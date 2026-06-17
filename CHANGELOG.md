@@ -6,6 +6,19 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-17
+
+### Added
+- `doctor` — read-only compatibility check: will a file load cleanly on the U1, and if not, why (verdicts READY / REPAIRABLE / CONVERTIBLE / HIGH_RISK; `--json`)
+- `diff` — read-only comparison of two projects (structure, geometry, settings, counts; `--json`)
+
+### Changed
+- README: badges, compatibility matrix, 30-second quick start, doctor & diff sections
+- Added CONTRIBUTING guide and issue templates
+- Public packaging metadata for the `snapmaker-studio` distribution
+
+## [0.1.0] - 2026-06-17
+
 ### Added
 - Repair incompatible 3MF projects into U1-ready projects (`u1convert repair --mode u1`)
 - Convert STL files directly into native Snapmaker U1 projects (`u1convert repair part.stl`)

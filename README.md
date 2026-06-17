@@ -1,5 +1,10 @@
 # Snapmaker Studio
 
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)
+![Release](https://img.shields.io/github/v/release/DeadlyVirusIn/snapmaker-studio?display_name=tag)
+![Status: alpha](https://img.shields.io/badge/status-alpha-orange.svg)
+
 **The compatibility layer for Snapmaker U1.**
 
 Convert, repair, validate, and optimize 3D print projects for the Snapmaker U1 —
@@ -33,33 +38,87 @@ multi-colour assignments.
 - Repair incompatible 3MF projects so they open on the U1
 - Convert projects into native Snapmaker U1 format
 - Generate ready-to-slice U1 projects directly from STL
+- Diagnose any file with `doctor` — will it load on the U1, and if not, why
+- Compare two projects with `diff` — see exactly what changed
 - Preserve painted and multi-colour models
 - Validate that a project is well-formed before you print
 - Optional, reversible print-optimization profiles
 
-## Quick start
+## Compatibility
 
-Install from source (a published `pip install snapmaker-studio` is on the roadmap):
+| Input | Status | Result |
+|---|---|---|
+| Bambu / Orca `.3mf` project | ✅ supported | repaired → Snapmaker U1 `.3mf` |
+| `.stl` model | ✅ supported | native Snapmaker U1 `.3mf` |
+| `.obj` / `.glb` | 🚧 planned | — |
+
+Output target: **Snapmaker U1**. Open the result in Snapmaker Orca to slice.
+
+## Quick start (30 seconds)
+
+Install from source (PyPI package coming later):
 
 ```bash
 pip install -e backend
 ```
 
-Then:
+Then, using the bundled example:
 
 ```bash
-# Make an existing 3MF U1-ready
-u1convert repair model.3mf --mode u1 -o model_U1.3mf
+# Convert the example STL into a native U1 project
+u1convert repair examples/sample_cube.stl -o my_part_U1.3mf
 
-# Convert an STL into a native U1 project
-u1convert repair part.stl -o part_U1.3mf
-
-# Validate a project
-u1convert validate part_U1.3mf
+# Check any file's U1 compatibility first
+u1convert doctor examples/sample_cube_U1.3mf
 ```
 
-Open the result in **Snapmaker Orca** and slice. A ready-made example lives in
+Open the result in **Snapmaker Orca** and slice. More samples live in
 [`examples/`](examples/).
+
+Everyday commands:
+
+```bash
+u1convert repair model.3mf --mode u1 -o model_U1.3mf   # make a 3MF U1-ready
+u1convert validate model_U1.3mf                        # check integrity
+```
+
+## Will my file work on the U1?
+
+`doctor` is a read-only check — it never modifies your file:
+
+```text
+$ u1convert doctor model.3mf
+
+  Verdict : REPAIRABLE
+  Score   : 90/100
+  Project type            : Bambu/Orca project
+  Snapmaker U1 compatible : yes
+  U1 compatibility        :
+    - incompatible slicer value: wall_filament=0
+
+Recommended action: Run `u1convert repair <file> --mode u1` to make this U1-ready.
+Read-only check - no files were modified.
+```
+
+Verdicts: **READY** (loads as-is) · **REPAIRABLE** (run `repair`) · **CONVERTIBLE** (an STL — run `repair`) · **HIGH_RISK** (not a usable project). Add `--json` for machine-readable output.
+
+## What changed between two projects?
+
+`diff` is a read-only comparison — handy to see what a repair or conversion actually changed:
+
+```text
+$ u1convert diff original.3mf converted.3mf
+
+  Structure : +2 parts / -0
+  Geometry  : unchanged
+  Objects 1->1  Plates 1->1  Filaments 4->5
+  Painting  : 0 -> 0 painted triangles
+  Settings  : 37 changed, 0 added, 0 removed
+    printer_model: 'Bambu Lab P1S' -> 'Snapmaker U1'
+    ... (use --json for the full list)
+```
+
+It reports structure, geometry, settings, and counts. Add `--json` for the full machine-readable diff.
 
 ## Roadmap
 
@@ -71,6 +130,10 @@ Open the result in **Snapmaker Orca** and slice. A ready-made example lives in
 - Optional cloud conversion service
 
 See [CHANGELOG.md](CHANGELOG.md) for release history.
+
+## Contributing
+
+Issues and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

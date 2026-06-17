@@ -9,6 +9,7 @@ from snapstudio_core.filaments import parse_remap
 from snapstudio_core.repair import repair as do_repair
 from snapstudio_core.validate import validate as do_validate
 from snapstudio_core.doctor import diagnose_path as do_diagnose_path
+from snapstudio_core.diff import diff_projects as do_diff
 from snapstudio_core.report import write_fix_report
 from snapstudio_core.errors import SnapStudioError
 
@@ -126,3 +127,31 @@ def doctor(path, as_json):
         click.echo(f"\nRecommended action: {d.recommended_action}")
         click.echo("Read-only check - no files were modified.")
     sys.exit(0 if d.verdict == "READY" else 1)
+
+@cli.command()
+@click.argument("file_a", type=click.Path(exists=True))
+@click.argument("file_b", type=click.Path(exists=True))
+@click.option("--json", "as_json", is_flag=True, help="machine-readable output")
+def diff(file_a, file_b, as_json):
+    """Compare two projects: what changed between FILE_A and FILE_B (read-only)."""
+    d = do_diff(ThreeMF.open(file_a), ThreeMF.open(file_b))
+    if as_json:
+        click.echo(json.dumps(d.to_dict(), indent=2, ensure_ascii=False))
+        return
+    click.echo(f"Diff: {Path(file_a).name} -> {Path(file_b).name}\n")
+    click.echo(f"  Structure : +{len(d.parts_added)} parts / -{len(d.parts_removed)}")
+    for n in d.parts_added: click.echo(f"    + {n}")
+    for n in d.parts_removed: click.echo(f"    - {n}")
+    click.echo(f"  Geometry  : {'changed' if d.geometry_changed else 'unchanged'}")
+    click.echo(f"  Objects {d.object_count[0]}->{d.object_count[1]}  "
+               f"Plates {d.plate_count[0]}->{d.plate_count[1]}  "
+               f"Filaments {d.filament_count[0]}->{d.filament_count[1]}")
+    click.echo(f"  Painting  : {d.painted_triangles[0]} -> {d.painted_triangles[1]} painted triangles")
+    click.echo(f"  Settings  : {len(d.settings_changed)} changed, "
+               f"{len(d.settings_added)} added, {len(d.settings_removed)} removed")
+    for c in d.settings_changed[:12]:
+        click.echo(f"    {c['key']}: {str(c['old'])[:32]!r} -> {str(c['new'])[:32]!r}")
+    if len(d.settings_changed) > 12:
+        click.echo(f"    ... +{len(d.settings_changed) - 12} more (use --json for the full list)")
+    if not d.has_changes:
+        click.echo("\nNo differences.")
