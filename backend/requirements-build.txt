@@ -1,0 +1,6 @@
+# Build-time dependencies for freezing the engine sidecar (not runtime app deps).
+# Install before running desktop/scripts/build-sidecar.ps1:
+#   pip install -e backend
+#   pip install -r backend/requirements-build.txt
+pyinstaller>=6
+lxml>=5
