@@ -1,0 +1,13 @@
+{
+  "schema": "u1-opt/1",
+  "name": "u1-fast-prime-tower",
+  "description": "Tuned prime/wipe tower: width 20mm, prime volume 13mm3, brim 5mm, rectangle wall, max purge speed 200mm/s, sparse layers on. Reversible; applied only in optimize mode when explicitly named.",
+  "set": {
+    "prime_tower_width": "20",
+    "prime_volume": "13",
+    "prime_tower_brim_width": "5",
+    "wipe_tower_wall_type": "rectangle",
+    "wipe_tower_max_purge_speed": "200",
+    "wipe_tower_no_sparse_layers": "0"
+  }
+}

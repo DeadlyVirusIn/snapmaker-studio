@@ -1,0 +1,11 @@
+{
+  "schema": "u1-rules/1",
+  "clamps": [
+    {"key": "prime_tower_brim_width", "bad": "-1", "good": "5"},
+    {"key": "raft_first_layer_expansion", "bad": "-1", "good": "2"},
+    {"key": "wall_filament", "bad": "0", "good": "1"},
+    {"key": "solid_infill_filament", "bad": "0", "good": "1"},
+    {"key": "sparse_infill_filament", "bad": "0", "good": "1"},
+    {"key": "tree_support_wall_count", "bad": "-1", "good": "0"}
+  ]
+}
