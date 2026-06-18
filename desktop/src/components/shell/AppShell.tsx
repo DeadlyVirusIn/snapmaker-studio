@@ -21,15 +21,23 @@ export function AppShell() {
   const setFile = useSession((s) => s.setFile);
 
   // Native drag-and-drop: a dropped .stl/.3mf loads into the live workspace.
+  // Guarded so the app still renders outside Tauri (e.g. a plain browser for
+  // screenshots) where the webview API is unavailable.
   useEffect(() => {
-    const un = getCurrentWebview().onDragDropEvent((e) => {
-      if (e.payload.type !== "drop" || !e.payload.paths.length) return;
-      const model = e.payload.paths.find((p) => /\.(stl|3mf)$/i.test(p));
-      if (!model) return;
-      setFile(model);
-      nav("/workspace");
-    });
-    return () => { un.then((f) => f()); };
+    let cleanup: (() => void) | undefined;
+    try {
+      const un = getCurrentWebview().onDragDropEvent((e) => {
+        if (e.payload.type !== "drop" || !e.payload.paths.length) return;
+        const model = e.payload.paths.find((p) => /\.(stl|3mf)$/i.test(p));
+        if (!model) return;
+        setFile(model);
+        nav("/workspace");
+      });
+      cleanup = () => { un.then((f) => f()); };
+    } catch {
+      /* not running inside Tauri — drag-drop disabled */
+    }
+    return () => cleanup?.();
   }, [nav, setFile]);
 
   return (

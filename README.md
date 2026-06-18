@@ -22,6 +22,20 @@ every conversion is proven clean before you print (real-world corpus: 112 files,
 Runs entirely on your machine. No cloud, no account, no upload — local-first and
 open source.
 
+## For reviewers / Innovation Fund
+
+- **What it is:** a local-first, open-source desktop platform that converts any
+  Bambu/Orca/Prusa/STL file into a clean Snapmaker U1 project — one click, no
+  cloud, no account.
+- **Proof:** real-world corpus of **112 files → 100% Doctor READY**; a former
+  Bambu project opens in Snapmaker Orca with **zero warnings**; a working
+  one-click Windows installer (`v0.3.0-beta.1`, bundled engine, no Python).
+- **Read:** [`docs/INNOVATION_FUND.md`](docs/INNOVATION_FUND.md) ·
+  [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) ·
+  [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) ·
+  [`docs/ROADMAP.md`](docs/ROADMAP.md) · brand [`docs/brand/`](docs/brand/README.md)
+  · landing [`docs/landing/index.html`](docs/landing/index.html).
+
 ## Why
 
 Models and projects from popular slicers and model sites don't always open cleanly

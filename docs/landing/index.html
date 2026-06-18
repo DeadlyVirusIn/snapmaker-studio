@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Snapmaker Studio — The Workflow Platform for Modern 3D Printing</title>
+<meta property="og:title" content="Snapmaker Studio" />
+<meta property="og:description" content="One Place. Any File. Any Printer. Perfect Prints." />
+<meta property="og:image" content="../brand/social-preview.svg" />
+<style>
+  :root{--bg:#0B0F19;--bg2:#05070D;--surface:#121826;--border:#243043;--text:#E5E9F0;--muted:#9AA4B2;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 50% -10%, #16203a 0%, var(--bg) 45%, var(--bg2) 100%);
+       color:var(--text);font-family:Inter,'Segoe UI',Arial,sans-serif;line-height:1.5}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+  header{padding:18px 0;display:flex;align-items:center;justify-content:space-between}
+  header .logo{height:40px}
+  nav a{color:var(--muted);text-decoration:none;margin-left:22px;font-size:14px}
+  nav a:hover{color:var(--text)}
+  .hero{text-align:center;padding:56px 0 28px}
+  .hero img{width:min(880px,100%);}
+  h1{font-size:54px;font-weight:800;letter-spacing:-1px;margin:18px 0 6px}
+  h1 .g{background:linear-gradient(90deg,#FF1E8E,#FF6A00 35%,#15C77E 62%,#1E84FF);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .tagline{font-size:20px;color:var(--muted)}
+  .sub{font-size:15px;color:var(--muted);margin-top:6px;letter-spacing:2px;text-transform:uppercase}
+  .cta{margin-top:26px}
+  .btn{display:inline-block;padding:12px 22px;border-radius:10px;font-weight:700;text-decoration:none}
+  .btn.p{background:linear-gradient(90deg,#FF6A00,#FF1E8E);color:#fff}
+  .btn.s{border:1px solid var(--border);color:var(--text);margin-left:10px}
+  .flow{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin:44px 0}
+  .step{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;min-width:150px;text-align:center}
+  .step b{display:block;font-size:16px}
+  .step.validate{border-color:#15C77E;box-shadow:0 0 0 1px #15C77E inset}
+  .step small{color:var(--muted)}
+  .arrow{color:#3A4252;font-size:22px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:32px 0 64px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
+  .card h3{font-size:16px;margin-bottom:6px}
+  .card p{color:var(--muted);font-size:14px}
+  .proof{text-align:center;color:var(--muted);font-size:14px;padding:8px 0 60px}
+  .proof b{color:var(--text)}
+  footer{border-top:1px solid var(--border);padding:24px 0;color:var(--muted);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img class="logo" src="../brand/logo.svg" alt="Snapmaker Studio" />
+    <nav><a href="#flow">How it works</a><a href="#why">Why</a><a href="https://github.com/DeadlyVirusIn/snapmaker-studio">GitHub</a></nav>
+  </header>
+
+  <section class="hero">
+    <img src="../brand/icon.svg" alt="Studio Hub" />
+    <h1>One Place. Any File. Any Printer. <span class="g">Perfect Prints.</span></h1>
+    <p class="tagline">The Workflow Platform for Modern 3D Printing.</p>
+    <p class="sub">The Operating System for Multi-Material 3D Printing</p>
+    <div class="cta">
+      <a class="btn p" href="https://github.com/DeadlyVirusIn/snapmaker-studio/releases">Download beta</a>
+      <a class="btn s" href="https://github.com/DeadlyVirusIn/snapmaker-studio">View source</a>
+    </div>
+  </section>
+
+  <section id="flow" class="flow">
+    <div class="step"><b>Input</b><small>Any file. Any ecosystem.</small></div>
+    <span class="arrow">&rarr;</span>
+    <div class="step"><b>Diagnose</b><small>Analyze &amp; detect issues.</small></div>
+    <span class="arrow">&rarr;</span>
+    <div class="step"><b>Transform</b><small>Repair, convert, optimize.</small></div>
+    <span class="arrow">&rarr;</span>
+    <div class="step validate"><b>Validate</b><small>Proven clean before print.</small></div>
+    <span class="arrow">&rarr;</span>
+    <div class="step"><b>Output</b><small>Clean. Ready. Print.</small></div>
+  </section>
+
+  <section id="why" class="grid">
+    <div class="card"><h3>Local-first</h3><p>No account, no cloud, no upload. Your files stay on your machine.</p></div>
+    <div class="card"><h3>Cross-ecosystem</h3><p>Bambu, OrcaSlicer, PrusaSlicer, STL — converted to a clean Snapmaker U1 project.</p></div>
+    <div class="card"><h3>Multi-material</h3><p>Built for color. Filament identity, purge, and arrays handled correctly.</p></div>
+    <div class="card"><h3>Open source</h3><p>Transparent, inspectable, extensible. MIT licensed.</p></div>
+  </section>
+
+  <p class="proof"><b>112</b> real-world files &middot; <b>100%</b> Doctor READY &middot; opens in Snapmaker Orca with <b>zero warnings</b> &middot; one-click Windows installer.</p>
+</div>
+<footer>Snapmaker Studio &middot; Local-first &middot; Open source &middot; github.com/DeadlyVirusIn/snapmaker-studio</footer>
+</body>
+</html>
