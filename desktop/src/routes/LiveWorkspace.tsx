@@ -1,13 +1,14 @@
 import { Navigate } from "react-router-dom";
 import {
   FileBox, Boxes, Wand2, FolderOpen, RotateCw, CheckCircle2,
-  AlertTriangle, Loader2, Save,
+  AlertTriangle, Loader2, Save, GitCompare,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/badge";
 import type { Verdict } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { useSession } from "@/store/session";
 import { useOpenFile } from "@/hooks/useOpenFile";
 
@@ -21,6 +22,8 @@ export default function LiveWorkspace() {
   const convert = useSession((s) => s.convert);
   const runDoctor = useSession((s) => s.runDoctor);
   const runConvert = useSession((s) => s.runConvert);
+  const diff = useSession((s) => s.diff);
+  const runDiff = useSession((s) => s.runDiff);
   const openFile = useOpenFile();
 
   // No file in session (e.g. hard refresh) — send the user back to start.
@@ -159,6 +162,76 @@ export default function LiveWorkspace() {
                 <Button variant="secondary" size="sm" onClick={runConvert}>
                   <RotateCw className="h-4 w-4" /> Retry
                 </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Compare: original ↔ converted (only once an output exists) */}
+          {convert.status === "done" && (
+            <Card>
+              <CardContent className="p-5">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                  <GitCompare className="h-4 w-4" /> Compare — original ↔ U1-ready
+                </div>
+                {file.ext === "stl" && (
+                  <p className="text-sm text-muted-foreground">
+                    Built a native Snapmaker U1 project from your STL — there’s no source project to compare against.
+                  </p>
+                )}
+                {file.ext !== "stl" && diff.status === "idle" && (
+                  <p className="text-sm text-muted-foreground">Comparison runs automatically after conversion.</p>
+                )}
+                {diff.status === "loading" && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground"><Spinner /> Comparing…</div>
+                )}
+                {diff.status === "error" && (
+                  <div className="space-y-2">
+                    <p className="flex items-center gap-2 text-sm text-risk"><AlertTriangle className="h-4 w-4" /> {diff.error}</p>
+                    <Button variant="secondary" size="sm" onClick={runDiff}><RotateCw className="h-4 w-4" /> Retry compare</Button>
+                  </div>
+                )}
+                {diff.status === "done" && diff.data && (
+                  <div className="space-y-4">
+                    <div className={cn("flex items-center gap-2 text-sm", diff.data.geometry_changed ? "text-repairable" : "text-ready")}>
+                      {diff.data.geometry_changed ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                      {diff.data.geometry_changed ? "Geometry changed" : "Geometry identical — mesh preserved"}
+                    </div>
+                    <div className="overflow-hidden rounded-md border border-border text-sm">
+                      <div className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-border bg-muted/40 px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <span>Metric</span><span>Original</span><span>U1-ready</span>
+                      </div>
+                      {([["Objects", "object_count"], ["Plates", "plate_count"], ["Filaments", "filament_count"], ["Painted △", "painted_triangles"]] as [string, string][]).map(([label, key]) => {
+                        const v = diff.data[key] || [0, 0];
+                        return (
+                          <div key={key} className="grid grid-cols-[1fr_auto_auto] gap-3 px-3 py-2">
+                            <span className="font-medium">{label}</span>
+                            <span className="text-muted-foreground">{v[0]}</span>
+                            <span className={cn(v[0] !== v[1] && "font-medium text-foreground")}>{v[1]}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="rounded-md border border-border p-3"><p className="text-xs text-muted-foreground">Parts</p><p>+{diff.data.parts_added?.length || 0} / −{diff.data.parts_removed?.length || 0}</p></div>
+                      <div className="rounded-md border border-border p-3"><p className="text-xs text-muted-foreground">Settings normalized</p><p>{diff.data.settings_changed?.length || 0} changed · +{diff.data.settings_added?.length || 0} / −{diff.data.settings_removed?.length || 0}</p></div>
+                    </div>
+                    {diff.data.settings_changed?.length > 0 && (
+                      <div>
+                        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Normalization results</p>
+                        <ul className="space-y-1 text-xs">
+                          {diff.data.settings_changed.slice(0, 8).map((c: any, i: number) => (
+                            <li key={i} className="flex gap-2"><span className="font-mono text-muted-foreground">{c.key}</span><span className="truncate">{String(c.old).slice(0, 18)} → <span className="text-ready">{String(c.new).slice(0, 18)}</span></span></li>
+                          ))}
+                          {diff.data.settings_changed.length > 8 && <li className="text-muted-foreground">+{diff.data.settings_changed.length - 8} more</li>}
+                        </ul>
+                      </div>
+                    )}
+                    <div className={cn("flex items-center gap-1.5 text-xs", convert.data?.validated_ok ? "text-ready" : "text-repairable")}>
+                      {convert.data?.validated_ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+                      Validation: {convert.data?.validated_ok ? "passed — U1-clean" : "issues remain"}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

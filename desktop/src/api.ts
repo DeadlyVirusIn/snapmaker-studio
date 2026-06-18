@@ -43,6 +43,21 @@ export async function convert(path: string, outDir?: string): Promise<any> {
   return r.json();
 }
 
+export async function diff(a: string, b: string): Promise<any> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/diff`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ a, b }),
+  });
+  if (!r.ok) {
+    let msg = `diff failed (${r.status})`;
+    try { const e = await r.json(); if (e?.error) msg = e.error; } catch { /* ignore */ }
+    throw new Error(msg);
+  }
+  return r.json();
+}
+
 // Native open dialog limited to the formats the engine accepts.
 export async function openModelDialog(): Promise<string | null> {
   const picked = await open({

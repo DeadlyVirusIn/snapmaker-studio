@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { doctor as apiDoctor, convert as apiConvert } from "@/api";
+import { doctor as apiDoctor, convert as apiConvert, diff as apiDiff } from "@/api";
 
 export interface FileRef {
   path: string;
@@ -27,10 +27,12 @@ interface SessionState {
   file: FileRef | null;
   doctor: AsyncState<any>;
   convert: AsyncState<any>;
+  diff: AsyncState<any>;
   /** Select a file and immediately run Doctor on it. */
   setFile: (path: string) => void;
   runDoctor: () => Promise<void>;
   runConvert: () => Promise<void>;
+  runDiff: () => Promise<void>;
   reset: () => void;
 }
 
@@ -38,9 +40,10 @@ export const useSession = create<SessionState>((set, get) => ({
   file: null,
   doctor: blank(),
   convert: blank(),
+  diff: blank(),
 
   setFile: (path) => {
-    set({ file: toFileRef(path), doctor: blank(), convert: blank() });
+    set({ file: toFileRef(path), doctor: blank(), convert: blank(), diff: blank() });
     void get().runDoctor();
   },
 
@@ -59,14 +62,30 @@ export const useSession = create<SessionState>((set, get) => ({
   runConvert: async () => {
     const file = get().file;
     if (!file) return;
-    set({ convert: { status: "loading", data: null, error: null } });
+    set({ convert: { status: "loading", data: null, error: null }, diff: blank() });
     try {
       const data = await apiConvert(file.path);
       set({ convert: { status: "done", data, error: null } });
+      // Auto-compare only when there's a source *project* to diff against.
+      // STL inputs are wrapped into a brand-new U1 project — nothing to compare.
+      if (file.ext === "3mf") void get().runDiff();
     } catch (e: any) {
       set({ convert: { status: "error", data: null, error: String(e?.message ?? e) } });
     }
   },
 
-  reset: () => set({ file: null, doctor: blank(), convert: blank() }),
+  runDiff: async () => {
+    const file = get().file;
+    const out = get().convert.data?.output_path;
+    if (!file || !out) return;
+    set({ diff: { status: "loading", data: null, error: null } });
+    try {
+      const data = await apiDiff(file.path, out);
+      set({ diff: { status: "done", data, error: null } });
+    } catch (e: any) {
+      set({ diff: { status: "error", data: null, error: String(e?.message ?? e) } });
+    }
+  },
+
+  reset: () => set({ file: null, doctor: blank(), convert: blank(), diff: blank() }),
 }));
