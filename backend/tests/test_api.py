@@ -95,3 +95,60 @@ def test_server_doctor_requires_token(tmp_path):
         assert body["verdict"] == "READY"
     finally:
         httpd.shutdown()
+
+
+# ---- library index ----
+def test_library_record_and_list(tmp_path, monkeypatch):
+    monkeypatch.setenv("SNAPSTUDIO_DATA_DIR", str(tmp_path / "data"))
+    out = _sample_u1(tmp_path)
+    service.record_diagnosis(str(out), service.doctor(str(out)))
+    listing = service.library_list()
+    assert listing["count"] == 1
+    p = listing["projects"][0]
+    assert p["name"] == "cube_U1.3mf" and p["verdict"] == "READY"
+    assert p["last_action"] == "doctor"
+
+
+def test_library_convert_records_output(tmp_path, monkeypatch):
+    monkeypatch.setenv("SNAPSTUDIO_DATA_DIR", str(tmp_path / "data"))
+    stl = tmp_path / "cube.stl"; stl.write_bytes(_bin_tetra())
+    res = service.convert(str(stl))
+    service.record_conversion(str(stl), res)
+    p = service.library_list()["projects"][0]
+    assert p["last_action"] == "convert"
+    assert p["output_path"] == res["output_path"]
+
+
+def test_library_search_and_delete(tmp_path, monkeypatch):
+    monkeypatch.setenv("SNAPSTUDIO_DATA_DIR", str(tmp_path / "data"))
+    out = _sample_u1(tmp_path)
+    service.record_diagnosis(str(out), service.doctor(str(out)))
+    assert service.library_list("cube")["count"] == 1
+    assert service.library_list("nomatch")["count"] == 0
+    pid = service.library_list()["projects"][0]["id"]
+    service.library_delete(pid)
+    assert service.library_list()["count"] == 0
+
+
+def test_server_library_roundtrip(tmp_path, monkeypatch):
+    monkeypatch.setenv("SNAPSTUDIO_DATA_DIR", str(tmp_path / "data"))
+    httpd, token = build_server(port=0)
+    _run(httpd)
+    try:
+        port = httpd.server_address[1]
+        out = _sample_u1(tmp_path)
+        hdr = {"Content-Type": "application/json", "X-Auth-Token": token}
+
+        # diagnose over the wire -> auto-records into the library
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/doctor",
+                                     data=json.dumps({"path": str(out)}).encode(), headers=hdr)
+        urllib.request.urlopen(req, timeout=5).read()
+
+        # list via /library
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/library",
+                                     data=b"{}", headers=hdr)
+        with urllib.request.urlopen(req, timeout=5) as r:
+            body = json.loads(r.read())
+        assert body["count"] == 1 and body["projects"][0]["name"] == "cube_U1.3mf"
+    finally:
+        httpd.shutdown()

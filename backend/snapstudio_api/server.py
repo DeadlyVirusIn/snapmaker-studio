@@ -109,7 +109,9 @@ def _make_handler(token: str):
                     self._send(400, {"error": "missing 'path'"})
                     return
                 try:
-                    self._send(200, service.doctor(path))
+                    result = service.doctor(path)
+                    service.record_diagnosis(path, result)  # best-effort index
+                    self._send(200, result)
                 except Exception as e:  # adapter must not crash the server
                     self._send(500, {"error": str(e)})
             elif self.path == "/convert":
@@ -118,7 +120,9 @@ def _make_handler(token: str):
                     self._send(400, {"error": "missing 'path'"})
                     return
                 try:
-                    self._send(200, service.convert(path, data.get("out_dir")))
+                    result = service.convert(path, data.get("out_dir"))
+                    service.record_conversion(path, result)  # best-effort index
+                    self._send(200, result)
                 except Exception as e:  # adapter must not crash the server
                     self._send(500, {"error": str(e)})
             elif self.path == "/diff":
@@ -129,6 +133,21 @@ def _make_handler(token: str):
                 try:
                     self._send(200, service.diff(a, b))
                 except Exception as e:  # adapter must not crash the server
+                    self._send(500, {"error": str(e)})
+            elif self.path == "/library":
+                try:
+                    self._send(200, service.library_list(
+                        data.get("query", ""), data.get("tag")))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
+            elif self.path == "/library/delete":
+                pid = data.get("id")
+                if pid is None:
+                    self._send(400, {"error": "missing 'id'"})
+                    return
+                try:
+                    self._send(200, service.library_delete(pid))
+                except Exception as e:
                     self._send(500, {"error": str(e)})
             else:
                 self._send(404, {"error": "not found"})

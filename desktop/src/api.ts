@@ -58,6 +58,41 @@ export async function diff(a: string, b: string): Promise<any> {
   return r.json();
 }
 
+export interface LibraryProject {
+  id: number;
+  name: string;
+  source_path: string;
+  source_family: string | null;
+  output_path: string | null;
+  verdict: string | null;
+  score: number | null;
+  filament_count: number | null;
+  last_action: string | null;
+  updated_at: string | null;
+}
+
+export async function library(query = "", tag?: string): Promise<LibraryProject[]> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/library`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ query, tag: tag ?? null }),
+  });
+  if (!r.ok) throw new Error(`library failed (${r.status})`);
+  const data = await r.json();
+  return data.projects ?? [];
+}
+
+export async function libraryDelete(id: number): Promise<void> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/library/delete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ id }),
+  });
+  if (!r.ok) throw new Error(`delete failed (${r.status})`);
+}
+
 // Native open dialog limited to the formats the engine accepts.
 export async function openModelDialog(): Promise<string | null> {
   const picked = await open({
