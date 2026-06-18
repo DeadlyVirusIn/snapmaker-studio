@@ -1,7 +1,8 @@
-import { Sun, Moon, FolderOpen, Info } from "lucide-react";
+import { Sun, Moon, FolderOpen, Info, Sparkles, SlidersHorizontal } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/store/theme";
+import { useMode } from "@/store/mode";
 import { comingSoon } from "@/store/toast";
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -18,9 +19,26 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
 
 export default function Settings() {
   const { theme, set } = useTheme();
+  const { mode, setMode } = useMode();
   return (
     <div className="max-w-2xl space-y-6">
       <h2 className="text-2xl font-semibold tracking-tight">Settings</h2>
+
+      <Card>
+        <CardContent className="divide-y divide-border p-5">
+          <p className="pb-2 text-sm font-semibold">Experience</p>
+          <Row label="Mode" hint="Simple is friendly and guided. Advanced shows every tool and detail.">
+            <div className="flex gap-1">
+              <Button variant={mode === "simple" ? "primary" : "secondary"} size="sm" onClick={() => setMode("simple")}>
+                <Sparkles className="h-4 w-4" /> Simple
+              </Button>
+              <Button variant={mode === "advanced" ? "primary" : "secondary"} size="sm" onClick={() => setMode("advanced")}>
+                <SlidersHorizontal className="h-4 w-4" /> Advanced
+              </Button>
+            </div>
+          </Row>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="divide-y divide-border p-5">
