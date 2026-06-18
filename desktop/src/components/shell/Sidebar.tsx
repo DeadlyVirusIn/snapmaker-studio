@@ -1,8 +1,10 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { LayoutDashboard, FolderKanban, Settings, Plus, Layers, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MOCK_PROJECTS } from "@/data/mock";
-import { comingSoon } from "@/store/toast";
+import { library } from "@/api";
+import { useSession } from "@/store/session";
+import { useOpenFile } from "@/hooks/useOpenFile";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -18,7 +20,12 @@ function navClass({ isActive }: { isActive: boolean }) {
 }
 
 export function Sidebar() {
-  const pinned = MOCK_PROJECTS.slice(0, 3);
+  const nav = useNavigate();
+  const setFile = useSession((s) => s.setFile);
+  const openFile = useOpenFile();
+  const { data } = useQuery({ queryKey: ["library"], queryFn: () => library() });
+  const recent = (data ?? []).slice(0, 3);
+
   return (
     <aside className="flex h-full w-[230px] flex-col border-r border-border bg-card">
       <div className="flex items-center gap-2 px-4 h-14 border-b border-border">
@@ -36,19 +43,28 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <button onClick={() => comingSoon("New project")} className="mx-3 mb-2 flex items-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted/60 hover:text-foreground">
-        <Plus className="h-4 w-4" /> New project
+      <button onClick={openFile} className="mx-3 mb-2 flex items-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted/60 hover:text-foreground">
+        <Plus className="h-4 w-4" /> Open a model
       </button>
 
-      <div className="px-4 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Pinned</div>
-      <div className="flex flex-col gap-0.5 px-2 py-1 overflow-y-auto">
-        {pinned.map((p) => (
-          <NavLink key={p.id} to={`/projects/${p.id}`} className={navClass}>
-            <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
-            <span className="truncate">{p.name}</span>
-          </NavLink>
-        ))}
-      </div>
+      {recent.length > 0 && (
+        <>
+          <div className="px-4 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Recent</div>
+          <div className="flex flex-col gap-0.5 px-2 py-1 overflow-y-auto">
+            {recent.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => { setFile(p.source_path); nav("/workspace"); }}
+                title={p.source_path}
+                className={navClass({ isActive: false }) + " w-full text-left"}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
+                <span className="truncate">{p.name}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="mt-auto p-3 border-t border-border">
         <NavLink to="/settings" className={navClass}>

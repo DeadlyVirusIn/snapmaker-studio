@@ -5,7 +5,6 @@ import { AppShell } from "@/components/shell/AppShell";
 import Dashboard from "@/routes/Dashboard";
 import Projects from "@/routes/Projects";
 import Batch from "@/routes/Batch";
-import Workspace from "@/routes/Workspace";
 import LiveWorkspace from "@/routes/LiveWorkspace";
 import Settings from "@/routes/Settings";
 import NotFound from "@/routes/NotFound";
@@ -30,7 +29,6 @@ export default function App() {
             <Route path="/projects" element={<Projects />} />
             <Route path="/batch" element={<Batch />} />
             <Route path="/workspace" element={<LiveWorkspace />} />
-            <Route path="/projects/:id" element={<Workspace />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Route>
