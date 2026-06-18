@@ -20,25 +20,38 @@ def load_per_filament_keys() -> tuple[str, ...]:
 PER_FILAMENT_KEYS = load_per_filament_keys()
 
 
+def _resize(v: list, keep: int):
+    """Truncate to `keep`, or pad by repeating the last entry. Inconsistent
+    per-filament array lengths are exactly what Orca flags as a Customized Preset,
+    so every array must end up the same length as the filament count."""
+    if len(v) >= keep:
+        return v[:keep]
+    return v + [v[-1]] * (keep - len(v)) if v else v
+
+
 def conform_filament_arrays(cfg: dict, keep: int) -> dict:
-    """Make every per-filament array exactly `keep` long, keeping the first `keep`
-    entries (kept values unchanged), and resize the purge structures to match:
-      per-filament arrays -> length n
-      flush_volumes_matrix -> n*n   (square submatrix of kept indices)
-      flush_volumes_vector -> n*2
+    """Make every per-filament array exactly `keep` long (truncate OR pad), and
+    resize the purge structures to match:
+      per-filament arrays -> length keep
+      flush_volumes_matrix -> keep*keep   (reuse existing cells where available)
+      flush_volumes_vector -> keep*2
       wiping_volumes_extruders -> unchanged
-    Per-extruder/machine arrays are untouched."""
-    orig = len(cfg.get("filament_colour", []))
+    Per-extruder/machine arrays (length 2) are untouched."""
     for k in PER_FILAMENT_KEYS:
         v = cfg.get(k)
-        if isinstance(v, list):
-            cfg[k] = v[:keep]
+        if isinstance(v, list) and v:
+            cfg[k] = _resize(v, keep)
     m = cfg.get("flush_volumes_matrix")
-    if isinstance(m, list) and orig and len(m) == orig * orig:
-        cfg["flush_volumes_matrix"] = [m[i * orig + j] for i in range(keep) for j in range(keep)]
+    if isinstance(m, list) and m:
+        side = int(round(len(m) ** 0.5))
+        square = side * side == len(m)
+        cfg["flush_volumes_matrix"] = [
+            (m[i * side + j] if (square and i < side and j < side) else 0)
+            for i in range(keep) for j in range(keep)
+        ]
     fv = cfg.get("flush_volumes_vector")
-    if isinstance(fv, list):
-        cfg["flush_volumes_vector"] = fv[:keep * 2]
+    if isinstance(fv, list) and fv:
+        cfg["flush_volumes_vector"] = _resize(fv, keep * 2)
     # wiping_volumes_extruders intentionally left as-is (stock keeps it length 10)
     return cfg
 

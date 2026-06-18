@@ -5,16 +5,18 @@ import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/ProjectCard";
 import { MOCK_PROJECTS, MOCK_ACTIVITY, INSIGHTS } from "@/data/mock";
 import { comingSoon } from "@/store/toast";
+import { useOpenFile } from "@/hooks/useOpenFile";
 
 const QUICK = [
-  { label: "Check compatibility", icon: Stethoscope, hint: "Run Doctor" },
-  { label: "Convert STL", icon: UploadCloud, hint: "STL → U1" },
-  { label: "Repair 3MF", icon: Wand2, hint: "Fix presets" },
-  { label: "Compare files", icon: GitCompare, hint: "Diff versions" },
+  { label: "Check compatibility", icon: Stethoscope, hint: "Run Doctor", live: true },
+  { label: "Convert STL", icon: UploadCloud, hint: "STL → U1", live: true },
+  { label: "Repair 3MF", icon: Wand2, hint: "Fix presets", live: false },
+  { label: "Compare files", icon: GitCompare, hint: "Diff versions", live: false },
 ];
 
 export default function Dashboard() {
   const recent = MOCK_PROJECTS.slice(0, 3);
+  const openFile = useOpenFile();
 
   return (
     <div className="space-y-8">
@@ -23,7 +25,7 @@ export default function Dashboard() {
         <p className="text-muted-foreground">Make any model Snapmaker U1-ready — fully on your machine.</p>
       </div>
 
-      <Card className="border-dashed bg-gradient-to-b from-muted/40 to-transparent">
+      <Card onClick={openFile} className="cursor-pointer border-dashed bg-gradient-to-b from-muted/40 to-transparent transition-colors hover:border-primary/40">
         <CardContent className="flex flex-col items-center justify-center gap-4 py-16 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20">
             <UploadCloud className="h-7 w-7" />
@@ -32,15 +34,15 @@ export default function Dashboard() {
             <p className="text-base font-medium">Drop a model to begin</p>
             <p className="text-sm text-muted-foreground">Supports <b>.stl</b> and <b>.3mf</b> · nothing leaves your computer</p>
           </div>
-          <Button onClick={() => comingSoon("New project")}>
-            <Plus className="h-4 w-4" /> New project
+          <Button onClick={(e) => { e.stopPropagation(); openFile(); }}>
+            <Plus className="h-4 w-4" /> Open a model
           </Button>
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {QUICK.map((q) => (
-          <Card key={q.label} onClick={() => comingSoon(q.label)} className="cursor-pointer transition-all hover:border-primary/40 hover:shadow-md">
+          <Card key={q.label} onClick={() => (q.live ? openFile() : comingSoon(q.label))} className="cursor-pointer transition-all hover:border-primary/40 hover:shadow-md">
             <CardContent className="flex flex-col gap-2 p-4">
               <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
                 <q.icon className="h-5 w-5" />

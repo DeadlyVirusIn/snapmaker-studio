@@ -4,12 +4,16 @@ from .container import ThreeMF
 from .config_io import load_project_settings, dump_project_settings
 from .rules import load_rules, apply_clamps
 from .profile import load_profile, apply_swap
-from .filaments import apply_remap, filament_count
+from .filaments import apply_remap, filament_count, conform_filament_arrays
 from .detect import detect_source
 from .optimize import load_optimization, apply_optimization
 from .report import RepairOutcome
+from .u1_identity import (
+    normalize_project_identity, normalize_values, scrub_foreign, normalize_slice_info,
+)
 
 SETTINGS = "Metadata/project_settings.config"
+SLICE_INFO = "Metadata/slice_info.config"
 
 
 def repair(tm: ThreeMF, mode: str = "u1", remap: dict | None = None,
@@ -36,6 +40,17 @@ def repair(tm: ThreeMF, mode: str = "u1", remap: dict | None = None,
 
     if mode in ("u1", "optimize"):
         report["profile_changes"] = apply_swap(work, load_profile(profile_name))
+        # Foreign projects often carry per-filament arrays longer than the real
+        # colour count (e.g. 10 slots, 5 colours). Inconsistent array lengths are
+        # what Orca flags as a "Customized Preset" — conform every per-filament
+        # array to the colour count first.
+        conform_filament_arrays(work, filament_count(work))
+        # Make the project read as a genuine U1 project: rewrite the preset
+        # identity block to known-good values and scrub any leftover
+        # Bambu/BBL/H2D strings (e.g. foreign machine G-code).
+        report["identity"] = normalize_project_identity(work, filament_count(work))
+        report["value_normalizations"] = normalize_values(work)
+        report["foreign_cleared"] = scrub_foreign(work)
 
     # Optimization is explicit + opt-in: applied ONLY in optimize mode when a
     # profile is named. Runs after the U1 swap so it overrides U1 defaults;
@@ -45,4 +60,7 @@ def repair(tm: ThreeMF, mode: str = "u1", remap: dict | None = None,
 
     if not dry_run:
         tm.replace_part(SETTINGS, dump_project_settings(work))
+        # Blank the Bambu slice_info version stamp (the "newer version" trigger).
+        if mode in ("u1", "optimize") and SLICE_INFO in tm.list_parts():
+            tm.replace_part(SLICE_INFO, normalize_slice_info(tm.read_part(SLICE_INFO)))
     return RepairOutcome(mode=mode, report=report)

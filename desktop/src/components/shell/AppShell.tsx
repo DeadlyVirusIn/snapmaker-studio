@@ -1,11 +1,15 @@
-import { Outlet, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { StatusBar } from "./StatusBar";
 import { Toaster } from "@/components/ui/Toaster";
+import { useSession } from "@/store/session";
 
 function titleFor(path: string): string {
   if (path === "/") return "Dashboard";
+  if (path.startsWith("/workspace")) return "Workspace";
   if (path.startsWith("/projects")) return "Projects";
   if (path.startsWith("/settings")) return "Settings";
   return "Snapmaker Studio";
@@ -13,6 +17,21 @@ function titleFor(path: string): string {
 
 export function AppShell() {
   const { pathname } = useLocation();
+  const nav = useNavigate();
+  const setFile = useSession((s) => s.setFile);
+
+  // Native drag-and-drop: a dropped .stl/.3mf loads into the live workspace.
+  useEffect(() => {
+    const un = getCurrentWebview().onDragDropEvent((e) => {
+      if (e.payload.type !== "drop" || !e.payload.paths.length) return;
+      const model = e.payload.paths.find((p) => /\.(stl|3mf)$/i.test(p));
+      if (!model) return;
+      setFile(model);
+      nav("/workspace");
+    });
+    return () => { un.then((f) => f()); };
+  }, [nav, setFile]);
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
       <Sidebar />

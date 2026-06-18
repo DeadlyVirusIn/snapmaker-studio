@@ -5,6 +5,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import Dashboard from "@/routes/Dashboard";
 import Projects from "@/routes/Projects";
 import Workspace from "@/routes/Workspace";
+import LiveWorkspace from "@/routes/LiveWorkspace";
 import Settings from "@/routes/Settings";
 import NotFound from "@/routes/NotFound";
 import { useTheme } from "@/store/theme";
@@ -26,6 +27,7 @@ export default function App() {
           <Route element={<AppShell />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/projects" element={<Projects />} />
+            <Route path="/workspace" element={<LiveWorkspace />} />
             <Route path="/projects/:id" element={<Workspace />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />

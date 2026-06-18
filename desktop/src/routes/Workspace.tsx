@@ -11,6 +11,7 @@ import type { Verdict } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { MOCK_PROJECTS } from "@/data/mock";
 import { comingSoon } from "@/store/toast";
+import { useOpenFile } from "@/hooks/useOpenFile";
 
 const TABS = ["Overview", "Doctor", "Convert", "Compare", "History"] as const;
 type Tab = (typeof TABS)[number];
@@ -57,6 +58,7 @@ export default function Workspace() {
   const { id } = useParams();
   const project = MOCK_PROJECTS.find((p) => p.id === id) ?? MOCK_PROJECTS[0];
   const [tab, setTab] = useState<Tab>("Overview");
+  const openFile = useOpenFile();
 
   const TypeIcon = project.type === "3mf" ? Boxes : FileBox;
   const checks = checksFor(project.verdict);
@@ -80,7 +82,7 @@ export default function Workspace() {
         </div>
         <StatusBadge verdict={project.verdict} />
         <div className="ml-auto">
-          <Button onClick={() => comingSoon("Make U1-ready")}>
+          <Button onClick={openFile}>
             <Wand2 className="h-4 w-4" /> Make U1-ready
           </Button>
         </div>
@@ -188,7 +190,7 @@ export default function Workspace() {
                     ))}
                   </div>
                 </div>
-                <Button className="w-full" onClick={() => comingSoon("Convert to U1")}>Convert &amp; save U1 project</Button>
+                <Button className="w-full" onClick={openFile}>Convert &amp; save U1 project</Button>
                 <p className="text-center text-xs text-muted-foreground">Originals are never overwritten.</p>
               </CardContent>
             </Card>

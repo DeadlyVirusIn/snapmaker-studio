@@ -35,6 +35,17 @@ def test_service_doctor(tmp_path):
     assert d["verdict"] == "READY" and d["is_compatible"] is True
 
 
+def test_service_convert_stl(tmp_path):
+    from pathlib import Path
+    stl = tmp_path / "cube.stl"; stl.write_bytes(_bin_tetra())
+    res = service.convert(str(stl))
+    assert res["source_type"] == "stl"
+    assert res["validated_ok"] is True
+    assert res["output_name"].endswith("_SnapmakerU1.3mf")
+    assert Path(res["output_path"]).exists()
+    assert stl.exists()  # source untouched
+
+
 # ---- loopback server round-trip ----
 def _run(httpd):
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
