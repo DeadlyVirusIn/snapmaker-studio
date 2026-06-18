@@ -1,8 +1,11 @@
 # Snapmaker Studio — Brand
 
 Official visual identity: **"Studio Hub."** This directory is the single source
-for the brand. Approved reference artwork (source of truth):
-[`studio-hub-concept.png`](studio-hub-concept.png).
+for the brand. **Source of truth:** the **Brand Identity Asset Pack** —
+[`Brand Identity Snapmaker Studio/`](Brand%20Identity%20Snapmaker%20Studio/)
+(master deck `Gemini_Generated_Image_awl389awl389awl3.png`). The earlier raster
+`studio-hub-concept.png` and its pastel palette are **deprecated** in favor of the
+Pack — see [`ASSET_MAPPING.md`](ASSET_MAPPING.md) for the per-file alignment audit.
 
 ## Concept
 Multi-material **color ribbons** flow into a glowing **transform portal** and
@@ -34,14 +37,16 @@ result.
 | README/site banner | `hero.svg` |
 
 ## Documents
+- `ASSET_MAPPING.md` — **audit**: every SVG → Pack reference + alignment gaps.
+- `EXPORT_CHECKLIST.md` — export gates (GitHub, landing, app icon, installer, README, deck).
 - `BRAND_GUIDELINES.md` — rules, typography, dark-mode, clear space, do/don't.
-- `COLOR_PALETTE.md` — surfaces, spectrum, gradients, status colors.
+- `COLOR_PALETTE.md` — Pack-verbatim palette (7 streams, Primary Dark, Accent White), status colors.
 - `LOGO_USAGE.md` — which asset when, spacing, minimum sizes.
 - `APP_ICON_GUIDE.md` — size strategy + Windows `.ico` production.
 
 ## Usage examples
 - **App shell:** `icon-simple.svg` in the sidebar brand slot (currently a Layers
-  icon); `bg = #0B0F19`.
+  icon); `bg = #0A101C` (Primary Dark).
 - **GitHub repo:** `hero.svg` (or the concept PNG) at the top of README; set
   `social-preview` as the repo's social image.
 - **Browser/site:** `favicon.svg`; OG image = `social-preview.svg`.

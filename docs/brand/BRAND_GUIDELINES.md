@@ -1,9 +1,12 @@
 # Snapmaker Studio — Brand Guidelines
 
-> Official identity: **"Studio Hub."** Source of truth:
-> [`studio-hub-concept.png`](studio-hub-concept.png). Do not redesign; produce
-> assets that match this direction. The earlier hexagon/chevron mark is
-> **deprecated**.
+> **Source of truth:** the **Brand Identity Asset Pack** —
+> [`Brand Identity Snapmaker Studio/`](Brand%20Identity%20Snapmaker%20Studio/)
+> (master deck `Gemini_Generated_Image_awl389awl389awl3.png`). Do not redesign;
+> align assets to the Pack. See [`ASSET_MAPPING.md`](ASSET_MAPPING.md) (per-file
+> audit), [`COLOR_PALETTE.md`](COLOR_PALETTE.md) (Pack-verbatim palette), and
+> [`EXPORT_CHECKLIST.md`](EXPORT_CHECKLIST.md). The earlier hexagon/chevron mark
+> and the pastel `studio-hub-concept.png` palette are **deprecated**.
 
 ## Primary identity (non-negotiable)
 - The **Studio Hub** scene is the **source of truth** and the primary identity:
@@ -49,7 +52,7 @@ See `COLOR_PALETTE.md`, `LOGO_USAGE.md`, `APP_ICON_GUIDE.md`, and `README.md`
   gradient.
 
 ## Dark-mode standard
-The brand is **dark-first** (bg `#0B0F19`/`#05070D`). The color logo is for dark
+The brand is **dark-first** (Primary Dark `#0A101C`). The color logo is for dark
 surfaces; on light surfaces use `logo-mono.svg`/`icon-mono.svg` set to ink.
 
 ## Clear space & minimum sizes

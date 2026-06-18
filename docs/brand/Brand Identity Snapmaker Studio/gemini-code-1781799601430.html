@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snapmake Studio Precision Asset Extractor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #0F111A; /* Dark background matching the brand deck */
+            color: #F2F2F2;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1.6;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #16192B;
+        }
+
+        .header h1 {
+            color: #F2F2F2; /* Clean white for the main title, with an accent */
+            margin: 0 0 10px 0;
+            font-weight: 700;
+        }
+        
+        .header h1 span {
+            color: #00A6FF; /* Primary accent cyan from the Snapmake palette */
+        }
+
+        .header p {
+            margin: 0;
+            color: #94A3B8;
+            max-width: 650px;
+        }
+
+        .controls {
+            background: #16192B; /* Dark panel background */
+            padding: 15px 30px;
+            border-radius: 8px;
+            border: 1px solid #00A6FF; /* Accent border matching the branding */
+            margin-bottom: 25px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 166, 255, 0.05);
+        }
+
+        button, label.upload-btn {
+            background: #00A6FF; /* Primary accent cyan */
+            color: #0F111A; /* Dark text on light background */
+            border: none;
+            padding: 12px 24px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: opacity 0.2s, background-color 0.2s;
+            font-size: 15px;
+        }
+
+        button:hover, label.upload-btn:hover {
+            opacity: 0.9;
+            background-color: #00E1FF; /* Lighter cyan for hover */
+        }
+
+        button:disabled {
+            background: #334155;
+            color: #94A3B8;
+            cursor: not-allowed;
+            border: none;
+        }
+
+        input[type="file"] {
+            display: none; /* Keep the native input hidden */
+        }
+
+        .workspace {
+            position: relative;
+            background: rgba(22, 25, 43, 0.5); /* Semi-transparent panel for visual containment */
+            box-shadow: 0 0 30px rgba(0, 166, 255, 0.05);
+            border: 1px solid #334155;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+
+        canvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        #selection-box {
+            position: absolute;
+            border: 2px dashed #FF3DF9; /* Keep the contrast border from the original tool, it's also present in the material streams */
+            background: rgba(0, 166, 255, 0.08); /* Faint cyan fill */
+            pointer-events: none;
+            display: none;
+        }
+
+        .instructions {
+            color: #94A3B8;
+            font-size: 14px;
+            margin-top: 20px;
+            text-align: center;
+            max-width: 600px;
+            padding: 15px;
+            background: #16192B;
+            border-radius: 6px;
+            border: 1px solid #334155;
+        }
+
+        .instructions strong {
+            color: #F2F2F2;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Snapmake <span>Studio</span> Asset Extractor</h1>
+        <p>Precision-crop Standalone PNGs (App Icons, Multi-Material Hubs, streams) from your generated brand image. Maintain your exact pixel counts for UI implementation.</p>
+    </div>
+
+    <div class="controls">
+        <label class="upload-btn">
+            1. Upload Snapmake Brand Image
+            <input type="file" id="imageLoader" accept="image/png, image/jpeg">
+        </label>
+        <button id="downloadBtn" disabled>2. Download Selected Area as PNG</button>
+    </div>
+
+    <div class="workspace" id="workspace">
+        <canvas id="imageCanvas"></canvas>
+        <div id="selection-box"></div>
+    </div>
+
+    <div class="instructions">
+        <strong>How to use:</strong> Load your final generated Snapmake Studio brand image (like the complete one you created). Click and drag your mouse precisely over any asset (like the Hub Portal, App Icon, or a single color stream) to draw a box. Click Download to save exactly what is inside the box as a clean, transparent PNG.
+    </div>
+
+    <script>
+        const imageLoader = document.getElementById('imageLoader');
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+        const selectionBox = document.getElementById('selection-box');
+        const workspace = document.getElementById('workspace');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        let img = new Image();
+        let isDrawing = false;
+        let startX, startY, currentX, currentY;
+        let cropData = null;
+
+        // Load image onto canvas
+        imageLoader.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    img.onload = () => {
+                        // Set canvas to natural image size for precision
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        
+                        // Scale the workspace to match image dimensions
+                        workspace.style.width = img.width + 'px';
+                        workspace.style.height = img.height + 'px';
+                        
+                        // Reset selection
+                        selectionBox.style.display = 'none';
+                        downloadBtn.disabled = true;
+                        cropData = null;
+                    }
+                    img.src = event.target.result;
+                }
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+
+        // Mouse events for drawing the selection
+        canvas.addEventListener('mousedown', (e) => {
+            if (!img.src) return; // Prevent drawing without an image
+            
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            // Calculate coordinates relative to the canvas
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+            
+            selectionBox.style.left = startX + 'px';
+            selectionBox.style.top = startY + 'px';
+            selectionBox.style.width = '0px';
+            selectionBox.style.height = '0px';
+            selectionBox.style.display = 'block';
+            downloadBtn.disabled = true;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            currentX = e.clientX - rect.left;
+            currentY = e.clientY - rect.top;
+
+            const width = currentX - startX;
+            const height = currentY - startY;
+
+            // Handle reverse dragging (up or left)
+            selectionBox.style.width = Math.abs(width) + 'px';
+            selectionBox.style.height = Math.abs(height) + 'px';
+            selectionBox.style.left = (width < 0 ? currentX : startX) + 'px';
+            selectionBox.style.top = (height < 0 ? currentY : startY) + 'px';
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (!isDrawing) return;
+            isDrawing = false;
+            const rect = canvas.getBoundingClientRect();
+            currentX = e.clientX - rect.left;
+            currentY = e.clientY - rect.top;
+
+            // Finalize crop data (ensure valid dimensions even if drawn backwards)
+            cropData = {
+                x: Math.min(startX, currentX),
+                y: Math.min(startY, currentY),
+                w: Math.abs(currentX - startX),
+                h: Math.abs(currentY - startY)
+            };
+
+            // Only enable download if box has functional dimensions (larger than a few pixels)
+            if (cropData.w > 5 && cropData.h > 5) {
+                downloadBtn.disabled = false;
+            } else {
+                selectionBox.style.display = 'none';
+                cropData = null;
+            }
+        });
+
+        // Handle the download process
+        downloadBtn.addEventListener('click', () => {
+            if (!cropData) return;
+
+            // Create a temporary canvas matching the crop dimensions for high precision
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = cropData.w;
+            tempCanvas.height = cropData.h;
+
+            // Draw the cropped area from the main canvas onto the temp canvas
+            tempCtx.drawImage(
+                canvas, 
+                cropData.x, cropData.y, cropData.w, cropData.h, // Source coordinates (x, y, w, h)
+                0, 0, cropData.w, cropData.h // Destination coordinates
+            );
+
+            // Convert temp canvas content to a transparent PNG and trigger download
+            const dataURL = tempCanvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            // Timestamp ensures uniqueness in filenames
+            link.download = `snapmake_asset_${Date.now()}.png`;
+            link.href = dataURL;
+            link.click();
+        });
+    </script>
+</body>
+</html>
