@@ -50,9 +50,10 @@ def _finish(source_type: str, out: Path, res) -> ConversionResult:
 def _unique_output(src: Path, out_dir: Path | None) -> Path:
     target_dir = out_dir if out_dir else src.parent
     out = target_dir / f"{src.stem}_SnapmakerU1.3mf"
-    # Never collide with the source itself (e.g. already-named source).
+    # Never collide with the source, and never silently overwrite a previous
+    # conversion: bump a numeric suffix until the path is free.
     n = 2
-    while out.resolve() == src.resolve():
+    while out.resolve() == src.resolve() or out.exists():
         out = target_dir / f"{src.stem}_SnapmakerU1_{n}.3mf"
         n += 1
     return out

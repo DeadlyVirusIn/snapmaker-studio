@@ -50,11 +50,14 @@ export const useSession = create<SessionState>((set, get) => ({
   runDoctor: async () => {
     const file = get().file;
     if (!file) return;
+    const p = file.path; // guard: ignore results if the active file changes
     set({ doctor: { status: "loading", data: null, error: null } });
     try {
-      const data = await apiDoctor(file.path);
+      const data = await apiDoctor(p);
+      if (get().file?.path !== p) return;
       set({ doctor: { status: "done", data, error: null } });
     } catch (e: any) {
+      if (get().file?.path !== p) return;
       set({ doctor: { status: "error", data: null, error: String(e?.message ?? e) } });
     }
   },
@@ -62,14 +65,17 @@ export const useSession = create<SessionState>((set, get) => ({
   runConvert: async () => {
     const file = get().file;
     if (!file) return;
+    const p = file.path;
     set({ convert: { status: "loading", data: null, error: null }, diff: blank() });
     try {
-      const data = await apiConvert(file.path);
+      const data = await apiConvert(p);
+      if (get().file?.path !== p) return;
       set({ convert: { status: "done", data, error: null } });
       // Auto-compare only when there's a source *project* to diff against.
       // STL inputs are wrapped into a brand-new U1 project — nothing to compare.
       if (file.ext === "3mf") void get().runDiff();
     } catch (e: any) {
+      if (get().file?.path !== p) return;
       set({ convert: { status: "error", data: null, error: String(e?.message ?? e) } });
     }
   },
@@ -78,11 +84,14 @@ export const useSession = create<SessionState>((set, get) => ({
     const file = get().file;
     const out = get().convert.data?.output_path;
     if (!file || !out) return;
+    const p = file.path;
     set({ diff: { status: "loading", data: null, error: null } });
     try {
-      const data = await apiDiff(file.path, out);
+      const data = await apiDiff(p, out);
+      if (get().file?.path !== p) return;
       set({ diff: { status: "done", data, error: null } });
     } catch (e: any) {
+      if (get().file?.path !== p) return;
       set({ diff: { status: "error", data: null, error: String(e?.message ?? e) } });
     }
   },

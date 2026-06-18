@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   UploadCloud, Stethoscope, Wand2, GitCompare, Plus, ArrowRight,
-  FileBox, Boxes, Loader2, CheckCircle2,
+  FileBox, Boxes, Loader2, CheckCircle2, AlertTriangle, RotateCw,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,7 @@ export default function Dashboard() {
   const nav = useNavigate();
   const setFile = useSession((s) => s.setFile);
 
-  const { data, status } = useQuery({ queryKey: ["library"], queryFn: () => library() });
+  const { data, status, error, refetch } = useQuery({ queryKey: ["library"], queryFn: () => library() });
   const projects = data ?? [];
   const recent = projects.slice(0, 3);
   const ready = projects.filter((p) => p.verdict === "READY").length;
@@ -87,6 +87,18 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {status === "error" && (
+        <Card>
+          <CardContent className="flex items-center gap-2 p-4 text-sm">
+            <AlertTriangle className="h-4 w-4 text-risk" />
+            <span className="text-muted-foreground">Couldn’t load your library: {String((error as Error)?.message ?? error)}</span>
+            <Button variant="secondary" size="sm" className="ml-auto" onClick={() => refetch()}>
+              <RotateCw className="h-4 w-4" /> Retry
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-semibold">Continue working</h3>
@@ -96,6 +108,8 @@ export default function Dashboard() {
         </div>
         {status === "pending" ? (
           <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>
+        ) : status === "error" ? (
+          <div className="py-6 text-sm text-muted-foreground">Library unavailable — see the error above.</div>
         ) : recent.length > 0 ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {recent.map((p) => {
@@ -140,6 +154,8 @@ export default function Dashboard() {
             <h3 className="mb-3 text-sm font-semibold">Activity</h3>
             {status === "pending" ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>
+            ) : status === "error" ? (
+              <p className="text-sm text-muted-foreground">Activity unavailable.</p>
             ) : projects.length > 0 ? (
               <ul className="space-y-2 text-sm">
                 {projects.slice(0, 6).map((p) => (
@@ -159,13 +175,19 @@ export default function Dashboard() {
           <CardContent className="p-5">
             <h3 className="mb-3 text-sm font-semibold">Library</h3>
             <div className="space-y-1 text-sm text-muted-foreground">
-              <p><span className="text-2xl font-semibold text-foreground">{projects.length}</span> project{projects.length === 1 ? "" : "s"}</p>
-              {projects.length > 0 ? (
-                <p className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-ready" />{ready} U1-ready · {needsWork} need work
-                </p>
+              {status === "error" ? (
+                <p>Library unavailable.</p>
               ) : (
-                <p>Nothing indexed yet.</p>
+                <>
+                  <p><span className="text-2xl font-semibold text-foreground">{projects.length}</span> project{projects.length === 1 ? "" : "s"}</p>
+                  {projects.length > 0 ? (
+                    <p className="flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-ready" />{ready} U1-ready · {needsWork} need work
+                    </p>
+                  ) : (
+                    <p>Nothing indexed yet.</p>
+                  )}
+                </>
               )}
             </div>
           </CardContent>

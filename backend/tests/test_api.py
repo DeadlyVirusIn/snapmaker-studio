@@ -67,6 +67,27 @@ def test_service_convert_stl(tmp_path):
     assert stl.exists()  # source untouched
 
 
+def test_convert_never_overwrites_previous_output(tmp_path):
+    from pathlib import Path
+    stl = tmp_path / "cube.stl"; stl.write_bytes(_bin_tetra())
+    first = service.convert(str(stl))
+    second = service.convert(str(stl))
+    # second conversion must NOT reuse/overwrite the first output
+    assert first["output_path"] != second["output_path"]
+    assert Path(first["output_path"]).exists() and Path(second["output_path"]).exists()
+    assert second["output_name"].endswith("_SnapmakerU1_2.3mf")
+
+
+def test_xml_special_chars_in_name_are_escaped(tmp_path):
+    # filename with XML-significant chars must not produce malformed model_settings
+    import xml.dom.minidom as M
+    from snapstudio_core.stl_wrap import build_model_settings, build_model_settings_multi
+    bad = 'a<b>&"c'
+    for blob in (build_model_settings(name=bad), build_model_settings_multi([2], name=bad)):
+        M.parseString(blob)  # raises if malformed
+        assert b"a<b>" not in blob  # raw angle brackets not interpolated
+
+
 # ---- loopback server round-trip ----
 def _run(httpd):
     threading.Thread(target=httpd.serve_forever, daemon=True).start()

@@ -34,7 +34,7 @@ function LibraryCard({ p, onOpen, onDelete }: {
         <div className="flex items-start justify-between gap-2">
           <button
             onClick={onOpen}
-            className="flex min-w-0 items-center gap-2.5 text-left focus-visible:outline-none"
+            className="flex min-w-0 items-center gap-2.5 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             title={p.source_path}
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground group-hover:text-foreground">
@@ -57,7 +57,7 @@ function LibraryCard({ p, onOpen, onDelete }: {
           </span>
           <button
             onClick={onDelete}
-            className="rounded p-1 text-muted-foreground opacity-0 transition hover:text-risk group-hover:opacity-100"
+            className="rounded p-1 text-muted-foreground opacity-0 transition hover:text-risk group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             title="Remove from library (keeps your files)"
             aria-label={`Remove ${p.name} from library`}
           >

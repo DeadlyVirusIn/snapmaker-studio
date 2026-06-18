@@ -1,6 +1,12 @@
 from __future__ import annotations
 import copy, json, re, uuid
 from pathlib import Path
+from xml.sax.saxutils import escape as _xml_escape
+
+
+def _attr(value: str) -> str:
+    """Escape a string for safe use inside an XML attribute value."""
+    return _xml_escape(value, {'"': "&quot;"})
 from importlib.resources import files
 from .container import ThreeMF
 from .config_io import dump_project_settings
@@ -91,6 +97,7 @@ def build_root_model_xml(transform, u_obj1, u_obj2, u_comp, u_build, u_item) -> 
 
 def build_model_settings(name: str = "object", object_id: int = 2, extruder: int = 0) -> bytes:
     # Maps the build object to its plate and filament/extruder slot.
+    name = _attr(name)
     return ('<?xml version="1.0" encoding="UTF-8"?>\n<config>\n'
             f'  <object id="{object_id}">\n'
             f'    <metadata key="name" value="{name}"/>\n'
@@ -185,6 +192,7 @@ def wrap_stl(stl_path, colors=DEFAULT_COLORS, profile_name: str = "snapmaker_u1"
 def build_model_settings_multi(object_ids, name: str = "object", extruder: int = 1) -> bytes:
     """model_settings.config for an arbitrary set of build objects: map each to a
     filament/extruder slot and list them on plate 1."""
+    name = _attr(name)
     objs = "".join(
         f'  <object id="{oid}">\n'
         f'    <metadata key="name" value="{name}_{oid}"/>\n'

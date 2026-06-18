@@ -135,6 +135,17 @@ def _convert_and_record(path: str, out_dir: str | None = None) -> dict:
 
 _jobs: dict[str, dict] = {}
 _jobs_lock = threading.Lock()
+_JOBS_MAX = 32  # cap retained jobs; the sidecar can run for days
+
+
+def _prune_jobs_locked() -> None:
+    """Evict oldest *finished* jobs so _jobs can't grow without bound. Running
+    jobs are always kept. Caller must hold _jobs_lock."""
+    if len(_jobs) <= _JOBS_MAX:
+        return
+    finished = [k for k, v in _jobs.items() if v["status"] in ("done", "error")]
+    for k in finished[: len(_jobs) - _JOBS_MAX]:  # dict preserves insertion order
+        _jobs.pop(k, None)
 
 
 def batch_start(paths: list[str], out_dir: str | None = None) -> dict:
@@ -143,6 +154,7 @@ def batch_start(paths: list[str], out_dir: str | None = None) -> dict:
         raise ValueError("no paths to convert")
     job_id = uuid.uuid4().hex
     with _jobs_lock:
+        _prune_jobs_locked()
         _jobs[job_id] = {"id": job_id, "status": "running", "error": None, "result": None}
 
     def on_item(res) -> None:

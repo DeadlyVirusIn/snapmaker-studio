@@ -25,17 +25,26 @@ export default function Batch() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
 
-  const { data: job } = useQuery({
+  const { data: job, isError, error } = useQuery({
     queryKey: ["batch", jobId],
     queryFn: () => batchStatus(jobId as string),
     enabled: !!jobId,
-    // Poll while the job is still running; stop once it's finished.
-    refetchInterval: (q) =>
-      q.state.data && q.state.data.result?.finished ? false : 400,
+    retry: 1,
+    // Poll while running; stop once finished OR the job/worker reports an error.
+    refetchInterval: (q) => {
+      const d = q.state.data;
+      if (q.state.status === "error" || d?.status === "error" || d?.result?.finished) return false;
+      return 400;
+    },
   });
 
   const result = job?.result ?? null;
-  const running = !!jobId && !result?.finished;
+  const failed = isError || job?.status === "error";
+  // Never stay "running" forever: a polling/worker error releases the UI.
+  const running = !!jobId && !failed && !result?.finished;
+  const pollError = failed
+    ? (job?.error ?? String((error as Error)?.message ?? "batch status unavailable"))
+    : null;
 
   async function addFiles() {
     setStartError(null);
@@ -94,10 +103,16 @@ export default function Batch() {
         </div>
       </div>
 
-      {startError && (
+      {(startError || pollError) && (
         <Card>
           <CardContent className="flex items-center gap-2 p-4 text-sm text-risk">
-            <AlertTriangle className="h-4 w-4" /> {startError}
+            <AlertTriangle className="h-4 w-4" />
+            {startError ?? `Batch interrupted: ${pollError}`}
+            {pollError && (
+              <Button variant="secondary" size="sm" className="ml-auto" onClick={clearAll}>
+                <X className="h-4 w-4" /> Clear
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
