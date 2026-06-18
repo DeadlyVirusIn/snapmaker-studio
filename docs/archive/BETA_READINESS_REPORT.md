@@ -5,7 +5,7 @@
 End-to-end verification of all nine surfaces against the **real** Python sidecar
 (`snapstudio_api` on loopback) driving the production React build (`vite preview`)
 through a Tauri-IPC shim, so every data-backed state below is live engine output —
-not mocked. Screenshots in [`qa-beta/`](qa-beta/).
+not mocked. Screenshots in [`qa-beta/`](../qa-beta/).
 
 ## Method
 - Sidecar started on an **empty** library dir (`SNAPSTUDIO_DATA_DIR`) to prove the

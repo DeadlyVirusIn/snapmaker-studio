@@ -78,8 +78,8 @@ manage -> optimize, across the whole ecosystem.
 ## Proof links (current)
 - Repo: github.com/DeadlyVirusIn/snapmaker-studio
 - Vision: `docs/PRODUCT_VISION.md` . Roadmap: `docs/ROADMAP.md`
-- Reliability: `validation/report.md` (112 files, 100%)
-- Readiness: `docs/RELEASE_READINESS.md`
+- Reliability: `../PROOF.md` (112 files, 100%)
+- Release process: `RELEASE.md`
 
 ## Asks / notes for submission
 - Confirm fund category + word limits before pasting the short/long descriptions.

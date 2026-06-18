@@ -7,40 +7,33 @@
 ![Release](https://img.shields.io/github/v/release/DeadlyVirusIn/snapmaker-studio?display_name=tag)
 ![Status: beta](https://img.shields.io/badge/status-beta-orange.svg)
 
-**The Operating System for Multi-Material 3D Printing.**
+**Understand any design, check if it will print, and get it ready.**
 
-_One place. Any file. Any printer. Perfect prints._
+_Any file. Any ecosystem. A clean, print-ready Snapmaker U1 project — in one click._
 
-Drop in a model from any ecosystem — Bambu, OrcaSlicer, PrusaSlicer, or raw STL —
-and get a clean, **validated** Snapmaker U1 project. A polished desktop app (and a
-scriptable engine + CLI) that keep your geometry, painting, and colours intact.
+Drop in a model from any ecosystem — Bambu, OrcaSlicer, PrusaSlicer, or a plain STL —
+and Snapmaker Studio tells you, in plain language, **what's in it** and **whether it
+will print on your printer** — then makes a clean, **validated** print-ready copy.
+Your originals are never changed.
 
-**Input → Diagnose → Transform → Validate → Output.** Validation is always on:
-every conversion is proven clean before you print (real-world corpus: 112 files,
-100%).
+**Understand → Check → Get it ready.** A friendly desktop app, plus a scriptable
+engine + CLI for power users.
 
 Runs entirely on your machine. No cloud, no account, no upload — local-first and
 open source.
 
-## For reviewers / Innovation Fund
-
-- **What it is:** a local-first, open-source desktop platform that converts any
-  Bambu/Orca/Prusa/STL file into a clean Snapmaker U1 project — one click, no
-  cloud, no account.
-- **Proof:** real-world corpus of **112 files → 100% Doctor READY**; a former
-  Bambu project opens in Snapmaker Orca with **zero warnings**; a working
-  one-click Windows installer (`v0.3.0-beta.1`, bundled engine, no Python).
-- **Read:** [`docs/INNOVATION_FUND.md`](docs/INNOVATION_FUND.md) ·
-  [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) ·
-  [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) ·
-  [`docs/ROADMAP.md`](docs/ROADMAP.md) · brand [`docs/brand/`](docs/brand/README.md)
-  · landing [`docs/landing/index.html`](docs/landing/index.html).
+> Independent open-source project, validated on a real-world corpus —
+> **112 files → 100%** (see [PROOF.md](PROOF.md)). Reviewer / Innovation Fund notes:
+> [`docs/INNOVATION_FUND.md`](docs/INNOVATION_FUND.md). Also
+> [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) ·
+> [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md) ·
+> brand [`docs/brand/`](docs/brand/README.md) ·
+> landing [`docs/landing/index.html`](docs/landing/index.html).
 
 ## Screenshots
 
-The desktop app — local-first, dark-first, **Input → Diagnose → Transform →
-Validate → Output**. (Captured live against the bundled engine; see
-[`docs/BETA_READINESS_REPORT.md`](docs/BETA_READINESS_REPORT.md).)
+The desktop app — local-first, dark-first: **Understand → Check → Get it ready**.
+(Captured live against the bundled engine; see [PROOF.md](PROOF.md) for validation.)
 
 | Dashboard | Doctor |
 |---|---|

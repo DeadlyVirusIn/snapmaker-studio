@@ -74,4 +74,4 @@ spectrum accents only for status (verdict badges) and the brand mark.
 ## Trademark note
 "Snapmaker" is a Snapmaker trademark; this is an independent open-source project.
 Pursue official/Innovation-Fund blessing, or mark clearly as community/unofficial,
-before public GA. (Tracked in `../RELEASE_READINESS.md` / `../INNOVATION_FUND.md`.)
+before public GA. (Tracked in `../archive/RELEASE_READINESS.md` / `../INNOVATION_FUND.md`.)

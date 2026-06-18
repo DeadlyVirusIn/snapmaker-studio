@@ -33,5 +33,5 @@ Keep the mark within the inner ~80% of the tile; the rounded corners (radius
 
 ## Status
 Rasterizing + wiring into the app is a **GA blocker** tracked in
-`../RELEASE_READINESS.md`. The SVG masters here are final; only rasterization
+`../archive/RELEASE_READINESS.md`. The SVG masters here are final; only rasterization
 remains.
