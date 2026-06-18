@@ -149,6 +149,25 @@ def _make_handler(token: str):
                     self._send(200, service.library_delete(pid))
                 except Exception as e:
                     self._send(500, {"error": str(e)})
+            elif self.path == "/batch":
+                paths = data.get("paths")
+                if not paths or not isinstance(paths, list):
+                    self._send(400, {"error": "missing 'paths' (non-empty list)"})
+                    return
+                try:
+                    self._send(200, service.batch_start(paths, data.get("out_dir")))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
+            elif self.path == "/batch/status":
+                job_id = data.get("job_id")
+                if not job_id:
+                    self._send(400, {"error": "missing 'job_id'"})
+                    return
+                status = service.batch_status(job_id)
+                if status is None:
+                    self._send(404, {"error": "unknown job"})
+                else:
+                    self._send(200, status)
             else:
                 self._send(404, {"error": "not found"})
 

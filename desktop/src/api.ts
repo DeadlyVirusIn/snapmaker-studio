@@ -93,6 +93,56 @@ export async function libraryDelete(id: number): Promise<void> {
   if (!r.ok) throw new Error(`delete failed (${r.status})`);
 }
 
+export interface BatchItem {
+  path: string;
+  status: "pending" | "running" | "done" | "error";
+  output_path: string | null;
+  output_name: string | null;
+  validated_ok: boolean | null;
+  error: string | null;
+}
+
+export interface BatchSnapshot {
+  items: BatchItem[];
+  total: number;
+  done: number;
+  failed: number;
+  finished: boolean;
+}
+
+export interface BatchJobStatus {
+  id: string;
+  status: "running" | "done" | "error";
+  error: string | null;
+  result: BatchSnapshot | null;
+}
+
+export async function batchStart(paths: string[], outDir?: string): Promise<{ job_id: string; total: number }> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/batch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ paths, out_dir: outDir ?? null }),
+  });
+  if (!r.ok) {
+    let msg = `batch failed (${r.status})`;
+    try { const e = await r.json(); if (e?.error) msg = e.error; } catch { /* ignore */ }
+    throw new Error(msg);
+  }
+  return r.json();
+}
+
+export async function batchStatus(jobId: string): Promise<BatchJobStatus> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/batch/status`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ job_id: jobId }),
+  });
+  if (!r.ok) throw new Error(`batch status failed (${r.status})`);
+  return r.json();
+}
+
 // Native open dialog limited to the formats the engine accepts.
 export async function openModelDialog(): Promise<string | null> {
   const picked = await open({
@@ -100,4 +150,14 @@ export async function openModelDialog(): Promise<string | null> {
     filters: [{ name: "3D models / projects", extensions: ["stl", "3mf"] }],
   });
   return typeof picked === "string" ? picked : null;
+}
+
+// Multi-select variant for batch conversion.
+export async function openModelsDialog(): Promise<string[]> {
+  const picked = await open({
+    multiple: true,
+    filters: [{ name: "3D models / projects", extensions: ["stl", "3mf"] }],
+  });
+  if (Array.isArray(picked)) return picked;
+  return typeof picked === "string" ? [picked] : [];
 }

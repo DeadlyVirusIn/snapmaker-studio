@@ -1,11 +1,24 @@
 import json
 import struct
 import threading
+import time
 import urllib.request
 import urllib.error
 from snapstudio_api import service
 from snapstudio_api.server import build_server
 from snapstudio_core.stl_wrap import wrap_stl
+
+
+def _poll_until_finished(get_status, timeout=15.0):
+    """Poll a batch status callable until its result is finished or timeout."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        st = get_status()
+        res = (st or {}).get("result")
+        if st and st.get("status") in ("done", "error") and res and res.get("finished"):
+            return st
+        time.sleep(0.05)
+    raise AssertionError("batch did not finish in time")
 
 
 def _bin_tetra():
@@ -150,5 +163,68 @@ def test_server_library_roundtrip(tmp_path, monkeypatch):
         with urllib.request.urlopen(req, timeout=5) as r:
             body = json.loads(r.read())
         assert body["count"] == 1 and body["projects"][0]["name"] == "cube_U1.3mf"
+    finally:
+        httpd.shutdown()
+
+
+# ---- batch conversion ----
+def test_batch_start_and_status(tmp_path, monkeypatch):
+    monkeypatch.setenv("SNAPSTUDIO_DATA_DIR", str(tmp_path / "data"))
+    paths = []
+    for i in range(3):
+        stl = tmp_path / f"cube{i}.stl"; stl.write_bytes(_bin_tetra())
+        paths.append(str(stl))
+
+    job = service.batch_start(paths)
+    assert job["total"] == 3 and job["job_id"]
+
+    st = _poll_until_finished(lambda: service.batch_status(job["job_id"]))
+    res = st["result"]
+    assert res["total"] == 3 and res["done"] == 3 and res["failed"] == 0
+    assert all(it["status"] == "done" and it["validated_ok"] for it in res["items"])
+    # each batched conversion was indexed in the library too
+    assert service.library_list()["count"] == 3
+
+
+def test_batch_isolates_failures(tmp_path, monkeypatch):
+    monkeypatch.setenv("SNAPSTUDIO_DATA_DIR", str(tmp_path / "data"))
+    good = tmp_path / "ok.stl"; good.write_bytes(_bin_tetra())
+    bad = tmp_path / "missing.stl"  # never created -> convert raises
+    job = service.batch_start([str(good), str(bad)])
+    st = _poll_until_finished(lambda: service.batch_status(job["job_id"]))
+    res = st["result"]
+    assert res["done"] == 1 and res["failed"] == 1
+    by = {it["path"]: it for it in res["items"]}
+    assert by[str(good)]["status"] == "done"
+    assert by[str(bad)]["status"] == "error" and by[str(bad)]["error"]
+
+
+def test_batch_status_unknown_job():
+    assert service.batch_status("nope-not-a-job") is None
+
+
+def test_server_batch_roundtrip(tmp_path, monkeypatch):
+    monkeypatch.setenv("SNAPSTUDIO_DATA_DIR", str(tmp_path / "data"))
+    httpd, token = build_server(port=0)
+    _run(httpd)
+    try:
+        port = httpd.server_address[1]
+        hdr = {"Content-Type": "application/json", "X-Auth-Token": token}
+        stl = tmp_path / "cube.stl"; stl.write_bytes(_bin_tetra())
+
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/batch",
+                                     data=json.dumps({"paths": [str(stl)]}).encode(), headers=hdr)
+        with urllib.request.urlopen(req, timeout=5) as r:
+            start = json.loads(r.read())
+        job_id = start["job_id"]
+
+        def status():
+            req = urllib.request.Request(f"http://127.0.0.1:{port}/batch/status",
+                                         data=json.dumps({"job_id": job_id}).encode(), headers=hdr)
+            with urllib.request.urlopen(req, timeout=5) as r:
+                return json.loads(r.read())
+
+        st = _poll_until_finished(status)
+        assert st["result"]["done"] == 1
     finally:
         httpd.shutdown()

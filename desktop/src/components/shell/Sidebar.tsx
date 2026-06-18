@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, FolderKanban, Settings, Plus, Layers } from "lucide-react";
+import { LayoutDashboard, FolderKanban, Settings, Plus, Layers, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MOCK_PROJECTS } from "@/data/mock";
 import { comingSoon } from "@/store/toast";
@@ -7,6 +7,7 @@ import { comingSoon } from "@/store/toast";
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/projects", label: "Projects", icon: FolderKanban, end: false },
+  { to: "/batch", label: "Batch convert", icon: Wand2, end: false },
 ];
 
 function navClass({ isActive }: { isActive: boolean }) {

@@ -6,11 +6,14 @@ timestamps and the on-disk library index. The engine stays pure and testable.
 from __future__ import annotations
 import datetime
 import os
+import threading
+import uuid
 from snapstudio_core.doctor import diagnose_path
 from snapstudio_core.convert import convert_to_u1
 from snapstudio_core.diff import diff_projects
 from snapstudio_core.container import ThreeMF
 from snapstudio_core import library
+from snapstudio_core.batch import run_batch
 
 API_VERSION = "api/1"
 
@@ -116,3 +119,56 @@ def record_conversion(path: str, result: dict) -> None:
             conn.close()
     except Exception:
         pass
+
+
+def _convert_and_record(path: str, out_dir: str | None = None) -> dict:
+    """Convert one file and index it. Used by the batch worker so batched
+    conversions land in the library exactly like single ones."""
+    result = convert(path, out_dir)
+    record_conversion(path, result)
+    return result
+
+
+# --- batch jobs (background queue) -------------------------------------------
+# A job runs in a daemon thread and publishes progress snapshots into _jobs.
+# Clients start a job, then poll batch_status(job_id) until finished.
+
+_jobs: dict[str, dict] = {}
+_jobs_lock = threading.Lock()
+
+
+def batch_start(paths: list[str], out_dir: str | None = None) -> dict:
+    """Kick off a batch conversion in the background. Returns a job handle."""
+    if not paths:
+        raise ValueError("no paths to convert")
+    job_id = uuid.uuid4().hex
+    with _jobs_lock:
+        _jobs[job_id] = {"id": job_id, "status": "running", "error": None, "result": None}
+
+    def on_item(res) -> None:
+        with _jobs_lock:
+            _jobs[job_id]["result"] = res.to_dict()
+
+    def worker() -> None:
+        try:
+            run_batch(paths, _convert_and_record, out_dir, on_item)
+            with _jobs_lock:
+                _jobs[job_id]["status"] = "done"
+        except Exception as e:  # the orchestrator shouldn't raise, but be safe
+            with _jobs_lock:
+                _jobs[job_id]["status"] = "error"
+                _jobs[job_id]["error"] = str(e)
+
+    threading.Thread(target=worker, daemon=True).start()
+    return {"job_id": job_id, "total": len(paths), "schema_version": "batch/1"}
+
+
+def batch_status(job_id: str) -> dict | None:
+    """Current snapshot of a job, or None if the id is unknown."""
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        if job is None:
+            return None
+        # shallow copy; result dict is already rebuilt fresh on each on_item
+        return {"id": job["id"], "status": job["status"],
+                "error": job["error"], "result": job["result"]}
