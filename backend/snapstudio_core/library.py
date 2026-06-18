@@ -1,0 +1,117 @@
+"""Local project library — a SQLite *index* of what the user has opened and
+converted. It stores file PATHS + the doctor/convert summary, never file
+contents (files stay where the user keeps them; local-first). Pure stdlib
+(`sqlite3`), so it freezes cleanly in the sidecar.
+
+Dates are ISO-8601 UTC strings (e.g. "2026-06-18T20:00:00Z"). Callers pass the
+timestamp in (the engine never reads the wall clock itself), keeping it testable.
+"""
+from __future__ import annotations
+import sqlite3
+
+SCHEMA_VERSION = 1
+
+_SCHEMA = """
+CREATE TABLE IF NOT EXISTS projects (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  source_path TEXT NOT NULL UNIQUE,
+  source_family TEXT,
+  output_path TEXT,
+  verdict TEXT,
+  score INTEGER,
+  filament_count INTEGER,
+  last_action TEXT,
+  updated_at TEXT
+);
+CREATE TABLE IF NOT EXISTS tags (
+  id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL
+);
+CREATE TABLE IF NOT EXISTS project_tags (
+  project_id INTEGER, tag_id INTEGER,
+  PRIMARY KEY (project_id, tag_id)
+);
+CREATE TABLE IF NOT EXISTS history (
+  id INTEGER PRIMARY KEY, project_id INTEGER,
+  action TEXT, detail TEXT, at TEXT
+);
+"""
+
+
+def connect(db_path: str) -> sqlite3.Connection:
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    conn.executescript(_SCHEMA)
+    conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+    return conn
+
+
+def upsert_project(conn: sqlite3.Connection, *, name: str, source_path: str,
+                   source_family: str | None = None, output_path: str | None = None,
+                   verdict: str | None = None, score: int | None = None,
+                   filament_count: int | None = None, last_action: str | None = None,
+                   updated_at: str) -> int:
+    """Insert or update a project keyed by source_path. Returns the row id."""
+    with conn:
+        conn.execute(
+            """INSERT INTO projects
+                 (name, source_path, source_family, output_path, verdict, score,
+                  filament_count, last_action, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?)
+               ON CONFLICT(source_path) DO UPDATE SET
+                 name=excluded.name, source_family=excluded.source_family,
+                 output_path=COALESCE(excluded.output_path, projects.output_path),
+                 verdict=excluded.verdict, score=excluded.score,
+                 filament_count=excluded.filament_count,
+                 last_action=excluded.last_action, updated_at=excluded.updated_at""",
+            (name, source_path, source_family, output_path, verdict, score,
+             filament_count, last_action, updated_at),
+        )
+    row = conn.execute("SELECT id FROM projects WHERE source_path=?", (source_path,)).fetchone()
+    return int(row["id"])
+
+
+def list_projects(conn: sqlite3.Connection) -> list[dict]:
+    rows = conn.execute("SELECT * FROM projects ORDER BY updated_at DESC").fetchall()
+    return [dict(r) for r in rows]
+
+
+def search_projects(conn: sqlite3.Connection, query: str = "", tag: str | None = None) -> list[dict]:
+    sql = "SELECT p.* FROM projects p"
+    params: list = []
+    if tag:
+        sql += (" JOIN project_tags pt ON pt.project_id=p.id"
+                " JOIN tags t ON t.id=pt.tag_id AND t.name=?")
+        params.append(tag)
+    if query:
+        sql += (" WHERE " if "WHERE" not in sql else " AND ") + "p.name LIKE ?"
+        params.append(f"%{query}%")
+    sql += " ORDER BY p.updated_at DESC"
+    return [dict(r) for r in conn.execute(sql, params).fetchall()]
+
+
+def delete_project(conn: sqlite3.Connection, project_id: int) -> None:
+    with conn:
+        conn.execute("DELETE FROM project_tags WHERE project_id=?", (project_id,))
+        conn.execute("DELETE FROM history WHERE project_id=?", (project_id,))
+        conn.execute("DELETE FROM projects WHERE id=?", (project_id,))
+
+
+def add_tag(conn: sqlite3.Connection, project_id: int, tag: str) -> None:
+    with conn:
+        conn.execute("INSERT OR IGNORE INTO tags(name) VALUES (?)", (tag,))
+        tid = conn.execute("SELECT id FROM tags WHERE name=?", (tag,)).fetchone()["id"]
+        conn.execute("INSERT OR IGNORE INTO project_tags(project_id, tag_id) VALUES (?,?)",
+                     (project_id, tid))
+
+
+def add_history(conn: sqlite3.Connection, project_id: int, action: str, detail: str, at: str) -> None:
+    with conn:
+        conn.execute("INSERT INTO history(project_id, action, detail, at) VALUES (?,?,?,?)",
+                     (project_id, action, detail, at))
+
+
+def get_history(conn: sqlite3.Connection, project_id: int) -> list[dict]:
+    rows = conn.execute("SELECT * FROM history WHERE project_id=? ORDER BY at DESC",
+                        (project_id,)).fetchall()
+    return [dict(r) for r in rows]

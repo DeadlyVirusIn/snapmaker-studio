@@ -35,6 +35,14 @@ def test_service_doctor(tmp_path):
     assert d["verdict"] == "READY" and d["is_compatible"] is True
 
 
+def test_service_diff(tmp_path):
+    a = _sample_u1(tmp_path)
+    d = service.diff(str(a), str(a))   # same file vs itself
+    assert d["schema_version"] == "diff/1"
+    assert d["geometry_changed"] is False
+    assert d["has_changes"] is False
+
+
 def test_service_convert_stl(tmp_path):
     from pathlib import Path
     stl = tmp_path / "cube.stl"; stl.write_bytes(_bin_tetra())

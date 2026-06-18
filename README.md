@@ -1,18 +1,26 @@
+<p align="center"><img src="docs/brand/hero.svg" alt="Snapmaker Studio" width="100%"></p>
+
 # Snapmaker Studio
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 ![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)
 ![Release](https://img.shields.io/github/v/release/DeadlyVirusIn/snapmaker-studio?display_name=tag)
-![Status: alpha](https://img.shields.io/badge/status-alpha-orange.svg)
+![Status: beta](https://img.shields.io/badge/status-beta-orange.svg)
 
-**The compatibility layer for Snapmaker U1.**
+**The Operating System for Multi-Material 3D Printing.**
 
-Convert, repair, validate, and optimize 3D print projects for the Snapmaker U1 —
-with your geometry, painting, and colours kept intact.
+_One place. Any file. Any printer. Perfect prints._
 
-Runs entirely on your machine. No cloud, no account, no upload, no browser
-extension, no Docker — just a command-line tool (and a Python library you can
-build on).
+Drop in a model from any ecosystem — Bambu, OrcaSlicer, PrusaSlicer, or raw STL —
+and get a clean, **validated** Snapmaker U1 project. A polished desktop app (and a
+scriptable engine + CLI) that keep your geometry, painting, and colours intact.
+
+**Input → Diagnose → Transform → Validate → Output.** Validation is always on:
+every conversion is proven clean before you print (real-world corpus: 112 files,
+100%).
+
+Runs entirely on your machine. No cloud, no account, no upload — local-first and
+open source.
 
 ## Why
 

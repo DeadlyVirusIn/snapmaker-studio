@@ -16,7 +16,7 @@ Push-Location $backend
 try {
     # --collect-data snapstudio_core : bundle data/*.json loaded via importlib.resources
     # --collect-submodules lxml      : ensure the lxml C-extension parts are included
-    pyinstaller --noconfirm --clean --onefile --name $name `
+    python -m PyInstaller --noconfirm --clean --onefile --name $name `
         --collect-data snapstudio_core `
         --collect-submodules lxml `
         sidecar_main.py

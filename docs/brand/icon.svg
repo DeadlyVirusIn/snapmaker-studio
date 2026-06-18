@@ -1,0 +1,83 @@
+<svg width="320" height="256" viewBox="0 0 320 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Snapmaker Studio">
+  <!-- Official "Studio Hub" mark — high fidelity to studio-hub-concept.png:
+       glossy filament tubes -> metallic transform portal w/ bloom -> glossy
+       multicolor print cube on a reflective pad. -->
+  <defs>
+    <filter id="soft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="soft2" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="12"/></filter>
+    <linearGradient id="chrome" x1="105" y1="84" x2="195" y2="174" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EAF1FB"/><stop offset="0.35" stop-color="#9AA9C2"/>
+      <stop offset="0.7" stop-color="#4A5870"/><stop offset="1" stop-color="#222C40"/>
+    </linearGradient>
+    <radialGradient id="bloom" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset="0.4" stop-color="#9DEFFF"/>
+      <stop offset="0.75" stop-color="#22A6F0" stop-opacity="0.5"/><stop offset="1" stop-color="#1E6FE0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rib1" x1="20" y1="60" x2="140" y2="124" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FF8FCF"/><stop offset="1" stop-color="#FF1E8E"/></linearGradient>
+    <linearGradient id="rib2" x1="20" y1="92" x2="140" y2="124" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFC98A"/><stop offset="1" stop-color="#FF6A00"/></linearGradient>
+    <linearGradient id="rib3" x1="20" y1="128" x2="140" y2="128" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFE98A"/><stop offset="1" stop-color="#FFC400"/></linearGradient>
+    <linearGradient id="rib4" x1="20" y1="160" x2="140" y2="132" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8DF0C4"/><stop offset="1" stop-color="#15C77E"/></linearGradient>
+    <linearGradient id="rib5" x1="20" y1="194" x2="140" y2="134" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8FD6FF"/><stop offset="1" stop-color="#1E84FF"/></linearGradient>
+    <radialGradient id="pad" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#2FC6FF" stop-opacity="0.55"/><stop offset="1" stop-color="#1E6FE0" stop-opacity="0"/></radialGradient>
+  </defs>
+
+  <!-- entry pixels -->
+  <g filter="url(#soft)" opacity="0.95">
+    <rect x="2" y="56" width="8" height="8" rx="2" fill="#FF1E8E"/><rect x="2" y="122" width="8" height="8" rx="2" fill="#FFC400"/>
+    <rect x="2" y="190" width="8" height="8" rx="2" fill="#1E84FF"/><rect x="16" y="90" width="8" height="8" rx="2" fill="#FF6A00"/>
+    <rect x="16" y="158" width="8" height="8" rx="2" fill="#15C77E"/>
+  </g>
+
+  <!-- ribbon tubes: outer glow + base + glossy highlight -->
+  <g fill="none" stroke-linecap="round">
+    <g filter="url(#soft)" opacity="0.6" stroke-width="17">
+      <path d="M30 62  C82 66 98 104 132 122" stroke="#FF1E8E"/><path d="M30 96  C86 100 102 116 132 124" stroke="#FF6A00"/>
+      <path d="M30 128 C92 128 106 128 134 128" stroke="#FFC400"/><path d="M30 160 C86 156 102 140 132 132" stroke="#15C77E"/>
+      <path d="M30 194 C82 190 98 152 132 134" stroke="#1E84FF"/>
+    </g>
+    <g stroke-width="16">
+      <path d="M30 62  C82 66 98 104 132 122" stroke="url(#rib1)"/><path d="M30 96  C86 100 102 116 132 124" stroke="url(#rib2)"/>
+      <path d="M30 128 C92 128 106 128 134 128" stroke="url(#rib3)"/><path d="M30 160 C86 156 102 140 132 132" stroke="url(#rib4)"/>
+      <path d="M30 194 C82 190 98 152 132 134" stroke="url(#rib5)"/>
+    </g>
+    <g stroke-width="4" stroke="#FFFFFF" opacity="0.5">
+      <path d="M30 58  C82 62 98 100 130 119"/><path d="M30 92  C86 96 102 113 130 121"/>
+      <path d="M30 124 C92 124 106 124 132 125"/><path d="M30 156 C86 152 102 137 130 129"/>
+      <path d="M30 190 C82 186 98 148 130 131"/>
+    </g>
+  </g>
+
+  <!-- transform portal: bloom + chrome rings + dark well + cyan rim + core -->
+  <circle cx="150" cy="128" r="58" fill="url(#bloom)" filter="url(#soft2)"/>
+  <circle cx="150" cy="128" r="48" fill="none" stroke="url(#chrome)" stroke-width="12"/>
+  <circle cx="150" cy="128" r="40" fill="#0A1018"/>
+  <circle cx="150" cy="128" r="40" fill="none" stroke="#0A1018" stroke-width="2"/>
+  <circle cx="150" cy="128" r="34" fill="none" stroke="#7FE9FF" stroke-width="2.5" opacity="0.9"/>
+  <circle cx="150" cy="128" r="26" fill="url(#bloom)"/>
+  <circle cx="150" cy="124" r="9" fill="#FFFFFF" filter="url(#soft)"/>
+  <path d="M126 110 A30 30 0 0 1 158 100" stroke="#FFFFFF" stroke-width="3" fill="none" opacity="0.5" stroke-linecap="round"/>
+
+  <!-- reflective pad -->
+  <ellipse cx="236" cy="194" rx="66" ry="16" fill="url(#pad)" filter="url(#soft)"/>
+
+  <!-- glossy multicolor cube, 2x2 cells per face -->
+  <g stroke="#0A1018" stroke-width="1.2" stroke-linejoin="round">
+    <!-- top (cyan family) -->
+    <polygon points="236,68 260.25,82 236,96 211.75,82" fill="#6FE6FF"/>
+    <polygon points="260.25,82 284.5,96 260.25,110 236,96" fill="#33C6F2"/>
+    <polygon points="236,96 260.25,110 236,124 211.75,110" fill="#1FA6E0"/>
+    <polygon points="211.75,82 236,96 211.75,110 187.5,96" fill="#46D0FF"/>
+    <!-- left (pink/magenta family) -->
+    <polygon points="187.5,96 211.75,110 211.75,138 187.5,124" fill="#FF6AA8"/>
+    <polygon points="211.75,110 236,124 236,152 211.75,138" fill="#FF2E86"/>
+    <polygon points="211.75,138 236,152 236,180 211.75,166" fill="#C81E73"/>
+    <polygon points="187.5,124 211.75,138 211.75,166 187.5,152" fill="#E63E97"/>
+    <!-- right (green family) -->
+    <polygon points="284.5,96 260.25,110 260.25,138 284.5,124" fill="#7DEBA0"/>
+    <polygon points="260.25,110 236,124 236,152 260.25,138" fill="#2FCF77"/>
+    <polygon points="236,152 260.25,138 260.25,166 236,180" fill="#16A95C"/>
+    <polygon points="284.5,124 260.25,138 260.25,166 284.5,152" fill="#3FD986"/>
+  </g>
+  <!-- top specular sheen -->
+  <polygon points="236,68 260.25,82 236,96 211.75,82" fill="#FFFFFF" opacity="0.18"/>
+</svg>

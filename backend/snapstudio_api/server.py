@@ -91,12 +91,15 @@ def _make_handler(token: str):
                 self._send(404, {"error": "not found"})
 
         def do_POST(self):
+            # Always drain the request body BEFORE responding. Replying (e.g. 401)
+            # with an unread body resets the connection on Windows (WinError 10053).
+            length = int(self.headers.get("Content-Length", 0) or 0)
+            raw = self.rfile.read(length) if length else b""
             if self.headers.get("X-Auth-Token") != token:
                 self._send(401, {"error": "unauthorized"})
                 return
-            length = int(self.headers.get("Content-Length", 0) or 0)
             try:
-                data = json.loads(self.rfile.read(length) or b"{}")
+                data = json.loads(raw or b"{}")
             except json.JSONDecodeError:
                 self._send(400, {"error": "invalid JSON"})
                 return
@@ -116,6 +119,15 @@ def _make_handler(token: str):
                     return
                 try:
                     self._send(200, service.convert(path, data.get("out_dir")))
+                except Exception as e:  # adapter must not crash the server
+                    self._send(500, {"error": str(e)})
+            elif self.path == "/diff":
+                a, b = data.get("a"), data.get("b")
+                if not a or not b:
+                    self._send(400, {"error": "missing 'a' or 'b'"})
+                    return
+                try:
+                    self._send(200, service.diff(a, b))
                 except Exception as e:  # adapter must not crash the server
                     self._send(500, {"error": str(e)})
             else:

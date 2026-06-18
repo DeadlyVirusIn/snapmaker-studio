@@ -28,6 +28,9 @@ from snapstudio_core.u1_identity import find_foreign
 SETTINGS = "Metadata/project_settings.config"
 # Skip already-converted / backup / sample artifacts so we only test real inputs.
 SKIP_SUBSTR = ("_snapmakeru1", "_fixed", ".orig", "stock_u1", "_u1.", "sample")
+# Skip whole directories of generated output / repo / dependencies.
+SKIP_DIRS = {"snapmaker-studio", "snapmaker-studio-public", "validation-out",
+             "sample", ".git", "node_modules", "target", "dist", "__pycache__"}
 
 CATEGORIES = ("Identity", "Filament", "Preset", "Geometry", "Thumbnail",
               "Slice metadata", "Geometry-only 3MF", "Unknown")
@@ -37,27 +40,44 @@ def _is_input(p: Path) -> bool:
     name = p.name.lower()
     if p.suffix.lower() not in (".3mf", ".stl"):
         return False
-    return not any(s in name for s in SKIP_SUBSTR)
+    if any(s in name for s in SKIP_SUBSTR):
+        return False
+    return not any(part.lower() in SKIP_DIRS for part in p.parts)
 
 
 def _src_info(path: Path) -> dict:
     """Classify the source: family, colour count, custom-preset flag, size."""
-    info = {"size_mb": round(path.stat().st_size / 1e6, 1), "family": "stl",
-            "filament_count": 0, "custom_preset": False, "multicolor": False}
+    size_mb = round(path.stat().st_size / 1e6, 1)
+    non_english = any(ord(c) > 127 for c in path.name)
+    info = {"size_mb": size_mb, "family": "stl", "filament_count": 0,
+            "custom_preset": False, "multicolor": False,
+            "large": size_mb >= 50, "non_english": non_english}
     if path.suffix.lower() != ".3mf":
         return info
     try:
         z = zipfile.ZipFile(path)
-        if SETTINGS in z.namelist():
+        names = set(z.namelist())
+        if SETTINGS in names:
             cfg = load_project_settings(z.read(SETTINGS))
             pm = str(cfg.get("printer_model", ""))
-            info["family"] = ("u1" if pm == "Snapmaker U1"
-                              else "bambu/orca" if pm else "3mf")
+            # Distinguish Bambu vs OrcaSlicer vs U1 by printer identity.
+            if pm == "Snapmaker U1":
+                info["family"] = "u1"
+            elif "bambu" in pm.lower():
+                info["family"] = "bambu"
+            elif pm:
+                info["family"] = "orca"
+            else:
+                info["family"] = "3mf"
             n = len(cfg.get("filament_colour", []))
             info["filament_count"] = n
             info["multicolor"] = n > 1
             dsts = cfg.get("different_settings_to_system") or []
             info["custom_preset"] = any(isinstance(s, str) and s for s in dsts)
+        elif any(p.startswith("Metadata/Slic3r") for p in names):
+            info["family"] = "prusa(geometry)"
+        else:
+            info["family"] = "geometry-3mf"
     except Exception:
         info["family"] = "unreadable"
     return info
@@ -132,12 +152,15 @@ def validate_one(src: Path, workdir: Path) -> dict:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--input", required=True, help="directory to scan (non-recursive)")
+    ap.add_argument("--input", required=True, help="directory to scan")
     ap.add_argument("--report", default="validation/report.md")
     ap.add_argument("--limit", type=int, default=0, help="cap number of files (0 = all)")
+    ap.add_argument("--recursive", action="store_true", default=True,
+                    help="scan subdirectories (default on; SKIP_DIRS are excluded)")
     args = ap.parse_args()
 
-    inputs = sorted(p for p in Path(args.input).glob("*") if _is_input(p))
+    walker = Path(args.input).rglob("*") if args.recursive else Path(args.input).glob("*")
+    inputs = sorted({p for p in walker if _is_input(p)})
     if args.limit:
         inputs = inputs[:args.limit]
 
@@ -161,6 +184,20 @@ def main():
     rate = (len(clean) / len(rows) * 100) if rows else 0
     lines += [f"**Corpus:** {len(rows)} files  ", f"**Clean (READY + validated):** {len(clean)}  ",
               f"**Failures:** {len(failures)}  ", f"**SUCCESS RATE: {rate:.0f}%**", ""]
+
+    fam = {}
+    for r in rows:
+        fam[r["family"]] = fam.get(r["family"], 0) + 1
+    multi = sum(1 for r in rows if r.get("multicolor"))
+    large = sum(1 for r in rows if r.get("large"))
+    custom = sum(1 for r in rows if r.get("custom_preset"))
+    noneng = sum(1 for r in rows if r.get("non_english"))
+    lines += ["## Corpus composition", "",
+              "| Family | Count |", "|---|---|"]
+    lines += [f"| {k} | {v} |" for k, v in sorted(fam.items(), key=lambda kv: -kv[1])]
+    lines += ["", f"- multi-color: {multi}  ", f"- single-color: {len(rows) - multi}  ",
+              f"- large (>=50MB): {large}  ", f"- custom-preset: {custom}  ",
+              f"- non-English filenames: {noneng}", ""]
 
     lines += ["## Failures by category", "", "| Category | Count |", "|---|---|"]
     for c in CATEGORIES:
