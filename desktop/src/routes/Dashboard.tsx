@@ -11,6 +11,7 @@ import type { Verdict } from "@/components/ui/badge";
 import { library } from "@/api";
 import type { LibraryProject } from "@/api";
 import { useSession } from "@/store/session";
+import { useMode } from "@/store/mode";
 import { comingSoon } from "@/store/toast";
 import { useOpenFile } from "@/hooks/useOpenFile";
 
@@ -42,6 +43,7 @@ export default function Dashboard() {
   const openFile = useOpenFile();
   const nav = useNavigate();
   const setFile = useSession((s) => s.setFile);
+  const unit = useMode((s) => s.mode) === "simple" ? "color" : "filament";
 
   const { data, status, error, refetch } = useQuery({ queryKey: ["library"], queryFn: () => library() });
   const projects = data ?? [];
@@ -130,7 +132,7 @@ export default function Dashboard() {
                       {p.verdict && <StatusBadge verdict={p.verdict as Verdict} />}
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{(p.source_family ?? "project")}{p.filament_count != null ? ` · ${p.filament_count} filament${p.filament_count === 1 ? "" : "s"}` : ""}</span>
+                      <span>{(p.source_family ?? "project")}{p.filament_count != null ? ` · ${p.filament_count} ${unit}${p.filament_count === 1 ? "" : "s"}` : ""}</span>
                       <span>{timeAgo(p.updated_at)}</span>
                     </div>
                   </CardContent>

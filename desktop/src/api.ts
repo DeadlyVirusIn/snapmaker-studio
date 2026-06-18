@@ -83,6 +83,26 @@ export async function library(query = "", tag?: string): Promise<LibraryProject[
   return data.projects ?? [];
 }
 
+export interface HistoryEvent {
+  id: number;
+  project_id: number;
+  action: string;
+  detail: string;
+  at: string;
+}
+
+export async function history(projectId: number): Promise<HistoryEvent[]> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/history`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ project_id: projectId }),
+  });
+  if (!r.ok) throw new Error(`history failed (${r.status})`);
+  const data = await r.json();
+  return data.events ?? [];
+}
+
 export async function libraryDelete(id: number): Promise<void> {
   const { port, token } = await apiInfo();
   const r = await fetch(`http://127.0.0.1:${port}/library/delete`, {

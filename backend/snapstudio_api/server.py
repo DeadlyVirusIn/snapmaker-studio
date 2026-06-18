@@ -149,6 +149,15 @@ def _make_handler(token: str):
                     self._send(200, service.library_delete(pid))
                 except Exception as e:
                     self._send(500, {"error": str(e)})
+            elif self.path == "/history":
+                pid = data.get("project_id")
+                if pid is None:
+                    self._send(400, {"error": "missing 'project_id'"})
+                    return
+                try:
+                    self._send(200, service.library_history(pid))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
             elif self.path == "/batch":
                 paths = data.get("paths")
                 if not paths or not isinstance(paths, list):

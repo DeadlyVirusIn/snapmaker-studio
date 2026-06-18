@@ -81,17 +81,29 @@ def library_delete(project_id: int) -> dict:
         conn.close()
 
 
+def library_history(project_id: int) -> dict:
+    """Workflow timeline for one project, newest first (read-only)."""
+    conn = _conn()
+    try:
+        events = library.get_history(conn, int(project_id))
+        return {"project_id": int(project_id), "events": events, "schema_version": "history/1"}
+    finally:
+        conn.close()
+
+
 def record_diagnosis(path: str, result: dict) -> None:
-    """Best-effort: index a file the user just diagnosed. Never raises."""
+    """Best-effort: index a file the user just diagnosed + log a history event. Never raises."""
     try:
         conn = _conn()
         try:
-            library.upsert_project(
+            pid = library.upsert_project(
                 conn, name=os.path.basename(path), source_path=path,
                 source_family=result.get("family"), output_path=None,
                 verdict=result.get("verdict"), score=result.get("score"),
                 filament_count=result.get("filament_count"),
                 last_action="doctor", updated_at=_now())
+            library.add_history(conn, pid, "doctor",
+                                f"Checked — {result.get('verdict', '')}".strip(" —"), _now())
         finally:
             conn.close()
     except Exception:
@@ -99,8 +111,7 @@ def record_diagnosis(path: str, result: dict) -> None:
 
 
 def record_conversion(path: str, result: dict) -> None:
-    """Best-effort: index a successful conversion (verdict/family from a fresh
-    read-only diagnosis of the source). Never raises."""
+    """Best-effort: index a successful conversion + log a history event. Never raises."""
     try:
         try:
             diag = diagnose_path(path).to_dict()
@@ -108,13 +119,15 @@ def record_conversion(path: str, result: dict) -> None:
             diag = {}
         conn = _conn()
         try:
-            library.upsert_project(
+            pid = library.upsert_project(
                 conn, name=os.path.basename(path), source_path=path,
                 source_family=diag.get("family"),
                 output_path=result.get("output_path"),
                 verdict=diag.get("verdict"), score=diag.get("score"),
                 filament_count=diag.get("filament_count"),
                 last_action="convert", updated_at=_now())
+            library.add_history(conn, pid, "convert",
+                                f"Made U1-ready — {result.get('output_name', '')}".strip(" —"), _now())
         finally:
             conn.close()
     except Exception:

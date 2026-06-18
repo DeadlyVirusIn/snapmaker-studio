@@ -153,6 +153,19 @@ def test_library_convert_records_output(tmp_path, monkeypatch):
     assert p["output_path"] == res["output_path"]
 
 
+def test_library_history_recorded(tmp_path, monkeypatch):
+    monkeypatch.setenv("SNAPSTUDIO_DATA_DIR", str(tmp_path / "data"))
+    out = _sample_u1(tmp_path)
+    service.record_diagnosis(str(out), service.doctor(str(out)))
+    pid = service.library_list()["projects"][0]["id"]
+    hist = service.library_history(pid)
+    assert hist["schema_version"] == "history/1"
+    assert len(hist["events"]) >= 1
+    assert hist["events"][0]["action"] == "doctor"
+    # unknown project id -> empty timeline, never raises
+    assert service.library_history(999999)["events"] == []
+
+
 def test_library_search_and_delete(tmp_path, monkeypatch):
     monkeypatch.setenv("SNAPSTUDIO_DATA_DIR", str(tmp_path / "data"))
     out = _sample_u1(tmp_path)
