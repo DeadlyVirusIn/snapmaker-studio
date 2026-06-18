@@ -74,8 +74,19 @@ def convert_to_u1(path: str, out_dir: str | None = None) -> ConversionResult:
         res = do_validate(ThreeMF.open(out), against=None)
         return _finish("stl", out, res)
 
-    # 3MF: repair into U1, validate against the source fingerprint (preservation).
     tm = ThreeMF.open(src)
+    if not tm.has_part(SETTINGS):
+        # Geometry-only / foreign-slicer 3MF (e.g. a PrusaSlicer export with no
+        # project_settings.config): there is no project to repair, so wrap the
+        # existing geometry into a clean U1 project, like the STL path.
+        from .stl_wrap import wrap_geometry_3mf
+
+        wrapped = wrap_geometry_3mf(str(src))
+        wrapped.save(out)
+        res = do_validate(ThreeMF.open(out), against=None)
+        return _finish("3mf-geometry", out, res)
+
+    # 3MF: repair into U1, validate against the source fingerprint (preservation).
     src_fp = compute_fingerprint(tm)
     do_repair(tm, mode="u1", remap=None, dry_run=False, opt_profile=None)
     backup = src.with_suffix(".orig.3mf")

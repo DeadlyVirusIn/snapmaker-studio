@@ -102,3 +102,44 @@ def test_convert_3mf_strips_all_foreign(tmp_path):
     assert cfg["filament_colour"] == ["#FF0000", "#00FF00"]  # design preserved
     assert res.validated_ok is True
     assert src.exists()  # source untouched
+
+
+# ---- geometry-only / foreign-slicer 3MF (no project_settings.config) ----
+def _geometry_only_3mf(tmp_path):
+    tri = ('<mesh><vertices><vertex x="0" y="0" z="0"/><vertex x="1" y="0" z="0"/>'
+           '<vertex x="0" y="1" z="0"/></vertices>'
+           '<triangles><triangle v1="0" v2="1" v3="2"/></triangles></mesh>')
+    model = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<model unit="millimeter" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">'
+        f'<resources><object id="1" type="model">{tri}</object>'
+        f'<object id="2" type="model">{tri}</object></resources>'
+        '<build><item objectid="1" transform="1 0 0 0 1 0 0 0 1 10 10 0"/>'
+        '<item objectid="2" transform="1 0 0 0 1 0 0 0 1 50 50 0"/></build></model>'
+    ).encode("utf-8")
+    p = tmp_path / "geo.3mf"
+    with zipfile.ZipFile(p, "w") as z:
+        z.writestr("[Content_Types].xml", '<?xml version="1.0"?><Types/>')
+        z.writestr("_rels/.rels", '<?xml version="1.0"?><Relationships/>')
+        z.writestr("3D/3dmodel.model", model)
+        z.writestr("Metadata/Slic3r_PE.config", "; prusa config\n")  # foreign slicer marker
+    return p, model
+
+
+def test_geometry_only_3mf_wraps_to_clean_u1(tmp_path):
+    src, model = _geometry_only_3mf(tmp_path)
+    res = convert_to_u1(str(src))
+    assert res.source_type == "3mf-geometry"
+    z = zipfile.ZipFile(res.output_path)
+    names = z.namelist()
+    assert "Metadata/project_settings.config" in names
+    assert "Metadata/model_settings.config" in names
+    assert z.read("3D/3dmodel.model") == model            # geometry preserved verbatim
+    assert "Metadata/Slic3r_PE.config" not in names       # foreign slicer config dropped
+    cfg = load_project_settings(z.read("Metadata/project_settings.config"))
+    assert find_foreign(cfg) == []
+    assert cfg["printer_model"] == "Snapmaker U1"
+    ms = z.read("Metadata/model_settings.config").decode("utf-8")
+    assert 'id="1"' in ms and 'id="2"' in ms              # both build objects mapped
+    assert res.validated_ok is True
+    assert src.exists()

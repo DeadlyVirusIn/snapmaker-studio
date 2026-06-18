@@ -1,5 +1,5 @@
 from __future__ import annotations
-import copy, json, uuid
+import copy, json, re, uuid
 from pathlib import Path
 from importlib.resources import files
 from .container import ThreeMF
@@ -178,3 +178,85 @@ def wrap_stl_bytes(data: bytes, name: str = "model", colors=DEFAULT_COLORS,
 def wrap_stl(stl_path, colors=DEFAULT_COLORS, profile_name: str = "snapmaker_u1") -> ThreeMF:
     p = Path(stl_path)
     return wrap_stl_bytes(p.read_bytes(), name=p.stem, colors=colors, profile_name=profile_name)
+
+
+# ---- geometry-only / foreign-slicer 3MF (no project_settings.config) ----
+
+def build_model_settings_multi(object_ids, name: str = "object", extruder: int = 1) -> bytes:
+    """model_settings.config for an arbitrary set of build objects: map each to a
+    filament/extruder slot and list them on plate 1."""
+    objs = "".join(
+        f'  <object id="{oid}">\n'
+        f'    <metadata key="name" value="{name}_{oid}"/>\n'
+        f'    <metadata key="extruder" value="{extruder}"/>\n'
+        '    <part id="1" subtype="normal_part">\n'
+        f'      <metadata key="name" value="{name}_{oid}"/>\n'
+        '      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>\n'
+        '      <mesh_stat edges_fixed="0" degenerate_facets="0" facets_removed="0" '
+        'facets_reversed="0" backwards_edges="0"/>\n'
+        '    </part>\n  </object>\n'
+        for oid in object_ids)
+    instances = "".join(
+        '    <model_instance>\n'
+        f'      <metadata key="object_id" value="{oid}"/>\n'
+        '      <metadata key="instance_id" value="0"/>\n'
+        '    </model_instance>\n'
+        for oid in object_ids)
+    return ('<?xml version="1.0" encoding="UTF-8"?>\n<config>\n' + objs +
+            '  <plate>\n'
+            '    <metadata key="plater_id" value="1"/>\n'
+            '    <metadata key="plater_name" value=""/>\n'
+            '    <metadata key="locked" value="false"/>\n'
+            '    <metadata key="filament_map_mode" value="Auto For Flush"/>\n'
+            '    <metadata key="filament_maps" value="1"/>\n' + instances +
+            '  </plate>\n  <assemble>\n  </assemble>\n</config>\n').encode("utf-8")
+
+
+def _build_object_ids(model_xml: bytes) -> list[int]:
+    """Object ids referenced by the root model's <build> items (preserve order)."""
+    text = model_xml.decode("utf-8", "replace")
+    m = re.search(r"<build.*?</build>", text, re.S)
+    seg = m.group(0) if m else text
+    ids, seen = [], set()
+    for s in re.findall(r'objectid="(\d+)"', seg):
+        i = int(s)
+        if i not in seen:
+            seen.add(i)
+            ids.append(i)
+    return ids or [1]
+
+
+def wrap_geometry_3mf(path, colors=DEFAULT_COLORS, profile_name: str = "snapmaker_u1") -> ThreeMF:
+    """Wrap a geometry-only / foreign-slicer 3MF (no project_settings.config) into
+    a clean U1 project. The source 3D geometry and build items/transforms are kept
+    verbatim; foreign slicer metadata is dropped and a clean U1 project_settings /
+    model_settings / slice_info is injected."""
+    src = ThreeMF.open(path)
+    model = src.read_part("3D/3dmodel.model")
+    object_ids = _build_object_ids(model)
+    eff = effective_colours(colors)
+
+    parts: dict[str, bytes] = {}
+    order: list[str] = []
+
+    def put(n: str, b: bytes):
+        if n not in parts:
+            order.append(n)
+        parts[n] = b
+
+    # Preserve container essentials + ALL geometry + thumbnails; drop foreign
+    # slicer configs (Slic3r_PE*, Bambu/Orca metadata, wipe-tower info, etc.).
+    for n in src.list_parts():
+        if n in ("[Content_Types].xml", "_rels/.rels") or n.startswith("3D/") \
+                or (n.startswith("Metadata/") and n.lower().endswith(".png")):
+            put(n, src.read_part(n))
+    if "[Content_Types].xml" not in parts:
+        put("[Content_Types].xml", CONTENT_TYPES)
+    if "_rels/.rels" not in parts:
+        put("_rels/.rels", RELS)
+
+    # Inject a clean U1 project around the preserved geometry.
+    put("Metadata/model_settings.config", build_model_settings_multi(object_ids, name=Path(path).stem))
+    put("Metadata/slice_info.config", build_slice_info(eff))
+    put("Metadata/project_settings.config", dump_project_settings(_base_settings(eff, profile_name)))
+    return ThreeMF(parts, order)
