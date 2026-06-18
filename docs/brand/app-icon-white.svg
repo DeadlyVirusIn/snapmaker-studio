@@ -1,8 +1,7 @@
-<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Snapmaker Studio">
-  <!-- 1200x630 OG card — Brand Identity Asset Pack §1. Primary Dark field +
-       official 7-stream Studio Hub mark + spectrum wordmark. -->
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Snapmaker Studio app icon (white tile)">
+  <!-- App icon — white tile variant (Brand Identity Asset Pack §3). Same 7-stream
+       Studio Hub mark on an accent-white tile. -->
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0A101C"/><stop offset="1" stop-color="#060A12"/></linearGradient>
     <filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="5"/></filter>
     <filter id="glowL" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="14"/></filter>
     <linearGradient id="s1" x1="30" y1="44" x2="132" y2="112" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9DF6FF"/><stop offset="1" stop-color="#00E1FF"/></linearGradient>
@@ -14,9 +13,8 @@
     <linearGradient id="s7" x1="30" y1="212" x2="132" y2="144" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#6E8CFF"/><stop offset="1" stop-color="#0000FF"/></linearGradient>
     <linearGradient id="ring" x1="105" y1="84" x2="195" y2="174" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#EAF6FF"/><stop offset="0.45" stop-color="#7FE9FF"/><stop offset="0.8" stop-color="#1E6FE0"/><stop offset="1" stop-color="#16223A"/></linearGradient>
     <radialGradient id="bloom" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#FFFFFF"/><stop offset="0.35" stop-color="#9DEFFF"/><stop offset="0.7" stop-color="#00E1FF" stop-opacity="0.55"/><stop offset="1" stop-color="#0000FF" stop-opacity="0"/></radialGradient>
-    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#00E1FF" stop-opacity="0.4"/><stop offset="1" stop-color="#00E1FF" stop-opacity="0"/></radialGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#00E1FF" stop-opacity="0.45"/><stop offset="1" stop-color="#00E1FF" stop-opacity="0"/></radialGradient>
     <radialGradient id="pad" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#00E1FF" stop-opacity="0.5"/><stop offset="1" stop-color="#0000FF" stop-opacity="0"/></radialGradient>
-    <linearGradient id="studio" x1="120" y1="400" x2="560" y2="470" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#00E1FF"/><stop offset="0.3" stop-color="#8F00FF"/><stop offset="0.55" stop-color="#FF00FF"/><stop offset="0.78" stop-color="#32CD32"/><stop offset="1" stop-color="#FF8500"/></linearGradient>
     <g id="mark">
       <circle cx="150" cy="128" r="78" fill="url(#halo)" filter="url(#glowL)"/>
       <g filter="url(#glow)">
@@ -49,12 +47,7 @@
       <polygon points="236,66 260.25,80 236,94 211.75,80" fill="#FFFFFF" opacity="0.22"/>
     </g>
   </defs>
-  <rect width="1200" height="630" fill="url(#bg)"/>
-  <use href="#mark" transform="translate(330,70) scale(1.6)"/>
-  <text x="120" y="430" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-weight="700" font-size="92" fill="#FFFFFF">Snapmaker <tspan font-weight="800" fill="url(#studio)">Studio</tspan></text>
-  <text x="122" y="480" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-weight="600" font-size="26" letter-spacing="3" fill="#94A3B8">THE OPERATING SYSTEM FOR MULTI-MATERIAL 3D PRINTING</text>
-  <g font-family="Inter, 'Segoe UI', Arial, sans-serif" font-weight="700" font-size="24">
-    <text x="122" y="546" fill="#94A3B8">INPUT</text><text x="262" y="546" fill="#00E1FF">DIAGNOSE</text><text x="470" y="546" fill="#FF8500">TRANSFORM</text><text x="700" y="546" fill="#32CD32">VALIDATE</text><text x="900" y="546" fill="#00A6FF">OUTPUT</text>
-  </g>
-  <text x="120" y="600" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-weight="700" font-size="30" fill="#F2F2F2">One place. Any file. Any printer. Perfect prints.</text>
+  <rect width="512" height="512" rx="112" fill="#FFFFFF"/>
+  <rect x="6" y="6" width="500" height="500" rx="108" fill="none" stroke="#E2E6EF" stroke-width="3"/>
+  <use href="#mark" transform="translate(70,96) scale(1.28)"/>
 </svg>

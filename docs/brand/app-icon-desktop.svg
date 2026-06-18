@@ -1,8 +1,7 @@
-<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Snapmaker Studio">
-  <!-- 1200x630 OG card — Brand Identity Asset Pack §1. Primary Dark field +
-       official 7-stream Studio Hub mark + spectrum wordmark. -->
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Snapmaker Studio on desktop">
+  <!-- Desktop / monitor mockup (Brand Identity Asset Pack §3): the app
+       shown running on a display, with the 7-stream Studio Hub mark. -->
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0A101C"/><stop offset="1" stop-color="#060A12"/></linearGradient>
     <filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="5"/></filter>
     <filter id="glowL" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="14"/></filter>
     <linearGradient id="s1" x1="30" y1="44" x2="132" y2="112" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9DF6FF"/><stop offset="1" stop-color="#00E1FF"/></linearGradient>
@@ -14,9 +13,8 @@
     <linearGradient id="s7" x1="30" y1="212" x2="132" y2="144" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#6E8CFF"/><stop offset="1" stop-color="#0000FF"/></linearGradient>
     <linearGradient id="ring" x1="105" y1="84" x2="195" y2="174" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#EAF6FF"/><stop offset="0.45" stop-color="#7FE9FF"/><stop offset="0.8" stop-color="#1E6FE0"/><stop offset="1" stop-color="#16223A"/></linearGradient>
     <radialGradient id="bloom" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#FFFFFF"/><stop offset="0.35" stop-color="#9DEFFF"/><stop offset="0.7" stop-color="#00E1FF" stop-opacity="0.55"/><stop offset="1" stop-color="#0000FF" stop-opacity="0"/></radialGradient>
-    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#00E1FF" stop-opacity="0.4"/><stop offset="1" stop-color="#00E1FF" stop-opacity="0"/></radialGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#00E1FF" stop-opacity="0.45"/><stop offset="1" stop-color="#00E1FF" stop-opacity="0"/></radialGradient>
     <radialGradient id="pad" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#00E1FF" stop-opacity="0.5"/><stop offset="1" stop-color="#0000FF" stop-opacity="0"/></radialGradient>
-    <linearGradient id="studio" x1="120" y1="400" x2="560" y2="470" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#00E1FF"/><stop offset="0.3" stop-color="#8F00FF"/><stop offset="0.55" stop-color="#FF00FF"/><stop offset="0.78" stop-color="#32CD32"/><stop offset="1" stop-color="#FF8500"/></linearGradient>
     <g id="mark">
       <circle cx="150" cy="128" r="78" fill="url(#halo)" filter="url(#glowL)"/>
       <g filter="url(#glow)">
@@ -49,12 +47,26 @@
       <polygon points="236,66 260.25,80 236,94 211.75,80" fill="#FFFFFF" opacity="0.22"/>
     </g>
   </defs>
-  <rect width="1200" height="630" fill="url(#bg)"/>
-  <use href="#mark" transform="translate(330,70) scale(1.6)"/>
-  <text x="120" y="430" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-weight="700" font-size="92" fill="#FFFFFF">Snapmaker <tspan font-weight="800" fill="url(#studio)">Studio</tspan></text>
-  <text x="122" y="480" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-weight="600" font-size="26" letter-spacing="3" fill="#94A3B8">THE OPERATING SYSTEM FOR MULTI-MATERIAL 3D PRINTING</text>
-  <g font-family="Inter, 'Segoe UI', Arial, sans-serif" font-weight="700" font-size="24">
-    <text x="122" y="546" fill="#94A3B8">INPUT</text><text x="262" y="546" fill="#00E1FF">DIAGNOSE</text><text x="470" y="546" fill="#FF8500">TRANSFORM</text><text x="700" y="546" fill="#32CD32">VALIDATE</text><text x="900" y="546" fill="#00A6FF">OUTPUT</text>
+  <!-- monitor -->
+  <rect x="40" y="66" width="432" height="312" rx="22" fill="#05080F"/>
+  <rect x="40" y="66" width="432" height="312" rx="22" fill="none" stroke="#2A3346" stroke-width="3"/>
+  <!-- screen -->
+  <rect x="58" y="84" width="396" height="276" rx="10" fill="#0A101C"/>
+  <!-- title bar -->
+  <rect x="58" y="84" width="396" height="30" rx="10" fill="#16192B"/>
+  <rect x="58" y="100" width="396" height="14" fill="#16192B"/>
+  <circle cx="78" cy="99" r="4.5" fill="#FF5F57"/><circle cx="94" cy="99" r="4.5" fill="#FEBC2E"/><circle cx="110" cy="99" r="4.5" fill="#28C840"/>
+  <text x="256" y="103" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="11" font-weight="600" fill="#94A3B8">Snapmaker Studio</text>
+  <!-- screen glow + mark -->
+  <rect x="58" y="114" width="396" height="246" fill="url(#halo)" opacity="0.35"/>
+  <use href="#mark" transform="translate(108,128) scale(0.92)"/>
+  <!-- workflow strip -->
+  <g font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="9" font-weight="600" fill="#94A3B8">
+    <rect x="86" y="324" width="64" height="20" rx="5" fill="#16192B"/><text x="118" y="338" text-anchor="middle">Dashboard</text>
+    <rect x="158" y="324" width="52" height="20" rx="5" fill="#16192B"/><text x="184" y="338" text-anchor="middle">Library</text>
+    <rect x="218" y="324" width="74" height="20" rx="5" fill="#16192B"/><text x="255" y="338" text-anchor="middle">Batch Convert</text>
   </g>
-  <text x="120" y="600" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-weight="700" font-size="30" fill="#F2F2F2">One place. Any file. Any printer. Perfect prints.</text>
+  <!-- stand -->
+  <rect x="236" y="378" width="40" height="34" fill="#1A2233"/>
+  <rect x="186" y="408" width="140" height="16" rx="8" fill="#222C40"/>
 </svg>

@@ -1,38 +1,53 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Snapmaker Studio app icon">
+  <!-- App icon (color tile) — Brand Identity Asset Pack §3. Primary Dark tile +
+       the official 7-stream Studio Hub mark. -->
   <defs>
-    <filter id="soft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6"/></filter>
-    <filter id="soft2" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="12"/></filter>
-    <linearGradient id="chrome" x1="105" y1="84" x2="195" y2="174" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#EAF1FB"/><stop offset="0.35" stop-color="#9AA9C2"/><stop offset="0.7" stop-color="#4A5870"/><stop offset="1" stop-color="#222C40"/></linearGradient>
-    <radialGradient id="bloom" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#FFFFFF"/><stop offset="0.4" stop-color="#9DEFFF"/><stop offset="0.75" stop-color="#22A6F0" stop-opacity="0.5"/><stop offset="1" stop-color="#1E6FE0" stop-opacity="0"/></radialGradient>
-    <linearGradient id="rib1" x1="20" y1="60" x2="140" y2="124" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FF8FCF"/><stop offset="1" stop-color="#FF1E8E"/></linearGradient>
-    <linearGradient id="rib2" x1="20" y1="92" x2="140" y2="124" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFC98A"/><stop offset="1" stop-color="#FF6A00"/></linearGradient>
-    <linearGradient id="rib3" x1="20" y1="128" x2="140" y2="128" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFE98A"/><stop offset="1" stop-color="#FFC400"/></linearGradient>
-    <linearGradient id="rib4" x1="20" y1="160" x2="140" y2="132" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8DF0C4"/><stop offset="1" stop-color="#15C77E"/></linearGradient>
-    <linearGradient id="rib5" x1="20" y1="194" x2="140" y2="134" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8FD6FF"/><stop offset="1" stop-color="#1E84FF"/></linearGradient>
-    <radialGradient id="pad" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#2FC6FF" stop-opacity="0.55"/><stop offset="1" stop-color="#1E6FE0" stop-opacity="0"/></radialGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="5"/></filter>
+    <filter id="glowL" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="14"/></filter>
+    <linearGradient id="s1" x1="30" y1="44" x2="132" y2="112" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9DF6FF"/><stop offset="1" stop-color="#00E1FF"/></linearGradient>
+    <linearGradient id="s2" x1="30" y1="72" x2="132" y2="118" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9CF0B4"/><stop offset="1" stop-color="#32CD32"/></linearGradient>
+    <linearGradient id="s3" x1="30" y1="100" x2="132" y2="123" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFFFA8"/><stop offset="1" stop-color="#FFFF00"/></linearGradient>
+    <linearGradient id="s4" x1="30" y1="128" x2="132" y2="128" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFCD96"/><stop offset="1" stop-color="#FF8500"/></linearGradient>
+    <linearGradient id="s5" x1="30" y1="156" x2="132" y2="133" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FF94E6"/><stop offset="1" stop-color="#FF00FF"/></linearGradient>
+    <linearGradient id="s6" x1="30" y1="184" x2="132" y2="138" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#CB97FF"/><stop offset="1" stop-color="#8F00FF"/></linearGradient>
+    <linearGradient id="s7" x1="30" y1="212" x2="132" y2="144" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#6E8CFF"/><stop offset="1" stop-color="#0000FF"/></linearGradient>
+    <linearGradient id="ring" x1="105" y1="84" x2="195" y2="174" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#EAF6FF"/><stop offset="0.45" stop-color="#7FE9FF"/><stop offset="0.8" stop-color="#1E6FE0"/><stop offset="1" stop-color="#16223A"/></linearGradient>
+    <radialGradient id="bloom" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#FFFFFF"/><stop offset="0.35" stop-color="#9DEFFF"/><stop offset="0.7" stop-color="#00E1FF" stop-opacity="0.55"/><stop offset="1" stop-color="#0000FF" stop-opacity="0"/></radialGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#00E1FF" stop-opacity="0.45"/><stop offset="1" stop-color="#00E1FF" stop-opacity="0"/></radialGradient>
+    <radialGradient id="pad" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#00E1FF" stop-opacity="0.5"/><stop offset="1" stop-color="#0000FF" stop-opacity="0"/></radialGradient>
     <g id="mark">
-      <g filter="url(#soft)" opacity="0.95"><rect x="2" y="56" width="8" height="8" rx="2" fill="#FF1E8E"/><rect x="2" y="122" width="8" height="8" rx="2" fill="#FFC400"/><rect x="2" y="190" width="8" height="8" rx="2" fill="#1E84FF"/><rect x="16" y="90" width="8" height="8" rx="2" fill="#FF6A00"/><rect x="16" y="158" width="8" height="8" rx="2" fill="#15C77E"/></g>
+      <circle cx="150" cy="128" r="78" fill="url(#halo)" filter="url(#glowL)"/>
+      <g filter="url(#glow)">
+        <rect x="2" y="40" width="7" height="7" rx="2" fill="#00E1FF"/><rect x="2" y="96" width="7" height="7" rx="2" fill="#FFFF00"/>
+        <rect x="2" y="152" width="7" height="7" rx="2" fill="#FF00FF"/><rect x="2" y="208" width="7" height="7" rx="2" fill="#0000FF"/>
+        <rect x="15" y="68" width="7" height="7" rx="2" fill="#32CD32"/><rect x="15" y="124" width="7" height="7" rx="2" fill="#FF8500"/><rect x="15" y="180" width="7" height="7" rx="2" fill="#8F00FF"/>
+      </g>
       <g fill="none" stroke-linecap="round">
-        <g filter="url(#soft)" opacity="0.6" stroke-width="17"><path d="M30 62 C82 66 98 104 132 122" stroke="#FF1E8E"/><path d="M30 96 C86 100 102 116 132 124" stroke="#FF6A00"/><path d="M30 128 C92 128 106 128 134 128" stroke="#FFC400"/><path d="M30 160 C86 156 102 140 132 132" stroke="#15C77E"/><path d="M30 194 C82 190 98 152 132 134" stroke="#1E84FF"/></g>
-        <g stroke-width="16"><path d="M30 62 C82 66 98 104 132 122" stroke="url(#rib1)"/><path d="M30 96 C86 100 102 116 132 124" stroke="url(#rib2)"/><path d="M30 128 C92 128 106 128 134 128" stroke="url(#rib3)"/><path d="M30 160 C86 156 102 140 132 132" stroke="url(#rib4)"/><path d="M30 194 C82 190 98 152 132 134" stroke="url(#rib5)"/></g>
-        <g stroke-width="4" stroke="#FFFFFF" opacity="0.5"><path d="M30 58 C82 62 98 100 130 119"/><path d="M30 92 C86 96 102 113 130 121"/><path d="M30 124 C92 124 106 124 132 125"/><path d="M30 156 C86 152 102 137 130 129"/><path d="M30 190 C82 186 98 148 130 131"/></g>
+        <g filter="url(#glow)" opacity="0.7" stroke-width="16">
+          <path d="M30 44 C84 44 104 112 130 112" stroke="#00E1FF"/><path d="M30 72 C84 72 104 118 130 118" stroke="#32CD32"/><path d="M30 100 C84 100 104 123 130 123" stroke="#FFFF00"/><path d="M30 128 C84 128 104 128 130 128" stroke="#FF8500"/><path d="M30 156 C84 156 104 133 130 133" stroke="#FF00FF"/><path d="M30 184 C84 184 104 138 130 138" stroke="#8F00FF"/><path d="M30 212 C84 212 104 144 130 144" stroke="#0000FF"/>
+        </g>
+        <g stroke-width="13">
+          <path d="M30 44 C84 44 104 112 130 112" stroke="url(#s1)"/><path d="M30 72 C84 72 104 118 130 118" stroke="url(#s2)"/><path d="M30 100 C84 100 104 123 130 123" stroke="url(#s3)"/><path d="M30 128 C84 128 104 128 130 128" stroke="url(#s4)"/><path d="M30 156 C84 156 104 133 130 133" stroke="url(#s5)"/><path d="M30 184 C84 184 104 138 130 138" stroke="url(#s6)"/><path d="M30 212 C84 212 104 144 130 144" stroke="url(#s7)"/>
+        </g>
+        <g stroke-width="3" stroke="#FFFFFF" opacity="0.55"><path d="M30 40 C84 40 104 109 128 109"/><path d="M30 68 C84 68 104 115 128 115"/><path d="M30 96 C84 96 104 120 128 120"/><path d="M30 124 C84 124 104 125 128 125"/></g>
       </g>
-      <circle cx="150" cy="128" r="58" fill="url(#bloom)" filter="url(#soft2)"/>
-      <circle cx="150" cy="128" r="48" fill="none" stroke="url(#chrome)" stroke-width="12"/>
-      <circle cx="150" cy="128" r="40" fill="#0A1018"/>
-      <circle cx="150" cy="128" r="34" fill="none" stroke="#7FE9FF" stroke-width="2.5" opacity="0.9"/>
-      <circle cx="150" cy="128" r="26" fill="url(#bloom)"/>
-      <circle cx="150" cy="124" r="9" fill="#FFFFFF" filter="url(#soft)"/>
-      <path d="M126 110 A30 30 0 0 1 158 100" stroke="#FFFFFF" stroke-width="3" fill="none" opacity="0.5" stroke-linecap="round"/>
-      <ellipse cx="236" cy="194" rx="66" ry="16" fill="url(#pad)" filter="url(#soft)"/>
-      <g stroke="#0A1018" stroke-width="1.2" stroke-linejoin="round">
-        <polygon points="236,68 260.25,82 236,96 211.75,82" fill="#6FE6FF"/><polygon points="260.25,82 284.5,96 260.25,110 236,96" fill="#33C6F2"/><polygon points="236,96 260.25,110 236,124 211.75,110" fill="#1FA6E0"/><polygon points="211.75,82 236,96 211.75,110 187.5,96" fill="#46D0FF"/>
-        <polygon points="187.5,96 211.75,110 211.75,138 187.5,124" fill="#FF6AA8"/><polygon points="211.75,110 236,124 236,152 211.75,138" fill="#FF2E86"/><polygon points="211.75,138 236,152 236,180 211.75,166" fill="#C81E73"/><polygon points="187.5,124 211.75,138 211.75,166 187.5,152" fill="#E63E97"/>
-        <polygon points="284.5,96 260.25,110 260.25,138 284.5,124" fill="#7DEBA0"/><polygon points="260.25,110 236,124 236,152 260.25,138" fill="#2FCF77"/><polygon points="236,152 260.25,138 260.25,166 236,180" fill="#16A95C"/><polygon points="284.5,124 260.25,138 260.25,166 284.5,152" fill="#3FD986"/>
+      <circle cx="150" cy="128" r="60" fill="url(#bloom)" filter="url(#glowL)"/>
+      <circle cx="150" cy="128" r="50" fill="none" stroke="url(#ring)" stroke-width="13"/>
+      <circle cx="150" cy="128" r="42" fill="#0A101C"/>
+      <circle cx="150" cy="128" r="36" fill="none" stroke="#00E1FF" stroke-width="2.5" opacity="0.95" filter="url(#glow)"/>
+      <circle cx="150" cy="128" r="28" fill="url(#bloom)"/>
+      <circle cx="150" cy="126" r="10" fill="#FFFFFF" filter="url(#glow)"/>
+      <path d="M124 108 A32 32 0 0 1 160 98" stroke="#FFFFFF" stroke-width="3" fill="none" opacity="0.55" stroke-linecap="round"/>
+      <ellipse cx="236" cy="196" rx="68" ry="16" fill="url(#pad)" filter="url(#glow)"/>
+      <g stroke="#0A101C" stroke-width="1.3" stroke-linejoin="round">
+        <polygon points="236,66 260.25,80 236,94 211.75,80" fill="#5BE3FF"/><polygon points="260.25,80 284.5,94 260.25,108 236,94" fill="#16B6E6"/><polygon points="236,94 260.25,108 236,122 211.75,108" fill="#00A6FF"/><polygon points="211.75,80 236,94 211.75,108 187.5,94" fill="#00E1FF"/>
+        <polygon points="187.5,94 211.75,108 211.75,138 187.5,124" fill="#FF66FF"/><polygon points="211.75,108 236,122 236,152 211.75,138" fill="#FF00FF"/><polygon points="211.75,138 236,152 236,182 211.75,168" fill="#B100B1"/><polygon points="187.5,124 211.75,138 211.75,168 187.5,154" fill="#D11FD1"/>
+        <polygon points="284.5,94 260.25,108 260.25,138 284.5,124" fill="#7BE87B"/><polygon points="260.25,108 236,122 236,152 260.25,138" fill="#32CD32"/><polygon points="236,152 260.25,138 260.25,168 236,182" fill="#1E901E"/><polygon points="284.5,124 260.25,138 260.25,168 284.5,154" fill="#4BD64B"/>
       </g>
-      <polygon points="236,68 260.25,82 236,96 211.75,82" fill="#FFFFFF" opacity="0.18"/>
+      <polygon points="236,66 260.25,80 236,94 211.75,80" fill="#FFFFFF" opacity="0.22"/>
     </g>
   </defs>
-  <rect width="512" height="512" rx="112" fill="#0B0F19"/>
-  <use href="#mark" transform="translate(61,90) scale(1.3)"/>
+  <rect width="512" height="512" rx="112" fill="#0A101C"/>
+  <rect width="512" height="512" rx="112" fill="url(#halo)" opacity="0.5"/>
+  <use href="#mark" transform="translate(70,96) scale(1.28)"/>
 </svg>

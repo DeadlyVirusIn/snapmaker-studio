@@ -3,9 +3,14 @@
 > **Source of truth:** the **Brand Identity Asset Pack** —
 > [`Brand Identity Snapmaker Studio/`](Brand%20Identity%20Snapmaker%20Studio/).
 > Master deck: `Gemini_Generated_Image_awl389awl389awl3.png`.
-> This document maps every existing `*.svg` to its Pack reference and records how
-> well it currently aligns. **No assets were redesigned in this sprint** — this is
-> the audit + alignment plan only.
+> This document maps every `*.svg` to its Pack reference and records alignment.
+>
+> **STATUS: IMPLEMENTATION COMPLETE.** All color assets were re-authored to the
+> Pack's 7-stream spectrum on Primary Dark `#0A101C`, with stronger glow/bloom
+> and hub definition; the white-tile, grey-tile, and desktop-mockup app-icon
+> variants were added. Verified (XML well-formed, 7 official streams present, no
+> deprecated pastel hexes) and previewed via headless Chromium. Branding is now
+> **frozen** unless a critical issue is found.
 
 ## The Pack at a glance
 | Deck section | Content | Drives |
@@ -21,17 +26,22 @@
 ## Per-file mapping
 | SVG | Maps to (Pack) | Status | Notes |
 |---|---|---|---|
-| `logo.svg` | §1 Hero & Primary Logo | ⚠ palette mismatch | Layout + Inter wordmark match; stream colors are pastel, not the 7 saturated streams. |
+| `logo.svg` | §1 Hero & Primary Logo | ✅ implemented | 7-stream mark + spectrum "Studio" wordmark (Inter). |
 | `logo-mono.svg` | §2 "single color shape" | ✅ aligned | `currentColor`, no palette dependency. |
-| `icon.svg` | §2 "full color streams" | ⚠ palette + stream count | ~5 pastel streams; Pack shows 7 saturated streams converging into a brighter hub. |
+| `icon.svg` | §2 "full color streams" | ✅ implemented | 7 saturated streams → bright hub → glossy cube; layered bloom. |
 | `icon-mono.svg` | §2 "white outline" / mono | ✅ aligned | `currentColor`. |
-| `icon-simple.svg` | §2 "single color shape" (small) | ⚠ palette mismatch | Reads as the Hub at small size (good); colors pastel. |
-| `favicon.svg` | §7 Favicon Stress Test | ⚠ palette + bg | Legible to 16 px (good); bg `#0A1018`/`#0B0F19` vs Pack `#0A101C`. |
-| `app-icon.svg` | §3 App Icons (color tile) | ⚠ palette + bg | Rounded dark tile + full mark correct; missing white/grey + monitor variants from §3. |
-| `hero.svg` | §1 Hero banner | ⚠ palette mismatch | Composition matches; pastel spectrum + `#05070D` gradient floor. |
-| `social-preview.svg` | (OG card, derived from §1) | ⚠ palette mismatch | 1200×630 fine; same pastel spectrum. |
+| `icon-simple.svg` | §2 "single color shape" (small) | ✅ implemented | 3 saturated stream stubs + hub + cube; `#0A101C` well. |
+| `favicon.svg` | §7 Favicon Stress Test | ✅ implemented | Primary Dark tile `#0A101C`; saturated stubs; legible to 16 px. |
+| `app-icon.svg` | §3 App Icons (color tile) | ✅ implemented | `#0A101C` rounded tile + full 7-stream mark + halo. |
+| `app-icon-white.svg` | §3 App Icons (white tile) | ✅ new | White tile + mark (light surfaces / stores). |
+| `app-icon-grey.svg` | §3 App Icons (grey tile) | ✅ new | Brushed-metal grey tile + mark. |
+| `app-icon-desktop.svg` | §3 App Icons (desktop mockup) | ✅ new | Monitor showing the app + workflow strip. |
+| `hero.svg` | §1 Hero banner | ✅ implemented | 7-stream mark, `#0A101C` field, spectrum wordmark + workflow. |
+| `social-preview.svg` | (OG card, derived from §1) | ✅ implemented | 1200×630, 7-stream mark, Primary Dark. |
 
-## Audit findings
+## Audit findings (all RESOLVED in the implementation sprint)
+Each finding below was the pre-implementation gap; every item is now fixed in the
+assets (see the ✅ table above).
 
 ### 1. Visual differences
 - Pack mark: **7 high-saturation streams** converge into a **bright glossy circular
@@ -63,8 +73,13 @@
 - Pack assets show stronger neon bloom, depth/lighting on the hub, glossy rings,
   and a cleaner rounded-square app tile. Current SVGs read flatter and less vivid.
 
-## Alignment plan (future branding sprint — NOT this one)
-Re-export each ⚠ SVG against the Pack: swap the pastel spectrum for the 7 official
-streams, set background to `#0A101C`, raise hub bloom/gloss, and add the missing
-`app-icon` white/grey + monitor variants. Per the directive, **no redesign was
-performed here** — this is the recorded gap list for that sprint.
+## Alignment plan — DONE
+Every ⚠ SVG was re-authored against the Pack: pastel spectrum → 7 official streams,
+backgrounds → `#0A101C`, hub bloom/gloss raised, and the `app-icon` white/grey +
+desktop-mockup variants added. Verification:
+- `python` XML parse + palette scan: all 10 assets well-formed, 7 official streams
+  present (simplified `icon-simple`/`favicon` carry 3 stream colors by design),
+  zero deprecated pastel hexes, `#0A101C` present in every asset.
+- Headless Chromium render of each asset + a before/after board (visual check OK).
+
+Branding is **frozen** from here unless a critical issue is found.
