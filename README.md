@@ -36,6 +36,18 @@ open source.
   [`docs/ROADMAP.md`](docs/ROADMAP.md) · brand [`docs/brand/`](docs/brand/README.md)
   · landing [`docs/landing/index.html`](docs/landing/index.html).
 
+## Screenshots
+
+The desktop app — local-first, dark-first, **Input → Diagnose → Transform →
+Validate → Output**. (Captured live against the bundled engine; see
+[`docs/BETA_READINESS_REPORT.md`](docs/BETA_READINESS_REPORT.md).)
+
+| Dashboard | Doctor |
+|---|---|
+| ![Dashboard](docs/qa-beta/01_dashboard_dark.png) | ![Doctor](docs/qa-beta/04_doctor_3mf.png) |
+| **Compare** | **Batch convert** |
+| ![Compare](docs/qa-beta/06_compare_diff.png) | ![Batch](docs/qa-beta/08d_batch_done.png) |
+
 ## Why
 
 Models and projects from popular slicers and model sites don't always open cleanly
@@ -142,16 +154,35 @@ $ u1convert diff original.3mf converted.3mf
 
 It reports structure, geometry, settings, and counts. Add `--json` for the full machine-readable diff.
 
+## Architecture
+
+Local-first, no network. Three layers:
+
+- **Engine** — `snapstudio_core`, pure Python (no net, no UI): detect →
+  diagnose → transform → validate, preserving geometry/painting/colour.
+- **Local API** — `snapstudio_api`, a loopback (`127.0.0.1`) JSON server, token-gated,
+  frozen with PyInstaller into a single sidecar binary (no Python install needed).
+- **Desktop app** — Tauri (Rust) + React + TypeScript. Spawns the sidecar as a
+  child process (zero orphans on exit) and talks to it over loopback.
+- **CLI** — `u1convert` exposes the same engine for scripting/automation.
+
+Workflow everywhere: **Input → Diagnose → Transform → Validate → Output** —
+validation is mandatory and never removed. Full detail in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
 ## Roadmap
 
-- OBJ and GLB conversion
-- Batch processing (folders / many files)
-- Desktop / GUI application
-- A stable API for integration
-- Automatic compatibility analysis
-- Optional cloud conversion service
+**Shipped:** desktop app (Doctor · Convert · Compare · **Batch** · Library),
+one-click Windows installer with bundled engine.
 
-See [CHANGELOG.md](CHANGELOG.md) for release history.
+**Next:**
+- OBJ and GLB conversion
+- A stable API for third-party integration
+- Deeper automatic compatibility analysis
+- More printer targets
+
+See [CHANGELOG.md](CHANGELOG.md) for release history and
+[`docs/ROADMAP.md`](docs/ROADMAP.md) for the full plan.
 
 ## Contributing
 
