@@ -16,9 +16,12 @@ const PILL: Record<Level, string> = {
 };
 const STATUS_ICON: Record<Level, LucideIcon> = { ok: CheckCircle2, warn: AlertTriangle, risk: ShieldAlert };
 
-function buildRows(mesh: MeshReport, dims?: { x: number; y: number; z: number } | null): Row[] {
+function buildRows(mesh: MeshReport, dims?: { x: number; y: number; z: number } | null,
+                   bed?: { x: number; y: number; z: number } | null): Row[] {
   const rows: Row[] = [];
   const integ = mesh.integrity;
+  const fitBed = bed ?? U1_BED;
+  const bedSource = bed ? "your connected U1" : "the U1’s";
 
   // 1. Watertight
   if (integ) {
@@ -60,28 +63,30 @@ function buildRows(mesh: MeshReport, dims?: { x: number; y: number; z: number } 
         : "Few steep overhangs — this should print without supports." });
   }
 
-  // 5. Bed fit (from dimensions vs the U1 bed)
+  // 5. Bed fit (from dimensions vs the real connected printer bed, else the U1 default)
   if (dims) {
-    const fits = dims.x <= U1_BED.x && dims.y <= U1_BED.y && dims.z <= U1_BED.z;
+    const fits = dims.x <= fitBed.x && dims.y <= fitBed.y && dims.z <= fitBed.z;
+    const bedStr = `${fitBed.x} × ${fitBed.y} × ${fitBed.z} mm`;
     rows.push({ key: "bedfit", label: "Bed fit", icon: Ruler, level: fits ? "ok" : "risk",
       status: fits ? "Fits" : "Too big",
       detail: fits
-        ? `${dims.x} × ${dims.y} × ${dims.z} mm fits the U1's 270 × 270 × 270 mm bed.`
-        : `${dims.x} × ${dims.y} × ${dims.z} mm is larger than the U1's 270 mm bed — scale it down or split it.` });
+        ? `${dims.x} × ${dims.y} × ${dims.z} mm fits ${bedSource} ${bedStr} bed.`
+        : `${dims.x} × ${dims.y} × ${dims.z} mm is larger than ${bedSource} ${bedStr} bed — scale it down or split it.` });
   }
   return rows;
 }
 
 /** Design Health — at-a-glance geometry verdicts with plain-language what/why/do.
  *  `mode` "advanced" appends the raw metric footer. */
-export function DesignHealth({ mesh, dims, mode = "simple" }: {
-  mesh?: MeshReport; dims?: { x: number; y: number; z: number } | null; mode?: "simple" | "advanced";
+export function DesignHealth({ mesh, dims, bed, mode = "simple" }: {
+  mesh?: MeshReport; dims?: { x: number; y: number; z: number } | null;
+  bed?: { x: number; y: number; z: number } | null; mode?: "simple" | "advanced";
 }) {
   if (!mesh) return null;
   if (!mesh.available) {
     return <p className="text-xs text-muted-foreground">Geometry analysis isn’t available for this file (it may be too large).</p>;
   }
-  const rows = buildRows(mesh, dims);
+  const rows = buildRows(mesh, dims, bed);
   if (!rows.length) return null;
 
   return (

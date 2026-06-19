@@ -335,6 +335,13 @@ export function printerHistory(host: string, port = 7125): Promise<PrinterHistor
 export function printerDiagnostics(host: string, port = 7125): Promise<PrinterDiagnostics> {
   return printerPost("/printer/diagnostics", { host, port });
 }
+export interface PrinterCapabilities {
+  host: string; port: number; toolhead_count: number | null;
+  bed_mm: { x: number; y: number; z: number } | null;
+}
+export function printerCapabilities(host: string, port = 7125): Promise<PrinterCapabilities> {
+  return printerPost("/printer/capabilities", { host, port });
+}
 
 export async function printerDiscover(hosts?: string[]): Promise<PrinterProbe[]> {
   const { port, token } = await apiInfo();

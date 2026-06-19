@@ -10,7 +10,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/store/session";
-import { insights as apiInsights, report as apiReport, mesh as apiMesh } from "@/api";
+import { insights as apiInsights, report as apiReport, mesh as apiMesh, printerCapabilities } from "@/api";
+import { usePrinter } from "@/store/printer";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { useToast } from "@/store/toast";
 import { StrategyPicker } from "@/components/StrategyPicker";
@@ -72,6 +73,13 @@ export default function DesignInsights() {
     queryKey: ["mesh", file.path],
     queryFn: () => apiMesh(file.path),
     enabled: doctor.status === "done",
+  });
+  // If a printer is connected, bed-fit uses its REAL bed; offline -> falls back to U1 270.
+  const u1Host = usePrinter((s) => s.host);
+  const { data: caps } = useQuery({
+    queryKey: ["capabilities", u1Host],
+    queryFn: () => printerCapabilities(u1Host),
+    enabled: doctor.status === "done", retry: false, staleTime: 60000,
   });
   const issues = [...(d?.validation_issues ?? []), ...(d?.compatibility_issues ?? [])];
 
@@ -180,7 +188,7 @@ export default function DesignInsights() {
             <Card>
               <CardContent className="space-y-3 p-5">
                 <div className="flex items-center gap-2 text-sm font-semibold"><HeartPulse className="h-4 w-4 text-primary" /> Design Health</div>
-                <DesignHealth mesh={meshData} dims={dims} mode="simple" />
+                <DesignHealth mesh={meshData} dims={dims} bed={caps?.bed_mm} mode="simple" />
               </CardContent>
             </Card>
           )}
