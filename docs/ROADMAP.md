@@ -57,8 +57,9 @@ The Diagnose → Transform → Validate loop, proven on real files.
 - **Sidecar** — frozen Python engine, no system Python required, zero-orphan
   lifecycle (Job Object + watchdog).
 
-**Exit criteria met:** a Bambu/Prusa/STL file → one click → U1 project that opens
-in Snapmaker Orca with zero warnings.
+**Exit criteria met:** a Bambu/Orca or STL file → one click → U1 project that opens
+in Snapmaker Orca with zero warnings. (PrusaSlicer files are detected/read; full
+Prusa preservation is later-phase, not shipped.)
 
 ---
 
