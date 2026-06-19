@@ -155,6 +155,38 @@ def printer_capabilities(host: str, port: int = 7125) -> dict:
     return moonraker.capabilities(host, port)
 
 
+def printer_bed_mesh(host: str, port: int = 7125) -> dict:
+    """Read-only: the printer's measured bed surface reduced to flatness insight stats."""
+    from snapstudio_core import moonraker
+    return moonraker.bed_mesh(host, port)
+
+
+def first_layer(path: str, host: str | None = None, port: int = 7125) -> dict:
+    """First-Layer Intelligence: fuse the design's footprint/stability with the printer's
+    REAL measured bed (when a host is reachable) into plain-language first-layer findings.
+    Read-only end to end. Works design-only when no printer is connected."""
+    from snapstudio_core.mesh_diagnostics import analyze
+    from snapstudio_core import first_layer as fl
+    md = analyze(path)
+    if not md.get("available"):
+        return {"schema_version": fl.SCHEMA_VERSION, "available": False,
+                "reason": "geometry unavailable", "bed_aware": False}
+    bed = None
+    bed_dim = 270.0
+    if host:
+        from snapstudio_core import moonraker
+        bed = moonraker.bed_mesh(host, port)            # never raises
+        try:
+            caps = moonraker.capabilities(host, port)   # can raise when unreachable
+            if caps.get("bed_mm") and caps["bed_mm"].get("x"):
+                bed_dim = caps["bed_mm"]["x"]
+        except Exception:
+            pass
+    out = fl.assess(md.get("footprint"), md.get("stability"), bed, bed_dim)
+    out["available"] = True
+    return out
+
+
 def library_list(query: str = "", tag: str | None = None) -> dict:
     """List indexed projects, newest first. Optional name search / tag filter."""
     conn = _conn()

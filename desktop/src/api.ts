@@ -217,6 +217,25 @@ export async function report(path: string): Promise<ReadinessReport> {
   return r.json();
 }
 
+export interface FirstLayerReport {
+  available: boolean;
+  bed_aware?: boolean;
+  overall_level?: "ok" | "warn" | "risk";
+  overall_text?: string;
+  findings?: { level: "ok" | "warn" | "risk"; text: string }[];
+  signals_used?: string[];
+  reason?: string;
+}
+export async function firstLayer(path: string, host?: string | null): Promise<FirstLayerReport> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/first_layer`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ path, host: host ?? null }),
+  });
+  if (!r.ok) throw new Error(`first_layer failed (${r.status})`);
+  return r.json();
+}
+
 export interface MeshReport {
   schema_version: string;
   available: boolean;

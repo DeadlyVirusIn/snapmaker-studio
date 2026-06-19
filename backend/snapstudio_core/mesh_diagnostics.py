@@ -211,6 +211,43 @@ def _stability(m: Mesh, centroid) -> dict:
     }
 
 
+def _hull_area(hull) -> float:
+    """Polygon area (mm²) via the shoelace formula on a convex hull (CCW)."""
+    n = len(hull)
+    if n < 3:
+        return 0.0
+    a = 0.0
+    for i in range(n):
+        x1, y1 = hull[i]; x2, y2 = hull[(i + 1) % n]
+        a += x1 * y2 - x2 * y1
+    return abs(a) / 2.0
+
+
+def _footprint(m: Mesh) -> dict:
+    """Base contact footprint — the area + smallest dimension of the part resting on
+    the bed. Feeds adhesion / first-layer / corner-lift reasoning."""
+    zs = [v[2] for v in m.verts]
+    zmin, zmax = min(zs), max(zs)
+    eps = max(0.5, 0.01 * (zmax - zmin))
+    base = [(v[0], v[1]) for v in m.verts if v[2] <= zmin + eps]
+    hull = _convex_hull(base)
+    area = _hull_area(hull)
+    xs = [p[0] for p in base] or [0.0]
+    ys = [p[1] for p in base] or [0.0]
+    width_x = max(xs) - min(xs)
+    width_y = max(ys) - min(ys)
+    # center of the footprint, used to map onto the bed mesh (assume centered print).
+    cx = (max(xs) + min(xs)) / 2.0 if base else 0.0
+    cy = (max(ys) + min(ys)) / 2.0 if base else 0.0
+    return {
+        "base_area_mm2": round(area, 1),
+        "width_x_mm": round(width_x, 1),
+        "width_y_mm": round(width_y, 1),
+        "min_dim_mm": round(min(width_x, width_y), 1),
+        "center_xy": [round(cx, 1), round(cy, 1)],
+    }
+
+
 def _plain(integrity, overhang, stability, vol_cm3, grams) -> list:
     out = []
     if integrity["watertight"]:
@@ -263,5 +300,6 @@ def analyze(path: str) -> dict:
         "volume_cm3": vol_cm3,
         "surface_area_mm2": round(area, 1),
         "material_estimate_g": grams,
+        "footprint": _footprint(m),
         "findings": _plain(integrity, overhang, stability, vol_cm3, grams),
     }

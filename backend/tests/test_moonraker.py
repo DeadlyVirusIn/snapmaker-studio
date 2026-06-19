@@ -38,6 +38,14 @@ _METADATA = {"result": {
     "slicer": "OrcaSlicer", "slicer_version": "2.3.4",
     "thumbnails": [{"width": 300, "height": 300, "relative_path": ".thumbs/x.png"}],
 }}
+_BEDMESH = {"result": {"status": {"bed_mesh": {
+    "profile_name": "default", "mesh_min": [10.0, 10.0], "mesh_max": [260.0, 260.0],
+    "probed_matrix": [
+        [0.05, 0.02, 0.18],
+        [0.01, 0.00, 0.06],
+        [0.20, 0.03, 0.10],
+    ],
+}}}}
 _PRINTER_INFO = {"result": {"state": "ready", "state_message": "Printer is ready", "hostname": "U1"}}
 _OBJECTS_LIST = {"result": {"objects": ["print_stats", "heater_bed", "toolhead",
                                         "extruder", "extruder1", "extruder2", "extruder3"]}}
@@ -60,6 +68,7 @@ def _mock_moonraker():
             elif self.path.startswith("/server/history/list"): self._send(_HISTORY)
             elif self.path == "/server/history/totals": self._send(_TOTALS)
             elif self.path.startswith("/server/files/metadata"): self._send(_METADATA)
+            elif self.path.startswith("/printer/objects/query") and "bed_mesh" in self.path: self._send(_BEDMESH)
             elif self.path.startswith("/printer/objects/query"): self._send(_STATUS)
             else: self.send_response(404); self.end_headers()
         def do_POST(self):  # must NEVER be hit by the read-only client
@@ -161,6 +170,25 @@ def test_file_metadata_reads_slicer_estimates():
         assert all(meth == "GET" for meth, _ in seen)
     finally:
         httpd.shutdown()
+
+
+def test_bed_mesh_reduces_to_flatness_stats():
+    httpd, port, seen = _mock_moonraker()
+    try:
+        bm = moonraker.bed_mesh("127.0.0.1", port, timeout=5)
+        assert bm["available"] is True
+        assert bm["profile_name"] == "default"
+        # range = 0.20 - 0.00 = 0.20mm; no raw matrix leaked
+        assert abs(bm["range_mm"] - 0.20) < 1e-6
+        assert "probed_matrix" not in bm and "corner_spread_mm" in bm
+        assert all(m == "GET" for m, _ in seen)
+    finally:
+        httpd.shutdown()
+
+
+def test_bed_mesh_unreachable_never_raises():
+    bm = moonraker.bed_mesh("127.0.0.1", 9, timeout=0.5)
+    assert bm["available"] is False
 
 
 def test_file_metadata_missing_never_raises():

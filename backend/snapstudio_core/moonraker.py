@@ -187,6 +187,62 @@ def diagnostics(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> di
     return out
 
 
+def _matrix_stats(matrix: list) -> dict | None:
+    """Reduce a probed Z matrix to insight stats (NOT a raw dump): overall range/std,
+    central vs edge flatness, worst corner. All in mm."""
+    rows = [r for r in matrix if isinstance(r, (list, tuple)) and r]
+    if len(rows) < 2 or len(rows[0]) < 2:
+        return None
+    flat = [float(z) for r in rows for z in r]
+    n = len(flat)
+    lo, hi = min(flat), max(flat)
+    mean = sum(flat) / n
+    std = (sum((z - mean) ** 2 for z in flat) / n) ** 0.5
+    nr, nc = len(rows), len(rows[0])
+    # central block (inner half) vs the rest (edges).
+    r0, r1 = nr // 4, nr - nr // 4
+    c0, c1 = nc // 4, nc - nc // 4
+    center = [float(rows[i][j]) for i in range(r0, max(r1, r0 + 1)) for j in range(c0, max(c1, c0 + 1))]
+    center_range = (max(center) - min(center)) if center else (hi - lo)
+    corners = [float(rows[0][0]), float(rows[0][-1]), float(rows[-1][0]), float(rows[-1][-1])]
+    corner_spread = max(corners) - min(corners)
+    return {
+        "range_mm": round(hi - lo, 3),
+        "std_mm": round(std, 3),
+        "max_dip_mm": round(lo - mean, 3),
+        "max_peak_mm": round(hi - mean, 3),
+        "center_range_mm": round(center_range, 3),
+        "corner_spread_mm": round(corner_spread, 3),
+        "rows": nr, "cols": nc,
+    }
+
+
+def bed_mesh(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:
+    """Read-only: the printer's REAL measured bed surface, reduced to flatness insight
+    stats (not a raw matrix). GET /printer/objects/query?bed_mesh only. Never raises."""
+    out: dict = {"schema_version": SCHEMA_VERSION, "host": host, "port": port, "available": False}
+    try:
+        bm = _get(host, port, "/printer/objects/query?bed_mesh", timeout) \
+            .get("result", {}).get("status", {}).get("bed_mesh", {}) or {}
+    except Exception as e:
+        out["reason"] = str(e)
+        return out
+    matrix = bm.get("probed_matrix") or bm.get("mesh_matrix")
+    stats = _matrix_stats(matrix) if matrix else None
+    if not stats:
+        out["reason"] = "no probed bed mesh on the printer (run a bed mesh calibration first)"
+        out["profile_name"] = bm.get("profile_name") or None
+        return out
+    out.update({
+        "available": True,
+        "profile_name": bm.get("profile_name") or None,
+        "mesh_min": bm.get("mesh_min"),
+        "mesh_max": bm.get("mesh_max"),
+        **stats,
+    })
+    return out
+
+
 def capabilities(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:
     """Read-only printer capabilities — the U1's REAL bed volume + toolhead count, so
     Design Intelligence can use the actual printer instead of assumed values.

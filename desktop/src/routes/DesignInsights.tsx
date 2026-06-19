@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/store/session";
-import { insights as apiInsights, report as apiReport, mesh as apiMesh, printerCapabilities } from "@/api";
+import { insights as apiInsights, report as apiReport, mesh as apiMesh, printerCapabilities, firstLayer as apiFirstLayer } from "@/api";
 import { usePrinter } from "@/store/printer";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { useToast } from "@/store/toast";
@@ -80,6 +80,13 @@ export default function DesignInsights() {
     queryKey: ["capabilities", u1Host],
     queryFn: () => printerCapabilities(u1Host),
     enabled: doctor.status === "done", retry: false, staleTime: 60000,
+  });
+  // First-Layer Intelligence: design footprint/stability fused with the printer's
+  // REAL measured bed (when reachable); design-only otherwise. Read-only.
+  const { data: firstLayer } = useQuery({
+    queryKey: ["first-layer", file.path, u1Host],
+    queryFn: () => apiFirstLayer(file.path, u1Host),
+    enabled: doctor.status === "done", retry: false, staleTime: 30000,
   });
   const issues = [...(d?.validation_issues ?? []), ...(d?.compatibility_issues ?? [])];
 
@@ -189,6 +196,37 @@ export default function DesignInsights() {
               <CardContent className="space-y-3 p-5">
                 <div className="flex items-center gap-2 text-sm font-semibold"><HeartPulse className="h-4 w-4 text-primary" /> Design Health</div>
                 <DesignHealth mesh={meshData} dims={dims} bed={caps?.bed_mm} mode="simple" />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* First-Layer Intelligence — design footprint × the printer's real bed */}
+          {firstLayer?.available && firstLayer.findings && (
+            <Card>
+              <CardContent className="space-y-3 p-5">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-sm font-semibold"><Layers className="h-4 w-4 text-primary" /> First-layer check</span>
+                  <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                    firstLayer.overall_level === "ok" ? "bg-ready/10 text-ready" : firstLayer.overall_level === "warn" ? "bg-repairable/10 text-repairable" : "bg-risk/10 text-risk")}>
+                    {firstLayer.bed_aware ? "Your bed" : "Design"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">{firstLayer.overall_text}</p>
+                <ul className="space-y-1.5 text-sm">
+                  {firstLayer.findings.map((f, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      {f.level === "ok"
+                        ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-ready" />
+                        : <AlertTriangle className={cn("mt-0.5 h-4 w-4 shrink-0", f.level === "risk" ? "text-risk" : "text-repairable")} />}
+                      <span className="text-muted-foreground">{f.text}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-[11px] text-muted-foreground">
+                  {firstLayer.bed_aware
+                    ? "Uses your U1's actual measured bed — read-only."
+                    : "Connect your U1 in the Printer Hub to check against your real bed surface."}
+                </p>
               </CardContent>
             </Card>
           )}
