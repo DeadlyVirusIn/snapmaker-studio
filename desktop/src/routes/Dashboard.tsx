@@ -3,15 +3,17 @@ import { useQuery } from "@tanstack/react-query";
 import {
   UploadCloud, Stethoscope, Wand2, GitCompare, Plus, ArrowRight,
   FileBox, Boxes, Loader2, CheckCircle2, AlertTriangle, RotateCw,
+  Printer, Thermometer,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import type { Verdict } from "@/components/ui/badge";
-import { library } from "@/api";
+import { library, printerStatus } from "@/api";
 import type { LibraryProject } from "@/api";
 import { useSession } from "@/store/session";
 import { useMode } from "@/store/mode";
+import { usePrinter } from "@/store/printer";
 import { comingSoon } from "@/store/toast";
 import { useOpenFile } from "@/hooks/useOpenFile";
 
@@ -37,6 +39,52 @@ function timeAgo(iso: string | null): string {
 function activityText(p: LibraryProject): string {
   if (p.last_action === "convert") return `Converted ${p.name} to U1`;
   return `Diagnosed ${p.name}${p.verdict ? ` — ${p.verdict[0]}${p.verdict.slice(1).toLowerCase()}` : ""}`;
+}
+
+function PrinterCard() {
+  const host = usePrinter((s) => s.host);
+  const { data, status } = useQuery({
+    queryKey: ["dash-printer", host],
+    queryFn: () => printerStatus(host),
+    refetchInterval: 5000,   // read-only liveness
+    retry: false,
+  });
+  const online = status === "success";
+  const printing = data?.print_state === "printing";
+  return (
+    <Card>
+      <CardContent className="p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-sm font-semibold"><Printer className="h-4 w-4" /> Your U1</h3>
+          <Link to="/printers" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+            Printer Hub <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+        {status === "pending" ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Checking {host}…</div>
+        ) : online && data ? (
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              <span className={`h-2 w-2 rounded-full ${printing ? "bg-primary" : "bg-ready"}`} />
+              <span className="font-medium capitalize">{data.print_state ?? "idle"}</span>
+              {data.progress != null && <span className="ml-auto text-muted-foreground">{Math.round(data.progress * 100)}%</span>}
+            </div>
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Thermometer className="h-3.5 w-3.5" /> Bed {data.bed.temperature ?? "—"}°
+              {data.toolheads[0] ? ` · Tool 1 ${data.toolheads[0].temperature ?? "—"}°` : ""}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>No U1 connected.</p>
+            <Button variant="secondary" size="sm" asChild>
+              <Link to="/printers"><Printer className="h-4 w-4" /> Connect your printer</Link>
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function Dashboard() {
@@ -173,27 +221,30 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-5">
-            <h3 className="mb-3 text-sm font-semibold">Library</h3>
-            <div className="space-y-1 text-sm text-muted-foreground">
-              {status === "error" ? (
-                <p>Library unavailable.</p>
-              ) : (
-                <>
-                  <p><span className="text-2xl font-semibold text-foreground">{projects.length}</span> project{projects.length === 1 ? "" : "s"}</p>
-                  {projects.length > 0 ? (
-                    <p className="flex items-center gap-1.5">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-ready" />{ready} U1-ready · {needsWork} need work
-                    </p>
-                  ) : (
-                    <p>Nothing indexed yet.</p>
-                  )}
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="p-5">
+              <h3 className="mb-3 text-sm font-semibold">Library</h3>
+              <div className="space-y-1 text-sm text-muted-foreground">
+                {status === "error" ? (
+                  <p>Library unavailable.</p>
+                ) : (
+                  <>
+                    <p><span className="text-2xl font-semibold text-foreground">{projects.length}</span> project{projects.length === 1 ? "" : "s"}</p>
+                    {projects.length > 0 ? (
+                      <p className="flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-ready" />{ready} U1-ready · {needsWork} need work
+                      </p>
+                    ) : (
+                      <p>Nothing indexed yet.</p>
+                    )}
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          <PrinterCard />
+        </div>
       </section>
     </div>
   );
