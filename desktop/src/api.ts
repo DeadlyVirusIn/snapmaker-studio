@@ -296,9 +296,44 @@ export interface PrinterProbe {
 }
 export interface PrinterStatus {
   host: string; port: number; print_state: string | null; filename: string | null;
+  message: string | null;
   progress: number | null;
+  print_duration_s: number | null; total_duration_s: number | null; filament_used_mm: number | null;
+  current_layer: number | null; total_layer: number | null;
+  speed_factor: number | null; extrude_factor: number | null;
   bed: { temperature: number | null; target: number | null };
-  toolheads: { index: number; temperature: number | null; target: number | null }[];
+  toolheads: { index: number; temperature: number | null; target: number | null; active?: boolean }[];
+}
+export interface PrinterJob {
+  filename: string | null; status: string | null;
+  start_time: number | null; end_time: number | null;
+  print_duration_s: number | null; total_duration_s: number | null; filament_used_mm: number | null;
+}
+export interface PrinterHistory {
+  host: string; port: number; jobs: PrinterJob[]; failures: PrinterJob[];
+  totals: { total_jobs: number | null; total_print_time_s: number | null; total_time_s: number | null;
+    total_filament_used_mm: number | null; longest_print_s: number | null };
+}
+export interface PrinterDiagnostics {
+  host: string; port: number; klippy_state?: string; state_message?: string | null;
+  hostname?: string; warnings: string[]; failed_components: string[]; healthy: boolean;
+}
+
+async function printerPost<T>(path: string, body: object): Promise<T> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}${path}`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`${path} failed (${r.status})`);
+  return r.json();
+}
+
+export function printerHistory(host: string, port = 7125): Promise<PrinterHistory> {
+  return printerPost("/printer/history", { host, port, limit: 20 });
+}
+export function printerDiagnostics(host: string, port = 7125): Promise<PrinterDiagnostics> {
+  return printerPost("/printer/diagnostics", { host, port });
 }
 
 export async function printerDiscover(hosts?: string[]): Promise<PrinterProbe[]> {

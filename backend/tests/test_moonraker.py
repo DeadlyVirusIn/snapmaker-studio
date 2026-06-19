@@ -9,13 +9,30 @@ from snapstudio_core import moonraker
 _SERVER_INFO = {"result": {"klippy_state": "ready", "moonraker_version": "v0.9.3",
                            "api_version_string": "1.5.0"}}
 _STATUS = {"result": {"status": {
-    "print_stats": {"state": "printing", "filename": "liberty_eagle.gcode"},
+    "print_stats": {"state": "printing", "filename": "liberty_eagle.gcode",
+                    "print_duration": 1200.0, "total_duration": 1300.0, "filament_used": 3456.0,
+                    "info": {"current_layer": 42, "total_layer": 120}},
     "heater_bed": {"temperature": 60.0, "target": 60.0},
-    "toolhead": {},
+    "toolhead": {"axis_maximum": [270.0, 270.0, 270.0, 0.0], "axis_minimum": [0.0, 0.0, 0.0, 0.0]},
     "virtual_sdcard": {"progress": 0.42},
+    "display_status": {"message": "Printing layer 42", "progress": 0.42},
+    "gcode_move": {"speed_factor": 1.0, "extrude_factor": 1.0},
     "extruder": {"temperature": 210.0, "target": 210.0},
     "extruder1": {"temperature": 25.0, "target": 0.0},
 }}}
+_HISTORY = {"result": {"count": 3, "jobs": [
+    {"filename": "good.gcode", "status": "completed", "start_time": 1700000000, "end_time": 1700003600,
+     "print_duration": 3500.0, "total_duration": 3600.0, "filament_used": 8000.0},
+    {"filename": "oops.gcode", "status": "cancelled", "start_time": 1699990000, "end_time": 1699990500,
+     "print_duration": 480.0, "total_duration": 500.0, "filament_used": 900.0},
+    {"filename": "boom.gcode", "status": "error", "start_time": 1699980000, "end_time": 1699980200,
+     "print_duration": 180.0, "total_duration": 200.0, "filament_used": 300.0},
+]}}
+_TOTALS = {"result": {"job_totals": {"total_jobs": 3, "total_time": 4300.0, "total_print_time": 4160.0,
+                                     "total_filament_used": 9200.0, "longest_print": 3500.0}}}
+_PRINTER_INFO = {"result": {"state": "ready", "state_message": "Printer is ready", "hostname": "U1"}}
+_OBJECTS_LIST = {"result": {"objects": ["print_stats", "heater_bed", "toolhead",
+                                        "extruder", "extruder1", "extruder2", "extruder3"]}}
 
 
 def _mock_moonraker():
@@ -30,6 +47,10 @@ def _mock_moonraker():
         def do_GET(self):
             methods_seen.append(("GET", self.path))
             if self.path == "/server/info": self._send(_SERVER_INFO)
+            elif self.path == "/printer/info": self._send(_PRINTER_INFO)
+            elif self.path == "/printer/objects/list": self._send(_OBJECTS_LIST)
+            elif self.path.startswith("/server/history/list"): self._send(_HISTORY)
+            elif self.path == "/server/history/totals": self._send(_TOTALS)
             elif self.path.startswith("/printer/objects/query"): self._send(_STATUS)
             else: self.send_response(404); self.end_headers()
         def do_POST(self):  # must NEVER be hit by the read-only client
@@ -69,5 +90,60 @@ def test_status_parses_toolheads_and_state():
         assert s["toolheads"][0]["temperature"] == 210.0
         # read-only guarantee: the client issued only GETs
         assert all(m == "GET" for m, _ in seen)
+    finally:
+        httpd.shutdown()
+
+
+def test_status_enriched_telemetry(tmp_path=None):
+    httpd, port, _ = _mock_moonraker()
+    try:
+        s = moonraker.status("127.0.0.1", port, timeout=5)
+        assert s["current_layer"] == 42 and s["total_layer"] == 120
+        assert s["message"] == "Printing layer 42"
+        assert s["print_duration_s"] == 1200.0 and s["filament_used_mm"] == 3456.0
+        assert s["speed_factor"] == 1.0
+        # active toolhead = one with a target temp
+        assert s["toolheads"][0]["active"] is True and s["toolheads"][1]["active"] is False
+    finally:
+        httpd.shutdown()
+
+
+def test_history_and_failure_observation():
+    httpd, port, seen = _mock_moonraker()
+    try:
+        h = moonraker.history("127.0.0.1", port, limit=20, timeout=5)
+        assert len(h["jobs"]) == 3
+        # two of three jobs failed (cancelled + error)
+        assert len(h["failures"]) == 2
+        assert {f["status"] for f in h["failures"]} == {"cancelled", "error"}
+        assert h["totals"]["total_jobs"] == 3
+        assert h["totals"]["total_filament_used_mm"] == 9200.0
+        assert all(m == "GET" for m, _ in seen)
+    finally:
+        httpd.shutdown()
+
+
+def test_diagnostics_reports_health():
+    httpd, port, _ = _mock_moonraker()
+    try:
+        d = moonraker.diagnostics("127.0.0.1", port, timeout=5)
+        assert d["klippy_state"] == "ready"
+        assert d["healthy"] is True
+        assert d["warnings"] == []
+    finally:
+        httpd.shutdown()
+
+
+def test_diagnostics_unreachable_never_raises():
+    d = moonraker.diagnostics("127.0.0.1", 9, timeout=0.5)
+    assert d["healthy"] is False
+
+
+def test_capabilities_reads_real_bed_and_toolheads():
+    httpd, port, _ = _mock_moonraker()
+    try:
+        c = moonraker.capabilities("127.0.0.1", port, timeout=5)
+        assert c["toolhead_count"] == 4
+        assert c["bed_mm"] == {"x": 270.0, "y": 270.0, "z": 270.0}
     finally:
         httpd.shutdown()

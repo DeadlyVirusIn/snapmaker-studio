@@ -46,23 +46,126 @@ def discover(hosts: list[str] | None = None, port: int = DEFAULT_PORT, timeout: 
 
 
 def status(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:
-    """Read-only live status: print state, bed + per-toolhead temperatures.
+    """Read-only live status: print state, progress, layers, bed + per-toolhead
+    temperatures, live message and motion factors.
     GET /printer/objects/query only — no subscriptions are persisted, nothing written."""
-    objs = "&".join(["print_stats", "heater_bed", "toolhead", "virtual_sdcard", *_TOOLHEAD_OBJECTS])
+    objs = "&".join(["print_stats", "heater_bed", "toolhead", "virtual_sdcard",
+                     "display_status", "gcode_move", *_TOOLHEAD_OBJECTS])
     st = _get(host, port, "/printer/objects/query?" + objs, timeout).get("result", {}).get("status", {})
     ps = st.get("print_stats", {}) or {}
     bed = st.get("heater_bed", {}) or {}
+    vsd = st.get("virtual_sdcard", {}) or {}
+    disp = st.get("display_status", {}) or {}
+    gmove = st.get("gcode_move", {}) or {}
+    info = ps.get("info", {}) or {}
     toolheads = []
     for i, key in enumerate(_TOOLHEAD_OBJECTS):
         e = st.get(key)
         if isinstance(e, dict):
-            toolheads.append({"index": i, "temperature": e.get("temperature"), "target": e.get("target")})
+            toolheads.append({
+                "index": i,
+                "temperature": e.get("temperature"),
+                "target": e.get("target"),
+                "active": bool(e.get("target")),  # heating/holding => in use this job
+            })
     return {
         "schema_version": SCHEMA_VERSION,
         "host": host, "port": port,
         "print_state": ps.get("state"),
         "filename": ps.get("filename") or None,
-        "progress": (st.get("virtual_sdcard", {}) or {}).get("progress"),
+        "message": disp.get("message") or None,
+        "progress": vsd.get("progress") if vsd.get("progress") is not None else disp.get("progress"),
+        "print_duration_s": ps.get("print_duration"),
+        "total_duration_s": ps.get("total_duration"),
+        "filament_used_mm": ps.get("filament_used"),
+        "current_layer": info.get("current_layer"),
+        "total_layer": info.get("total_layer"),
+        "speed_factor": gmove.get("speed_factor"),
+        "extrude_factor": gmove.get("extrude_factor"),
         "bed": {"temperature": bed.get("temperature"), "target": bed.get("target")},
         "toolheads": toolheads,
+    }
+
+
+def _job_brief(j: dict) -> dict:
+    return {
+        "filename": j.get("filename"),
+        "status": j.get("status"),
+        "start_time": j.get("start_time"),
+        "end_time": j.get("end_time"),
+        "print_duration_s": j.get("print_duration"),
+        "total_duration_s": j.get("total_duration"),
+        "filament_used_mm": j.get("filament_used"),
+    }
+
+
+# Moonraker [history] job statuses that mean the print did not finish cleanly.
+_FAILURE_STATES = {"error", "cancelled", "klippy_shutdown", "klippy_disconnect", "interrupted"}
+
+
+def history(host: str, port: int = DEFAULT_PORT, limit: int = 20, timeout: float = 4.0) -> dict:
+    """Read-only print history + failure observation via Moonraker [history].
+    GET /server/history/list + /server/history/totals only."""
+    listing = _get(host, port, f"/server/history/list?limit={int(limit)}&order=desc",
+                   timeout).get("result", {})
+    jobs = [_job_brief(j) for j in (listing.get("jobs") or [])]
+    totals = _get(host, port, "/server/history/totals", timeout).get("result", {}).get("job_totals", {}) or {}
+    failures = [j for j in jobs if (j.get("status") in _FAILURE_STATES)]
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "host": host, "port": port,
+        "jobs": jobs,
+        "failures": failures,
+        "totals": {
+            "total_jobs": totals.get("total_jobs"),
+            "total_print_time_s": totals.get("total_print_time"),
+            "total_time_s": totals.get("total_time"),
+            "total_filament_used_mm": totals.get("total_filament_used"),
+            "longest_print_s": totals.get("longest_print"),
+        },
+    }
+
+
+def diagnostics(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:
+    """Read-only health diagnostics: klippy state + message + Moonraker warnings.
+    GET /printer/info + /server/info only. Never raises — reports what it can."""
+    out: dict = {"schema_version": SCHEMA_VERSION, "host": host, "port": port}
+    try:
+        pi = _get(host, port, "/printer/info", timeout).get("result", {}) or {}
+        out["klippy_state"] = pi.get("state")
+        out["state_message"] = (pi.get("state_message") or "").strip() or None
+        out["hostname"] = pi.get("hostname")
+    except Exception as e:
+        out["state_message"] = f"printer info unavailable: {e}"
+    try:
+        si = _get(host, port, "/server/info", timeout).get("result", {}) or {}
+        out["warnings"] = si.get("warnings") or []
+        out["failed_components"] = si.get("failed_components") or []
+        out.setdefault("klippy_state", si.get("klippy_state"))
+    except Exception:
+        out.setdefault("warnings", [])
+        out.setdefault("failed_components", [])
+    out["healthy"] = (out.get("klippy_state") == "ready"
+                      and not out.get("warnings") and not out.get("failed_components"))
+    return out
+
+
+def capabilities(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:
+    """Read-only printer capabilities — the U1's REAL bed volume + toolhead count, so
+    Design Intelligence can use the actual printer instead of assumed values.
+    GET /printer/objects/list + /printer/objects/query?toolhead only."""
+    objects = _get(host, port, "/printer/objects/list", timeout).get("result", {}).get("objects", []) or []
+    toolhead_count = sum(1 for o in objects if o == "extruder" or (o.startswith("extruder") and o[8:].isdigit()))
+    th = _get(host, port, "/printer/objects/query?toolhead", timeout).get("result", {}).get("status", {}).get("toolhead", {}) or {}
+    amax = th.get("axis_maximum")   # klipper: [x, y, z, e]
+    amin = th.get("axis_minimum")
+    bed = None
+    if isinstance(amax, (list, tuple)) and len(amax) >= 3:
+        lo = amin if isinstance(amin, (list, tuple)) and len(amin) >= 3 else [0, 0, 0]
+        bed = {"x": round(amax[0] - lo[0], 1), "y": round(amax[1] - lo[1], 1), "z": round(amax[2] - lo[2], 1)}
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "host": host, "port": port,
+        "toolhead_count": toolhead_count or None,
+        "bed_mm": bed,
     }

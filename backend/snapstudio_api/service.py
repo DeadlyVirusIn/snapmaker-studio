@@ -130,6 +130,24 @@ def printer_status(host: str, port: int = 7125) -> dict:
     return moonraker.status(host, port)
 
 
+def printer_history(host: str, port: int = 7125, limit: int = 20) -> dict:
+    """Read-only: recent prints + failures + totals (Moonraker history)."""
+    from snapstudio_core import moonraker
+    return moonraker.history(host, port, limit)
+
+
+def printer_diagnostics(host: str, port: int = 7125) -> dict:
+    """Read-only: klippy health + Moonraker warnings."""
+    from snapstudio_core import moonraker
+    return moonraker.diagnostics(host, port)
+
+
+def printer_capabilities(host: str, port: int = 7125) -> dict:
+    """Read-only: the U1's real bed volume + toolhead count."""
+    from snapstudio_core import moonraker
+    return moonraker.capabilities(host, port)
+
+
 def library_list(query: str = "", tag: str | None = None) -> dict:
     """List indexed projects, newest first. Optional name search / tag filter."""
     conn = _conn()
