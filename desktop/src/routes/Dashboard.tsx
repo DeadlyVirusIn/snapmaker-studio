@@ -31,8 +31,8 @@ function timeAgo(iso: string | null): string {
 }
 
 function activityText(p: LibraryProject): string {
-  if (p.last_action === "convert") return `Converted ${p.name} to U1`;
-  return `Diagnosed ${p.name}${p.verdict ? ` — ${p.verdict[0]}${p.verdict.slice(1).toLowerCase()}` : ""}`;
+  if (p.last_action === "convert") return `Prepared ${p.name} for U1`;
+  return `Checked ${p.name}${p.verdict ? ` — ${p.verdict[0]}${p.verdict.slice(1).toLowerCase()}` : ""}`;
 }
 
 function PrinterCard() {
@@ -99,7 +99,7 @@ export default function Dashboard() {
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">Snapmaker Studio</h2>
-        <p className="text-muted-foreground">The control center for your Snapmaker U1 — understand, validate, prepare and print, all on your machine.</p>
+        <p className="text-muted-foreground">The local-first workflow platform for modern 3D printing — understand any design, validate it, get it ready, then monitor your U1 while it prints.</p>
       </div>
 
       {/* Hero: open a model + the end-to-end workflow it flows through */}
@@ -179,7 +179,7 @@ export default function Dashboard() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center gap-1 py-10 text-center">
               <p className="text-sm font-medium">No projects yet</p>
-              <p className="text-sm text-muted-foreground">Open a model above — it’ll appear here once diagnosed or converted.</p>
+              <p className="text-sm text-muted-foreground">Open a model above — it’ll appear here once you check or prepare it.</p>
             </CardContent>
           </Card>
         )}

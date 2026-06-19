@@ -173,7 +173,7 @@ export default function Projects() {
               {total - readyCount > 0 && <span>· {total - readyCount} need work</span>}
             </span>
           ) : (
-            simple ? "Everything you've worked on, ready to revisit." : "Your converted and diagnosed files."
+            simple ? "Everything you've worked on, ready to revisit." : "Your prepared and checked designs."
           )
         }
         actions={

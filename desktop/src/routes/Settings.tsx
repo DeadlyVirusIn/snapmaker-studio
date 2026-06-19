@@ -93,6 +93,7 @@ export default function Settings() {
           <div className="mt-2 space-y-1 text-sm text-muted-foreground">
             <p>Snapmaker Studio · v0.3.0-beta.2</p>
             <p>Local-first. No account, no cloud — nothing leaves your computer.</p>
+            <p>Independent open-source project — not affiliated with or endorsed by Snapmaker.</p>
           </div>
         </CardContent>
       </Card>

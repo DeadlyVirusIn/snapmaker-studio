@@ -9,7 +9,7 @@ import { useOpenFile } from "@/hooks/useOpenFile";
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/projects", label: "Projects", icon: FolderKanban, end: false },
-  { to: "/batch", label: "Batch convert", icon: Wand2, end: false },
+  { to: "/batch", label: "Batch prepare", icon: Wand2, end: false },
   { to: "/printers", label: "Printers", icon: Printer, end: false },
 ];
 
@@ -35,7 +35,7 @@ export function Sidebar() {
         </div>
         <div className="leading-none">
           <span className="block font-semibold tracking-tight">Snapmaker Studio</span>
-          <span className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">U1 Control Center</span>
+          <span className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Workflow Platform</span>
         </div>
       </div>
 

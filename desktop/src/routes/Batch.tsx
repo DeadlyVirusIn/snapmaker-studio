@@ -80,7 +80,7 @@ export default function Batch() {
     <div className="space-y-6">
       <PageHeader
         icon={Layers}
-        title="Batch convert"
+        title="Batch prepare"
         subtitle="Make a whole folder of designs U1-ready in one pass. Originals are never overwritten."
         actions={
           <>
@@ -89,7 +89,7 @@ export default function Batch() {
             </Button>
             {!jobId ? (
               <Button size="sm" onClick={start} disabled={!staged.length}>
-                <Play className="h-4 w-4" /> Convert {staged.length || ""}
+                <Play className="h-4 w-4" /> Prepare {staged.length || ""}
               </Button>
             ) : (
               <Button variant="secondary" size="sm" onClick={clearAll} disabled={running}>
@@ -120,7 +120,7 @@ export default function Batch() {
           <CardContent className="space-y-3 p-5">
             <div className="flex items-center justify-between text-sm">
               <span className="font-medium">
-                {result.finished ? "Done" : "Converting…"} {result.done + result.failed}/{result.total}
+                {result.finished ? "Done" : "Getting ready…"} {result.done + result.failed}/{result.total}
               </span>
               <span className="text-muted-foreground">
                 {result.done} ok{result.failed ? ` · ${result.failed} failed` : ""}
@@ -181,7 +181,7 @@ export default function Batch() {
           <CardContent className="p-0">
             <EmptyState
               icon={Layers}
-              title="Convert a whole batch at once"
+              title="Prepare a whole batch at once"
               description="Queue any number of .stl / .3mf files and Studio makes a clean, validated U1 project for each — your originals stay untouched."
               action={<Button size="sm" onClick={addFiles}><FilePlus className="h-4 w-4" /> Add files</Button>}
             />

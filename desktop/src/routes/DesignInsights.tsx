@@ -87,7 +87,7 @@ export default function DesignInsights() {
             <div className="text-left text-sm text-muted-foreground">
               <p className="mb-1 font-medium text-foreground">What now?</p>
               <p>1. Copy the file path (or find it in the folder shown above)</p>
-              <p>2. Open it in Snapmaker Orca and press print</p>
+              <p>2. Open it in Snapmaker Orca to slice and print</p>
             </div>
             <div className="flex flex-wrap justify-center gap-2">
               <Button variant="secondary" onClick={() => copyPath(convert.data!.output_path)}>

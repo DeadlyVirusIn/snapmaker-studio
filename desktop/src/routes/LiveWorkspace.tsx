@@ -128,7 +128,7 @@ export default function LiveWorkspace() {
           {convert.status === "loading" && (
             <Card>
               <CardContent className="flex items-center gap-2 p-5 text-sm text-muted-foreground">
-                <Spinner /> Converting and saving a U1-ready 3MF…
+                <Spinner /> Preparing and saving a U1-ready 3MF…
               </CardContent>
             </Card>
           )}
@@ -156,7 +156,7 @@ export default function LiveWorkspace() {
             <Card>
               <CardContent className="space-y-3 p-5">
                 <div className="flex items-center gap-2 font-medium text-risk">
-                  <AlertTriangle className="h-5 w-5" /> Conversion failed
+                  <AlertTriangle className="h-5 w-5" /> Preparation failed
                 </div>
                 <p className="text-sm text-muted-foreground">{convert.error}</p>
                 <Button variant="secondary" size="sm" onClick={runConvert}>
