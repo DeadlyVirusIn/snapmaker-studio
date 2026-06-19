@@ -143,6 +143,15 @@ def _make_handler(token: str):
                     self._send(200, service.insights(path))
                 except Exception as e:
                     self._send(500, {"error": str(e)})
+            elif self.path == "/report":
+                path = data.get("path")
+                if not path:
+                    self._send(400, {"error": "missing 'path'"})
+                    return
+                try:
+                    self._send(200, service.report(path))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
             elif self.path == "/library":
                 try:
                     self._send(200, service.library_list(

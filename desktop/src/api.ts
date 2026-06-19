@@ -193,6 +193,30 @@ export async function insights(path: string): Promise<Insights> {
   return r.json();
 }
 
+export interface ReadinessReport {
+  schema_version: string;
+  name: string;
+  verdict: string | null;
+  readiness_score: number | null;
+  ready: boolean;
+  checks: { name: string; status: "pass" | "warn" | "fail"; detail: string }[];
+  preserved: string[];
+  changes: string[];
+  at_risk: string[];
+  warnings: string[];
+}
+
+export async function report(path: string): Promise<ReadinessReport> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/report`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ path }),
+  });
+  if (!r.ok) throw new Error(`report failed (${r.status})`);
+  return r.json();
+}
+
 // Native open dialog limited to the formats the engine accepts.
 export async function openModelDialog(): Promise<string | null> {
   const picked = await open({

@@ -66,6 +66,12 @@ def insights(path: str) -> dict:
     return project_info(path)
 
 
+def report(path: str) -> dict:
+    """Read-only Validation Center report: checks + preserved/changes/at-risk."""
+    from snapstudio_core.validation_report import readiness_report
+    return readiness_report(path)
+
+
 def library_list(query: str = "", tag: str | None = None) -> dict:
     """List indexed projects, newest first. Optional name search / tag filter."""
     conn = _conn()

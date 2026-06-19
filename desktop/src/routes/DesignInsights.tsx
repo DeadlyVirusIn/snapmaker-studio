@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/store/session";
-import { insights as apiInsights } from "@/api";
+import { insights as apiInsights, report as apiReport } from "@/api";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { comingSoon } from "@/store/toast";
 import {
@@ -49,6 +49,12 @@ export default function DesignInsights() {
     enabled: doctor.status === "done",
   });
   const dims = ins?.dimensions_mm;
+  // Validation Center: readiness + preservation report (read-only).
+  const { data: rep } = useQuery({
+    queryKey: ["report", file.path],
+    queryFn: () => apiReport(file.path),
+    enabled: doctor.status === "done",
+  });
   const issues = [...(d?.validation_issues ?? []), ...(d?.compatibility_issues ?? [])];
 
   // ---- Done: it's ready ------------------------------------------------------
@@ -143,6 +149,39 @@ export default function DesignInsights() {
               )}
             </CardContent>
           </Card>
+
+          {/* Validation Center — will it print + what's preserved/changes/at-risk */}
+          {rep && (
+            <Card>
+              <CardContent className="space-y-4 p-5">
+                <div className="flex items-center gap-2 text-sm font-semibold"><CheckCircle2 className="h-4 w-4 text-primary" /> Readiness check</div>
+                <ul className="space-y-1.5 text-sm">
+                  {rep.checks.map((c, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      {c.status === "pass"
+                        ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-ready" />
+                        : <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-repairable" />}
+                      <span><span className="font-medium">{c.name}</span> — <span className="text-muted-foreground">{c.detail}</span></span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 text-xs">
+                  <div>
+                    <p className="mb-1 font-medium text-ready">Kept</p>
+                    <ul className="space-y-1 text-muted-foreground">{rep.preserved.map((x, i) => <li key={i}>• {x}</li>)}</ul>
+                  </div>
+                  <div>
+                    <p className="mb-1 font-medium">Changes</p>
+                    <ul className="space-y-1 text-muted-foreground">{rep.changes.length ? rep.changes.map((x, i) => <li key={i}>• {x}</li>) : <li>• none</li>}</ul>
+                  </div>
+                  <div>
+                    <p className="mb-1 font-medium text-repairable">At risk</p>
+                    <ul className="space-y-1 text-muted-foreground">{rep.at_risk.length ? rep.at_risk.map((x, i) => <li key={i}>• {x}</li>) : <li>• nothing</li>}</ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* readiness */}
           <Card>
