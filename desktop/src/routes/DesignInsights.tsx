@@ -1,8 +1,8 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import {
   Boxes, FileBox, Loader2, Sparkles, AlertTriangle, RotateCw, Wand2,
-  CheckCircle2, FolderOpen, Plus, Star, StarHalf, Palette, Layers, ChevronDown,
-  Ruler, Gauge,
+  CheckCircle2, Plus, Star, StarHalf, Palette, Layers, ChevronDown,
+  Ruler, Gauge, ShieldCheck, Copy, Printer,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { useSession } from "@/store/session";
 import { insights as apiInsights, report as apiReport } from "@/api";
 import { useOpenFile } from "@/hooks/useOpenFile";
-import { comingSoon } from "@/store/toast";
+import { useToast } from "@/store/toast";
 import {
   readinessStars, familyLabel, verdictStatus, colorsLabel, partsLabel,
 } from "@/lib/simple";
@@ -35,9 +35,17 @@ export default function DesignInsights() {
   const runDoctor = useSession((s) => s.runDoctor);
   const runConvert = useSession((s) => s.runConvert);
   const openFile = useOpenFile();
+  const showToast = useToast((s) => s.show);
   const [showDetails, setShowDetails] = useState(false);
 
   if (!file) return <Navigate to="/" replace />;
+
+  const copyPath = (p: string) => {
+    navigator.clipboard?.writeText(p).then(
+      () => showToast("Path copied — paste it in your printer’s app"),
+      () => showToast("Couldn’t copy the path"),
+    );
+  };
 
   const d = doctor.data;
   const TypeIcon = file.name.toLowerCase().endsWith(".stl") ? FileBox : Boxes;
@@ -78,12 +86,15 @@ export default function DesignInsights() {
             </div>
             <div className="text-left text-sm text-muted-foreground">
               <p className="mb-1 font-medium text-foreground">What now?</p>
-              <p>1. Open it in your printer's app</p>
-              <p>2. Press print</p>
+              <p>1. Copy the file path (or find it in the folder shown above)</p>
+              <p>2. Open it in Snapmaker Orca and press print</p>
             </div>
-            <div className="flex gap-2">
-              <Button variant="secondary" onClick={() => comingSoon("Open folder")}>
-                <FolderOpen className="h-4 w-4" /> Open folder
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button variant="secondary" onClick={() => copyPath(convert.data!.output_path)}>
+                <Copy className="h-4 w-4" /> Copy path
+              </Button>
+              <Button variant="secondary" asChild>
+                <Link to="/printers"><Printer className="h-4 w-4" /> View my U1</Link>
               </Button>
               <Button onClick={openFile}>
                 <Plus className="h-4 w-4" /> Do another
@@ -154,7 +165,8 @@ export default function DesignInsights() {
           {rep && (
             <Card>
               <CardContent className="space-y-4 p-5">
-                <div className="flex items-center gap-2 text-sm font-semibold"><CheckCircle2 className="h-4 w-4 text-primary" /> Readiness check</div>
+                <div className="flex items-center gap-2 text-sm font-semibold"><ShieldCheck className="h-4 w-4 text-primary" /> Validation Center</div>
+                <p className="-mt-2 text-xs text-muted-foreground">Will it print on your U1 — and what we keep, change, or can’t carry over.</p>
                 <ul className="space-y-1.5 text-sm">
                   {rep.checks.map((c, i) => (
                     <li key={i} className="flex items-start gap-2">
