@@ -29,11 +29,14 @@ export function Sidebar() {
 
   return (
     <aside className="flex h-full w-[230px] flex-col border-r border-border bg-card">
-      <div className="flex items-center gap-2 px-4 h-14 border-b border-border">
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-          <Layers className="h-4 w-4" />
+      <div className="flex items-center gap-2.5 px-4 h-14 border-b border-border">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-convertible text-primary-foreground shadow-sm">
+          <Layers className="h-[18px] w-[18px]" />
         </div>
-        <span className="font-semibold tracking-tight">Snapmaker Studio</span>
+        <div className="leading-none">
+          <span className="block font-semibold tracking-tight">Snapmaker Studio</span>
+          <span className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">U1 Control Center</span>
+        </div>
       </div>
 
       <nav className="flex flex-col gap-1 p-3">

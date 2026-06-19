@@ -139,6 +139,7 @@ export default function DesignInsights() {
           {/* what's in this design */}
           <Card>
             <CardContent className="space-y-4 p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Step 1 · Understand</p>
               <div className="flex items-center gap-2 text-sm font-semibold"><Sparkles className="h-4 w-4 text-primary" /> What's in this design</div>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-center gap-2"><FileBox className="h-4 w-4 text-muted-foreground" /> {familyLabel(d.family)}</li>
@@ -165,6 +166,7 @@ export default function DesignInsights() {
           {rep && (
             <Card>
               <CardContent className="space-y-4 p-5">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Step 2 · Validate</p>
                 <div className="flex items-center gap-2 text-sm font-semibold"><ShieldCheck className="h-4 w-4 text-primary" /> Validation Center</div>
                 <p className="-mt-2 text-xs text-muted-foreground">Will it print on your U1 — and what we keep, change, or can’t carry over.</p>
                 <ul className="space-y-1.5 text-sm">
@@ -198,6 +200,7 @@ export default function DesignInsights() {
           {/* readiness */}
           <Card>
             <CardContent className="space-y-3 p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Step 3 · Prepare</p>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Print-Readiness</span>
                 <Stars score={d.score} />
