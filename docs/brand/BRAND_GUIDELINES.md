@@ -72,6 +72,8 @@ spectrum accents only for status (verdict badges) and the brand mark.
 - ❌ Don't place the dark-mode color logo on light backgrounds.
 
 ## Trademark note
-"Snapmaker" is a Snapmaker trademark; this is an independent open-source project.
-Pursue official/Innovation-Fund blessing, or mark clearly as community/unofficial,
-before public GA. (Tracked in `../archive/RELEASE_READINESS.md` / `../INNOVATION_FUND.md`.)
+"Snapmaker" is a Snapmaker trademark. Snapmaker Studio is an **independent
+open-source project — not affiliated with or endorsed by Snapmaker**. State that
+clearly on every public-facing surface (README, landing, app About, docs). Any
+future sponsorship or endorsement must be documented separately before it is
+claimed. (Tracked in `../archive/RELEASE_READINESS.md` / `../INNOVATION_FUND.md`.)

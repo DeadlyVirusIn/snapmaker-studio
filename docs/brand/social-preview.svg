@@ -52,9 +52,9 @@
   <rect width="1200" height="630" fill="url(#bg)"/>
   <use href="#mark" transform="translate(330,70) scale(1.6)"/>
   <text x="120" y="430" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-weight="700" font-size="92" fill="#FFFFFF">Snapmaker <tspan font-weight="800" fill="url(#studio)">Studio</tspan></text>
-  <text x="122" y="480" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-weight="600" font-size="26" letter-spacing="3" fill="#94A3B8">THE OPERATING SYSTEM FOR MULTI-MATERIAL 3D PRINTING</text>
+  <text x="122" y="480" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-weight="600" font-size="26" letter-spacing="3" fill="#94A3B8">THE WORKFLOW PLATFORM FOR MODERN 3D PRINTING</text>
   <g font-family="Inter, 'Segoe UI', Arial, sans-serif" font-weight="700" font-size="24">
-    <text x="122" y="546" fill="#94A3B8">INPUT</text><text x="262" y="546" fill="#00E1FF">DIAGNOSE</text><text x="470" y="546" fill="#FF8500">TRANSFORM</text><text x="700" y="546" fill="#32CD32">VALIDATE</text><text x="900" y="546" fill="#00A6FF">OUTPUT</text>
+    <text x="122" y="546" fill="#00E1FF">UNDERSTAND</text><text x="370" y="546" fill="#32CD32">VALIDATE</text><text x="560" y="546" fill="#FF8500">PREPARE</text><text x="740" y="546" fill="#00A6FF">MONITOR</text>
   </g>
-  <text x="120" y="600" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-weight="700" font-size="30" fill="#F2F2F2">One place. Any file. Any printer. Perfect prints.</text>
+  <text x="120" y="600" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-weight="700" font-size="30" fill="#F2F2F2">Understand any design, check if it will print, get it ready.</text>
 </svg>

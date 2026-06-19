@@ -2,19 +2,22 @@
 
 > Submission-ready package. **Not submitted.** External submission requires
 > manual human action + credentials.
+>
+> Independent open-source project — not affiliated with or endorsed by Snapmaker.
 
 ## Project title
-**Snapmaker Studio — the open compatibility platform that makes any 3D file
-print on the Snapmaker U1.**
+**Snapmaker Studio — the open, local-first workflow platform that gets 3D
+designs print-ready for the Snapmaker U1.**
 
 ## Category
 Open-source software / ecosystem & developer tools / user onboarding &
 compatibility.
 
 ## Short description (~40 words)
-Snapmaker Studio is a free, local-first desktop app that turns any Bambu, Orca,
-Prusa, or STL file into a clean, warning-free Snapmaker U1 project in one click —
-removing the biggest barrier for makers switching to or adding a U1.
+Snapmaker Studio is a free, local-first desktop app that helps makers understand
+a design, check whether it will print, and turn Bambu/Orca and STL files into a
+clean, warning-free Snapmaker U1 project in one click (PrusaSlicer detection today;
+full conversion next) — removing the biggest barrier for makers adding a U1.
 
 ## Long description
 Makers adopting a new printer face a hidden tax: their existing library of

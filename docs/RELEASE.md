@@ -133,15 +133,15 @@ status badge. SemVer pre-release; next would be `v0.3.0-beta.2` (fixes) or
 
 > ### Snapmaker Studio v0.3.0-beta.1
 > **The workflow platform for modern 3D printing.** Drop in a Bambu / OrcaSlicer /
-> PrusaSlicer / STL file and get a clean, validated Snapmaker U1 project — local-first,
-> no cloud, no account.
+> STL file and get a clean, validated Snapmaker U1 project — local-first, no cloud,
+> no account. (PrusaSlicer files are detected/read; full conversion is on the roadmap.)
 >
 > **Highlights**
-> - **Doctor** — read-only U1 compatibility diagnosis with a verdict + score.
-> - **Convert** — Bambu/Orca/Prusa/STL → clean U1 3MF; originals never overwritten.
+> - **Understand** — read-only design intelligence + a U1 readiness verdict and score.
+> - **Prepare** — Bambu/Orca and STL → clean, validated U1 3MF; originals never overwritten.
 > - **Compare** — diff original ↔ U1-ready (geometry, counts, normalized settings).
-> - **Project Library** — every diagnosed/converted file auto-indexed, searchable.
-> - **Batch convert** — many files at once with live per-file progress.
+> - **Project Library** — every checked/prepared file auto-indexed, searchable.
+> - **Batch prepare** — many files at once with live per-file progress.
 > - **Desktop app** — Tauri + React, dark-first; bundled engine sidecar (no Python).
 > - One-click **Windows installer** (NSIS).
 >

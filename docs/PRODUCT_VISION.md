@@ -1,17 +1,21 @@
 # Snapmaker Studio — Product Vision
 
-> **The Operating System for Multi-Material 3D Printing.**
+> **Shipping today:** the workflow platform for modern 3D printing.
+> **North-star vision:** the operating system for multi-material 3D printing.
+>
+> Independent open-source project — not affiliated with or endorsed by Snapmaker.
 
 Snapmaker Studio is not a converter. Conversion is the first useful thing it
 does — the wedge — not the product. The product is a single, local-first
 desktop platform that owns the *workflow* between a 3D model and a reliable,
-multi-material print, across every slicer and every printer.
+multi-material print. Today that targets the Snapmaker U1; the long-term aim is
+to span more slicers and more printers over time (not a claim of current support).
 
-**The print flow — the spine of the product and the brand:**
-**Input → Diagnose → Transform → Validate → Output.**
-Validate is a mandatory stage, never skipped: every conversion is *proven clean*
-before output. (Brand: see [`brand/`](brand/README.md). Tagline: _One place. Any
-file. Any printer. Perfect prints._)
+**The workflow — the spine of the product and the brand:**
+**Understand → Validate → Prepare → Monitor.**
+Validate is a mandatory stage, never skipped: every prepared file is *proven clean*
+before output. (Brand: see [`brand/`](brand/README.md). Tagline: _Understand any
+design, check if it will print, get it ready._)
 
 ---
 
@@ -43,8 +47,9 @@ Snapmaker Studio operates in, and it widens as the ecosystem fragments.
 2. **Preserve, never destroy.** Geometry, painting, and color are sacred. The
    engine fails safe and never silently reduces colors or mutates meshes. Inputs
    are never overwritten.
-3. **Cross-ecosystem by default.** Bambu, Orca, Prusa, Cura, Creality, raw STL —
-   inputs are first-class. We meet users where their files already are.
+3. **Cross-ecosystem by default.** Bambu, Orca, and raw STL are first-class today;
+   PrusaSlicer is detected/read in limited form, with Cura, Creality, and broader
+   adapters planned. We meet users where their files already are.
 4. **Truthful state.** "Validated" must mean it actually loads clean. The Doctor
    and validator never report success they can't prove (verified against a
    real-world corpus, not a happy path).
@@ -247,8 +252,8 @@ _(Merged from the former PRODUCT_MISSION.md.)_
 multi-material print — without losing their work to format wars, vendor
 lock-in, or silent compatibility failures.**
 
-_One place. Any file. Any printer. Perfect prints._ The flow is always
-**Input → Diagnose → Transform → Validate → Output** — Validate never skipped.
+_Understand any design, check if it will print, get it ready._ The flow is always
+**Understand → Validate → Prepare → Monitor** — Validate never skipped.
 
 ## What we believe
 

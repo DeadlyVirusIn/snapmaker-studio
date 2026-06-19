@@ -1,6 +1,6 @@
 # Snapmaker Studio — Brand
 
-Official visual identity: **"Studio Hub."** This directory is the single source
+Project visual identity (independent open-source project; not affiliated with Snapmaker). This directory is the single source
 for the brand. **Source of truth:** the **Brand Identity Asset Pack** —
 [`Brand Identity Snapmaker Studio/`](Brand%20Identity%20Snapmaker%20Studio/)
 (master deck `Gemini_Generated_Image_awl389awl389awl3.png`). The earlier raster

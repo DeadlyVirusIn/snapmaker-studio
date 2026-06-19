@@ -4,8 +4,8 @@ Launch/teaser cut. One screen-recording of the real app + a closing roadmap
 card. Plain, confident VO; no music bed louder than the voice. Target 75s.
 
 ## Logline
-"3D printing workflows are fragmented. Snapmaker Studio makes any file print —
-anywhere."
+"3D printing workflows are fragmented. Snapmaker Studio makes any design
+print-ready — and tells you if it will print."
 
 ## Shot list
 
@@ -15,15 +15,15 @@ anywhere."
 | **10–25s** | Open Snapmaker Studio. Drag **Fox Sake.3mf** onto the drop zone. Doctor auto-runs; shows verdict + issues. | "Open Snapmaker Studio. Drop in any file. The Doctor checks it instantly — and tells you exactly what's wrong." | Studio: Dashboard -> drag-drop -> LiveWorkspace Doctor result. |
 | **25–45s** | Click **Make U1-ready**. Loading -> green "Saved U1-ready project" with output path + "Validated". | "One click. Studio rebuilds it as a clean Snapmaker U1 project — your geometry and colors preserved, nothing lost." | Studio: convert action -> success state. |
 | **45–60s** | Open the converted `Fox Sake_SnapmakerU1.3mf` in Snapmaker Orca. **No warnings.** Slice/print-ready. | "Open it in Snapmaker Orca. Zero warnings. Ready to print." | Screen-record Orca loading the output clean (the after-state). |
-| **60–90s** | Slow pan over roadmap cards: Diagnose . Transform . Validate . Manage . Optimize -> "multi-printer, simulation, plugins." End on logo + tagline. | "This is the start. We're building the unified platform for 3D printing workflows — the operating system for multi-material printing." | Title cards from ROADMAP.md pillars + logo. |
+| **60–90s** | Slow pan over roadmap cards: Understand . Validate . Prepare . Monitor -> "more ecosystems, more printers, plugins." End on logo + tagline. | "This is the start. We're building the workflow platform for modern 3D printing — understand, validate, and get any design print-ready." | Title cards from ROADMAP.md pillars + logo. |
 
 ## End card
-- Official brand assets: `docs/brand/` (mark `logo.svg`, banner `hero.svg`,
+- Project brand assets: `docs/brand/` (mark `logo.svg`, banner `hero.svg`,
   share `social-preview.svg`). Dark background (`#0B0F19`).
-- Show the flow once on screen: **Input → Diagnose → Transform → Validate →
-  Output** (Validate highlighted — it's always on).
-- Tagline: **"The Operating System for Multi-Material 3D Printing."**
-- Sub: _One place. Any file. Any printer. Perfect prints._ ·
+- Show the flow once on screen: **Understand → Validate → Prepare → Monitor**
+  (Validate highlighted — it's always on).
+- Tagline: **"The workflow platform for modern 3D printing."**
+- Sub: _Understand any design, check if it will print, get it ready._ ·
   "Local-first · Open source · github.com/DeadlyVirusIn/snapmaker-studio"
 
 ## Capture notes

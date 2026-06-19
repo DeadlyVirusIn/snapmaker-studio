@@ -54,8 +54,8 @@ anyone can produce the marketing set consistently.
 ### 5 — Roadmap / vision screen
 - **Compose:** a title card built from `docs/ROADMAP.md` pillars
   (Diagnose . Transform . Validate . Manage . Optimize) over a dark background
-  with the brand mark (`docs/brand/icon.svg`) and tagline **"The Operating System
-  for Multi-Material 3D Printing."**
+  with the brand mark (`docs/brand/icon.svg`) and tagline **"The workflow platform
+  for modern 3D printing."**
 - **Message:** platform ambition, not a one-trick tool.
 - **File:** `roadmap.png`. (Designed card, not an app screen — assemble from the
   brand assets + roadmap text.)
