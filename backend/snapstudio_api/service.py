@@ -72,6 +72,12 @@ def report(path: str) -> dict:
     return readiness_report(path)
 
 
+def canonical(path: str) -> dict:
+    """Read-only source-neutral view of a design (multi-ecosystem foundation)."""
+    from snapstudio_core.canonical import to_canonical
+    return to_canonical(path).to_dict()
+
+
 def printer_discover(hosts: list[str] | None = None) -> dict:
     """Read-only: probe candidate U1 hosts over Moonraker."""
     from snapstudio_core import moonraker
