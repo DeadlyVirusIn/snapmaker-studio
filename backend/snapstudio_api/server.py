@@ -152,6 +152,20 @@ def _make_handler(token: str):
                     self._send(200, service.report(path))
                 except Exception as e:
                     self._send(500, {"error": str(e)})
+            elif self.path == "/printer/discover":
+                try:
+                    self._send(200, service.printer_discover(data.get("hosts")))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
+            elif self.path == "/printer/status":
+                host = data.get("host")
+                if not host:
+                    self._send(400, {"error": "missing 'host'"})
+                    return
+                try:
+                    self._send(200, service.printer_status(host, int(data.get("port", 7125))))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
             elif self.path == "/library":
                 try:
                     self._send(200, service.library_list(

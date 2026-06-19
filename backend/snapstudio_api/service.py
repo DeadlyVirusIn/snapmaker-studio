@@ -72,6 +72,18 @@ def report(path: str) -> dict:
     return readiness_report(path)
 
 
+def printer_discover(hosts: list[str] | None = None) -> dict:
+    """Read-only: probe candidate U1 hosts over Moonraker."""
+    from snapstudio_core import moonraker
+    return {"printers": moonraker.discover(hosts or None), "schema_version": "printer/1"}
+
+
+def printer_status(host: str, port: int = 7125) -> dict:
+    """Read-only: live U1 status (print state, bed + toolhead temps)."""
+    from snapstudio_core import moonraker
+    return moonraker.status(host, port)
+
+
 def library_list(query: str = "", tag: str | None = None) -> dict:
     """List indexed projects, newest first. Optional name search / tag filter."""
     conn = _conn()

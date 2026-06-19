@@ -217,6 +217,37 @@ export async function report(path: string): Promise<ReadinessReport> {
   return r.json();
 }
 
+export interface PrinterProbe {
+  reachable: boolean; host: string; port: number;
+  klippy_state?: string; moonraker_version?: string; error?: string;
+}
+export interface PrinterStatus {
+  host: string; port: number; print_state: string | null; filename: string | null;
+  progress: number | null;
+  bed: { temperature: number | null; target: number | null };
+  toolheads: { index: number; temperature: number | null; target: number | null }[];
+}
+
+export async function printerDiscover(hosts?: string[]): Promise<PrinterProbe[]> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/printer/discover`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ hosts: hosts ?? null }),
+  });
+  if (!r.ok) throw new Error(`discover failed (${r.status})`);
+  return (await r.json()).printers ?? [];
+}
+
+export async function printerStatus(host: string, port = 7125): Promise<PrinterStatus> {
+  const { port: p, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${p}/printer/status`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ host, port }),
+  });
+  if (!r.ok) throw new Error(`status failed (${r.status})`);
+  return r.json();
+}
+
 // Native open dialog limited to the formats the engine accepts.
 export async function openModelDialog(): Promise<string | null> {
   const picked = await open({

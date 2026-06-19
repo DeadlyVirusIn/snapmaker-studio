@@ -6,6 +6,7 @@ import Dashboard from "@/routes/Dashboard";
 import Projects from "@/routes/Projects";
 import Batch from "@/routes/Batch";
 import WorkspaceSwitch from "@/routes/WorkspaceSwitch";
+import Printers from "@/routes/Printers";
 import Settings from "@/routes/Settings";
 import NotFound from "@/routes/NotFound";
 import { useTheme } from "@/store/theme";
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="/projects" element={<Projects />} />
             <Route path="/batch" element={<Batch />} />
             <Route path="/workspace" element={<WorkspaceSwitch />} />
+            <Route path="/printers" element={<Printers />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Route>
