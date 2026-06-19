@@ -126,6 +126,43 @@ def history(host: str, port: int = DEFAULT_PORT, limit: int = 20, timeout: float
     }
 
 
+def file_metadata(host: str, filename: str, port: int = DEFAULT_PORT, timeout: float = 4.0) -> dict:
+    """Read-only gcode metadata the printer already extracted for a file — the slicer's
+    OWN estimate (print time, filament grams/mm, layers, slicer, first-layer temps).
+    GET /server/files/metadata only. This is data Studio otherwise can't have without
+    slicing; here it's read straight from the open Moonraker stack.
+
+    `available: False` (never raises) when the file isn't on the printer / has no metadata."""
+    try:
+        from urllib.parse import quote
+        res = _get(host, port, "/server/files/metadata?filename=" + quote(filename), timeout).get("result", {}) or {}
+    except Exception as e:
+        return {"schema_version": SCHEMA_VERSION, "available": False, "filename": filename, "reason": str(e)}
+    if not res:
+        return {"schema_version": SCHEMA_VERSION, "available": False, "filename": filename}
+    thumbs = res.get("thumbnails") or []
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "available": True,
+        "filename": res.get("filename") or filename,
+        "estimated_time_s": res.get("estimated_time"),
+        "filament_total_mm": res.get("filament_total"),
+        "filament_weight_g": res.get("filament_weight_total"),
+        "filament_name": res.get("filament_name"),
+        "filament_type": res.get("filament_type"),
+        "layer_count": res.get("layer_count"),
+        "layer_height": res.get("layer_height"),
+        "first_layer_height": res.get("first_layer_height"),
+        "object_height": res.get("object_height"),
+        "first_layer_bed_temp": res.get("first_layer_bed_temp"),
+        "first_layer_extr_temp": res.get("first_layer_extr_temp"),
+        "nozzle_diameter": res.get("nozzle_diameter"),
+        "slicer": res.get("slicer"),
+        "slicer_version": res.get("slicer_version"),
+        "thumbnail_count": len(thumbs),
+    }
+
+
 def diagnostics(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:
     """Read-only health diagnostics: klippy state + message + Moonraker warnings.
     GET /printer/info + /server/info only. Never raises — reports what it can."""

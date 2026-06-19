@@ -7,7 +7,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/layout";
-import { printerDiscover, printerStatus, printerHistory, printerDiagnostics } from "@/api";
+import { printerDiscover, printerStatus, printerHistory, printerDiagnostics, printerFileMetadata } from "@/api";
 import { usePrinter } from "@/store/printer";
 
 function fmtDur(s: number | null | undefined): string {
@@ -43,6 +43,12 @@ export default function Printers() {
     queryKey: ["printer-history", connected],
     queryFn: () => printerHistory(connected as string),
     enabled: !!connected, refetchInterval: connected ? 30000 : false,
+  });
+  const filename = status.data?.filename ?? null;
+  const meta = useQuery({
+    queryKey: ["printer-meta", connected, filename],
+    queryFn: () => printerFileMetadata(connected as string, filename as string),
+    enabled: !!connected && !!filename, staleTime: 60000, retry: false,
   });
   const state = status.data?.print_state;
   const isPrinting = state === "printing";
@@ -134,6 +140,15 @@ export default function Printers() {
                     )}
                     {status.data.print_duration_s != null && <span>Elapsed {fmtDur(status.data.print_duration_s)}</span>}
                     {status.data.message && <span className="truncate">{status.data.message}</span>}
+                  </p>
+                )}
+                {meta.data?.available && (
+                  <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                    {meta.data.estimated_time_s != null && <span>Est total {fmtDur(meta.data.estimated_time_s)}</span>}
+                    {meta.data.filament_weight_g != null && <span>~{Math.round(meta.data.filament_weight_g)} g filament</span>}
+                    {meta.data.layer_count != null && <span>{meta.data.layer_count} layers</span>}
+                    {meta.data.slicer && <span>sliced by {meta.data.slicer}</span>}
+                    <span className="opacity-70">(from the file's own slicer data)</span>
                   </p>
                 )}
                 {status.data.progress != null && (

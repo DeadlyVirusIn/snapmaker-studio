@@ -136,6 +136,13 @@ def printer_history(host: str, port: int = 7125, limit: int = 20) -> dict:
     return moonraker.history(host, port, limit)
 
 
+def printer_file_metadata(host: str, filename: str, port: int = 7125) -> dict:
+    """Read-only: the slicer's own estimates for a file on the printer (time, filament,
+    layers, slicer) — extracted by Moonraker, no slicing done here."""
+    from snapstudio_core import moonraker
+    return moonraker.file_metadata(host, filename, port)
+
+
 def printer_diagnostics(host: str, port: int = 7125) -> dict:
     """Read-only: klippy health + Moonraker warnings."""
     from snapstudio_core import moonraker

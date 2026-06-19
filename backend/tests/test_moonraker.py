@@ -30,6 +30,14 @@ _HISTORY = {"result": {"count": 3, "jobs": [
 ]}}
 _TOTALS = {"result": {"job_totals": {"total_jobs": 3, "total_time": 4300.0, "total_print_time": 4160.0,
                                      "total_filament_used": 9200.0, "longest_print": 3500.0}}}
+_METADATA = {"result": {
+    "filename": "liberty_eagle.gcode", "estimated_time": 11520, "filament_total": 12345.6,
+    "filament_weight_total": 38.4, "filament_type": "PLA", "layer_count": 240,
+    "layer_height": 0.2, "first_layer_height": 0.24, "object_height": 48.0,
+    "first_layer_bed_temp": 60, "first_layer_extr_temp": 220, "nozzle_diameter": 0.4,
+    "slicer": "OrcaSlicer", "slicer_version": "2.3.4",
+    "thumbnails": [{"width": 300, "height": 300, "relative_path": ".thumbs/x.png"}],
+}}
 _PRINTER_INFO = {"result": {"state": "ready", "state_message": "Printer is ready", "hostname": "U1"}}
 _OBJECTS_LIST = {"result": {"objects": ["print_stats", "heater_bed", "toolhead",
                                         "extruder", "extruder1", "extruder2", "extruder3"]}}
@@ -51,6 +59,7 @@ def _mock_moonraker():
             elif self.path == "/printer/objects/list": self._send(_OBJECTS_LIST)
             elif self.path.startswith("/server/history/list"): self._send(_HISTORY)
             elif self.path == "/server/history/totals": self._send(_TOTALS)
+            elif self.path.startswith("/server/files/metadata"): self._send(_METADATA)
             elif self.path.startswith("/printer/objects/query"): self._send(_STATUS)
             else: self.send_response(404); self.end_headers()
         def do_POST(self):  # must NEVER be hit by the read-only client
@@ -137,6 +146,26 @@ def test_diagnostics_reports_health():
 def test_diagnostics_unreachable_never_raises():
     d = moonraker.diagnostics("127.0.0.1", 9, timeout=0.5)
     assert d["healthy"] is False
+
+
+def test_file_metadata_reads_slicer_estimates():
+    httpd, port, seen = _mock_moonraker()
+    try:
+        m = moonraker.file_metadata("127.0.0.1", "liberty_eagle.gcode", port=port, timeout=5)
+        assert m["available"] is True
+        assert m["estimated_time_s"] == 11520
+        assert m["filament_weight_g"] == 38.4
+        assert m["layer_count"] == 240
+        assert m["slicer"] == "OrcaSlicer"
+        assert m["thumbnail_count"] == 1
+        assert all(meth == "GET" for meth, _ in seen)
+    finally:
+        httpd.shutdown()
+
+
+def test_file_metadata_missing_never_raises():
+    m = moonraker.file_metadata("127.0.0.1", "nope.gcode", port=9, timeout=0.5)
+    assert m["available"] is False
 
 
 def test_capabilities_reads_real_bed_and_toolheads():

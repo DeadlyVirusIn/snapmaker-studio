@@ -207,6 +207,15 @@ def _make_handler(token: str):
                     self._send(200, service.printer_history(host, int(data.get("port", 7125)), int(data.get("limit", 20))))
                 except Exception as e:
                     self._send(500, {"error": str(e)})
+            elif self.path == "/printer/file_metadata":
+                host = data.get("host"); fn = data.get("filename")
+                if not host or not fn:
+                    self._send(400, {"error": "missing 'host' or 'filename'"})
+                    return
+                try:
+                    self._send(200, service.printer_file_metadata(host, fn, int(data.get("port", 7125))))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
             elif self.path == "/printer/diagnostics":
                 host = data.get("host")
                 if not host:

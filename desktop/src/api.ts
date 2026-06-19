@@ -335,6 +335,17 @@ export function printerHistory(host: string, port = 7125): Promise<PrinterHistor
 export function printerDiagnostics(host: string, port = 7125): Promise<PrinterDiagnostics> {
   return printerPost("/printer/diagnostics", { host, port });
 }
+export interface PrinterFileMetadata {
+  available: boolean; filename: string;
+  estimated_time_s?: number | null; filament_total_mm?: number | null; filament_weight_g?: number | null;
+  filament_type?: string | null; layer_count?: number | null; layer_height?: number | null;
+  first_layer_height?: number | null; object_height?: number | null;
+  first_layer_bed_temp?: number | null; first_layer_extr_temp?: number | null;
+  slicer?: string | null; slicer_version?: string | null; thumbnail_count?: number;
+}
+export function printerFileMetadata(host: string, filename: string, port = 7125): Promise<PrinterFileMetadata> {
+  return printerPost("/printer/file_metadata", { host, filename, port });
+}
 export interface PrinterCapabilities {
   host: string; port: number; toolhead_count: number | null;
   bed_mm: { x: number; y: number; z: number } | null;
