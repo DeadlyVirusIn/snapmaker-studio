@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "@/store/theme";
 import { useMode } from "@/store/mode";
 import { usePrinter } from "@/store/printer";
-import { comingSoon } from "@/store/toast";
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -78,10 +77,8 @@ export default function Settings() {
       <Card>
         <CardContent className="divide-y divide-border p-5">
           <p className="pb-2 text-sm font-semibold">Files</p>
-          <Row label="Default output folder" hint="Where converted U1 projects are saved.">
-            <Button variant="secondary" size="sm" onClick={() => comingSoon("Choose output folder")}>
-              <FolderOpen className="h-4 w-4" /> Choose…
-            </Button>
+          <Row label="Where U1 files are saved" hint="Converted projects are saved right next to the file you opened.">
+            <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground"><FolderOpen className="h-4 w-4" /> Beside your original</span>
           </Row>
           <Row label="Keep originals" hint="Never overwrite source files.">
             <span className="text-sm text-muted-foreground">Always on</span>
