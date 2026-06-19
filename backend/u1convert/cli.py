@@ -14,7 +14,12 @@ from snapstudio_core.report import write_fix_report
 from snapstudio_core.errors import SnapStudioError
 
 @click.group()
-def cli(): ...
+def cli():
+    """Snapmaker Studio engine — a local-first workflow for modern 3D printing.
+
+    Understand a design, check whether it will print, and get it print-ready.
+    Bambu/Orca/STL today; Snapmaker U1 is the first printer target.
+    """
 
 @cli.command()
 @click.argument("path", type=click.Path(exists=True))
