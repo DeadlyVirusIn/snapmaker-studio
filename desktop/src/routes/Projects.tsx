@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Search, FolderKanban, FileBox, Boxes, Loader2, AlertTriangle, Trash2, RotateCw,
-  Clock, ChevronDown,
+  Clock, ChevronDown, Copy, CheckCircle2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { library, libraryDelete, history } from "@/api";
 import type { LibraryProject } from "@/api";
 import { useSession } from "@/store/session";
 import { useMode } from "@/store/mode";
+import { useToast } from "@/store/toast";
 import { cn } from "@/lib/utils";
 
 function eventLabel(action: string): string {
@@ -60,6 +61,14 @@ function LibraryCard({ p, onOpen, onDelete, simple }: {
   const Icon = p.name.toLowerCase().endsWith(".stl") ? FileBox : Boxes;
   const [showHistory, setShowHistory] = useState(false);
   const unit = simple ? "color" : "filament";
+  const showToast = useToast((s) => s.show);
+  const copyOutput = () => {
+    if (!p.output_path) return;
+    navigator.clipboard?.writeText(p.output_path).then(
+      () => showToast("U1 file path copied"),
+      () => showToast("Couldn’t copy the path"),
+    );
+  };
   return (
     <Card className="group transition-all hover:border-primary/40 hover:shadow-md">
       <CardContent className="space-y-3 p-4">
@@ -84,9 +93,17 @@ function LibraryCard({ p, onOpen, onDelete, simple }: {
           <span>{fmtDate(p.updated_at)}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            {p.output_path ? "U1 project saved" : `Last: ${p.last_action ?? "—"}`}
-          </span>
+          {p.output_path ? (
+            <button
+              onClick={copyOutput}
+              className="inline-flex items-center gap-1 rounded text-xs text-ready hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              title={p.output_path}
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" /> U1 file ready <Copy className="h-3 w-3 opacity-70" />
+            </button>
+          ) : (
+            <span className="text-xs text-muted-foreground">Last: {p.last_action ?? "—"}</span>
+          )}
           <button
             onClick={onDelete}
             className="rounded p-1 text-muted-foreground opacity-0 transition hover:text-risk group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
@@ -132,6 +149,8 @@ export default function Projects() {
     () => (data ?? []).filter((p) => FILTERS[filter].match(p.verdict)),
     [data, filter]
   );
+  const total = data?.length ?? 0;
+  const readyCount = (data ?? []).filter((p) => p.verdict === "READY").length;
 
   const openProject = (p: LibraryProject) => {
     setFile(p.source_path);
@@ -143,10 +162,20 @@ export default function Projects() {
       <div className="flex flex-wrap items-center gap-3">
         <div>
           <h2 className="text-2xl font-semibold tracking-tight">{simple ? "My Designs" : "Projects"}</h2>
-          <p className="text-sm text-muted-foreground">
-            {status === "success"
-              ? `${data?.length ?? 0} design${(data?.length ?? 0) === 1 ? "" : "s"} ${simple ? "saved here" : "in your library"}.`
-              : simple ? "Everything you've worked on." : "Your converted and diagnosed files."}
+          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            {status === "success" && total > 0 ? (
+              <>
+                <span>{total} design{total === 1 ? "" : "s"}</span>
+                <span>·</span>
+                <CheckCircle2 className="h-3.5 w-3.5 text-ready" />
+                <span>{readyCount} ready to print</span>
+                {total - readyCount > 0 && <span>· {total - readyCount} need work</span>}
+              </>
+            ) : status === "success" ? (
+              <span>{simple ? "Everything you've worked on." : "Your converted and diagnosed files."}</span>
+            ) : (
+              <span>{simple ? "Everything you've worked on." : "Your converted and diagnosed files."}</span>
+            )}
           </p>
         </div>
         <Button className="ml-auto" variant="secondary" size="sm" onClick={() => refetch()} disabled={isFetching}>
