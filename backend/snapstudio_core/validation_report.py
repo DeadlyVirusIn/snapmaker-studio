@@ -82,6 +82,33 @@ def readiness_report(path: str) -> dict:
         if not changes and verdict == READY:
             changes.append("Already U1-clean — no changes needed")
 
+    # --- design (mesh) checks — best-effort, read-only; never break the report ----
+    design_findings = []
+    try:
+        from .mesh_diagnostics import analyze as _mesh
+        md = _mesh(path)
+        if md.get("available"):
+            integ = md["integrity"]
+            if not integ["watertight"]:
+                if integ["holes"]:
+                    checks.append(_check("Mesh is watertight", False,
+                        f"{integ['holes']} hole(s) — may print with gaps or fail; repair before printing"))
+                if integ["non_manifold_edges"]:
+                    checks.append(_check("Mesh is manifold", False,
+                        f"{integ['non_manifold_edges']} non-manifold edge(s) — slicers may misread the surface; repair recommended"))
+            else:
+                checks.append(_check("Mesh is watertight", True, "Closed, manifold mesh — clean to slice"))
+            if md["overhang"]["supports_likely"]:
+                checks.append(_check("Overhangs", False,
+                    f"{md['overhang']['overhang_pct']}% steep overhangs — supports will likely be needed (enable in Orca)"))
+            if md["stability"]["tip_risk"]:
+                checks.append(_check("Stability", False,
+                    "Tall/narrow base — may tip or knock off the bed; add a brim or reorient"))
+            design_findings = md.get("findings", [])
+            warnings.extend(f["text"] for f in design_findings if f["level"] in ("warn", "risk"))
+    except Exception:
+        pass
+
     ready = verdict == READY or all(c["status"] == "pass" for c in checks)
     return {
         "schema_version": SCHEMA_VERSION,

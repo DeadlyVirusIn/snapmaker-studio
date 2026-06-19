@@ -217,6 +217,35 @@ export async function report(path: string): Promise<ReadinessReport> {
   return r.json();
 }
 
+export interface MeshReport {
+  schema_version: string;
+  available: boolean;
+  reason?: string;
+  triangle_count?: number;
+  integrity?: {
+    watertight: boolean; manifold: boolean; open_edges: number; holes: number;
+    non_manifold_edges: number; degenerate_faces: number; duplicate_faces: number;
+    winding_consistent: boolean;
+  };
+  overhang?: { overhang_pct: number; severe_pct: number; supports_likely: boolean };
+  stability?: { tip_risk: boolean; com_over_base: boolean; margin_mm: number | null; height_mm: number; aspect: number };
+  volume_mm3?: number;
+  volume_cm3?: number;
+  surface_area_mm2?: number;
+  material_estimate_g?: number | null;
+  findings?: { level: "ok" | "warn" | "risk"; text: string }[];
+}
+
+export async function mesh(path: string): Promise<MeshReport> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/mesh`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ path }),
+  });
+  if (!r.ok) throw new Error(`mesh failed (${r.status})`);
+  return r.json();
+}
+
 export interface PrintStrategy {
   id: string;
   name: string;

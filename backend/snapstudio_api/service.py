@@ -78,6 +78,12 @@ def canonical(path: str) -> dict:
     return to_canonical(path).to_dict()
 
 
+def mesh(path: str) -> dict:
+    """Read-only mesh diagnostics: integrity, overhang/supports, stability, volume."""
+    from snapstudio_core.mesh_diagnostics import analyze
+    return analyze(path)
+
+
 def strategies() -> dict:
     """List the intent-based print strategies (read-only). Orca still slices."""
     from snapstudio_core.strategies import list_strategies

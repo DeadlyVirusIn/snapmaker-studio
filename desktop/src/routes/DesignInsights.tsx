@@ -2,7 +2,7 @@ import { Navigate, Link } from "react-router-dom";
 import {
   Boxes, FileBox, Loader2, Sparkles, AlertTriangle, RotateCw, Wand2,
   CheckCircle2, Plus, Star, StarHalf, Palette, Layers, ChevronDown,
-  Ruler, Gauge, ShieldCheck, Copy, Printer,
+  Ruler, Gauge, ShieldCheck, Copy, Printer, Box,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/store/session";
-import { insights as apiInsights, report as apiReport } from "@/api";
+import { insights as apiInsights, report as apiReport, mesh as apiMesh } from "@/api";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { useToast } from "@/store/toast";
 import { StrategyPicker } from "@/components/StrategyPicker";
@@ -63,6 +63,12 @@ export default function DesignInsights() {
   const { data: rep } = useQuery({
     queryKey: ["report", file.path],
     queryFn: () => apiReport(file.path),
+    enabled: doctor.status === "done",
+  });
+  // Real geometry diagnostics (volume / material estimate), read-only.
+  const { data: meshData } = useQuery({
+    queryKey: ["mesh", file.path],
+    queryFn: () => apiMesh(file.path),
     enabled: doctor.status === "done",
   });
   const issues = [...(d?.validation_issues ?? []), ...(d?.compatibility_issues ?? [])];
@@ -149,6 +155,9 @@ export default function DesignInsights() {
                 {colorsLabel(d.filament_count) && <li className="flex items-center gap-2"><Palette className="h-4 w-4 text-muted-foreground" /> {colorsLabel(d.filament_count)}</li>}
                 {partsLabel(d.object_count) && <li className="flex items-center gap-2"><Layers className="h-4 w-4 text-muted-foreground" /> {partsLabel(d.object_count)}{(ins?.plates ?? 0) > 1 ? ` · ${ins!.plates} plates` : ""}</li>}
                 {ins?.complexity && <li className="flex items-center gap-2"><Gauge className="h-4 w-4 text-muted-foreground" /> {ins.complexity} complexity{ins.triangles ? ` · ${ins.triangles.toLocaleString()} triangles` : ""}</li>}
+                {meshData?.available && meshData.volume_cm3 != null && meshData.volume_cm3 > 0 && (
+                  <li className="flex items-center gap-2"><Box className="h-4 w-4 text-muted-foreground" /> {meshData.volume_cm3} cm³{meshData.material_estimate_g != null ? ` · ~${meshData.material_estimate_g} g PLA (estimate)` : ""}</li>
+                )}
                 {d.painted && <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-ready" /> painted areas kept</li>}
               </ul>
               {ins?.materials && ins.materials.length > 0 && (
