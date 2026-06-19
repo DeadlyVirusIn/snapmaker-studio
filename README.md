@@ -30,6 +30,15 @@ open source.
 > brand [`docs/brand/`](docs/brand/README.md) ·
 > landing [`docs/landing/index.html`](docs/landing/index.html).
 
+## Download
+
+**[⬇ Download the latest Windows installer](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/latest)**
+— one click, no Python, runs offline. (Beta — Windows 10/11 x64.)
+
+Open the downloaded `…_x64-setup.exe`, install, and launch **Snapmaker Studio**.
+No account, no cloud, nothing leaves your computer. Older builds and checksums are
+on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
+
 ## Screenshots
 
 The desktop app — local-first, dark-first: **Understand → Check → Get it ready**.
