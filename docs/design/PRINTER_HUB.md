@@ -88,3 +88,44 @@ before any product integration.
 
 > Design only — nothing here is implemented. See `../ROADMAP.md` (v0.5/v0.6) for how
 > this phases into the product.
+
+---
+
+## External research integration — OctoPrint (concepts only)
+
+OctoPrint (AGPL) was reviewed for monitoring patterns. **Concepts/terminology only —
+no code copied.** Where OctoPrint and the U1 differ, **Moonraker is authoritative**:
+the U1 runs Klipper/Moonraker (JSON-RPC websocket `notify_status_update` after
+`printer.objects.subscribe`), not OctoPrint/SockJS.
+
+- **Hub UX → adopt the State panel, not the tab sprawl.** OctoPrint's densest
+  read-only surface is its State panel (state string, progress %, print time / ETA,
+  current height, temps). Studio's Hub uses a single novice dashboard built from that,
+  extended to the U1's **4 toolheads** as a multi-series temp graph.
+- **Read-only contract → split display from control.** OctoPrint fuses read-out and
+  control in the same widgets (editable temp targets, jog/Control tab, terminal command
+  box, connect/print/pause/cancel). Studio shows the *values/curves/progress* and ships
+  **none** of the input surfaces. A read-only terminal log is defensible but deferred
+  (scope-creep risk).
+- **State model → map to Moonraker natively.** OctoPrint flags (operational/printing/
+  paused/error/closedOrError) map onto `print_stats.state` ∈ {standby, printing, paused,
+  complete, error, cancelled}; temps from `heater_bed` + `extruder`/`extruder1..3`;
+  progress from `virtual_sdcard.progress`; layer from `print_stats.info.current_layer`.
+  Backfill via `server/temperature_store` (≈ OctoPrint's `history` message); push via
+  the subscribe socket with a `printer.objects.query` polling fallback.
+- **Time-left honesty.** Moonraker has no direct time-left field — Studio computes it and,
+  borrowing OctoPrint's `printTimeLeftOrigin`, **labels the estimate's source/quality**
+  rather than presenting it as exact.
+- **Telemetry vocabulary.** Adopt OctoPrint's observed-fact naming (completion, printTime,
+  printTimeLeft(+origin), filepos/filesize, file metadata, layer/height) and a synthesized
+  **observed-event** taxonomy (StateChanged, PrintStarted/Paused/Resumed/Done/Failed)
+  *derived by diffing Moonraker status* — notifications only, never action triggers.
+- **Plugin SDK (future, conceptual).** OctoPrint's mixin/hook/event-bus + asset-injection
+  model informs a *possible* Studio SDK (read-only views, printer-profile packs, ecosystem
+  adapters). If built, gate it to a **read-only capability surface** — structurally withhold
+  any command/write API. Not committed now.
+
+**Use:** State-panel layout, push+backfill+throttle pattern, estimate-origin labeling,
+telemetry/event vocabulary, registration-over-modification SDK lessons.
+**Don't use:** any control surface, OctoPrint field shapes verbatim (consume Moonraker
+objects), or AGPL implementation code.

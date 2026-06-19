@@ -71,3 +71,44 @@ No big-bang rewrite; each step ships working software (matches the project's dis
 Adopting a canonical IR is a **direction-setting** choice. This document recommends it
 but does **not** implement it — per the research-only rule and the "architecture lock"
 stop condition. Build sign-off belongs to the roadmap (Sprint 4) + an explicit go-ahead.
+
+---
+
+## External research integration — Slic3r/PrusaSlicer (concepts only)
+
+Slic3r/PrusaSlicer (GPL/AGPL) was reviewed for format + profile concepts. **Format
+knowledge, field/key names, and terminology are reusable; no C++ implementation may be
+copied** (3MF reader/writer, preset/inheritance engine, wipe-tower, MMU segmentation).
+
+- **Two-layer 3MF split → the canonical import shape.** Both Prusa and Bambu/Orca split
+  a project into (1) a **config-snapshot** file + (2) a **scene/model-tree** file, over a
+  shared spec-compliant `3D/3dmodel.model`. They differ only in filename, serialization,
+  and key vocabulary:
+  - Prusa: `Metadata/Slic3r_PE.config` (flat **INI**) + `Metadata/Slic3r_PE_model.config`
+    (**XML** object→volume tree, per-object overrides, painting). Identified by the
+    `Slic3r_PE`-prefixed files.
+  - Bambu/Orca: `Metadata/project_settings.config` (**JSON**) + `Metadata/model_settings.config`
+    (**XML**), plus Bambu/Orca-only `slice_info.config`, per-plate configs, `filament_maps`.
+  → The IR adopts this split: a **config layer** + a **scene layer (objects→volumes,
+  overrides, painting)**, with per-ecosystem parsers normalizing into one schema. Geometry
+  in `3dmodel.model` is the reliable common substrate; config is best-effort mapped (no
+  cross-slicer key translation survives a round trip).
+- **Three-axis preset model → the IR's settings spine.** Process/Print × Filament × Printer
+  is the lingua franca across Prusa/Orca/Bambu — map all three onto it. Keep a
+  **system-vs-user** preset split and a `compatible_printers_condition`-style gate so
+  U1-only profiles surface only for the U1.
+- **Terminology to adopt:** Process (prefer Orca/Bambu's term over "Print settings"),
+  Filament, Printer; **config bundle**; **modifier meshes**; **per-object/volume overrides**.
+- **Multi-material → per-volume tool index + per-face paint.** Represent MM as an extruder/
+  tool index per volume plus optional per-triangle paint segmentation. This maps **cleanly
+  to the U1's 4 toolheads** (extruder 0–3 → toolhead 0–3). Carry an import-side purge/flush
+  matrix field for fidelity from single-nozzle slicers, but mark it **advisory** — see the
+  adaptive-profiles note for why the U1 drops it.
+
+**Use:** the two-layer split, three-axis preset taxonomy + inheritance + compatibility
+conditions, the canonical vocabulary, per-volume tool index + face-paint representation.
+**Don't use:** GPL/AGPL implementation code; Prusa's lossy expand-at-import inheritance
+(Studio should resolve inheritance live); the single-nozzle purge model for U1 toolchanges.
+
+See `U1_ADAPTIVE_PROFILES.md` for how the preset/inheritance concept becomes U1 adaptive
+profiles, and `../design/PRINTER_HUB.md` for the OctoPrint/Moonraker monitoring integration.
