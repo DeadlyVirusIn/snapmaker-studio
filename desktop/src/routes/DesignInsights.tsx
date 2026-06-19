@@ -13,6 +13,7 @@ import { useSession } from "@/store/session";
 import { insights as apiInsights, report as apiReport } from "@/api";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { useToast } from "@/store/toast";
+import { StrategyPicker } from "@/components/StrategyPicker";
 import {
   readinessStars, familyLabel, verdictStatus, colorsLabel, partsLabel,
 } from "@/lib/simple";
@@ -37,6 +38,7 @@ export default function DesignInsights() {
   const openFile = useOpenFile();
   const showToast = useToast((s) => s.show);
   const [showDetails, setShowDetails] = useState(false);
+  const [strategy, setStrategy] = useState("balanced");  // default Balanced
 
   if (!file) return <Navigate to="/" replace />;
 
@@ -224,6 +226,10 @@ export default function DesignInsights() {
                   )}
                 </div>
               )}
+
+              <div className="border-t border-border pt-3">
+                <StrategyPicker filePath={file.path} mode="simple" value={strategy} onChange={setStrategy} />
+              </div>
 
               <Button className="w-full" onClick={runConvert} disabled={convert.status === "loading"}>
                 {convert.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}

@@ -217,6 +217,50 @@ export async function report(path: string): Promise<ReadinessReport> {
   return r.json();
 }
 
+export interface PrintStrategy {
+  id: string;
+  name: string;
+  explanation: string;
+  intent: string;
+  use_cases: string[];
+  tradeoffs: string;
+  settings: Record<string, string>;
+}
+export interface StrategyList {
+  schema_version: string;
+  default: string;
+  strategies: PrintStrategy[];
+  categories: Record<string, string>;
+  notes: string;
+}
+export interface StrategyRecommendation {
+  recommended: string;
+  reason: string;
+  warnings: string[];
+  signals_used: string[];
+  estimated_note: string;
+  signals: { colors: number | null; source_family: string | null; dimensions_mm: { x: number; y: number; z: number } | null; complexity: string | null };
+}
+
+export async function strategies(): Promise<StrategyList> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/strategies`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token }, body: "{}",
+  });
+  if (!r.ok) throw new Error(`strategies failed (${r.status})`);
+  return r.json();
+}
+
+export async function strategyRecommend(path: string): Promise<StrategyRecommendation> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/strategy/recommend`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ path }),
+  });
+  if (!r.ok) throw new Error(`recommend failed (${r.status})`);
+  return r.json();
+}
+
 export interface PrinterProbe {
   reachable: boolean; host: string; port: number;
   klippy_state?: string; moonraker_version?: string; error?: string;

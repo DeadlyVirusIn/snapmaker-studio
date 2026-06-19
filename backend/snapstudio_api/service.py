@@ -78,6 +78,31 @@ def canonical(path: str) -> dict:
     return to_canonical(path).to_dict()
 
 
+def strategies() -> dict:
+    """List the intent-based print strategies (read-only). Orca still slices."""
+    from snapstudio_core.strategies import list_strategies
+    return list_strategies()
+
+
+def strategy_recommend(path: str) -> dict:
+    """Recommend a print strategy from REAL design signals (read-only). Never fabricates
+    duration, tool-change count, or purge volume."""
+    from snapstudio_core import strategies as strat
+    from snapstudio_core.intelligence import project_info
+    info = project_info(path)
+    signals = {
+        "colors": info.get("colors"),
+        "source_family": info.get("source_family"),
+        "dimensions_mm": info.get("dimensions_mm"),
+        "triangles": info.get("triangles"),
+        "complexity": info.get("complexity"),
+        "issues": info.get("issues"),
+    }
+    rec = strat.recommend(signals)
+    rec["signals"] = {k: signals[k] for k in ("colors", "source_family", "dimensions_mm", "complexity")}
+    return rec
+
+
 def printer_discover(hosts: list[str] | None = None) -> dict:
     """Read-only: probe candidate U1 hosts over Moonraker."""
     from snapstudio_core import moonraker

@@ -11,6 +11,8 @@ import type { Verdict } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/store/session";
 import { useOpenFile } from "@/hooks/useOpenFile";
+import { StrategyPicker } from "@/components/StrategyPicker";
+import { useState } from "react";
 
 function Spinner() {
   return <Loader2 className="h-4 w-4 animate-spin" />;
@@ -18,6 +20,7 @@ function Spinner() {
 
 export default function LiveWorkspace() {
   const file = useSession((s) => s.file);
+  const [strategy, setStrategy] = useState("balanced");  // default Balanced
   const doctor = useSession((s) => s.doctor);
   const convert = useSession((s) => s.convert);
   const runDoctor = useSession((s) => s.runDoctor);
@@ -54,6 +57,14 @@ export default function LiveWorkspace() {
           </Button>
         </div>
       </div>
+
+      {doctor.status === "done" && (
+        <Card>
+          <CardContent className="p-5">
+            <StrategyPicker filePath={file.path} mode="advanced" value={strategy} onChange={setStrategy} />
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_300px]">
         {/* Doctor (left) */}

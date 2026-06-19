@@ -161,6 +161,20 @@ def _make_handler(token: str):
                     self._send(200, service.canonical(path))
                 except Exception as e:
                     self._send(500, {"error": str(e)})
+            elif self.path == "/strategies":
+                try:
+                    self._send(200, service.strategies())
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
+            elif self.path == "/strategy/recommend":
+                path = data.get("path")
+                if not path:
+                    self._send(400, {"error": "missing 'path'"})
+                    return
+                try:
+                    self._send(200, service.strategy_recommend(path))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
             elif self.path == "/printer/discover":
                 try:
                     self._send(200, service.printer_discover(data.get("hosts")))

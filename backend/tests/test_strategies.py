@@ -1,0 +1,90 @@
+"""Adaptive Print Strategies (intent profiles) — mapping + recommendation tests.
+
+Strategies are a read-only recommendation layer (Orca slices). These tests pin the
+safety invariants from docs/research/U1_PRINT_PROFILE_RESEARCH.md."""
+from snapstudio_core import strategies as S
+
+
+def test_five_strategies_present_with_default_balanced():
+    out = S.list_strategies()
+    ids = [s["id"] for s in out["strategies"]]
+    assert ids == ["fastest", "balanced", "best_quality", "max_reliability", "advanced"]
+    assert out["default"] == "balanced"
+    # every strategy has novice copy + intent + tradeoffs (Simple Mode needs these)
+    for s in out["strategies"]:
+        assert s["name"] and s["explanation"] and s["intent"] and s["tradeoffs"]
+
+
+def test_advanced_has_no_overrides():
+    assert S.get_strategy("advanced")["settings"] == {}
+
+
+def test_safety_invariants_across_all_strategies():
+    for s in S.STRATEGIES:
+        st = s["settings"]
+        # never auto-enable no-sparse-layers (collision risk)
+        assert st.get("wipe_tower_no_sparse_layers", "0") == "0"
+        # never auto-raise purge speed above the U1-documented safe max (90 mm/s)
+        if "wipe_tower_max_purge_speed" in st:
+            assert int(st["wipe_tower_max_purge_speed"]) <= S.U1_SAFE_MAX_PURGE_SPEED
+        # strategies never touch geometry or per-design filament data
+        for k in st:
+            assert not k.startswith(("filament_colour", "filament_type", "filament_settings_id"))
+
+
+def test_reliability_uses_rib_wall_and_bigger_brim():
+    rel = S.get_strategy("max_reliability")["settings"]
+    bal = S.get_strategy("balanced")["settings"]
+    assert rel["wipe_tower_wall_type"] == "rib"
+    assert int(rel["prime_tower_brim_width"]) >= int(bal["prime_tower_brim_width"])
+
+
+def test_best_quality_purges_more_than_fastest():
+    bq = float(S.get_strategy("best_quality")["settings"]["flush_multiplier"])
+    fast = float(S.get_strategy("fastest")["settings"]["flush_multiplier"])
+    assert bq > fast
+
+
+def test_recommend_single_color_is_fastest():
+    r = S.recommend({"colors": 1, "dimensions_mm": {"x": 20, "y": 20, "z": 20}})
+    assert r["recommended"] == "fastest"
+    assert "color count" in r["signals_used"]
+
+
+def test_recommend_tall_multicolor_is_reliability():
+    r = S.recommend({"colors": 3, "dimensions_mm": {"x": 50, "y": 50, "z": 220}})
+    assert r["recommended"] == "max_reliability"
+    assert "model height" in r["signals_used"]
+
+
+def test_recommend_over_four_colors_warns_and_picks_reliability():
+    r = S.recommend({"colors": 6, "dimensions_mm": {"x": 50, "y": 50, "z": 40}})
+    assert r["recommended"] == "max_reliability"
+    assert any("4 toolheads" in w for w in r["warnings"])
+
+
+def test_recommend_default_multicolor_is_balanced():
+    r = S.recommend({"colors": 2, "dimensions_mm": {"x": 50, "y": 50, "z": 40}, "complexity": "low"})
+    assert r["recommended"] == "balanced"
+
+
+def test_recommend_never_fakes_tool_changes_or_duration():
+    r = S.recommend({"colors": 3, "dimensions_mm": {"x": 50, "y": 50, "z": 40}})
+    blob = (r["reason"] + " " + r["estimated_note"]).lower()
+    assert "estimated" in r["estimated_note"].lower()
+    # no fabricated absolute counts/times
+    assert "minutes" not in blob and "hours" not in blob
+
+
+def test_service_strategies_and_recommend(tmp_path):
+    import struct
+    from snapstudio_api import service
+    out = service.strategies()
+    assert out["schema_version"] == "strategies/1" and len(out["strategies"]) == 5
+    # recommend on a real STL (single tetra -> single color -> fastest)
+    stl = tmp_path / "cube.stl"
+    head = b"\x00" * 80 + struct.pack("<I", 1) + struct.pack("<12fH", 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0)
+    stl.write_bytes(head)
+    rec = service.strategy_recommend(str(stl))
+    assert rec["recommended"] in {s["id"] for s in out["strategies"]}
+    assert "estimated_note" in rec
