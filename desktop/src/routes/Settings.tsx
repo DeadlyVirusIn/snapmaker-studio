@@ -91,7 +91,7 @@ export default function Settings() {
         <CardContent className="p-5">
           <div className="flex items-center gap-2 text-sm font-semibold"><Info className="h-4 w-4" /> About</div>
           <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-            <p>Snapmaker Studio · v0.3.0-beta.2</p>
+            <p>Snapmaker Studio · v0.4.0-beta.1</p>
             <p>Local-first. No account, no cloud — nothing leaves your computer.</p>
             <p>Independent open-source project — not affiliated with or endorsed by Snapmaker.</p>
           </div>

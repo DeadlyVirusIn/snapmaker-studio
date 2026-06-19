@@ -6,13 +6,24 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.4.0-beta.1] - UNRELEASED
+
+> Positioning: **the workflow platform for modern 3D printing** — understand any
+> design, validate it, get it ready, and monitor your U1 (read-only). Snapmaker Orca
+> still slices; Studio does not slice, send prints, or control printers. Independent
+> open-source project, not affiliated with Snapmaker. Snapmaker U1 is the first
+> printer target.
+
 ### Added
 - **Project Intelligence** (`/insights`) — real, read-only design data: model dimensions (bounding box, mm), triangle count + complexity tier, detected materials (color + type), object/plate/color counts, source ecosystem, verdict and readiness score. No fake data — every value is derived from the file or the existing engine.
 - **Validation Center** (`/report`) — a first-class readiness report: pass/warn/fail checks (incl. bed-fit vs the U1 270×270×270 build volume) plus a preservation answer to *What will be preserved? / What will change? / What might be lost?*
-- **U1 Printer Hub** (read-only spike) — discover a networked Snapmaker U1 over its stock LAN-trusted Moonraker API and watch live status: print state, progress, bed + per-toolhead temperatures. **Monitoring only** — GET requests exclusively; no upload, no print start/stop, no printer modification. New `Printers` tab in the desktop app.
+- **U1 Printer Hub** (read-only) — discover a networked Snapmaker U1 over its stock LAN-trusted Moonraker API and watch live status: print state, progress, bed + per-toolhead temperatures. **Monitoring only** — GET requests exclusively; no upload, no print start/stop, no printer modification. New `Printers` tab in the desktop app.
 - **Canonical project representation** (`/canonical`) — the smallest source-neutral view of a design, the seam where multi-ecosystem support begins. A thin read-only layer over Project Intelligence that normalizes any source into one shape, including a Prusa INI (`Slic3r_PE.config`) reader so Prusa materials + printer model surface like Bambu's. Honest about limits: Prusa multi-material is *detected*, not yet preserved through conversion.
+- **Adaptive Print Strategies** (`/strategies`, `/strategy/recommend`) — five research-backed, intent-based U1 print profiles (Fastest, Balanced (default), Best Quality, Maximum Reliability, Advanced). **Recommendation-only — Snapmaker Orca still slices.** Recommendation uses real design signals (color count, source, dimensions, complexity) and never fabricates duration, tool-change count, or purge volume. Print Strategy selector in the conversion flow: Simple Mode shows plain-language names + a *Recommended* badge; Advanced Mode shows the raw settings. Grounded in `docs/research/U1_PRINT_PROFILE_RESEARCH.md`.
 
-## [0.3.0-beta.2] - UNRELEASED
+### Changed
+- **Product positioning rework** across app, README, docs, brand, and landing — from "U1 converter" to a workflow platform (Understand → Validate → Prepare → Monitor). Nav/labels reworded (e.g. "Batch prepare"); "U1 Control Center" → "Workflow Platform"; live engine status in the footer; global search wired to My Designs.
+- **Honesty pass:** dropped "any printer / any file / Operating System / Perfect prints" overclaims; PrusaSlicer is shown as *detected* (full conversion = roadmap); added the "independent open-source project, not affiliated with Snapmaker" disclaimer to README, landing, app About, and brand docs.
 
 ### Fixed
 - **Clean import in Snapmaker Orca.** Converting a customized Bambu/Orca project no longer triggers Orca's "Customized Preset" popup or the "Print By Object" collision warning:
@@ -20,6 +31,7 @@ All notable changes to this project are documented here. The format is based on
   - resets `print_sequence` to `by layer` (the U1 default; "by object" caused the collision warning).
   - The customized setting *values* are preserved — only the markers/sequence are normalized.
 - **Validator hardened:** `is_u1_clean` (and the corpus gate) now fail if `different_settings_to_system` is non-empty or `print_sequence != "by layer"`, so these warning triggers can't regress silently. Regression tests added (real-world `KidsCrocsWithSupport` finding).
+- **Legacy optimization safety reconciliation:** the bundled `u1_fast_prime_tower` optimization no longer carries `wipe_tower_max_purge_speed: 200` (now 90, the U1-documented safe cap) and its description matches its data. Tests now scan all bundled optimizations/profiles to enforce ≤90 mm/s tower speed, no auto-enabled no-sparse-layers, and no touching of protected per-design data. (Opt-in optimize mode only; default conversion unchanged.)
 
 ## [0.3.0-beta.1] - 2026-06-18
 
