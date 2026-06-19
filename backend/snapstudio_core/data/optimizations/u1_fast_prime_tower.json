@@ -1,13 +1,14 @@
 {
   "schema": "u1-opt/1",
   "name": "u1-fast-prime-tower",
-  "description": "Tuned prime/wipe tower: width 20mm, prime volume 13mm3, brim 5mm, rectangle wall, max purge speed 200mm/s, sparse layers on. Reversible; applied only in optimize mode when explicitly named.",
+  "description": "Fast prime/wipe tower aligned with the U1-safe 'Fastest Print' strategy: square 60mm tower, rectangle wall, small 2mm brim, low purge. Tower speed capped at the U1-safe 90 mm/s and sparse layers NOT skipped (no auto collision risk). Reversible; applied only in optimize mode when explicitly named. See docs/research/U1_PRINT_PROFILE_RESEARCH.md.",
   "set": {
-    "prime_tower_width": "20",
-    "prime_volume": "13",
-    "prime_tower_brim_width": "5",
+    "prime_tower_width": "60",
+    "prime_volume": "45",
+    "prime_tower_brim_width": "2",
     "wipe_tower_wall_type": "rectangle",
-    "wipe_tower_max_purge_speed": "200",
-    "wipe_tower_no_sparse_layers": "0"
+    "wipe_tower_max_purge_speed": "90",
+    "wipe_tower_no_sparse_layers": "0",
+    "flush_multiplier": "0.2"
   }
 }

@@ -76,6 +76,57 @@ def test_recommend_never_fakes_tool_changes_or_duration():
     assert "minutes" not in blob and "hours" not in blob
 
 
+def _bundled_json(pkg):
+    import json
+    from importlib.resources import files
+    out = {}
+    for p in files(pkg).iterdir():
+        if p.name.endswith(".json"):
+            out[p.name] = json.loads(p.read_text("utf-8"))
+    return out
+
+
+_SPEED_KEYS = ("wipe_tower_max_purge_speed", "max_purge_speed")
+_NO_SPARSE_KEYS = ("wipe_tower_no_sparse_layers", "no_sparse_layers")
+_PROTECTED = ("filament_colour", "filament_type", "filament_settings_id")
+
+
+def _iter_setting_blocks():
+    """Yield (label, dict-of-settings) for every bundled optimization + profile."""
+    for fname, doc in _bundled_json("snapstudio_core.data.optimizations").items():
+        yield f"optimization:{fname}", doc.get("set", {})
+    for fname, doc in _bundled_json("snapstudio_core.data.profiles").items():
+        yield f"profile:{fname}", doc.get("keys", {})
+
+
+def test_no_bundled_data_exceeds_safe_tower_speed():
+    for label, settings in _iter_setting_blocks():
+        for k in _SPEED_KEYS:
+            if k in settings:
+                assert float(settings[k]) <= S.U1_SAFE_MAX_PURGE_SPEED, f"{label}:{k}={settings[k]} > 90"
+
+
+def test_no_bundled_data_auto_enables_no_sparse_layers():
+    off = {"0", "false", "False", 0, False}
+    for label, settings in _iter_setting_blocks():
+        for k in _NO_SPARSE_KEYS:
+            if k in settings:
+                assert settings[k] in off, f"{label}:{k}={settings[k]} must be OFF"
+
+
+def test_optimizations_never_touch_protected_per_design_data():
+    # optimization `set` blocks are applied to a real project — they must never
+    # overwrite per-design/per-filament/color data.
+    import json
+    from importlib.resources import files
+    for p in files("snapstudio_core.data.optimizations").iterdir():
+        if not p.name.endswith(".json"):
+            continue
+        doc = json.loads(p.read_text("utf-8"))
+        for k in doc.get("set", {}):
+            assert not k.startswith(_PROTECTED), f"{p.name}: {k} touches protected data"
+
+
 def test_service_strategies_and_recommend(tmp_path):
     import struct
     from snapstudio_api import service
