@@ -12,6 +12,34 @@ product or the branding. Brand: [`brand/`](brand/README.md).
 
 ---
 
+## Near-term versions
+
+Concrete next releases. Now that Snapmaker has open-sourced the U1 firmware
+(standard Klipper/Moonraker/Fluidd, local Moonraker on `:7125`, LAN-trusted),
+a **local-first Printer Hub** is feasible. Full feasibility audit:
+[`design/PRINTER_HUB.md`](design/PRINTER_HUB.md). _(No printer code is shipped yet.)_
+
+### v0.5 — Printer Hub Phase A (read-only monitoring)
+- Discover the U1 on the LAN (mDNS `U1.local` / port `7125`)
+- Connect via Moonraker (server-side, no auth needed on-LAN)
+- Live printer status
+- Toolhead / material telemetry (4 toolheads)
+- Job status
+- **Read-only monitoring first** — no control, no slicing
+
+### v0.6 — Printer Hub Phase B (control)
+- Upload already-sliced gcode
+- Start / pause / cancel
+- Print job queue
+
+### Future — closing the loop
+- Slice-and-send workflow
+- Snapmaker Orca handoff **or** embedded-slicer investigation
+- (Studio produces a U1 *project*; printing needs sliced gcode — this is the gap
+  to close. **Print sending is not shipped today.**)
+
+---
+
 ## Phase 1 — Foundation  ·  **DONE** (2026 H1)
 
 The Diagnose → Transform → Validate loop, proven on real files.

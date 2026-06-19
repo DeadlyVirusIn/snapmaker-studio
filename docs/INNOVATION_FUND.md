@@ -75,6 +75,18 @@ manage -> optimize, across the whole ecosystem.
 - **Plugin SDK** — stabilize and document the adapter/profile contracts.
 - **Part-time maintainer time** — sustain reviews, releases, and community packs.
 
+## Why Snapmaker's open U1 firmware matters
+Snapmaker has open-sourced the U1 firmware (Klipper, Moonraker, Fluidd), so each U1
+**exposes a standard local Moonraker/Klipper ecosystem on the LAN** — no cloud
+required. That makes Snapmaker Studio a natural fit as the **local workflow layer
+above the firmware**: understand a design → check it → get it ready → (next)
+discover and monitor the U1 directly over the local network. It keeps the product
+**local-first with no cloud dependency**, and it opens a clear path to a future
+**Printer Hub** (discovery, live status, toolhead/material telemetry, job status).
+_Full print sending is **not** shipped yet — it depends on a slicing step; see the
+phased plan in [`ROADMAP.md`](ROADMAP.md) and the audit in
+[`design/PRINTER_HUB.md`](design/PRINTER_HUB.md)._
+
 ## Proof links (current)
 - Repo: github.com/DeadlyVirusIn/snapmaker-studio
 - Vision: `docs/PRODUCT_VISION.md` . Roadmap: `docs/ROADMAP.md`
