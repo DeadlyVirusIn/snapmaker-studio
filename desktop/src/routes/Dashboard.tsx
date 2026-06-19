@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  UploadCloud, Stethoscope, Wand2, GitCompare, Plus, ArrowRight,
+  UploadCloud, Plus, ArrowRight,
   FileBox, Boxes, Loader2, CheckCircle2, AlertTriangle, RotateCw,
   Printer, Thermometer,
 } from "lucide-react";
@@ -9,20 +9,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import type { Verdict } from "@/components/ui/badge";
+import { SectionTitle } from "@/components/ui/layout";
+import { Workflow } from "@/components/Workflow";
 import { library, printerStatus } from "@/api";
 import type { LibraryProject } from "@/api";
 import { useSession } from "@/store/session";
 import { useMode } from "@/store/mode";
 import { usePrinter } from "@/store/printer";
-import { comingSoon } from "@/store/toast";
 import { useOpenFile } from "@/hooks/useOpenFile";
-
-const QUICK = [
-  { label: "Check compatibility", icon: Stethoscope, hint: "Run Doctor", live: true },
-  { label: "Convert STL", icon: UploadCloud, hint: "STL → U1", live: true },
-  { label: "Repair 3MF", icon: Wand2, hint: "Fix presets", live: true },
-  { label: "Compare files", icon: GitCompare, hint: "Diff versions", live: true },
-];
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "";
@@ -104,38 +98,32 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Welcome back.</h2>
-        <p className="text-muted-foreground">Make any model Snapmaker U1-ready — fully on your machine.</p>
+        <h2 className="text-2xl font-semibold tracking-tight">Snapmaker Studio</h2>
+        <p className="text-muted-foreground">The control center for your Snapmaker U1 — understand, validate, prepare and print, all on your machine.</p>
       </div>
 
-      <Card onClick={openFile} className="cursor-pointer border-dashed bg-gradient-to-b from-muted/40 to-transparent transition-colors hover:border-primary/40">
-        <CardContent className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20">
-            <UploadCloud className="h-7 w-7" />
+      {/* Hero: open a model + the end-to-end workflow it flows through */}
+      <Card className="surface-raised overflow-hidden">
+        <CardContent className="p-0">
+          <button onClick={openFile} className="flex w-full items-center gap-4 border-b border-border p-5 text-left transition-colors hover:bg-muted/40">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20">
+              <UploadCloud className="h-6 w-6" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-medium">Open a model to begin</p>
+              <p className="text-sm text-muted-foreground">Drag in or browse for a <b>.stl</b> or <b>.3mf</b> · nothing leaves your computer</p>
+            </div>
+            <span className="hidden shrink-0 sm:block">
+              <span className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm">
+                <Plus className="h-4 w-4" /> Open a model
+              </span>
+            </span>
+          </button>
+          <div className="p-3 sm:p-4">
+            <Workflow />
           </div>
-          <div>
-            <p className="text-base font-medium">Drop a model to begin</p>
-            <p className="text-sm text-muted-foreground">Supports <b>.stl</b> and <b>.3mf</b> · nothing leaves your computer</p>
-          </div>
-          <Button onClick={(e) => { e.stopPropagation(); openFile(); }}>
-            <Plus className="h-4 w-4" /> Open a model
-          </Button>
         </CardContent>
       </Card>
-
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {QUICK.map((q) => (
-          <Card key={q.label} onClick={() => (q.live ? openFile() : comingSoon(q.label))} className="cursor-pointer transition-all hover:border-primary/40 hover:shadow-md">
-            <CardContent className="flex flex-col gap-2 p-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <q.icon className="h-5 w-5" />
-              </div>
-              <span className="text-sm font-medium leading-tight">{q.label}</span>
-              <span className="text-xs text-muted-foreground">{q.hint}</span>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
 
       {status === "error" && (
         <Card>
@@ -150,12 +138,11 @@ export default function Dashboard() {
       )}
 
       <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Continue working</h3>
+        <SectionTitle trailing={
           <Link to="/projects" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
             All projects <ArrowRight className="h-3.5 w-3.5" />
           </Link>
-        </div>
+        }>Continue working</SectionTitle>
         {status === "pending" ? (
           <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>
         ) : status === "error" ? (

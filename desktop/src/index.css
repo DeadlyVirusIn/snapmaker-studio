@@ -52,3 +52,19 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 }
+
+@layer components {
+  /* Brand wordmark / accent gradient — the Snapmaker spectrum, used sparingly
+     on hero numerals, the logo, and key emphasis. */
+  .brand-gradient {
+    @apply bg-gradient-to-r from-primary to-convertible bg-clip-text text-transparent;
+  }
+  /* Premium interactive surface: subtle lift + ring on hover. */
+  .surface-hover {
+    @apply transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md;
+  }
+  /* Faint top-lit panel used for hero / feature surfaces. */
+  .surface-raised {
+    @apply bg-gradient-to-b from-muted/40 to-transparent;
+  }
+}
