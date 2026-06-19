@@ -63,6 +63,20 @@ def test_recommend_over_four_colors_warns_and_picks_reliability():
     assert any("4 toolheads" in w for w in r["warnings"])
 
 
+def test_recommend_tip_risk_forces_reliability():
+    # mesh diagnostics flagged tip-risk on an otherwise unremarkable multi-color print
+    r = S.recommend({"colors": 2, "dimensions_mm": {"x": 30, "y": 30, "z": 60}, "tip_risk": True})
+    assert r["recommended"] == "max_reliability"
+    assert "stability" in r["signals_used"]
+    assert "tip" in r["reason"].lower()
+
+
+def test_recommend_supports_likely_adds_warning():
+    r = S.recommend({"colors": 2, "dimensions_mm": {"x": 40, "y": 40, "z": 40}, "supports_likely": True})
+    assert "overhangs" in r["signals_used"]
+    assert any("supports" in w.lower() for w in r["warnings"])
+
+
 def test_recommend_default_multicolor_is_balanced():
     r = S.recommend({"colors": 2, "dimensions_mm": {"x": 50, "y": 50, "z": 40}, "complexity": "low"})
     assert r["recommended"] == "balanced"

@@ -155,12 +155,18 @@ def recommend(signals: dict) -> dict:
     height = _height_mm(signals.get("dimensions_mm"))
     complexity = signals.get("complexity")
     issues = signals.get("issues") or []
+    tip_risk = bool(signals.get("tip_risk"))           # from mesh diagnostics
+    supports_likely = bool(signals.get("supports_likely"))
     used: list[str] = []
     warnings: list[str] = []
 
     multicolor = isinstance(colors, int) and colors > 1
     tall = height is not None and height > 150.0  # mm; tall towers tip on the U1
     complex_model = complexity == "high"
+    if tip_risk:
+        used.append("stability")
+    if supports_likely:
+        used.append("overhangs")
 
     # >4 distinct colors can't each get a dedicated toolhead (U1 has 4).
     if isinstance(colors, int) and colors > U1_TOOLHEADS:
@@ -182,9 +188,11 @@ def recommend(signals: dict) -> dict:
     if not multicolor:
         rec = "fastest"
         reason = "This looks like a single-color print, so a heavy multi-color tower isn't needed."
-    elif tall or (isinstance(colors, int) and colors > U1_TOOLHEADS) or complex_model:
+    elif tall or tip_risk or (isinstance(colors, int) and colors > U1_TOOLHEADS) or complex_model:
         rec = "max_reliability"
         bits = []
+        if tip_risk:
+            bits.append("its tall/narrow shape can tip during printing")
         if tall:
             bits.append("it's a tall print (taller towers tip over more easily)")
         if isinstance(colors, int) and colors > U1_TOOLHEADS:
@@ -195,6 +203,9 @@ def recommend(signals: dict) -> dict:
     else:
         rec = "balanced"
         reason = "A balanced tower is a dependable choice for this multi-color print."
+
+    if supports_likely:
+        warnings.append("This model has steep overhangs — enable supports in Snapmaker Orca.")
 
     # Honesty: if validation already flagged issues, nudge toward reliability framing.
     if issues:

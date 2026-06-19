@@ -104,6 +104,15 @@ def strategy_recommend(path: str) -> dict:
         "complexity": info.get("complexity"),
         "issues": info.get("issues"),
     }
+    # Enrich with real mesh diagnostics when available (best-effort, read-only).
+    try:
+        from snapstudio_core.mesh_diagnostics import analyze as _mesh
+        md = _mesh(path)
+        if md.get("available"):
+            signals["tip_risk"] = md["stability"]["tip_risk"]
+            signals["supports_likely"] = md["overhang"]["supports_likely"]
+    except Exception:
+        pass
     rec = strat.recommend(signals)
     rec["signals"] = {k: signals[k] for k in ("colors", "source_family", "dimensions_mm", "complexity")}
     return rec
