@@ -3,12 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Search, FolderKanban, FileBox, Boxes, Loader2, AlertTriangle, Trash2, RotateCw,
-  Clock, ChevronDown, Copy, CheckCircle2,
+  Clock, ChevronDown, Copy, CheckCircle2, Plus,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import type { Verdict } from "@/components/ui/badge";
+import { PageHeader, EmptyState } from "@/components/ui/layout";
 import { library, libraryDelete, history } from "@/api";
 import type { LibraryProject } from "@/api";
 import { useSession } from "@/store/session";
@@ -159,29 +160,28 @@ export default function Projects() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">{simple ? "My Designs" : "Projects"}</h2>
-          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            {status === "success" && total > 0 ? (
-              <>
-                <span>{total} design{total === 1 ? "" : "s"}</span>
-                <span>·</span>
-                <CheckCircle2 className="h-3.5 w-3.5 text-ready" />
-                <span>{readyCount} ready to print</span>
-                {total - readyCount > 0 && <span>· {total - readyCount} need work</span>}
-              </>
-            ) : status === "success" ? (
-              <span>{simple ? "Everything you've worked on." : "Your converted and diagnosed files."}</span>
-            ) : (
-              <span>{simple ? "Everything you've worked on." : "Your converted and diagnosed files."}</span>
-            )}
-          </p>
-        </div>
-        <Button className="ml-auto" variant="secondary" size="sm" onClick={() => refetch()} disabled={isFetching}>
-          {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCw className="h-4 w-4" />} Refresh
-        </Button>
-      </div>
+      <PageHeader
+        icon={FolderKanban}
+        title={simple ? "My Designs" : "Projects"}
+        subtitle={
+          status === "success" && total > 0 ? (
+            <span className="flex items-center gap-1.5">
+              <span>{total} design{total === 1 ? "" : "s"}</span>
+              <span>·</span>
+              <CheckCircle2 className="h-3.5 w-3.5 text-ready" />
+              <span>{readyCount} ready to print</span>
+              {total - readyCount > 0 && <span>· {total - readyCount} need work</span>}
+            </span>
+          ) : (
+            simple ? "Everything you've worked on, ready to revisit." : "Your converted and diagnosed files."
+          )
+        }
+        actions={
+          <Button variant="secondary" size="sm" onClick={() => refetch()} disabled={isFetching}>
+            {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCw className="h-4 w-4" />} Refresh
+          </Button>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex h-9 min-w-[220px] flex-1 items-center gap-2 rounded-md border border-border bg-card px-3">
@@ -231,21 +231,20 @@ export default function Projects() {
 
       {status === "success" && shown.length === 0 && (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-            <FolderKanban className="h-7 w-7 text-muted-foreground" />
+          <CardContent className="p-0">
             {(data?.length ?? 0) === 0 && !query ? (
-              <>
-                <p className="font-medium">Your library is empty</p>
-                <p className="text-sm text-muted-foreground">
-                  Open or convert a file and it’ll show up here automatically.
-                </p>
-                <Button size="sm" onClick={() => nav("/")}>Get started</Button>
-              </>
+              <EmptyState
+                icon={FolderKanban}
+                title="Your design library starts here"
+                description="Every model you open is checked, scored, and kept here with its full history — so you always know what's ready to print."
+                action={<Button size="sm" onClick={() => nav("/")}><Plus className="h-4 w-4" /> Open your first model</Button>}
+              />
             ) : (
-              <>
-                <p className="font-medium">No matching projects</p>
-                <p className="text-sm text-muted-foreground">Try a different search or filter.</p>
-              </>
+              <EmptyState
+                icon={Search}
+                title="No matching designs"
+                description="Try a different search term or switch filters."
+              />
             )}
           </CardContent>
         </Card>

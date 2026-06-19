@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 export function PageHeader({
   icon: Icon, title, subtitle, actions, badge, className,
 }: {
-  icon: LucideIcon; title: string; subtitle?: string;
+  icon: LucideIcon; title: string; subtitle?: React.ReactNode;
   actions?: React.ReactNode; badge?: React.ReactNode; className?: string;
 }) {
   return (

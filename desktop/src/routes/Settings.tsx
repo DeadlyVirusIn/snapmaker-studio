@@ -1,6 +1,7 @@
-import { Sun, Moon, FolderOpen, Info, Sparkles, SlidersHorizontal, Printer, ShieldCheck } from "lucide-react";
+import { Sun, Moon, FolderOpen, Info, Sparkles, SlidersHorizontal, Printer, ShieldCheck, Settings as SettingsIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/layout";
 import { useTheme } from "@/store/theme";
 import { useMode } from "@/store/mode";
 import { usePrinter } from "@/store/printer";
@@ -23,7 +24,7 @@ export default function Settings() {
   const { host, setHost } = usePrinter();
   return (
     <div className="max-w-2xl space-y-6">
-      <h2 className="text-2xl font-semibold tracking-tight">Settings</h2>
+      <PageHeader icon={SettingsIcon} title="Settings" subtitle="Tune Studio to your printer, your workflow, and your environment." />
 
       <Card>
         <CardContent className="divide-y divide-border p-5">

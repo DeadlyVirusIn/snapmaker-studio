@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PageHeader, EmptyState } from "@/components/ui/layout";
 import { cn } from "@/lib/utils";
 import { batchStart, batchStatus, openModelsDialog } from "@/api";
 import type { BatchItem } from "@/api";
@@ -77,31 +78,27 @@ export default function Batch() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <Layers className="h-5 w-5" />
-        </div>
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Batch convert</h2>
-          <p className="text-sm text-muted-foreground">
-            Make many files U1-ready at once. Originals are never overwritten.
-          </p>
-        </div>
-        <div className="ml-auto flex gap-2">
-          <Button variant="secondary" size="sm" onClick={addFiles} disabled={running}>
-            <FilePlus className="h-4 w-4" /> Add files
-          </Button>
-          {!jobId ? (
-            <Button size="sm" onClick={start} disabled={!staged.length}>
-              <Play className="h-4 w-4" /> Convert {staged.length || ""}
+      <PageHeader
+        icon={Layers}
+        title="Batch convert"
+        subtitle="Make a whole folder of designs U1-ready in one pass. Originals are never overwritten."
+        actions={
+          <>
+            <Button variant="secondary" size="sm" onClick={addFiles} disabled={running}>
+              <FilePlus className="h-4 w-4" /> Add files
             </Button>
-          ) : (
-            <Button variant="secondary" size="sm" onClick={clearAll} disabled={running}>
-              <X className="h-4 w-4" /> {running ? "Working…" : "Clear"}
-            </Button>
-          )}
-        </div>
-      </div>
+            {!jobId ? (
+              <Button size="sm" onClick={start} disabled={!staged.length}>
+                <Play className="h-4 w-4" /> Convert {staged.length || ""}
+              </Button>
+            ) : (
+              <Button variant="secondary" size="sm" onClick={clearAll} disabled={running}>
+                <X className="h-4 w-4" /> {running ? "Working…" : "Clear"}
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {(startError || pollError) && (
         <Card>
@@ -181,13 +178,13 @@ export default function Batch() {
         </Card>
       ) : (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-            <Layers className="h-7 w-7 text-muted-foreground" />
-            <p className="font-medium">No files queued</p>
-            <p className="text-sm text-muted-foreground">
-              Add a batch of .stl / .3mf files and convert them all in one go.
-            </p>
-            <Button size="sm" onClick={addFiles}><FilePlus className="h-4 w-4" /> Add files</Button>
+          <CardContent className="p-0">
+            <EmptyState
+              icon={Layers}
+              title="Convert a whole batch at once"
+              description="Queue any number of .stl / .3mf files and Studio makes a clean, validated U1 project for each — your originals stay untouched."
+              action={<Button size="sm" onClick={addFiles}><FilePlus className="h-4 w-4" /> Add files</Button>}
+            />
           </CardContent>
         </Card>
       )}

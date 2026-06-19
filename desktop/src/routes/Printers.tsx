@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/layout";
 import { printerDiscover, printerStatus } from "@/api";
 import { usePrinter } from "@/store/printer";
 
@@ -31,16 +32,16 @@ export default function Printers() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Printer className="h-5 w-5" /></div>
-        <div className="flex-1">
-          <h2 className="text-2xl font-semibold tracking-tight">Printer Hub</h2>
-          <p className="text-sm text-muted-foreground">See your Snapmaker U1’s live status — temperatures, progress, and what it’s printing — right next to your designs.</p>
-        </div>
-        <span className="hidden items-center gap-1 rounded-full border border-ready/40 bg-ready/10 px-2 py-1 text-xs font-medium text-ready sm:inline-flex">
-          <ShieldCheck className="h-3.5 w-3.5" /> Read-only
-        </span>
-      </div>
+      <PageHeader
+        icon={Printer}
+        title="Printer Hub"
+        subtitle="See your Snapmaker U1’s live status — temperatures, progress, and what it’s printing — right next to your designs."
+        badge={
+          <span className="inline-flex items-center gap-1 rounded-full border border-ready/40 bg-ready/10 px-2 py-0.5 text-xs font-medium text-ready">
+            <ShieldCheck className="h-3.5 w-3.5" /> Read-only
+          </span>
+        }
+      />
 
       <Card>
         <CardContent className="space-y-3 p-5">
