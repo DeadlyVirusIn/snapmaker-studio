@@ -4,7 +4,7 @@
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 ![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)
-![Release](https://img.shields.io/github/v/release/DeadlyVirusIn/snapmaker-studio?display_name=tag)
+![Release](https://img.shields.io/github/v/release/DeadlyVirusIn/snapmaker-studio?display_name=tag&include_prereleases)
 ![Status: beta](https://img.shields.io/badge/status-beta-orange.svg)
 
 **Understand any design, check if it will print, and get it ready.**
