@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.3.0-beta.2] - UNRELEASED
+
+### Fixed
+- **Clean import in Snapmaker Orca.** Converting a customized Bambu/Orca project no longer triggers Orca's "Customized Preset" popup or the "Print By Object" collision warning:
+  - clears `different_settings_to_system` (the "differs from system preset" marker carried from the source) during U1 normalization;
+  - resets `print_sequence` to `by layer` (the U1 default; "by object" caused the collision warning).
+  - The customized setting *values* are preserved — only the markers/sequence are normalized.
+- **Validator hardened:** `is_u1_clean` (and the corpus gate) now fail if `different_settings_to_system` is non-empty or `print_sequence != "by layer"`, so these warning triggers can't regress silently. Regression tests added (real-world `KidsCrocsWithSupport` finding).
+
 ## [0.3.0-beta.1] - 2026-06-18
 
 ### Added

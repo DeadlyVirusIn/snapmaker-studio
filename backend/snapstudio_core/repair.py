@@ -10,6 +10,7 @@ from .optimize import load_optimization, apply_optimization
 from .report import RepairOutcome
 from .u1_identity import (
     normalize_project_identity, normalize_values, scrub_foreign, normalize_slice_info,
+    normalize_presets,
 )
 
 SETTINGS = "Metadata/project_settings.config"
@@ -51,6 +52,9 @@ def repair(tm: ThreeMF, mode: str = "u1", remap: dict | None = None,
         report["identity"] = normalize_project_identity(work, filament_count(work))
         report["value_normalizations"] = normalize_values(work)
         report["foreign_cleared"] = scrub_foreign(work)
+        # Clean-import: clear the "Customized Preset" diff marker and reset the
+        # "by object" print sequence (collision warning) to the U1 default.
+        report["presets_normalized"] = normalize_presets(work)
 
     # Optimization is explicit + opt-in: applied ONLY in optimize mode when a
     # profile is named. Runs after the U1 swap so it overrides U1 defaults;

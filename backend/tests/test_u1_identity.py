@@ -3,7 +3,7 @@ import zipfile
 
 from snapstudio_core.u1_identity import (
     normalize_project_identity, scrub_foreign, find_foreign, is_u1_clean,
-    normalize_slice_info, U1_VERSION,
+    normalize_slice_info, normalize_presets, U1_VERSION, U1_PRINT_SEQUENCE,
 )
 from snapstudio_core.config_io import load_project_settings
 from snapstudio_core.convert import convert_to_u1
@@ -37,9 +37,11 @@ def test_normalize_then_scrub_is_clean_and_preserves_design():
     cfg = _bambu_cfg()
     normalize_project_identity(cfg, n_filaments=len(cfg["filament_colour"]))
     scrub_foreign(cfg)
+    normalize_presets(cfg)
     ok, issues = is_u1_clean(cfg)
     assert ok is True, issues
     assert find_foreign(cfg) == []
+    assert cfg["different_settings_to_system"] == ["", ""]
     assert cfg["version"] == U1_VERSION
     assert cfg["printer_model"] == "Snapmaker U1"
     assert "@Snapmaker U1" in cfg["print_settings_id"]
@@ -50,6 +52,43 @@ def test_normalize_then_scrub_is_clean_and_preserves_design():
     assert cfg["filament_type"] == ["PLA", "PLA"]
     # leftover foreign gcode cleared
     assert cfg["time_lapse_gcode"] == ""
+
+
+def test_normalize_presets_clears_customized_markers():
+    # mirrors the real KidsCrocsWithSupport beta finding
+    cfg = {
+        "different_settings_to_system": ["brim_type;enable_support;print_sequence;sparse_infill_density", "", "", ""],
+        "print_sequence": "by object",
+    }
+    changes = normalize_presets(cfg)
+    assert cfg["different_settings_to_system"] == ["", "", "", ""]
+    assert cfg["print_sequence"] == U1_PRINT_SEQUENCE == "by layer"
+    keys = {c["key"] for c in changes}
+    assert {"different_settings_to_system", "print_sequence"} <= keys
+
+
+def test_is_u1_clean_fails_on_customized_preset_marker():
+    cfg = _bambu_cfg()
+    normalize_project_identity(cfg, n_filaments=len(cfg["filament_colour"]))
+    scrub_foreign(cfg)
+    normalize_presets(cfg)
+    assert is_u1_clean(cfg)[0] is True  # baseline clean
+    # inject the "Customized Preset" trigger -> must fail
+    cfg["different_settings_to_system"] = ["brim_type;enable_support", "", "", ""]
+    ok, issues = is_u1_clean(cfg)
+    assert ok is False and any("different_settings_to_system" in i for i in issues)
+
+
+def test_is_u1_clean_fails_on_print_by_object():
+    cfg = _bambu_cfg()
+    normalize_project_identity(cfg, n_filaments=len(cfg["filament_colour"]))
+    scrub_foreign(cfg)
+    cfg["print_sequence"] = "by object"
+    ok, issues = is_u1_clean(cfg)
+    assert ok is False and any("print_sequence" in i for i in issues)
+    # after normalize_presets it should pass
+    normalize_presets(cfg)
+    assert is_u1_clean(cfg)[0] is True
 
 
 def test_normalize_slice_info_blanks_bbl_version():

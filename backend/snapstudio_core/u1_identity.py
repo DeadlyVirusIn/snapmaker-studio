@@ -85,6 +85,41 @@ def normalize_project_identity(cfg: dict, n_filaments: int) -> dict:
     return {"changed": changes}
 
 
+# Clean-import normalization (Snapmaker Orca dialogs on a real beta file):
+#  - "Customized Preset"  -> `different_settings_to_system` non-empty (the
+#    "differs from the system preset" marker, carried from the source slice).
+#  - "Print By Object" collision -> `print_sequence == "by object"`.
+# A genuine clean U1 export carries neither. We reset the markers/sequence; the
+# customized *values* themselves stay in the project (intent preserved).
+U1_PRINT_SEQUENCE = "by layer"
+
+
+def normalize_presets(cfg: dict) -> list[dict]:
+    """Clear the markers Snapmaker Orca uses to flag a project as customized and
+    reset the print sequence to the U1 default. Returns the changes (old->new)."""
+    changes = []
+    # 1. different_settings_to_system — blank every entry, keep list shape.
+    dss = cfg.get("different_settings_to_system")
+    if isinstance(dss, list) and any(str(x) for x in dss):
+        cleared = [""] * len(dss)
+        changes.append({"key": "different_settings_to_system", "old": dss, "new": cleared})
+        cfg["different_settings_to_system"] = cleared
+    elif isinstance(dss, str) and dss:
+        changes.append({"key": "different_settings_to_system", "old": dss, "new": ""})
+        cfg["different_settings_to_system"] = ""
+    # 2. print_sequence — "by object" triggers the collision warning.
+    if cfg.get("print_sequence") not in (None, U1_PRINT_SEQUENCE):
+        changes.append({"key": "print_sequence", "old": cfg.get("print_sequence"), "new": U1_PRINT_SEQUENCE})
+        cfg["print_sequence"] = U1_PRINT_SEQUENCE
+    # 3. Defensive: explicit custom-preset flag, cleared only if actually set
+    #    (absent/None on the investigated sample — guard against other sources).
+    v = cfg.get("is_custom_defined")
+    if v not in (None, "", "0"):
+        changes.append({"key": "is_custom_defined", "old": v, "new": "0"})
+        cfg["is_custom_defined"] = "0"
+    return changes
+
+
 def scrub_foreign(cfg: dict) -> list[str]:
     """Blank any remaining Bambu/BBL/H2D-bearing values (typically leftover
     machine G-code blocks like time_lapse_gcode / wrapping_detection_gcode).
@@ -123,6 +158,13 @@ def is_u1_clean(cfg: dict) -> tuple[bool, list[str]]:
         issues.append("filament_settings_id contains non-Snapmaker presets")
     if not cfg.get("version"):
         issues.append("missing version")
+    # Clean-import markers (Snapmaker Orca dialogs):
+    dss = cfg.get("different_settings_to_system")
+    if (isinstance(dss, list) and any(str(x) for x in dss)) or (isinstance(dss, str) and dss):
+        issues.append("different_settings_to_system is non-empty (triggers 'Customized Preset')")
+    ps = cfg.get("print_sequence")
+    if ps not in (None, U1_PRINT_SEQUENCE):
+        issues.append(f"print_sequence is {ps!r}, expected {U1_PRINT_SEQUENCE!r} (triggers 'Print By Object')")
     return (not issues, issues)
 
 
