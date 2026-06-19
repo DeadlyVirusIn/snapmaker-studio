@@ -7,18 +7,21 @@
 ![Release](https://img.shields.io/github/v/release/DeadlyVirusIn/snapmaker-studio?display_name=tag&include_prereleases)
 ![Status: beta](https://img.shields.io/badge/status-beta-orange.svg)
 
-**The workflow platform for modern 3D printing.**
+**The workflow platform for modern 3D printing — it understands your design before you print it.**
 
-_Understand any design, check if it will print, get it ready — and watch your printer do it._
+_Understand any design, check if it will actually print, get it ready — and watch your printer do it._
 
 Snapmaker Studio is a friendly, local-first desktop app (plus a scriptable engine
-and CLI) that takes a 3D design from **any** common source and walks it through the
-whole pre-print workflow:
+and CLI) that **reads the real geometry** of a 3D design from **any** common source and
+walks it through the whole pre-print workflow:
 
-1. **Understand** — see colors, size, complexity and which ecosystem it came from, in plain language.
-2. **Validate** — find out whether it will print, and exactly what's preserved, changed, or at risk.
+1. **Understand** — colors, size, volume, complexity, source ecosystem, and a **Design Health** read on the actual mesh, in plain language.
+2. **Validate** — will it print? **Watertight check, hole detection, geometry integrity, overhang/supports prediction, stability/tip-risk, and bed fit** — each with what was found, why it matters, and what to do.
 3. **Prepare** — make a clean, print-ready copy. Your originals are never changed.
 4. **Monitor** — watch your printer's live status while it prints (read-only).
+
+It's not a converter — it's the layer that tells you whether a design will print, and
+why, *before* you waste filament. (Converting to a clean U1 project is just one step.)
 
 Runs entirely on your machine. No cloud, no account, no upload — local-first and
 open source.
@@ -62,11 +65,17 @@ printer target; the workflow is built to grow across ecosystems.
 
 ## What's inside
 
-- **Project Intelligence** — real, read-only design data: dimensions, triangle count
+- **Design Health** — real geometry analysis of the actual mesh: **watertight check,
+  hole detection, manifold/normals integrity, overhang → supports prediction,
+  stability/tip-risk, and bed fit** — each as a badge with what was found, why it
+  matters, and what to do. Volume + an honest material *estimate* too. Slice-free,
+  cross-ecosystem, in plain language.
+- **Project Intelligence** — read-only design data: dimensions, volume, triangle count
   and complexity, detected materials/colors, object and plate counts, and the source
   ecosystem. No guesswork, no fake data.
 - **Validation Center** — a readiness check that answers the questions a novice
-  actually has: *will it print, what's preserved, what changes, and what's at risk?*
+  actually has: *will it print, what's preserved, what changes, and what's at risk?* —
+  now backed by the Design Health geometry checks above.
 - **Prepare** — make a clean, validated print-ready copy in one click. Originals are
   never overwritten; every change is recorded.
 - **Printer Hub (read-only)** — discover a networked Snapmaker U1 over its open,

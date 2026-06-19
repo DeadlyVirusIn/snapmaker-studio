@@ -12,7 +12,11 @@ import { cn } from "@/lib/utils";
 import { useSession } from "@/store/session";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { StrategyPicker } from "@/components/StrategyPicker";
+import { DesignHealth } from "@/components/DesignHealth";
+import { mesh as apiMesh, insights as apiInsights } from "@/api";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { HeartPulse } from "lucide-react";
 
 function Spinner() {
   return <Loader2 className="h-4 w-4 animate-spin" />;
@@ -28,6 +32,9 @@ export default function LiveWorkspace() {
   const diff = useSession((s) => s.diff);
   const runDiff = useSession((s) => s.runDiff);
   const openFile = useOpenFile();
+
+  const meshQ = useQuery({ queryKey: ["mesh", file?.path], queryFn: () => apiMesh(file!.path), enabled: !!file && doctor.status === "done" });
+  const insQ = useQuery({ queryKey: ["insights", file?.path], queryFn: () => apiInsights(file!.path), enabled: !!file && doctor.status === "done" });
 
   // No file in session (e.g. hard refresh) — send the user back to start.
   if (!file) return <Navigate to="/" replace />;
@@ -57,6 +64,15 @@ export default function LiveWorkspace() {
           </Button>
         </div>
       </div>
+
+      {doctor.status === "done" && meshQ.data?.available && (
+        <Card>
+          <CardContent className="space-y-3 p-5">
+            <div className="flex items-center gap-2 text-sm font-semibold"><HeartPulse className="h-4 w-4 text-primary" /> Design Health</div>
+            <DesignHealth mesh={meshQ.data} dims={insQ.data?.dimensions_mm} mode="advanced" />
+          </CardContent>
+        </Card>
+      )}
 
       {doctor.status === "done" && (
         <Card>

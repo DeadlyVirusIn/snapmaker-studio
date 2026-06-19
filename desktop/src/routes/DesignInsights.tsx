@@ -14,6 +14,8 @@ import { insights as apiInsights, report as apiReport, mesh as apiMesh } from "@
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { useToast } from "@/store/toast";
 import { StrategyPicker } from "@/components/StrategyPicker";
+import { DesignHealth } from "@/components/DesignHealth";
+import { HeartPulse } from "lucide-react";
 import {
   readinessStars, familyLabel, verdictStatus, colorsLabel, partsLabel,
 } from "@/lib/simple";
@@ -172,6 +174,16 @@ export default function DesignInsights() {
               )}
             </CardContent>
           </Card>
+
+          {/* Design Health — real geometry verdicts in plain language */}
+          {meshData?.available && (
+            <Card>
+              <CardContent className="space-y-3 p-5">
+                <div className="flex items-center gap-2 text-sm font-semibold"><HeartPulse className="h-4 w-4 text-primary" /> Design Health</div>
+                <DesignHealth mesh={meshData} dims={dims} mode="simple" />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Validation Center — will it print + what's preserved/changes/at-risk */}
           {rep && (

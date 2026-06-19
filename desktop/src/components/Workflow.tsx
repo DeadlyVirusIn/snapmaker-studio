@@ -4,8 +4,8 @@ import { Sparkles, ShieldCheck, Wand2, Printer, ChevronRight } from "lucide-reac
 // stages. Used on the Dashboard to frame Studio as an end-to-end workflow,
 // not a one-shot converter. Each stage maps to a real feature in the app.
 const PHASES = [
-  { icon: Sparkles, label: "Understand", hint: "See colors, size & complexity" },
-  { icon: ShieldCheck, label: "Validate", hint: "Confirm it prints on your U1" },
+  { icon: Sparkles, label: "Understand", hint: "Colors, size, volume & geometry health" },
+  { icon: ShieldCheck, label: "Validate", hint: "Watertight, supports, stability & bed fit" },
   { icon: Wand2, label: "Prepare", hint: "Make a clean U1 project" },
   { icon: Printer, label: "Print", hint: "Monitor your U1 live" },
 ];
