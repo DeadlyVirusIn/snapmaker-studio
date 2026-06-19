@@ -60,6 +60,12 @@ def diff(a: str, b: str) -> dict:
     return diff_projects(ThreeMF.open(a), ThreeMF.open(b)).to_dict()
 
 
+def insights(path: str) -> dict:
+    """Rich read-only Project Intelligence (geometry, materials, readiness)."""
+    from snapstudio_core.intelligence import project_info
+    return project_info(path)
+
+
 def library_list(query: str = "", tag: str | None = None) -> dict:
     """List indexed projects, newest first. Optional name search / tag filter."""
     conn = _conn()

@@ -48,6 +48,26 @@ def test_service_doctor(tmp_path):
     assert d["verdict"] == "READY" and d["is_compatible"] is True
 
 
+def test_service_insights_stl(tmp_path):
+    stl = tmp_path / "cube.stl"; stl.write_bytes(_bin_tetra())
+    info = service.insights(str(stl))
+    assert info["schema_version"] == "insights/1"
+    assert info["source_type"] == "stl"
+    assert info["verdict"] == "CONVERTIBLE"  # an STL converts to a U1 project
+    assert info["dimensions_mm"] is not None and info["dimensions_mm"]["x"] >= 0
+    assert info["triangles"] == 2  # the test tetra has 2 facets
+    assert info["complexity"] == "low"
+
+
+def test_service_insights_3mf_materials(tmp_path):
+    out = _sample_u1(tmp_path)
+    info = service.insights(str(out))
+    assert info["verdict"] == "READY"
+    assert isinstance(info["materials"], list)
+    assert len(info["materials"]) == info["colors"]
+    assert all("color" in m for m in info["materials"])
+
+
 def test_service_diff(tmp_path):
     a = _sample_u1(tmp_path)
     d = service.diff(str(a), str(a))   # same file vs itself

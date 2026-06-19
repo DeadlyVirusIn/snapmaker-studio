@@ -163,6 +163,36 @@ export async function batchStatus(jobId: string): Promise<BatchJobStatus> {
   return r.json();
 }
 
+export interface Insights {
+  schema_version: string;
+  name: string;
+  source_type: string | null;
+  source_family: string | null;
+  verdict: string | null;
+  readiness_score: number | null;
+  is_compatible: boolean;
+  objects: number | null;
+  plates: number | null;
+  colors: number | null;
+  painted: boolean;
+  materials: { color: string; type: string | null }[];
+  dimensions_mm: { x: number; y: number; z: number } | null;
+  triangles: number | null;
+  complexity: string | null;
+  issues: string[];
+}
+
+export async function insights(path: string): Promise<Insights> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/insights`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ path }),
+  });
+  if (!r.ok) throw new Error(`insights failed (${r.status})`);
+  return r.json();
+}
+
 // Native open dialog limited to the formats the engine accepts.
 export async function openModelDialog(): Promise<string | null> {
   const picked = await open({

@@ -2,12 +2,15 @@ import { Navigate } from "react-router-dom";
 import {
   Boxes, FileBox, Loader2, Sparkles, AlertTriangle, RotateCw, Wand2,
   CheckCircle2, FolderOpen, Plus, Star, StarHalf, Palette, Layers, ChevronDown,
+  Ruler, Gauge,
 } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/store/session";
+import { insights as apiInsights } from "@/api";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { comingSoon } from "@/store/toast";
 import {
@@ -39,6 +42,13 @@ export default function DesignInsights() {
   const d = doctor.data;
   const TypeIcon = file.name.toLowerCase().endsWith(".stl") ? FileBox : Boxes;
   const status = d ? verdictStatus(d.verdict) : null;
+  // Rich Project Intelligence (real geometry + materials), fetched read-only.
+  const { data: ins } = useQuery({
+    queryKey: ["insights", file.path],
+    queryFn: () => apiInsights(file.path),
+    enabled: doctor.status === "done",
+  });
+  const dims = ins?.dimensions_mm;
   const issues = [...(d?.validation_issues ?? []), ...(d?.compatibility_issues ?? [])];
 
   // ---- Done: it's ready ------------------------------------------------------
@@ -115,10 +125,22 @@ export default function DesignInsights() {
               <div className="flex items-center gap-2 text-sm font-semibold"><Sparkles className="h-4 w-4 text-primary" /> What's in this design</div>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-center gap-2"><FileBox className="h-4 w-4 text-muted-foreground" /> {familyLabel(d.family)}</li>
+                {dims && <li className="flex items-center gap-2"><Ruler className="h-4 w-4 text-muted-foreground" /> {dims.x} × {dims.y} × {dims.z} mm</li>}
                 {colorsLabel(d.filament_count) && <li className="flex items-center gap-2"><Palette className="h-4 w-4 text-muted-foreground" /> {colorsLabel(d.filament_count)}</li>}
-                {partsLabel(d.object_count) && <li className="flex items-center gap-2"><Layers className="h-4 w-4 text-muted-foreground" /> {partsLabel(d.object_count)}</li>}
+                {partsLabel(d.object_count) && <li className="flex items-center gap-2"><Layers className="h-4 w-4 text-muted-foreground" /> {partsLabel(d.object_count)}{(ins?.plates ?? 0) > 1 ? ` · ${ins!.plates} plates` : ""}</li>}
+                {ins?.complexity && <li className="flex items-center gap-2"><Gauge className="h-4 w-4 text-muted-foreground" /> {ins.complexity} complexity{ins.triangles ? ` · ${ins.triangles.toLocaleString()} triangles` : ""}</li>}
                 {d.painted && <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-ready" /> painted areas kept</li>}
               </ul>
+              {ins?.materials && ins.materials.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  {ins.materials.map((m, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs">
+                      <span className="h-3 w-3 rounded-full border border-border" style={{ backgroundColor: m.color }} />
+                      {m.type ?? "filament"}
+                    </span>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
