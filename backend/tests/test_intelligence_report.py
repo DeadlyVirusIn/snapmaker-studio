@@ -98,6 +98,33 @@ def test_comparison_present_in_every_report():
     assert isinstance(comp["studio_line"], str) and comp["studio_line"]
 
 
+def test_risks_carry_community_guidance():
+    out = ir.build(
+        bed_fit={"available": True, "overall_level": "risk",
+                 "findings": [{"level": "risk", "text": "out of bounds — too big for the bed"}],
+                 "fixes": ["Scale to 84%"]},
+    )
+    rk = out["biggest_risk"]
+    assert "community" in rk
+    assert rk["community"]["fix"]
+    assert rk["community"]["confidence"] in ("High", "Medium")
+    assert rk["community"]["sources"]
+
+
+def test_expected_improvement_is_a_labelled_estimate():
+    out = ir.build(
+        predict={"available": True, "likelihood": 65, "band": "uncertain",
+                 "factors": ["more colours than toolheads"]},
+        bed_fit={"available": True, "overall_level": "risk",
+                 "findings": [{"level": "risk", "text": "out of bounds"}], "fixes": ["Scale"]},
+    )
+    ei = out["expected_improvement"]
+    assert ei["current"] == 65
+    assert ei["after_fixes"] > 65 and ei["after_fixes"] <= 95
+    assert ei["is_estimate"] is True
+    assert "estimate" in ei["label"].lower()
+
+
 def test_headline_questions_present():
     out = ir.build(predict={"available": True, "likelihood": 70, "band": "uncertain", "factors": []})
     for k in ("studio_score", "print_success_score", "cost", "suggested_price",

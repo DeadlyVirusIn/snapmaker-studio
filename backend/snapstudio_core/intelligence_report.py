@@ -139,7 +139,35 @@ def build(predict=None, bed_fit=None, mm=None, first_layer=None, health=None,
     seen_r = set()
     recommendations = [r for r in recs if not (r in seen_r or seen_r.add(r))]
 
+    # Community Knowledge: attach the community-known fix + confidence to each risk.
+    try:
+        from . import community_knowledge as ck
+        for rk in risks:
+            hit = ck.match(rk["text"], limit=1)
+            if hit:
+                e = hit[0]
+                rk["community"] = {
+                    "fix": e["community_fix"],
+                    "success_pattern": f"Most U1 users resolve “{e['title']}” this way.",
+                    "confidence": "High",   # curated, widely-reported issues
+                    "sources": e["sources"],
+                }
+    except Exception:
+        pass
+
     biggest_risk = risks[0] if risks else None
+
+    # Expected Improvement (clearly an estimate): applying the recommended fixes
+    # clears most of the gap to a clean print. We recover ~80% of the shortfall.
+    expected_improvement = None
+    if success is not None:
+        after = success if not recommendations or success >= 95 else round(success + (95 - success) * 0.8)
+        expected_improvement = {
+            "current": success,
+            "after_fixes": after,
+            "is_estimate": True,
+            "label": f"Estimate: ~{success}% now → ~{after}% after the recommended fixes",
+        }
 
     # --- the one next action ---
     if biggest_risk:
@@ -205,6 +233,7 @@ def build(predict=None, bed_fit=None, mm=None, first_layer=None, health=None,
         "schema_version": SCHEMA_VERSION,
         "available": True,
         "comparison": comparison,
+        "expected_improvement": expected_improvement,
         "studio_score": studio_score,
         "print_success_score": success,
         "cost": cost_v,
