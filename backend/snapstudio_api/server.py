@@ -312,6 +312,15 @@ def _make_handler(token: str):
                         str(data.get("query", "")), data.get("risks")))
                 except Exception as e:
                     self._send(500, {"error": str(e)})
+            elif self.path == "/plate_inspect":
+                path = data.get("path")
+                if not path:
+                    self._send(400, {"error": "missing 'path'"})
+                    return
+                try:
+                    self._send(200, service.plate_inspect(path))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
             elif self.path == "/demo_report":
                 try:
                     self._send(200, service.demo_report())

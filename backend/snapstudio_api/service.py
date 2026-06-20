@@ -398,6 +398,13 @@ def community_knowledge(query: str = "", risks: list | None = None) -> dict:
             "matches": hits, "count": len(hits)}
 
 
+def plate_inspect(path: str) -> dict:
+    """Per-Plate Filament Remapper — read-only inspection: plates by UI number,
+    their objects, and the filaments in use (Commit A)."""
+    from snapstudio_core import plate_remap
+    return plate_remap.inspect(path)
+
+
 def demo_report() -> dict:
     """Demo Mode: a complete, representative Studio Intelligence Report with no
     file and no printer — for a sub-10-second reviewer demo."""
