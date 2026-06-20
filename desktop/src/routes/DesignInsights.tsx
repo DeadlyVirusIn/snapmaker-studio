@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/store/session";
-import { insights as apiInsights, report as apiReport, mesh as apiMesh, printerCapabilities, firstLayer as apiFirstLayer, toolheadFit as apiToolheadFit, costEstimate as apiCostEstimate, costToPrice as apiCostToPrice, predictSuccess as apiPredictSuccess } from "@/api";
+import { insights as apiInsights, report as apiReport, mesh as apiMesh, printerCapabilities, firstLayer as apiFirstLayer, toolheadFit as apiToolheadFit, costEstimate as apiCostEstimate, costToPrice as apiCostToPrice, predictSuccess as apiPredictSuccess, bedFit as apiBedFit } from "@/api";
 import { usePrinter } from "@/store/printer";
 import { useFilament } from "@/store/filament";
 import { useOpenFile } from "@/hooks/useOpenFile";
@@ -110,6 +110,12 @@ export default function DesignInsights() {
   const { data: price } = useQuery({
     queryKey: ["price", file.path, filamentPrice, filamentCurrency],
     queryFn: () => apiCostToPrice(file.path, { pricePerKg: filamentPrice, currency: filamentCurrency }),
+    enabled: doctor.status === "done", retry: false, staleTime: 30000,
+  });
+  // Bed-Fit / Out-of-Bounds Doctor: catch Orca's cryptic "out of bounds" pre-slice.
+  const { data: bed } = useQuery({
+    queryKey: ["bedfit", file.path, u1Host],
+    queryFn: () => apiBedFit(file.path, u1Host),
     enabled: doctor.status === "done", retry: false, staleTime: 30000,
   });
   // Print Success Prediction: pre-print odds from design + printer + history.
@@ -240,6 +246,38 @@ export default function DesignInsights() {
                     ))}
                   </ul>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* out-of-bounds doctor — only when there's something to warn about */}
+          {bed?.available && bed.overall_level && bed.overall_level !== "ok" && (
+            <Card>
+              <CardContent className="space-y-2 p-5">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-sm font-semibold"><Ruler className="h-4 w-4 text-primary" /> Will it fit your U1?</span>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                    bed.overall_level === "warn" ? "bg-repairable/10 text-repairable" : "bg-risk/10 text-risk"}`}>
+                    {bed.overall_level === "warn" ? "Tight fit" : "Out of bounds"}
+                  </span>
+                </div>
+                {bed.overall_text && <p className="text-sm text-muted-foreground">{bed.overall_text}</p>}
+                {bed.findings && bed.findings.filter((f) => f.level !== "ok").map((f, i) => (
+                  <p key={i} className={`flex items-start gap-1.5 text-xs ${f.level === "risk" ? "text-risk" : "text-repairable"}`}>
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {f.text}
+                  </p>
+                ))}
+                {bed.fixes && bed.fixes.length > 0 && (
+                  <div className="rounded-md bg-ready/5 p-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-ready">How to fix it</p>
+                    <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+                      {bed.fixes.map((fx, i) => (
+                        <li key={i} className="flex items-start gap-1.5"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ready" /> {fx}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <p className="text-[11px] text-muted-foreground opacity-70">Checked against {bed.bed_source} ({bed.bed_mm?.x}×{bed.bed_mm?.y}×{bed.bed_mm?.z} mm) — before Orca even opens.</p>
               </CardContent>
             </Card>
           )}

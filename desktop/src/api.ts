@@ -345,6 +345,29 @@ export async function batchPricing(
   return r.json();
 }
 
+// Bed-Fit / Out-of-Bounds Doctor: does it fit the U1 bed, and if not, why + fix.
+export interface BedFit {
+  available: boolean;
+  bed_known?: boolean;
+  bed_source?: string;
+  bed_mm?: { x: number; y: number; z: number };
+  dims_mm?: { x: number; y: number; z: number };
+  overall_level?: "ok" | "warn" | "risk";
+  overall_text?: string;
+  findings?: { level: "ok" | "warn" | "risk"; text: string }[];
+  fixes?: string[];
+  reason?: string;
+}
+export async function bedFit(path: string, host?: string | null): Promise<BedFit> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/bed_fit`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify(host ? { path, host } : { path }),
+  });
+  if (!r.ok) throw new Error(`bed_fit failed (${r.status})`);
+  return r.json();
+}
+
 // Print Success Prediction: pre-print "will it print?" odds from existing signals.
 export interface SuccessPrediction {
   available: boolean;

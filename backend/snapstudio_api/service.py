@@ -256,6 +256,31 @@ def batch_pricing(paths: list[str], currency: str = "$", **factors) -> dict:
     return pricing.aggregate(priced)
 
 
+def bed_fit(path: str, host: str | None = None, port: int = 7125) -> dict:
+    """Bed-Fit / Out-of-Bounds Doctor: does the model fit the U1 bed, and if not,
+    WHY (the cryptic 'out of bounds' error) and HOW to fix it. Uses the connected
+    U1's real bed when reachable, else the known U1 bed. Read-only; works offline."""
+    from snapstudio_core.intelligence import project_info
+    from snapstudio_core import bed_fit as bf
+    info = project_info(path)
+    dims = info.get("dimensions_mm")
+    object_count = info.get("objects") or 1
+    multi = (info.get("colors") or 0) > 1
+    bed = None
+    bed_known = False
+    if host:
+        from snapstudio_core import moonraker
+        try:
+            caps = moonraker.capabilities(host, port)
+            bm = caps.get("bed_mm")
+            if bm and bm.get("x"):
+                bed, bed_known = bm, True
+        except Exception:
+            pass
+    return bf.assess(dims, bed=bed, bed_known=bed_known,
+                     object_count=object_count, multi_material=multi)
+
+
 def predict_success(path: str, host: str | None = None, port: int = 7125) -> dict:
     """Print Success Prediction: synthesise design readiness + toolhead fit +
     first-layer risk + (when a printer is reachable) its health score and this
