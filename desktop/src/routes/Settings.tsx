@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui/layout";
 import { useTheme } from "@/store/theme";
 import { useMode } from "@/store/mode";
 import { usePrinter } from "@/store/printer";
+import { useFilament } from "@/store/filament";
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -22,6 +23,7 @@ export default function Settings() {
   const { theme, set } = useTheme();
   const { mode, setMode } = useMode();
   const { host, setHost } = usePrinter();
+  const { pricePerKg, currency, setPrice, setCurrency } = useFilament();
   return (
     <div className="max-w-2xl space-y-6">
       <PageHeader icon={SettingsIcon} title="Settings" subtitle="Tune Studio to your printer, your workflow, and your environment." />
@@ -78,6 +80,30 @@ export default function Settings() {
               <Button variant={theme === "dark" ? "primary" : "secondary"} size="sm" onClick={() => set("dark")}>
                 <Moon className="h-4 w-4" /> Dark
               </Button>
+            </div>
+          </Row>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="divide-y divide-border p-5">
+          <p className="pb-2 text-sm font-semibold">Filament</p>
+          <Row label="Filament price" hint="Used to estimate the material cost of a print. Set it to what you pay per spool (per kg).">
+            <div className="flex items-center gap-1">
+              <input
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                aria-label="Currency symbol"
+                className="h-9 w-12 rounded-md border border-border bg-card px-2 text-center text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              />
+              <input
+                type="number" min={1} step={1}
+                value={pricePerKg}
+                onChange={(e) => setPrice(Number(e.target.value))}
+                aria-label="Price per kilogram"
+                className="h-9 w-20 rounded-md border border-border bg-card px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              />
+              <span className="text-sm text-muted-foreground">/ kg</span>
             </div>
           </Row>
         </CardContent>

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/layout";
 import { printerDiscover, printerStatus, printerHistory, printerDiagnostics, printerFileMetadata, printerFailureInsights } from "@/api";
 import { usePrinter } from "@/store/printer";
+import { useFilament } from "@/store/filament";
 
 function fmtDur(s: number | null | undefined): string {
   if (s == null) return "—";
@@ -22,6 +23,8 @@ const FAILED = new Set(["error", "cancelled", "klippy_shutdown", "klippy_disconn
 export default function Printers() {
   const savedHost = usePrinter((s) => s.host);
   const setSavedHost = usePrinter((s) => s.setHost);
+  const filamentPrice = useFilament((s) => s.pricePerKg);
+  const filamentCurrency = useFilament((s) => s.currency);
   const [host, setHost] = useState(savedHost);
   const [connected, setConnected] = useState<string | null>(null);
 
@@ -152,6 +155,7 @@ export default function Printers() {
                   <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                     {meta.data.estimated_time_s != null && <span>Est total {fmtDur(meta.data.estimated_time_s)}</span>}
                     {meta.data.filament_weight_g != null && <span>~{Math.round(meta.data.filament_weight_g)} g filament</span>}
+                    {meta.data.filament_weight_g != null && <span>~{filamentCurrency}{((meta.data.filament_weight_g / 1000) * filamentPrice).toFixed(2)} material</span>}
                     {meta.data.layer_count != null && <span>{meta.data.layer_count} layers</span>}
                     {meta.data.slicer && <span>sliced by {meta.data.slicer}</span>}
                     <span className="opacity-70">(from the file's own slicer data)</span>

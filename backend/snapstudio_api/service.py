@@ -187,6 +187,16 @@ def first_layer(path: str, host: str | None = None, port: int = 7125) -> dict:
     return out
 
 
+def cost_estimate(path: str, price_per_kg: float = 20.0, currency: str = "$") -> dict:
+    """Material Cost Estimation: real material weight (from mesh geometry) x the user's
+    filament price. Read-only; returns unavailable when geometry has no weight."""
+    from snapstudio_core.mesh_diagnostics import analyze
+    from snapstudio_core import cost_estimate as ce
+    md = analyze(path)
+    grams = md.get("material_estimate_g") if md.get("available") else None
+    return ce.estimate(grams, price_per_kg, currency, basis="design estimate (PLA)")
+
+
 def printer_failure_insights(host: str, port: int = 7125, limit: int = 50) -> dict:
     """Failure-Pattern Learning: read the printer's OWN Moonraker history and surface
     failure patterns (rate, repeat-offender files, dominant cause, recent streak) as

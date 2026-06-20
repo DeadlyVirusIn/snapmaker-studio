@@ -256,6 +256,25 @@ export async function toolheadFit(path: string, host?: string | null): Promise<T
   return r.json();
 }
 
+export interface CostEstimate {
+  available: boolean;
+  grams?: number;
+  price_per_kg?: number;
+  currency?: string;
+  cost?: number;
+  basis?: string;
+  reason?: string;
+}
+export async function costEstimate(path: string, pricePerKg = 20, currency = "$"): Promise<CostEstimate> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/cost_estimate`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ path, price_per_kg: pricePerKg, currency }),
+  });
+  if (!r.ok) throw new Error(`cost_estimate failed (${r.status})`);
+  return r.json();
+}
+
 export interface FailureInsights {
   available: boolean;
   overall_level?: "ok" | "warn" | "risk";
