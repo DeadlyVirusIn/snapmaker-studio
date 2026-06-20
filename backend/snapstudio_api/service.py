@@ -197,6 +197,41 @@ def cost_estimate(path: str, price_per_kg: float = 20.0, currency: str = "$") ->
     return ce.estimate(grams, price_per_kg, currency, basis="design estimate (PLA)")
 
 
+def cost_to_price(path: str, host: str | None = None, filename: str | None = None,
+                  port: int = 7125, currency: str = "$", **factors) -> dict:
+    """Cost-to-Price Intelligence: true cost (material + power + machine wear +
+    labour + failed-print buffer) and a suggested selling price with margin.
+
+    Weight + print time come from the slicer's OWN metadata already on the U1 when
+    a host + filename are given (most accurate); otherwise the design's geometry
+    estimate is used for weight and time is left unknown. Read-only; never raises."""
+    from snapstudio_core import pricing
+    grams = None
+    print_hours = None
+    basis = "design estimate (PLA)"
+    if host and filename:
+        from snapstudio_core import moonraker
+        try:
+            md = moonraker.file_metadata(host, filename, port)
+            if md.get("available"):
+                grams = md.get("filament_weight_g")
+                secs = md.get("estimated_time_s")
+                print_hours = (secs / 3600.0) if secs else None
+                basis = "printer slicer metadata"
+        except Exception:
+            pass
+    if grams is None:
+        from snapstudio_core.mesh_diagnostics import analyze
+        mdg = analyze(path)
+        grams = mdg.get("material_estimate_g") if mdg.get("available") else None
+    # Only forward known pricing factors; ignore unrelated keys defensively.
+    allowed = {"price_per_kg", "power_w", "electricity_per_kwh", "machine_price",
+               "machine_life_hours", "labor_hours", "labor_rate",
+               "failure_rate_pct", "markup_pct", "marketplace_fee_pct"}
+    kw = {k: float(v) for k, v in factors.items() if k in allowed and v is not None}
+    return pricing.price(grams, print_hours, currency=currency, basis=basis, **kw)
+
+
 def printer_failure_insights(host: str, port: int = 7125, limit: int = 50) -> dict:
     """Failure-Pattern Learning: read the printer's OWN Moonraker history and surface
     failure patterns (rate, repeat-offender files, dominant cause, recent streak) as

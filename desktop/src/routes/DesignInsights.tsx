@@ -2,7 +2,7 @@ import { Navigate, Link } from "react-router-dom";
 import {
   Boxes, FileBox, Loader2, Sparkles, AlertTriangle, RotateCw, Wand2,
   CheckCircle2, Plus, Star, StarHalf, Palette, Layers, ChevronDown,
-  Ruler, Gauge, ShieldCheck, Copy, Printer, Box, Coins,
+  Ruler, Gauge, ShieldCheck, Copy, Printer, Box, Coins, TrendingUp,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/store/session";
-import { insights as apiInsights, report as apiReport, mesh as apiMesh, printerCapabilities, firstLayer as apiFirstLayer, toolheadFit as apiToolheadFit, costEstimate as apiCostEstimate } from "@/api";
+import { insights as apiInsights, report as apiReport, mesh as apiMesh, printerCapabilities, firstLayer as apiFirstLayer, toolheadFit as apiToolheadFit, costEstimate as apiCostEstimate, costToPrice as apiCostToPrice } from "@/api";
 import { usePrinter } from "@/store/printer";
 import { useFilament } from "@/store/filament";
 import { useOpenFile } from "@/hooks/useOpenFile";
@@ -104,6 +104,12 @@ export default function DesignInsights() {
   const { data: cost } = useQuery({
     queryKey: ["cost", file.path, filamentPrice, filamentCurrency],
     queryFn: () => apiCostEstimate(file.path, filamentPrice, filamentCurrency),
+    enabled: doctor.status === "done", retry: false, staleTime: 30000,
+  });
+  // Cost-to-Price: what it truly costs to make and what it could sell for.
+  const { data: price } = useQuery({
+    queryKey: ["price", file.path, filamentPrice, filamentCurrency],
+    queryFn: () => apiCostToPrice(file.path, { pricePerKg: filamentPrice, currency: filamentCurrency }),
     enabled: doctor.status === "done", retry: false, staleTime: 30000,
   });
   const issues = [...(d?.validation_issues ?? []), ...(d?.compatibility_issues ?? [])];
@@ -223,6 +229,15 @@ export default function DesignInsights() {
                     <Coins className="h-4 w-4 text-muted-foreground" />
                     ~{cost.currency}{cost.cost} in filament
                     <span className="text-xs text-muted-foreground">({cost.grams} g at {cost.currency}{cost.price_per_kg}/kg)</span>
+                  </li>
+                )}
+                {price?.available && price.suggested_price != null && (
+                  <li className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-ready" />
+                    Could sell for ~{price.currency}{price.suggested_price}
+                    <span className="text-xs text-muted-foreground">
+                      ({price.currency}{price.true_cost} cost · ~{price.currency}{price.margin} profit{price.time_known ? "" : ", material + margin"})
+                    </span>
                   </li>
                 )}
                 {/* Advanced detail kept available but out of the novice's first glance */}

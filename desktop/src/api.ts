@@ -275,6 +275,45 @@ export async function costEstimate(path: string, pricePerKg = 20, currency = "$"
   return r.json();
 }
 
+// Cost-to-Price Intelligence: true cost + suggested selling price with margin.
+export interface CostToPrice {
+  available: boolean;
+  time_known?: boolean;
+  grams?: number;
+  print_hours?: number | null;
+  currency?: string;
+  breakdown?: {
+    material: number; electricity: number; depreciation: number;
+    labor: number; failure_buffer: number; marketplace_fee: number;
+  };
+  true_cost?: number;
+  markup_pct?: number;
+  suggested_price?: number;
+  margin?: number;
+  margin_pct?: number;
+  basis?: string;
+  verdict?: string;
+  reason?: string;
+}
+export async function costToPrice(
+  path: string,
+  opts: { pricePerKg?: number; currency?: string; markupPct?: number;
+          host?: string | null; filename?: string | null } = {},
+): Promise<CostToPrice> {
+  const { port, token } = await apiInfo();
+  const body: Record<string, unknown> = { path, currency: opts.currency ?? "$" };
+  if (opts.pricePerKg != null) body.price_per_kg = opts.pricePerKg;
+  if (opts.markupPct != null) body.markup_pct = opts.markupPct;
+  if (opts.host) body.host = opts.host;
+  if (opts.filename) body.filename = opts.filename;
+  const r = await fetch(`http://127.0.0.1:${port}/cost_to_price`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`cost_to_price failed (${r.status})`);
+  return r.json();
+}
+
 export interface FailureInsights {
   available: boolean;
   overall_level?: "ok" | "warn" | "risk";

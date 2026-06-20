@@ -261,6 +261,23 @@ def _make_handler(token: str):
                     self._send(200, service.cost_estimate(path, float(data.get("price_per_kg", 20.0)), str(data.get("currency", "$"))))
                 except Exception as e:
                     self._send(500, {"error": str(e)})
+            elif self.path == "/cost_to_price":
+                path = data.get("path")
+                if not path:
+                    self._send(400, {"error": "missing 'path'"})
+                    return
+                try:
+                    factor_keys = ("price_per_kg", "power_w", "electricity_per_kwh",
+                                   "machine_price", "machine_life_hours", "labor_hours",
+                                   "labor_rate", "failure_rate_pct", "markup_pct",
+                                   "marketplace_fee_pct")
+                    factors = {k: data[k] for k in factor_keys if data.get(k) is not None}
+                    self._send(200, service.cost_to_price(
+                        path, data.get("host"), data.get("filename"),
+                        int(data.get("port", 7125)), str(data.get("currency", "$")),
+                        **factors))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
             elif self.path == "/printer/capabilities":
                 host = data.get("host")
                 if not host:
