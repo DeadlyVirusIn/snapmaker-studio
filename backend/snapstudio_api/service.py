@@ -389,6 +389,32 @@ def printer_firmware(host: str, port: int = 7125) -> dict:
                          caps.get("bed_mm"))
 
 
+def intelligence_report(path: str, host: str | None = None, filename: str | None = None,
+                        port: int = 7125, currency: str = "$", **factors) -> dict:
+    """Studio Intelligence Report: run every Doctor and synthesise one verdict —
+    Studio score, will-it-print, cost, price, profit, biggest risk, next action,
+    with each Doctor as supporting evidence. Read-only; one failing Doctor never
+    sinks the report."""
+    from snapstudio_core import intelligence_report as ir
+
+    def _safe(fn, *a, **kw):
+        try:
+            return fn(*a, **kw)
+        except Exception:
+            return None
+
+    predict = _safe(predict_success, path, host, port)
+    bed = _safe(bed_fit, path, host, port)
+    mm = _safe(mm_doctor, path, host, port)
+    fl = _safe(first_layer, path, host, port)
+    health = _safe(printer_health, host, port) if host else None
+    cost = _safe(cost_to_price, path, host, filename, port, currency, **factors)
+    pricing = _safe(pricing_doctor, path, host, filename, port, currency, **factors)
+    profit = _safe(profit_doctor, path, host, filename, port, currency=currency, **factors)
+    return ir.build(predict=predict, bed_fit=bed, mm=mm, first_layer=fl,
+                    health=health, cost=cost, pricing=pricing, profit=profit)
+
+
 def printer_health(host: str, port: int = 7125, limit: int = 50) -> dict:
     """Printer Health Score: fold the U1's OWN read-only signals — firmware/
     connectivity diagnostics + print-history failure patterns — into one 0–100

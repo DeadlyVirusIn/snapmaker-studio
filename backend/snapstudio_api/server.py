@@ -306,6 +306,23 @@ def _make_handler(token: str):
                         path, data.get("host"), int(data.get("port", 7125))))
                 except Exception as e:
                     self._send(500, {"error": str(e)})
+            elif self.path == "/intelligence_report":
+                path = data.get("path")
+                if not path:
+                    self._send(400, {"error": "missing 'path'"})
+                    return
+                try:
+                    factor_keys = ("price_per_kg", "power_w", "electricity_per_kwh",
+                                   "machine_price", "machine_life_hours", "labor_hours",
+                                   "labor_rate", "failure_rate_pct", "markup_pct",
+                                   "marketplace_fee_pct")
+                    factors = {k: data[k] for k in factor_keys if data.get(k) is not None}
+                    self._send(200, service.intelligence_report(
+                        path, data.get("host"), data.get("filename"),
+                        int(data.get("port", 7125)), str(data.get("currency", "$")),
+                        **factors))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
             elif self.path in ("/pricing_doctor", "/profit_doctor"):
                 path = data.get("path")
                 if not path:
