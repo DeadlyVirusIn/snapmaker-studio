@@ -314,6 +314,37 @@ export async function costToPrice(
   return r.json();
 }
 
+// Business Mode: a whole batch rolled into one cost / price / profit P&L.
+export interface BatchPricing {
+  available: boolean;
+  parts?: number;
+  currency?: string;
+  total_grams?: number;
+  total_cost?: number;
+  total_price?: number;
+  total_profit?: number;
+  margin_pct?: number;
+  avg_price?: number;
+  time_known?: boolean;
+  verdict?: string;
+  reason?: string;
+}
+export async function batchPricing(
+  paths: string[],
+  opts: { pricePerKg?: number; currency?: string; markupPct?: number } = {},
+): Promise<BatchPricing> {
+  const { port, token } = await apiInfo();
+  const body: Record<string, unknown> = { paths, currency: opts.currency ?? "$" };
+  if (opts.pricePerKg != null) body.price_per_kg = opts.pricePerKg;
+  if (opts.markupPct != null) body.markup_pct = opts.markupPct;
+  const r = await fetch(`http://127.0.0.1:${port}/batch_pricing`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`batch_pricing failed (${r.status})`);
+  return r.json();
+}
+
 export interface FailureInsights {
   available: boolean;
   overall_level?: "ok" | "warn" | "risk";

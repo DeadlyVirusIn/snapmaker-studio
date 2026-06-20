@@ -73,3 +73,32 @@ def test_u1_defaults_are_sane():
 def test_verdict_is_plain_language():
     out = pricing.price(grams=100, print_hours=5.0)
     assert isinstance(out["verdict"], str) and len(out["verdict"]) > 0
+
+
+# ---- Business Mode: aggregate a batch into one P&L ---------------------------
+
+def test_aggregate_empty_is_unavailable():
+    out = pricing.aggregate([])
+    assert out["available"] is False
+
+
+def test_aggregate_skips_unavailable_parts():
+    a = pricing.price(grams=100, print_hours=2.0)
+    unavailable = pricing.price(grams=None)
+    out = pricing.aggregate([a, unavailable])
+    assert out["available"] is True
+    assert out["parts"] == 1
+
+
+def test_aggregate_sums_cost_price_profit():
+    a = pricing.price(grams=100, print_hours=2.0, price_per_kg=20.0,
+                     labor_rate=0.0, failure_rate_pct=0.0, markup_pct=100.0)
+    b = pricing.price(grams=50, print_hours=1.0, price_per_kg=20.0,
+                     labor_rate=0.0, failure_rate_pct=0.0, markup_pct=100.0)
+    out = pricing.aggregate([a, b])
+    assert out["parts"] == 2
+    assert out["total_cost"] == round(a["true_cost"] + b["true_cost"], 2)
+    assert out["total_price"] == round(a["suggested_price"] + b["suggested_price"], 2)
+    assert out["total_profit"] == round(a["margin"] + b["margin"], 2)
+    assert out["currency"] == "$"
+    assert isinstance(out["verdict"], str) and out["verdict"]

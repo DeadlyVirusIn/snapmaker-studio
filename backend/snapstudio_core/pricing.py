@@ -108,3 +108,42 @@ def _verdict(cost: float, price_: float, profit: float, currency: str,
     tail = "" if time_known else " (material + margin only — no print time known yet)"
     return (f"Costs about {currency}{cost:.2f} to make; sell around "
             f"{currency}{price_:.2f} for ~{currency}{profit:.2f} profit.{tail}")
+
+
+def aggregate(items) -> dict:
+    """Business Mode: roll a batch of priced parts into one job P&L.
+
+    items: a list of price() results. Unavailable parts are skipped (a missing
+    weight for one model never voids the whole batch). Returns unavailable only
+    when nothing in the batch could be priced.
+    """
+    priced = [i for i in (items or []) if i and i.get("available")]
+    n = len(priced)
+    if n == 0:
+        return {"schema_version": SCHEMA_VERSION, "available": False,
+                "reason": "no priceable parts in this batch"}
+
+    currency = priced[0].get("currency") or "$"
+    total_cost = sum(i.get("true_cost", 0.0) for i in priced)
+    total_price = sum(i.get("suggested_price", 0.0) for i in priced)
+    total_profit = sum(i.get("margin", 0.0) for i in priced)
+    total_grams = sum(i.get("grams", 0.0) for i in priced)
+    margin_pct = (total_profit / total_price * 100.0) if total_price > 0 else 0.0
+    any_time_unknown = any(not i.get("time_known") for i in priced)
+
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "available": True,
+        "parts": n,
+        "currency": currency,
+        "total_grams": round(total_grams, 1),
+        "total_cost": round(total_cost, 2),
+        "total_price": round(total_price, 2),
+        "total_profit": round(total_profit, 2),
+        "margin_pct": round(margin_pct, 1),
+        "avg_price": round(total_price / n, 2),
+        "time_known": not any_time_unknown,
+        "verdict": (f"{n} part{'s' if n != 1 else ''}: ~{currency}{total_cost:.2f} to make, "
+                    f"sell for ~{currency}{total_price:.2f} → ~{currency}{total_profit:.2f} profit"
+                    f"{'' if not any_time_unknown else ' (material + margin only)'}."),
+    }

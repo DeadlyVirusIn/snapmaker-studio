@@ -2,13 +2,15 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Layers, FilePlus, Play, X, Loader2, CheckCircle2, AlertTriangle, FileBox, Boxes,
+  TrendingUp,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader, EmptyState } from "@/components/ui/layout";
 import { cn } from "@/lib/utils";
-import { batchStart, batchStatus, openModelsDialog } from "@/api";
+import { batchStart, batchStatus, openModelsDialog, batchPricing } from "@/api";
 import type { BatchItem } from "@/api";
+import { useFilament } from "@/store/filament";
 
 function baseName(p: string): string {
   return p.split(/[\\/]/).pop() || p;
@@ -25,6 +27,15 @@ export default function Batch() {
   const [staged, setStaged] = useState<string[]>([]);
   const [jobId, setJobId] = useState<string | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
+  const filamentPrice = useFilament((s) => s.pricePerKg);
+  const filamentCurrency = useFilament((s) => s.currency);
+
+  // Business Mode: roll the whole batch into one cost / price / profit P&L.
+  const { data: pnl } = useQuery({
+    queryKey: ["batch-pnl", staged, filamentPrice, filamentCurrency],
+    queryFn: () => batchPricing(staged, { pricePerKg: filamentPrice, currency: filamentCurrency }),
+    enabled: staged.length > 0, retry: false, staleTime: 30000,
+  });
 
   const { data: job, isError, error } = useQuery({
     queryKey: ["batch", jobId],
@@ -99,6 +110,36 @@ export default function Batch() {
           </>
         }
       />
+
+      {pnl?.available && pnl.parts != null && pnl.parts > 0 && (
+        <Card>
+          <CardContent className="space-y-3 p-5">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <TrendingUp className="h-4 w-4 text-ready" /> Business summary
+              </span>
+              <span className="text-xs text-muted-foreground">{pnl.parts} part{pnl.parts !== 1 ? "s" : ""}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="rounded-md border border-border p-2">
+                <p className="text-xs text-muted-foreground">Cost to make</p>
+                <p className="text-base font-semibold tabular-nums">{pnl.currency}{pnl.total_cost}</p>
+              </div>
+              <div className="rounded-md border border-border p-2">
+                <p className="text-xs text-muted-foreground">Sell for</p>
+                <p className="text-base font-semibold tabular-nums">{pnl.currency}{pnl.total_price}</p>
+              </div>
+              <div className="rounded-md border border-ready/30 bg-ready/5 p-2">
+                <p className="text-xs text-muted-foreground">Profit</p>
+                <p className="text-base font-semibold tabular-nums text-ready">{pnl.currency}{pnl.total_profit}</p>
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground opacity-80">
+              {pnl.margin_pct}% margin · ~{pnl.total_grams} g total{pnl.time_known ? "" : " · material + margin (print time unknown until sliced)"}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {(startError || pollError) && (
         <Card>

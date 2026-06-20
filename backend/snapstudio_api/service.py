@@ -242,6 +242,20 @@ def printer_failure_insights(host: str, port: int = 7125, limit: int = 50) -> di
     return fp.assess(hist.get("jobs"), hist.get("totals"))
 
 
+def batch_pricing(paths: list[str], currency: str = "$", **factors) -> dict:
+    """Business Mode: price every part in a batch and roll them into one P&L —
+    total cost, total suggested price, total profit across the whole job. Reuses
+    cost_to_price per part (geometry weight); read-only; never raises on one part."""
+    from snapstudio_core import pricing
+    priced = []
+    for p in (paths or []):
+        try:
+            priced.append(cost_to_price(p, currency=currency, **factors))
+        except Exception:
+            priced.append({"available": False})
+    return pricing.aggregate(priced)
+
+
 def printer_health(host: str, port: int = 7125, limit: int = 50) -> dict:
     """Printer Health Score: fold the U1's OWN read-only signals — firmware/
     connectivity diagnostics + print-history failure patterns — into one 0–100
