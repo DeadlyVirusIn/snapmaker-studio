@@ -7,9 +7,11 @@
 ![Release](https://img.shields.io/github/v/release/DeadlyVirusIn/snapmaker-studio?display_name=tag&include_prereleases)
 ![Status: beta](https://img.shields.io/badge/status-beta-orange.svg)
 
-**The workflow platform for modern 3D printing — it understands your design before you print it.**
+**The Intelligence Layer for Open 3D Printing.**
 
-_Understand any design, check if it will actually print, get it ready — and watch your printer do it._
+_Project Doctor. Printer Doctor. Cost Doctor — Studio checks every model, tells you if it will print, what it costs, and what to sell it for, before your U1 ever sees it._
+
+> **Independent open-source project — not affiliated with or endorsed by Snapmaker.** "Snapmaker" is a trademark of its respective owner.
 
 Snapmaker Studio is a friendly, local-first desktop app (plus a scriptable engine
 and CLI) that **reads the real geometry** of a 3D design from **any** common source and

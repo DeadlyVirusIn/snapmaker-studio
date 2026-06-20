@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { LayoutDashboard, FolderKanban, Settings, Plus, Layers, Wand2, Printer, Sparkles, SlidersHorizontal } from "lucide-react";
+import { LayoutDashboard, FolderKanban, Settings, Plus, Wand2, Printer, Sparkles, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { library } from "@/api";
 import { useSession } from "@/store/session";
@@ -32,8 +32,19 @@ export function Sidebar() {
   return (
     <aside className="flex h-full w-[230px] flex-col border-r border-border bg-card">
       <div className="flex items-center gap-2.5 px-4 h-14 border-b border-border">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-convertible text-primary-foreground shadow-sm">
-          <Layers className="h-[18px] w-[18px]" />
+        {/* Brand mark — ribbon stubs → core → cube (Intelligence Layer) */}
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg shadow-sm" style={{ background: "linear-gradient(135deg,#141A2C,#0A101C)" }}>
+          <svg viewBox="0 0 32 32" className="h-7 w-7" fill="none" aria-hidden="true">
+            <g stroke-width="1.6" stroke-linecap="round">
+              <path d="M3 12 C8 12,9 16,13 16" stroke="#00E1FF"/>
+              <path d="M3 16 C8 16,9 16,13 16" stroke="#FF00FF"/>
+              <path d="M3 20 C8 20,9 16,13 16" stroke="#FF8300"/>
+            </g>
+            <circle cx="15" cy="16" r="4.2" stroke="#0061FF" stroke-width="1.6"/>
+            <circle cx="15" cy="16" r="1.8" fill="#00E1FF"/>
+            <path d="M22 12 L27 14.5 L27 19.5 L22 22 L17 19.5 L17 14.5 Z" fill="#8000FF" opacity="0.9"/>
+            <path d="M22 12 L27 14.5 L22 17 L17 14.5 Z" fill="#fff" opacity="0.25"/>
+          </svg>
         </div>
         <div className="leading-none">
           <span className="block font-semibold tracking-tight">Snapmaker Studio</span>
