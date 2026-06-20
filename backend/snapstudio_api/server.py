@@ -243,6 +243,15 @@ def _make_handler(token: str):
                     self._send(200, service.first_layer(path, data.get("host"), int(data.get("port", 7125))))
                 except Exception as e:
                     self._send(500, {"error": str(e)})
+            elif self.path == "/toolhead_fit":
+                path = data.get("path")
+                if not path:
+                    self._send(400, {"error": "missing 'path'"})
+                    return
+                try:
+                    self._send(200, service.toolhead_fit(path, data.get("host"), int(data.get("port", 7125))))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
             elif self.path == "/printer/capabilities":
                 host = data.get("host")
                 if not host:

@@ -1,7 +1,7 @@
 import { Navigate } from "react-router-dom";
 import {
   FileBox, Boxes, Wand2, FolderOpen, RotateCw, CheckCircle2,
-  AlertTriangle, Loader2, Save, GitCompare,
+  AlertTriangle, Loader2, Save, GitCompare, Palette,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,10 +10,11 @@ import { StatusBadge } from "@/components/ui/badge";
 import type { Verdict } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/store/session";
+import { usePrinter } from "@/store/printer";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { StrategyPicker } from "@/components/StrategyPicker";
 import { DesignHealth } from "@/components/DesignHealth";
-import { mesh as apiMesh, insights as apiInsights } from "@/api";
+import { mesh as apiMesh, insights as apiInsights, toolheadFit as apiToolheadFit } from "@/api";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { HeartPulse } from "lucide-react";
@@ -33,8 +34,10 @@ export default function LiveWorkspace() {
   const runDiff = useSession((s) => s.runDiff);
   const openFile = useOpenFile();
 
+  const u1Host = usePrinter((s) => s.host);
   const meshQ = useQuery({ queryKey: ["mesh", file?.path], queryFn: () => apiMesh(file!.path), enabled: !!file && doctor.status === "done" });
   const insQ = useQuery({ queryKey: ["insights", file?.path], queryFn: () => apiInsights(file!.path), enabled: !!file && doctor.status === "done" });
+  const toolFitQ = useQuery({ queryKey: ["toolhead-fit", file?.path, u1Host], queryFn: () => apiToolheadFit(file!.path, u1Host), enabled: !!file && doctor.status === "done", retry: false, staleTime: 30000 });
 
   // No file in session (e.g. hard refresh) — send the user back to start.
   if (!file) return <Navigate to="/" replace />;
@@ -70,6 +73,36 @@ export default function LiveWorkspace() {
           <CardContent className="space-y-3 p-5">
             <div className="flex items-center gap-2 text-sm font-semibold"><HeartPulse className="h-4 w-4 text-primary" /> Design Health</div>
             <DesignHealth mesh={meshQ.data} dims={insQ.data?.dimensions_mm} mode="advanced" />
+          </CardContent>
+        </Card>
+      )}
+
+      {doctor.status === "done" && toolFitQ.data?.available && (
+        <Card>
+          <CardContent className="space-y-3 p-5">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-sm font-semibold"><Palette className="h-4 w-4 text-primary" /> Colors &amp; toolheads</span>
+              <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                toolFitQ.data.overall_level === "ok" ? "bg-ready/10 text-ready" : toolFitQ.data.overall_level === "warn" ? "bg-repairable/10 text-repairable" : "bg-risk/10 text-risk")}>
+                {toolFitQ.data.color_count} colors / {toolFitQ.data.toolhead_count} heads{toolFitQ.data.printer_aware ? " · live" : ""}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">{toolFitQ.data.overall_text}</p>
+            <ul className="space-y-1.5 text-sm">
+              {toolFitQ.data.findings?.map((f, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  {f.level === "ok"
+                    ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-ready" />
+                    : <AlertTriangle className={cn("mt-0.5 h-4 w-4 shrink-0", f.level === "risk" ? "text-risk" : "text-repairable")} />}
+                  <span className="text-muted-foreground">{f.text}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-[11px] text-muted-foreground">
+              {toolFitQ.data.printer_aware
+                ? "Based on your connected U1's actual toolheads — read-only."
+                : "Based on the U1's 4 toolheads (connect a printer for the live count)."}
+            </p>
           </CardContent>
         </Card>
       )}

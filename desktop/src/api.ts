@@ -236,6 +236,26 @@ export async function firstLayer(path: string, host?: string | null): Promise<Fi
   return r.json();
 }
 
+export interface ToolheadFitReport {
+  available: boolean;
+  printer_aware?: boolean;
+  color_count?: number;
+  toolhead_count?: number;
+  overall_level?: "ok" | "warn" | "risk";
+  overall_text?: string;
+  findings?: { level: "ok" | "warn" | "risk"; text: string }[];
+  reason?: string;
+}
+export async function toolheadFit(path: string, host?: string | null): Promise<ToolheadFitReport> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/toolhead_fit`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ path, host: host ?? null }),
+  });
+  if (!r.ok) throw new Error(`toolhead_fit failed (${r.status})`);
+  return r.json();
+}
+
 export interface MeshReport {
   schema_version: string;
   available: boolean;

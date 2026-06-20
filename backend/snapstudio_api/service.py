@@ -187,6 +187,28 @@ def first_layer(path: str, host: str | None = None, port: int = 7125) -> dict:
     return out
 
 
+def toolhead_fit(path: str, host: str | None = None, port: int = 7125) -> dict:
+    """Toolhead-Fit Intelligence: does the design's colour count fit the U1's toolheads?
+    Uses the printer's REAL toolhead count when a host is reachable, else the U1's known 4.
+    Read-only end to end; works offline (printer-unaware) when no host is given."""
+    from snapstudio_core.intelligence import project_info
+    from snapstudio_core import toolhead_fit as tf
+    info = project_info(path)
+    colors = info.get("colors")
+    heads = None
+    known = False
+    if host:
+        from snapstudio_core import moonraker
+        try:
+            caps = moonraker.capabilities(host, port)   # can raise when unreachable
+            if caps.get("toolhead_count"):
+                heads = caps["toolhead_count"]
+                known = True
+        except Exception:
+            pass
+    return tf.assess(colors, heads, known)
+
+
 def library_list(query: str = "", tag: str | None = None) -> dict:
     """List indexed projects, newest first. Optional name search / tag filter."""
     conn = _conn()

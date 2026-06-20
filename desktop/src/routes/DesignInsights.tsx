@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/store/session";
-import { insights as apiInsights, report as apiReport, mesh as apiMesh, printerCapabilities, firstLayer as apiFirstLayer } from "@/api";
+import { insights as apiInsights, report as apiReport, mesh as apiMesh, printerCapabilities, firstLayer as apiFirstLayer, toolheadFit as apiToolheadFit } from "@/api";
 import { usePrinter } from "@/store/printer";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { useToast } from "@/store/toast";
@@ -88,6 +88,13 @@ export default function DesignInsights() {
   const { data: firstLayer } = useQuery({
     queryKey: ["first-layer", file.path, u1Host],
     queryFn: () => apiFirstLayer(file.path, u1Host),
+    enabled: doctor.status === "done", retry: false, staleTime: 30000,
+  });
+  // Toolhead-Fit: does this design's colour count fit the U1's toolheads?
+  // Uses the connected printer's REAL toolhead count when reachable; else U1's 4.
+  const { data: toolFit } = useQuery({
+    queryKey: ["toolhead-fit", file.path, u1Host],
+    queryFn: () => apiToolheadFit(file.path, u1Host),
     enabled: doctor.status === "done", retry: false, staleTime: 30000,
   });
   const issues = [...(d?.validation_issues ?? []), ...(d?.compatibility_issues ?? [])];
@@ -266,6 +273,37 @@ export default function DesignInsights() {
                   {firstLayer.bed_aware
                     ? "Uses your U1's actual measured bed — read-only."
                     : "Connect your U1 in the Printer Hub to check against your real bed surface."}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Colors & toolheads — does this design's colour count fit the U1? */}
+          {toolFit?.available && (toolFit.color_count ?? 0) > 1 && (
+            <Card>
+              <CardContent className="space-y-3 p-5">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-sm font-semibold"><Palette className="h-4 w-4 text-primary" /> Colors &amp; toolheads</span>
+                  <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                    toolFit.overall_level === "ok" ? "bg-ready/10 text-ready" : toolFit.overall_level === "warn" ? "bg-repairable/10 text-repairable" : "bg-risk/10 text-risk")}>
+                    {toolFit.color_count} colors / {toolFit.toolhead_count} heads
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">{toolFit.overall_text}</p>
+                <ul className="space-y-1.5 text-sm">
+                  {toolFit.findings?.map((f, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      {f.level === "ok"
+                        ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-ready" />
+                        : <AlertTriangle className={cn("mt-0.5 h-4 w-4 shrink-0", f.level === "risk" ? "text-risk" : "text-repairable")} />}
+                      <span className="text-muted-foreground">{f.text}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-[11px] text-muted-foreground">
+                  {toolFit.printer_aware
+                    ? "Based on your connected U1's actual toolheads — read-only."
+                    : "Based on the U1's 4 toolheads. Connect your U1 in the Printer Hub to confirm."}
                 </p>
               </CardContent>
             </Card>
