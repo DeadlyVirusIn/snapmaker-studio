@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Printer, Loader2, RotateCw, Thermometer, AlertTriangle, CheckCircle2,
@@ -29,6 +29,13 @@ export default function Printers() {
   const [connected, setConnected] = useState<string | null>(null);
 
   const connect = (h: string) => { const v = h.trim(); if (!v) return; setSavedHost(v); setConnected(v); };
+
+  // Auto-connect a previously-saved printer when the Hub opens, so returning
+  // users land on live status instead of an empty input box.
+  useEffect(() => {
+    if (savedHost && !connected) connect(savedHost);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const discover = useQuery({ queryKey: ["discover"], queryFn: () => printerDiscover(), enabled: false });
   const status = useQuery({
@@ -70,7 +77,7 @@ export default function Printers() {
         subtitle="See your Snapmaker U1’s live status — temperatures, progress, and what it’s printing — right next to your designs."
         badge={
           <span className="inline-flex items-center gap-1 rounded-full border border-ready/40 bg-ready/10 px-2 py-0.5 text-xs font-medium text-ready">
-            <ShieldCheck className="h-3.5 w-3.5" /> Read-only
+            <ShieldCheck className="h-3.5 w-3.5" /> Monitoring only
           </span>
         }
       />
@@ -79,7 +86,7 @@ export default function Printers() {
         <CardContent className="space-y-3 p-5">
           <p className="text-sm font-medium">Connect to your U1</p>
           <p className="text-xs text-muted-foreground">
-            Your U1 shows up on your home network as <code className="rounded bg-muted px-1">U1.local</code>. Enter that (or its IP address) and connect — Studio only reads status, it never changes your printer.
+            Not sure of the address? Tap <b>Auto-detect my U1</b> and Studio finds it for you. Or type its name (<code className="rounded bg-muted px-1">U1.local</code>) or IP address. Studio only reads status — it never changes your printer.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex h-9 min-w-[200px] flex-1 items-center gap-2 rounded-md border border-border bg-card px-3">
@@ -87,22 +94,25 @@ export default function Printers() {
               <input value={host} onChange={(e) => setHost(e.target.value)} onKeyDown={(e) => e.key === "Enter" && connect(host)} placeholder="U1.local"
                 className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
             </div>
-            <Button onClick={() => connect(host)} disabled={!host.trim()}>Connect</Button>
-            <Button variant="secondary" onClick={() => discover.refetch()} disabled={discover.isFetching}>
-              {discover.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCw className="h-4 w-4" />} Scan network
+            <Button variant="secondary" onClick={() => connect(host)} disabled={!host.trim()}>Connect</Button>
+            <Button onClick={() => discover.refetch()} disabled={discover.isFetching}>
+              {discover.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCw className="h-4 w-4" />} Auto-detect my U1
             </Button>
           </div>
           {discover.data && (
-            <ul className="text-sm">
+            <ul className="space-y-1 text-sm">
               {discover.data.map((p) => (
                 <li key={p.host} className="flex items-center gap-2 py-1">
                   {p.reachable ? <CheckCircle2 className="h-4 w-4 text-ready" /> : <AlertTriangle className="h-4 w-4 text-muted-foreground" />}
-                  <button className="underline-offset-2 hover:underline" onClick={() => { setHost(p.host); connect(p.host); }}>{p.host}</button>
-                  <span className="text-xs text-muted-foreground">{p.reachable ? `found — ${p.klippy_state ?? "ready"}` : "no printer here"}</span>
+                  <span className="font-medium">{p.host}</span>
+                  <span className="text-xs text-muted-foreground">{p.reachable ? "U1 found — ready" : "not a U1"}</span>
+                  {p.reachable && (
+                    <Button size="sm" className="ml-auto" onClick={() => { setHost(p.host); connect(p.host); }}>Use this printer</Button>
+                  )}
                 </li>
               ))}
               {discover.data.every((p) => !p.reachable) && (
-                <li className="pt-1 text-xs text-muted-foreground">No U1 found. Make sure it’s powered on and on the same Wi-Fi, then try its IP address.</li>
+                <li className="pt-1 text-xs text-muted-foreground">No U1 found. Make sure it’s powered on and on the same Wi-Fi, then try typing its IP address above.</li>
               )}
             </ul>
           )}

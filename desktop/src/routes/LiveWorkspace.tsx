@@ -68,6 +68,43 @@ export default function LiveWorkspace() {
         </div>
       </div>
 
+      {/* Readiness verdict + score + issues — kept directly under the header CTA so the
+          decision data sits next to the "Make U1-ready" action it informs. */}
+      {doctor.status === "done" && d && (
+        <Card>
+          <CardContent className="space-y-4 p-6">
+            <div className="flex items-center gap-5">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 border-primary/30 text-2xl font-bold text-primary">
+                {d.score ?? "—"}
+              </div>
+              <div className="space-y-1.5">
+                <StatusBadge verdict={d.verdict as Verdict} />
+                <p className="text-sm text-muted-foreground">{d.recommended_action}</p>
+              </div>
+            </div>
+            {(d.compatibility_issues?.length || d.validation_issues?.length) ? (
+              <div className="border-t border-border pt-3">
+                <h3 className="mb-2 text-sm font-semibold">Issues found</h3>
+                <ul className="space-y-2 text-sm">
+                  {[...(d.validation_issues ?? []), ...(d.compatibility_issues ?? [])].map(
+                    (issue: string, i: number) => (
+                      <li key={i} className="flex items-start gap-2 text-muted-foreground">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-repairable" />
+                        <span>{issue}</span>
+                      </li>
+                    )
+                  )}
+                </ul>
+              </div>
+            ) : (
+              <p className="flex items-center gap-2 border-t border-border pt-3 text-sm">
+                <CheckCircle2 className="h-4 w-4 text-ready" /> No compatibility issues found.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {doctor.status === "done" && meshQ.data?.available && (
         <Card>
           <CardContent className="space-y-3 p-5">
@@ -142,46 +179,6 @@ export default function LiveWorkspace() {
                 </Button>
               </CardContent>
             </Card>
-          )}
-
-          {doctor.status === "done" && d && (
-            <>
-              <Card>
-                <CardContent className="flex items-center gap-5 p-6">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 border-primary/30 text-2xl font-bold text-primary">
-                    {d.score ?? "—"}
-                  </div>
-                  <div className="space-y-1.5">
-                    <StatusBadge verdict={d.verdict as Verdict} />
-                    <p className="text-sm text-muted-foreground">{d.recommended_action}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {(d.compatibility_issues?.length || d.validation_issues?.length) ? (
-                <Card>
-                  <CardContent className="p-5">
-                    <h3 className="mb-3 text-sm font-semibold">Issues found</h3>
-                    <ul className="space-y-2 text-sm">
-                      {[...(d.validation_issues ?? []), ...(d.compatibility_issues ?? [])].map(
-                        (issue: string, i: number) => (
-                          <li key={i} className="flex items-start gap-2 text-muted-foreground">
-                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-repairable" />
-                            <span>{issue}</span>
-                          </li>
-                        )
-                      )}
-                    </ul>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card>
-                  <CardContent className="flex items-center gap-2 p-5 text-sm">
-                    <CheckCircle2 className="h-4 w-4 text-ready" /> No compatibility issues found.
-                  </CardContent>
-                </Card>
-              )}
-            </>
           )}
 
           {/* Convert outcome */}
