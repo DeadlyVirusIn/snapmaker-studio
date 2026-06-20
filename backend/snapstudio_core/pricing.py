@@ -110,6 +110,80 @@ def _verdict(cost: float, price_: float, profit: float, currency: str,
             f"{currency}{price_:.2f} for ~{currency}{profit:.2f} profit.{tail}")
 
 
+def tiers(true_cost, currency: str = "$", marketplace_fee_pct: float = 0.0) -> dict:
+    """Pricing Doctor: three honest selling-price tiers for one print.
+
+    Hobby (cover costs + a little), Marketplace (competitive for Etsy/MakerWorld),
+    Premium (bespoke / low-volume). Each grosses up any marketplace fee so the
+    seller still nets the markup, and explains who it's for. Returns unavailable
+    with no cost to price from."""
+    if true_cost is None or true_cost <= 0:
+        return {"schema_version": SCHEMA_VERSION, "available": False,
+                "reason": "no cost available to price from"}
+    cur = currency or "$"
+    fee_frac = max(0.0, min(marketplace_fee_pct / 100.0, 0.95))
+    plan = [
+        ("Hobby", 30, "Just covers your costs and time — for friends, gifts, or cost-recovery."),
+        ("Marketplace", 85, "Competitive for Etsy / MakerWorld / local sales at typical demand."),
+        ("Premium", 175, "Bespoke, custom, or low-volume work where quality commands more."),
+    ]
+    out = []
+    for label, markup, why in plan:
+        pre = true_cost * (1.0 + markup / 100.0)
+        price_ = pre / (1.0 - fee_frac) if fee_frac else pre
+        profit = price_ - true_cost - price_ * fee_frac
+        out.append({
+            "label": label, "markup_pct": markup,
+            "price": round(price_, 2), "profit": round(profit, 2),
+            "margin_pct": round(profit / price_ * 100.0, 1) if price_ > 0 else 0.0,
+            "why": why,
+        })
+    mk = out[1]
+    return {
+        "schema_version": SCHEMA_VERSION, "available": True, "currency": cur,
+        "true_cost": round(float(true_cost), 2), "tiers": out,
+        "verdict": f"For most sellers, price it around {cur}{mk['price']:.2f} "
+                   f"(marketplace) for ~{cur}{mk['profit']:.2f} profit.",
+    }
+
+
+def profit_analysis(true_cost, suggested_price, currency: str = "$",
+                    prints_per_month: int = 20, fixed_cost: float = None,
+                    batch_count: int = 10) -> dict:
+    """Profit Doctor: profit per print, margin %, batch profitability, a monthly
+    projection, and break-even against a fixed cost (e.g. the printer). Honest:
+    a loss-making price never "breaks even"; estimates are labelled as such."""
+    import math
+    if true_cost is None or suggested_price is None:
+        return {"schema_version": SCHEMA_VERSION, "available": False,
+                "reason": "need both a cost and a price to analyse profit"}
+    cur = currency or "$"
+    profit = suggested_price - true_cost
+    margin = (profit / suggested_price * 100.0) if suggested_price > 0 else 0.0
+    monthly = profit * max(0, int(prints_per_month or 0))
+    be = None
+    if fixed_cost and profit > 0:
+        be = math.ceil(fixed_cost / profit)
+    n = max(1, int(batch_count or 1))
+    if profit > 0:
+        verdict = (f"~{cur}{profit:.2f} profit per print ({margin:.0f}% margin); "
+                   f"about {cur}{monthly:.2f}/month at {prints_per_month} prints"
+                   + (f", break-even on the printer after {be} prints." if be else "."))
+    else:
+        verdict = (f"Priced below cost — you'd lose {cur}{abs(profit):.2f} per print. "
+                   f"Raise the price or cut cost before selling.")
+    return {
+        "schema_version": SCHEMA_VERSION, "available": True, "currency": cur,
+        "profit_per_print": round(profit, 2),
+        "margin_pct": round(margin, 1),
+        "monthly_profit": round(monthly, 2),
+        "prints_per_month": int(prints_per_month or 0),
+        "break_even_prints": be,
+        "batch": {"count": n, "profit": round(profit * n, 2)},
+        "verdict": verdict,
+    }
+
+
 def aggregate(items) -> dict:
     """Business Mode: roll a batch of priced parts into one job P&L.
 

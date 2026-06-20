@@ -90,6 +90,55 @@ def test_aggregate_skips_unavailable_parts():
     assert out["parts"] == 1
 
 
+# ---- Pricing Doctor: tiered selling prices ----------------------------------
+
+def test_tiers_unavailable_without_cost():
+    out = pricing.tiers(None)
+    assert out["available"] is False
+
+
+def test_tiers_returns_three_labelled_tiers_ascending():
+    out = pricing.tiers(10.0, currency="$")
+    assert out["available"] is True
+    labels = [t["label"] for t in out["tiers"]]
+    assert labels == ["Hobby", "Marketplace", "Premium"]
+    prices = [t["price"] for t in out["tiers"]]
+    assert prices == sorted(prices)          # hobby < marketplace < premium
+    assert all(t["why"] for t in out["tiers"])   # each tier explains itself
+    assert all(t["price"] > 10.0 for t in out["tiers"])  # all above cost
+
+
+def test_tiers_marketplace_fee_raises_prices():
+    base = pricing.tiers(10.0, marketplace_fee_pct=0.0)
+    fee = pricing.tiers(10.0, marketplace_fee_pct=10.0)
+    assert fee["tiers"][1]["price"] > base["tiers"][1]["price"]
+
+
+# ---- Profit Doctor: profit, margin, batch, monthly, break-even --------------
+
+def test_profit_unavailable_without_inputs():
+    assert pricing.profit_analysis(None, None)["available"] is False
+
+
+def test_profit_basic_math():
+    out = pricing.profit_analysis(true_cost=4.0, suggested_price=10.0,
+                                  prints_per_month=20, fixed_cost=600.0)
+    assert out["available"] is True
+    assert out["profit_per_print"] == 6.0
+    assert out["margin_pct"] == 60.0
+    assert out["monthly_profit"] == 120.0          # 6 * 20
+    assert out["break_even_prints"] == 100         # ceil(600 / 6)
+    assert out["batch"]["count"] >= 1
+    assert out["batch"]["profit"] == round(6.0 * out["batch"]["count"], 2)
+
+
+def test_profit_handles_nonprofitable():
+    out = pricing.profit_analysis(true_cost=10.0, suggested_price=8.0, fixed_cost=600.0)
+    assert out["profit_per_print"] == -2.0
+    assert out["break_even_prints"] is None        # never breaks even at a loss
+    assert isinstance(out["verdict"], str) and out["verdict"]
+
+
 def test_aggregate_sums_cost_price_profit():
     a = pricing.price(grams=100, print_hours=2.0, price_per_kg=20.0,
                      labor_rate=0.0, failure_rate_pct=0.0, markup_pct=100.0)

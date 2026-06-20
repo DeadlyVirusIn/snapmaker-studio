@@ -306,6 +306,30 @@ def _make_handler(token: str):
                         path, data.get("host"), int(data.get("port", 7125))))
                 except Exception as e:
                     self._send(500, {"error": str(e)})
+            elif self.path in ("/pricing_doctor", "/profit_doctor"):
+                path = data.get("path")
+                if not path:
+                    self._send(400, {"error": "missing 'path'"})
+                    return
+                try:
+                    factor_keys = ("price_per_kg", "power_w", "electricity_per_kwh",
+                                   "machine_price", "machine_life_hours", "labor_hours",
+                                   "labor_rate", "failure_rate_pct", "markup_pct",
+                                   "marketplace_fee_pct")
+                    factors = {k: data[k] for k in factor_keys if data.get(k) is not None}
+                    common = dict(host=data.get("host"), filename=data.get("filename"),
+                                  port=int(data.get("port", 7125)),
+                                  currency=str(data.get("currency", "$")))
+                    if self.path == "/pricing_doctor":
+                        self._send(200, service.pricing_doctor(path, **common, **factors))
+                    else:
+                        self._send(200, service.profit_doctor(
+                            path, **common,
+                            prints_per_month=int(data.get("prints_per_month", 20)),
+                            fixed_cost=data.get("fixed_cost"),
+                            batch_count=int(data.get("batch_count", 10)), **factors))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
             elif self.path == "/cost_to_price":
                 path = data.get("path")
                 if not path:

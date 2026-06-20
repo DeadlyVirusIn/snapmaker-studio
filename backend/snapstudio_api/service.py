@@ -347,6 +347,38 @@ def predict_success(path: str, host: str | None = None, port: int = 7125) -> dic
                       health=health, prior_failures=prior)
 
 
+def pricing_doctor(path: str, host: str | None = None, filename: str | None = None,
+                   port: int = 7125, currency: str = "$", **factors) -> dict:
+    """Pricing Doctor: hobby / marketplace / premium selling prices for a print,
+    built on the Cost Doctor's true cost. Read-only."""
+    from snapstudio_core import pricing
+    cost = cost_to_price(path, host, filename, port, currency, **factors)
+    if not cost.get("available"):
+        return {"schema_version": "pricing/1", "available": False,
+                "reason": cost.get("reason", "no cost available")}
+    fee = float(factors.get("marketplace_fee_pct") or 0.0)
+    out = pricing.tiers(cost.get("true_cost"), currency=currency, marketplace_fee_pct=fee)
+    out["true_cost_basis"] = cost.get("basis")
+    return out
+
+
+def profit_doctor(path: str, host: str | None = None, filename: str | None = None,
+                  port: int = 7125, currency: str = "$", prints_per_month: int = 20,
+                  fixed_cost: float | None = None, batch_count: int = 10,
+                  **factors) -> dict:
+    """Profit Doctor: profit per print, margin, batch, monthly projection and
+    break-even — built on the Cost Doctor's cost and suggested price. Read-only."""
+    from snapstudio_core import pricing
+    cost = cost_to_price(path, host, filename, port, currency, **factors)
+    if not cost.get("available"):
+        return {"schema_version": "pricing/1", "available": False,
+                "reason": cost.get("reason", "no cost available")}
+    fc = fixed_cost if fixed_cost is not None else float(factors.get("machine_price") or 0) or None
+    return pricing.profit_analysis(
+        cost.get("true_cost"), cost.get("suggested_price"), currency=currency,
+        prints_per_month=prints_per_month, fixed_cost=fc, batch_count=batch_count)
+
+
 def printer_firmware(host: str, port: int = 7125) -> dict:
     """Firmware Capability Intelligence: interpret the U1's OWN klipper object list
     into a plain-language capability set (mesh, input shaping, runout, exclusion,
