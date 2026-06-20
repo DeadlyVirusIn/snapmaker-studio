@@ -256,6 +256,48 @@ def batch_pricing(paths: list[str], currency: str = "$", **factors) -> dict:
     return pricing.aggregate(priced)
 
 
+def predict_success(path: str, host: str | None = None, port: int = 7125) -> dict:
+    """Print Success Prediction: synthesise design readiness + toolhead fit +
+    first-layer risk + (when a printer is reachable) its health score and this
+    file's prior-failure count into one pre-print likelihood. Read-only; the
+    printer-side signals are simply skipped when no host is given."""
+    from snapstudio_core import success_predict as sp
+    from snapstudio_core.validation_report import readiness_report
+    import os
+    readiness = toolfit = fl = health = None
+    prior = 0
+    try:
+        readiness = readiness_report(path)
+    except Exception:
+        pass
+    try:
+        toolfit = toolhead_fit(path, host, port)
+    except Exception:
+        pass
+    try:
+        fl = first_layer(path, host, port)
+    except Exception:
+        pass
+    if host:
+        try:
+            health = printer_health(host, port)
+        except Exception:
+            pass
+        try:
+            from snapstudio_core import moonraker
+            base = os.path.basename(path).lower()
+            hist = moonraker.history(host, port, 50)
+            from snapstudio_core import failure_patterns as fp
+            fa = fp.assess(hist.get("jobs"), hist.get("totals"))
+            for ro in (fa.get("repeat_offenders") or []):
+                if (ro.get("filename") or "").lower() == base:
+                    prior = int(ro.get("failures") or 0)
+        except Exception:
+            pass
+    return sp.predict(readiness=readiness, toolfit=toolfit, first_layer=fl,
+                      health=health, prior_failures=prior)
+
+
 def printer_firmware(host: str, port: int = 7125) -> dict:
     """Firmware Capability Intelligence: interpret the U1's OWN klipper object list
     into a plain-language capability set (mesh, input shaping, runout, exclusion,

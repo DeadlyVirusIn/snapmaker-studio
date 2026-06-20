@@ -345,6 +345,25 @@ export async function batchPricing(
   return r.json();
 }
 
+// Print Success Prediction: pre-print "will it print?" odds from existing signals.
+export interface SuccessPrediction {
+  available: boolean;
+  likelihood?: number;
+  band?: "likely" | "uncertain" | "risky";
+  factors?: string[];
+  verdict?: string;
+  reason?: string;
+}
+export async function predictSuccess(path: string, host?: string | null): Promise<SuccessPrediction> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/predict_success`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify(host ? { path, host } : { path }),
+  });
+  if (!r.ok) throw new Error(`predict_success failed (${r.status})`);
+  return r.json();
+}
+
 export interface FailureInsights {
   available: boolean;
   overall_level?: "ok" | "warn" | "risk";

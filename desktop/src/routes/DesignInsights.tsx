@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/store/session";
-import { insights as apiInsights, report as apiReport, mesh as apiMesh, printerCapabilities, firstLayer as apiFirstLayer, toolheadFit as apiToolheadFit, costEstimate as apiCostEstimate, costToPrice as apiCostToPrice } from "@/api";
+import { insights as apiInsights, report as apiReport, mesh as apiMesh, printerCapabilities, firstLayer as apiFirstLayer, toolheadFit as apiToolheadFit, costEstimate as apiCostEstimate, costToPrice as apiCostToPrice, predictSuccess as apiPredictSuccess } from "@/api";
 import { usePrinter } from "@/store/printer";
 import { useFilament } from "@/store/filament";
 import { useOpenFile } from "@/hooks/useOpenFile";
@@ -110,6 +110,12 @@ export default function DesignInsights() {
   const { data: price } = useQuery({
     queryKey: ["price", file.path, filamentPrice, filamentCurrency],
     queryFn: () => apiCostToPrice(file.path, { pricePerKg: filamentPrice, currency: filamentCurrency }),
+    enabled: doctor.status === "done", retry: false, staleTime: 30000,
+  });
+  // Print Success Prediction: pre-print odds from design + printer + history.
+  const { data: predict } = useQuery({
+    queryKey: ["predict", file.path, u1Host],
+    queryFn: () => apiPredictSuccess(file.path, u1Host),
     enabled: doctor.status === "done", retry: false, staleTime: 30000,
   });
   const issues = [...(d?.validation_issues ?? []), ...(d?.compatibility_issues ?? [])];
@@ -213,6 +219,31 @@ export default function DesignInsights() {
 
       {doctor.status === "done" && d && status && (
         <>
+          {/* will it print? — pre-print success prediction */}
+          {predict?.available && predict.likelihood != null && (
+            <Card>
+              <CardContent className="space-y-2 p-5">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-sm font-semibold"><Gauge className="h-4 w-4 text-primary" /> Will it print?</span>
+                  <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-bold ${
+                    predict.band === "likely" ? "bg-ready/10 text-ready"
+                      : predict.band === "uncertain" ? "bg-repairable/10 text-repairable" : "bg-risk/10 text-risk"}`}>
+                    <span className="tabular-nums">{predict.likelihood}%</span>
+                    <span className="capitalize">{predict.band}</span>
+                  </span>
+                </div>
+                {predict.verdict && <p className="text-sm text-muted-foreground">{predict.verdict}</p>}
+                {predict.band !== "likely" && predict.factors && predict.factors.length > 0 && (
+                  <ul className="space-y-1 text-xs text-muted-foreground">
+                    {predict.factors.map((f, i) => (
+                      <li key={i} className="flex items-start gap-1.5"><span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-current opacity-60" /> {f}</li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* what's in this design */}
           <Card>
             <CardContent className="space-y-4 p-5">
