@@ -389,6 +389,15 @@ def printer_firmware(host: str, port: int = 7125) -> dict:
                          caps.get("bed_mm"))
 
 
+def community_knowledge(query: str = "", risks: list | None = None) -> dict:
+    """Community Knowledge Doctor (MVP): map a symptom (or the Report's risks) to
+    curated community-known causes + fixes. Read-only, offline."""
+    from snapstudio_core import community_knowledge as ck
+    hits = ck.match_risks(risks) if risks else ck.match(query)
+    return {"schema_version": ck.SCHEMA_VERSION, "query": query,
+            "matches": hits, "count": len(hits)}
+
+
 def demo_report() -> dict:
     """Demo Mode: a complete, representative Studio Intelligence Report with no
     file and no printer — for a sub-10-second reviewer demo."""
