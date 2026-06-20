@@ -242,6 +242,25 @@ def printer_failure_insights(host: str, port: int = 7125, limit: int = 50) -> di
     return fp.assess(hist.get("jobs"), hist.get("totals"))
 
 
+def printer_health(host: str, port: int = 7125, limit: int = 50) -> dict:
+    """Printer Health Score: fold the U1's OWN read-only signals — firmware/
+    connectivity diagnostics + print-history failure patterns — into one 0–100
+    score, a grade, and plain-language drivers. Read-only; never raises."""
+    from snapstudio_core import moonraker, failure_patterns as fp, health_score as hs
+    diag = None
+    fail = None
+    try:
+        diag = moonraker.diagnostics(host, port)
+    except Exception:
+        pass
+    try:
+        hist = moonraker.history(host, port, limit)
+        fail = fp.assess(hist.get("jobs"), hist.get("totals"))
+    except Exception:
+        pass
+    return hs.score(diagnostics=diag, failures=fail)
+
+
 def toolhead_fit(path: str, host: str | None = None, port: int = 7125) -> dict:
     """Toolhead-Fit Intelligence: does the design's colour count fit the U1's toolheads?
     Uses the printer's REAL toolhead count when a host is reachable, else the U1's known 4.

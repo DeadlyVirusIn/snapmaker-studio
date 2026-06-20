@@ -331,6 +331,20 @@ export function printerFailureInsights(host: string, port = 7125): Promise<Failu
   return printerPost("/printer/failure_insights", { host, port });
 }
 
+// Printer Health Score: one 0–100 from the U1's own read-only firmware + history signals.
+export interface PrinterHealth {
+  available: boolean;
+  score?: number;
+  grade?: "A" | "B" | "C" | "D" | "F";
+  drivers?: string[];
+  basis?: string;
+  verdict?: string;
+  reason?: string;
+}
+export function printerHealth(host: string, port = 7125): Promise<PrinterHealth> {
+  return printerPost("/printer/health", { host, port });
+}
+
 export interface MeshReport {
   schema_version: string;
   available: boolean;

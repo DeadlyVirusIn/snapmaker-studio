@@ -7,7 +7,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/layout";
-import { printerDiscover, printerStatus, printerHistory, printerDiagnostics, printerFileMetadata, printerFailureInsights } from "@/api";
+import { printerDiscover, printerStatus, printerHistory, printerDiagnostics, printerFileMetadata, printerFailureInsights, printerHealth } from "@/api";
 import { usePrinter } from "@/store/printer";
 import { useFilament } from "@/store/filament";
 
@@ -58,6 +58,12 @@ export default function Printers() {
   const failInsights = useQuery({
     queryKey: ["printer-failures", connected],
     queryFn: () => printerFailureInsights(connected as string),
+    enabled: !!connected, refetchInterval: connected ? 60000 : false, retry: false,
+  });
+  // Printer Health Score: one 0–100 folding firmware state + history failures.
+  const health = useQuery({
+    queryKey: ["printer-health", connected],
+    queryFn: () => printerHealth(connected as string),
     enabled: !!connected, refetchInterval: connected ? 60000 : false, retry: false,
   });
   const filename = status.data?.filename ?? null;
@@ -185,6 +191,33 @@ export default function Printers() {
                 <p className="text-xs text-muted-foreground">Live, read-only — Studio never changes your printer.</p>
               </>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {connected && health.data?.available && health.data.score != null && (
+        <Card>
+          <CardContent className="space-y-3 p-5">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-sm font-semibold"><HeartPulse className="h-4 w-4 text-primary" /> Printer Health Score</span>
+              <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-bold ${
+                health.data.grade === "A" || health.data.grade === "B" ? "bg-ready/10 text-ready"
+                  : health.data.grade === "C" ? "bg-repairable/10 text-repairable" : "bg-risk/10 text-risk"}`}>
+                <span className="text-lg leading-none">{health.data.grade}</span>
+                <span className="tabular-nums">{health.data.score}/100</span>
+              </span>
+            </div>
+            {health.data.verdict && <p className="text-sm text-muted-foreground">{health.data.verdict}</p>}
+            {health.data.drivers && health.data.drivers.length > 0 && (
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                {health.data.drivers.map((d, i) => (
+                  <li key={i} className="flex items-start gap-1.5">
+                    <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-current opacity-60" /> {d}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {health.data.basis && <p className="text-[11px] text-muted-foreground opacity-70">From {health.data.basis} — read-only.</p>}
           </CardContent>
         </Card>
       )}
