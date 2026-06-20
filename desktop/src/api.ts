@@ -699,6 +699,39 @@ export async function printerStatus(host: string, port = 7125): Promise<PrinterS
 }
 
 // Native open dialog limited to the formats the engine accepts.
+// ---- Per-Plate Filament Remapper (Commits A/B/C) ----
+import type { PlateInspect, PlateDryRun, PlateExport } from "@/lib/plateRemapWizard";
+
+async function platePost<T>(route: string, body: Record<string, unknown>): Promise<T> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}${route}`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    let msg = `${route} failed (${r.status})`;
+    try { const e = await r.json(); if (e?.error) msg = e.error; } catch { /* ignore */ }
+    throw new Error(msg);
+  }
+  return r.json();
+}
+
+export function plateInspect(path: string): Promise<PlateInspect> {
+  return platePost("/plate_inspect", { path });
+}
+export function plateDryRun(path: string, uiPlate: number, fromFilament: number, toFilament: number): Promise<PlateDryRun> {
+  return platePost("/plate_dry_run", { path, ui_plate: uiPlate, from_filament: fromFilament, to_filament: toFilament });
+}
+export function plateExport(path: string, uiPlate: number, fromFilament: number, toFilament: number): Promise<PlateExport> {
+  return platePost("/plate_export", { path, ui_plate: uiPlate, from_filament: fromFilament, to_filament: toFilament });
+}
+
+// 3MF-only picker for the plate remap wizard (projects only — not bare STLs).
+export async function open3mfDialog(): Promise<string | null> {
+  const picked = await open({ multiple: false, filters: [{ name: "3MF project", extensions: ["3mf"] }] });
+  return typeof picked === "string" ? picked : null;
+}
+
 export async function openModelDialog(): Promise<string | null> {
   const picked = await open({
     multiple: false,
