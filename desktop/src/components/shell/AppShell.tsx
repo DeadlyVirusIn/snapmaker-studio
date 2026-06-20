@@ -10,7 +10,7 @@ import { useSession } from "@/store/session";
 function titleFor(path: string): string {
   if (path === "/") return "Dashboard";
   if (path.startsWith("/workspace")) return "Workspace";
-  if (path.startsWith("/batch")) return "Batch convert";
+  if (path.startsWith("/batch")) return "Batch prepare";
   if (path.startsWith("/projects")) return "Projects";
   if (path.startsWith("/printers")) return "Printer Hub";
   if (path.startsWith("/settings")) return "Settings";

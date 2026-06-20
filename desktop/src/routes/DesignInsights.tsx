@@ -41,7 +41,9 @@ export default function DesignInsights() {
   const openFile = useOpenFile();
   const showToast = useToast((s) => s.show);
   const [showDetails, setShowDetails] = useState(false);
-  const [strategy, setStrategy] = useState("balanced");  // default Balanced
+  const [showMore, setShowMore] = useState(false);       // advanced "what's in this" detail
+  const [showStrategy, setShowStrategy] = useState(false); // strategy is optional for novices
+  const [strategy, setStrategy] = useState("balanced");  // default Balanced (recommended)
 
   if (!file) return <Navigate to="/" replace />;
 
@@ -119,10 +121,10 @@ export default function DesignInsights() {
                 <Copy className="h-4 w-4" /> Copy path
               </Button>
               <Button variant="secondary" asChild>
-                <Link to="/printers"><Printer className="h-4 w-4" /> View my U1</Link>
+                <Link to="/printers"><Printer className="h-4 w-4" /> Check printer status</Link>
               </Button>
               <Button onClick={openFile}>
-                <Plus className="h-4 w-4" /> Do another
+                <Plus className="h-4 w-4" /> Open another model
               </Button>
             </div>
           </CardContent>
@@ -140,9 +142,37 @@ export default function DesignInsights() {
         </div>
         <div className="min-w-0">
           <h2 className="truncate text-xl font-semibold tracking-tight">{file.name}</h2>
-          <p className="text-xs text-muted-foreground">Let's see what's in your design.</p>
+          <p className="text-xs text-muted-foreground">
+            {doctor.status === "loading"
+              ? "Looking at your design…"
+              : doctor.status === "done"
+                ? "Checked — here's what we found. Press Get it ready when you're set."
+                : "Let's see what's in your design."}
+          </p>
         </div>
       </div>
+
+      {/* At-a-glance summary + primary action, visible without scrolling */}
+      {doctor.status === "done" && d && status && (
+        <Card className="surface-raised">
+          <CardContent className="flex flex-wrap items-center gap-4 p-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <Stars score={d.score} />
+                <span className={cn("text-sm font-semibold",
+                  status.tone === "ready" ? "text-ready" : status.tone === "risk" ? "text-risk" : "text-repairable")}>
+                  {status.label}
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">We make a print-ready copy — your original is never changed.</p>
+            </div>
+            <Button onClick={runConvert} disabled={convert.status === "loading"} className="shrink-0">
+              {convert.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+              {convert.status === "loading" ? "Getting it ready…" : "Get it ready"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* looking at it */}
       {doctor.status === "loading" && (
@@ -171,12 +201,22 @@ export default function DesignInsights() {
                 {dims && <li className="flex items-center gap-2"><Ruler className="h-4 w-4 text-muted-foreground" /> {dims.x} × {dims.y} × {dims.z} mm</li>}
                 {colorsLabel(d.filament_count) && <li className="flex items-center gap-2"><Palette className="h-4 w-4 text-muted-foreground" /> {colorsLabel(d.filament_count)}</li>}
                 {partsLabel(d.object_count) && <li className="flex items-center gap-2"><Layers className="h-4 w-4 text-muted-foreground" /> {partsLabel(d.object_count)}{(ins?.plates ?? 0) > 1 ? ` · ${ins!.plates} plates` : ""}</li>}
-                {ins?.complexity && <li className="flex items-center gap-2"><Gauge className="h-4 w-4 text-muted-foreground" /> {ins.complexity} complexity{ins.triangles ? ` · ${ins.triangles.toLocaleString()} triangles` : ""}</li>}
-                {meshData?.available && meshData.volume_cm3 != null && meshData.volume_cm3 > 0 && (
-                  <li className="flex items-center gap-2"><Box className="h-4 w-4 text-muted-foreground" /> {meshData.volume_cm3} cm³{meshData.material_estimate_g != null ? ` · ~${meshData.material_estimate_g} g PLA (estimate)` : ""}</li>
-                )}
                 {d.painted && <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-ready" /> painted areas kept</li>}
+                {/* Advanced detail kept available but out of the novice's first glance */}
+                {showMore && (
+                  <>
+                    {ins?.complexity && <li className="flex items-center gap-2"><Gauge className="h-4 w-4 text-muted-foreground" /> {ins.complexity} complexity{ins.triangles ? ` · ${ins.triangles.toLocaleString()} triangles` : ""}</li>}
+                    {meshData?.available && meshData.volume_cm3 != null && meshData.volume_cm3 > 0 && (
+                      <li className="flex items-center gap-2"><Box className="h-4 w-4 text-muted-foreground" /> {meshData.volume_cm3} cm³{meshData.material_estimate_g != null ? ` · ~${meshData.material_estimate_g} g PLA (estimate)` : ""}</li>
+                    )}
+                  </>
+                )}
               </ul>
+              {(ins?.complexity || (meshData?.available && (meshData.volume_cm3 ?? 0) > 0)) && (
+                <button onClick={() => setShowMore((v) => !v)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                  <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showMore && "rotate-180")} /> {showMore ? "Less detail" : "More detail"}
+                </button>
+              )}
               {ins?.materials && ins.materials.length > 0 && (
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
                   {ins.materials.map((m, i) => (
@@ -282,9 +322,9 @@ export default function DesignInsights() {
               {issues.length > 0 && (
                 <div>
                   <button onClick={() => setShowDetails((v) => !v)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showDetails && "rotate-180")} /> What needs fixing?
+                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", (showDetails || status.tone === "risk") && "rotate-180")} /> What needs fixing?
                   </button>
-                  {showDetails && (
+                  {(showDetails || status.tone === "risk") && (
                     <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
                       {issues.map((it: string, i: number) => (
                         <li key={i} className="flex items-start gap-2"><span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-repairable" />{it}</li>
@@ -295,7 +335,12 @@ export default function DesignInsights() {
               )}
 
               <div className="border-t border-border pt-3">
-                <StrategyPicker filePath={file.path} mode="simple" value={strategy} onChange={setStrategy} />
+                <button onClick={() => setShowStrategy((v) => !v)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                  <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showStrategy && "rotate-180")} /> Change how it's prepared <span className="opacity-70">(optional)</span>
+                </button>
+                {showStrategy
+                  ? <div className="pt-3"><StrategyPicker filePath={file.path} mode="simple" value={strategy} onChange={setStrategy} /></div>
+                  : <p className="pt-1 text-xs text-muted-foreground">We'll use the recommended setup. No need to choose unless you want to.</p>}
               </div>
 
               <Button className="w-full" onClick={runConvert} disabled={convert.status === "loading"}>

@@ -1,9 +1,10 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { LayoutDashboard, FolderKanban, Settings, Plus, Layers, Wand2, Printer } from "lucide-react";
+import { LayoutDashboard, FolderKanban, Settings, Plus, Layers, Wand2, Printer, Sparkles, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { library } from "@/api";
 import { useSession } from "@/store/session";
+import { useMode } from "@/store/mode";
 import { useOpenFile } from "@/hooks/useOpenFile";
 
 const NAV = [
@@ -24,6 +25,7 @@ export function Sidebar() {
   const nav = useNavigate();
   const setFile = useSession((s) => s.setFile);
   const openFile = useOpenFile();
+  const { mode, setMode } = useMode();
   const { data } = useQuery({ queryKey: ["library"], queryFn: () => library() });
   const recent = (data ?? []).slice(0, 3);
 
@@ -70,7 +72,32 @@ export function Sidebar() {
         </>
       )}
 
-      <div className="mt-auto p-3 border-t border-border">
+      <div className="mt-auto space-y-2 p-3 border-t border-border">
+        {/* Persistent mode switch — the single highest-leverage setting, surfaced
+            where users work instead of buried in Settings. */}
+        <div>
+          <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">View</div>
+          <div className="grid grid-cols-2 gap-1 rounded-md bg-muted/50 p-0.5" role="group" aria-label="Choose Simple or Advanced view">
+            <button
+              onClick={() => setMode("simple")}
+              aria-pressed={mode === "simple"}
+              title="Guided, step-by-step — best for first-time users"
+              className={cn("flex items-center justify-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors",
+                mode === "simple" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Simple
+            </button>
+            <button
+              onClick={() => setMode("advanced")}
+              aria-pressed={mode === "advanced"}
+              title="Every tool and detail visible at once — for power users"
+              className={cn("flex items-center justify-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors",
+                mode === "advanced" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" /> Advanced
+            </button>
+          </div>
+        </div>
         <NavLink to="/settings" className={navClass}>
           <Settings className="h-4 w-4" /> Settings
         </NavLink>

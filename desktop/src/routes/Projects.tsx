@@ -25,8 +25,8 @@ function eventLabel(action: string): string {
 
 const FILTERS: { label: string; match: (v: string | null) => boolean }[] = [
   { label: "All", match: () => true },
-  { label: "U1-ready", match: (v) => v === "READY" },
-  { label: "Needs work", match: (v) => v !== "READY" },
+  { label: "Ready to print", match: (v) => v === "READY" },
+  { label: "Needs prep", match: (v) => v !== "READY" },
 ];
 
 function fmtDate(iso: string | null): string {
@@ -103,7 +103,7 @@ function LibraryCard({ p, onOpen, onDelete, simple }: {
               <CheckCircle2 className="h-3.5 w-3.5" /> U1 file ready <Copy className="h-3 w-3 opacity-70" />
             </button>
           ) : (
-            <span className="text-xs text-muted-foreground">Last: {p.last_action ?? "—"}</span>
+            <span className="text-xs text-muted-foreground">Last: {p.last_action ? eventLabel(p.last_action) : "—"}</span>
           )}
           <button
             onClick={onDelete}
@@ -170,7 +170,7 @@ export default function Projects() {
               <span>·</span>
               <CheckCircle2 className="h-3.5 w-3.5 text-ready" />
               <span>{readyCount} ready to print</span>
-              {total - readyCount > 0 && <span>· {total - readyCount} need work</span>}
+              {total - readyCount > 0 && <span>· {total - readyCount} need prep</span>}
             </span>
           ) : (
             simple ? "Everything you've worked on, ready to revisit." : "Your prepared and checked designs."

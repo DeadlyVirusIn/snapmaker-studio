@@ -46,7 +46,14 @@ export default function Settings() {
       <Card>
         <CardContent className="divide-y divide-border p-5">
           <p className="pb-2 text-sm font-semibold">Experience</p>
-          <Row label="Mode" hint="Simple is friendly and guided. Advanced shows every tool and detail.">
+          <Row
+            label="Mode"
+            hint={
+              mode === "simple"
+                ? "Simple: guided, step-by-step — best for first-time users. Switch to Advanced for full diagnostics, side-by-side comparison, and raw settings."
+                : "Advanced: every tool and detail visible at once — no hand-holding. Switch to Simple for a guided, one-action-at-a-time flow."
+            }
+          >
             <div className="flex gap-1">
               <Button variant={mode === "simple" ? "primary" : "secondary"} size="sm" onClick={() => setMode("simple")}>
                 <Sparkles className="h-4 w-4" /> Simple
@@ -56,6 +63,7 @@ export default function Settings() {
               </Button>
             </div>
           </Row>
+          <p className="pt-2 text-xs text-muted-foreground">You can switch any time from the <b>View</b> toggle at the bottom of the sidebar.</p>
         </CardContent>
       </Card>
 

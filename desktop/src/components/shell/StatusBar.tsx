@@ -7,13 +7,12 @@ export function StatusBar() {
   const online = status === "success";
   return (
     <footer className="flex h-7 items-center gap-4 border-t border-border bg-card px-4 text-[11px] text-muted-foreground">
-      <span className="flex items-center gap-1.5">
+      <span className="flex items-center gap-1.5" title={online ? "Local engine running" : status === "pending" ? "Local engine starting" : "Local engine not responding"}>
         <span className={`h-1.5 w-1.5 rounded-full ${online ? "bg-ready" : status === "pending" ? "bg-repairable" : "bg-risk"}`} />
-        {online ? "Engine ready" : status === "pending" ? "Starting engine…" : "Engine offline"}
+        {online ? "Ready" : status === "pending" ? "Starting up…" : "Reconnecting…"}
       </span>
       <span>v0.4.0-beta.1</span>
-      <span>Local-only</span>
-      <span className="ml-auto">No files leave your computer</span>
+      <span className="ml-auto">Local-only · nothing leaves your computer</span>
     </footer>
   );
 }

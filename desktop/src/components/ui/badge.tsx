@@ -10,6 +10,15 @@ const VERDICT_STYLES: Record<Verdict, string> = {
   HIGH_RISK: "bg-risk/10 text-risk",
 };
 
+// Plain-language labels so cards never show raw engine enums to a novice.
+// The raw verdict is kept in title/aria-label for power users & debugging.
+const VERDICT_LABEL: Record<Verdict, string> = {
+  READY: "Print-ready",
+  REPAIRABLE: "Fixable",
+  CONVERTIBLE: "Needs prep",
+  HIGH_RISK: "Needs review",
+};
+
 export function Badge({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) {
   return (
     <span
@@ -21,9 +30,13 @@ export function Badge({ className, ...props }: React.HTMLAttributes<HTMLSpanElem
 
 export function StatusBadge({ verdict, className }: { verdict: Verdict; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold", VERDICT_STYLES[verdict], className)}>
+    <span
+      className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold", VERDICT_STYLES[verdict], className)}
+      title={verdict}
+      aria-label={`Status: ${VERDICT_LABEL[verdict]}`}
+    >
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {verdict.replace("_", " ")}
+      {VERDICT_LABEL[verdict]}
     </span>
   );
 }

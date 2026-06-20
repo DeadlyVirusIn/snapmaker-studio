@@ -98,8 +98,8 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Snapmaker Studio</h2>
-        <p className="text-muted-foreground">The local-first workflow platform for modern 3D printing — understand any design, validate it, get it ready, then monitor your U1 while it prints.</p>
+        <h2 className="text-2xl font-semibold tracking-tight">Get any 3D model ready for your Snapmaker U1</h2>
+        <p className="text-muted-foreground">Open a model — Studio checks it, fixes what it can, and saves a print-ready file. Everything stays on your computer.</p>
       </div>
 
       {/* Hero: open a model + the end-to-end workflow it flows through */}
@@ -220,7 +220,7 @@ export default function Dashboard() {
                     <p><span className="text-2xl font-semibold text-foreground">{projects.length}</span> project{projects.length === 1 ? "" : "s"}</p>
                     {projects.length > 0 ? (
                       <p className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-ready" />{ready} U1-ready · {needsWork} need work
+                        <CheckCircle2 className="h-3.5 w-3.5 text-ready" />{ready} ready to print · {needsWork} need prep
                       </p>
                     ) : (
                       <p>Nothing indexed yet.</p>

@@ -17,30 +17,34 @@ const PILL: Record<Level, string> = {
 const STATUS_ICON: Record<Level, LucideIcon> = { ok: CheckCircle2, warn: AlertTriangle, risk: ShieldAlert };
 
 function buildRows(mesh: MeshReport, dims?: { x: number; y: number; z: number } | null,
-                   bed?: { x: number; y: number; z: number } | null): Row[] {
+                   bed?: { x: number; y: number; z: number } | null,
+                   mode: "simple" | "advanced" = "simple"): Row[] {
   const rows: Row[] = [];
   const integ = mesh.integrity;
   const fitBed = bed ?? U1_BED;
   const bedSource = bed ? "your connected U1" : "the U1’s";
+  const simple = mode === "simple";
 
-  // 1. Watertight
+  // 1. Watertight — plain "No holes" for novices; the technical term stays in Advanced.
   if (integ) {
     rows.push(integ.watertight
-      ? { key: "watertight", label: "Watertight", icon: Droplets, level: "ok", status: "Sealed",
-          detail: "The mesh is fully closed. It will slice cleanly without gaps." }
-      : { key: "watertight", label: "Watertight", icon: Droplets, level: "risk", status: `${integ.holes} hole${integ.holes === 1 ? "" : "s"}`,
-          detail: `Found ${integ.holes} hole(s) / ${integ.open_edges} open edge(s). Open meshes can print with gaps or fail — repair the model before printing.` });
+      ? { key: "watertight", label: simple ? "No holes" : "Watertight", icon: Droplets, level: "ok", status: "Sealed",
+          detail: "The surface is fully closed, so it prints without gaps." }
+      : { key: "watertight", label: simple ? "No holes" : "Watertight", icon: Droplets, level: "risk", status: `${integ.holes} hole${integ.holes === 1 ? "" : "s"}`,
+          detail: simple
+            ? `Found ${integ.holes} hole(s) in the surface. This can print with gaps or fail — best to repair the model first.`
+            : `Found ${integ.holes} hole(s) / ${integ.open_edges} open edge(s). Open meshes can print with gaps or fail — repair the model before printing.` });
 
-    // 2. Geometry integrity (manifold + normals + degenerate)
+    // 2. Mesh quality (manifold + normals + degenerate) — plain wording in Simple mode.
     const intIssues: string[] = [];
-    if (integ.non_manifold_edges) intIssues.push(`${integ.non_manifold_edges} non-manifold edge(s)`);
-    if (!integ.winding_consistent) intIssues.push("inconsistent face normals");
-    if (integ.degenerate_faces) intIssues.push(`${integ.degenerate_faces} zero-area face(s)`);
+    if (integ.non_manifold_edges) intIssues.push(simple ? "bad edge joins" : `${integ.non_manifold_edges} non-manifold edge(s)`);
+    if (!integ.winding_consistent) intIssues.push(simple ? "inside/outside surfaces confused" : "inconsistent face normals");
+    if (integ.degenerate_faces) intIssues.push(simple ? "zero-size triangles" : `${integ.degenerate_faces} zero-area face(s)`);
     rows.push(intIssues.length === 0
-      ? { key: "integrity", label: "Geometry integrity", icon: Boxes, level: "ok", status: "Clean",
-          detail: "Manifold surface with consistent normals — slicers will read it correctly." }
-      : { key: "integrity", label: "Geometry integrity", icon: Boxes, level: integ.non_manifold_edges ? "risk" : "warn", status: "Issues",
-          detail: `${intIssues.join(", ")}. These can confuse a slicer; a repair pass cleans them up.` });
+      ? { key: "integrity", label: simple ? "Mesh quality" : "Geometry integrity", icon: Boxes, level: "ok", status: "Clean",
+          detail: simple ? "Clean model — the slicer will read it correctly." : "Manifold surface with consistent normals — slicers will read it correctly." }
+      : { key: "integrity", label: simple ? "Mesh quality" : "Geometry integrity", icon: Boxes, level: integ.non_manifold_edges ? "risk" : "warn", status: "Issues",
+          detail: `${intIssues.join(", ")}. The slicer may misread these; a repair pass cleans them up.` });
   }
 
   // 3. Stability / tip-risk
@@ -86,7 +90,7 @@ export function DesignHealth({ mesh, dims, bed, mode = "simple" }: {
   if (!mesh.available) {
     return <p className="text-xs text-muted-foreground">Geometry analysis isn’t available for this file (it may be too large).</p>;
   }
-  const rows = buildRows(mesh, dims, bed);
+  const rows = buildRows(mesh, dims, bed, mode);
   if (!rows.length) return null;
 
   return (
