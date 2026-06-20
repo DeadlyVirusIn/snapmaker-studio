@@ -11,6 +11,8 @@ import { StatusBadge } from "@/components/ui/badge";
 import type { Verdict } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/ui/layout";
 import { Workflow } from "@/components/Workflow";
+import { HeroMark } from "@/components/HeroMark";
+import { DoctorsGrid } from "@/components/DoctorsGrid";
 import { library, printerStatus } from "@/api";
 import type { LibraryProject } from "@/api";
 import { useSession } from "@/store/session";
@@ -97,11 +99,14 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">
-          The <span className="brand-gradient">operating system</span> for multi-material 3D printing
-        </h2>
-        <p className="text-muted-foreground">One place. Any file. Any printer. Perfect prints — Studio diagnoses, transforms, and validates every model before your U1 ever sees it. Local-first &amp; open source.</p>
+      <div className="flex items-center gap-5">
+        <HeroMark className="hidden h-20 w-44 shrink-0 sm:block" />
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight">
+            The <span className="brand-gradient">Intelligence Layer</span> for Open 3D Printing
+          </h2>
+          <p className="text-muted-foreground">One place. Any file. Any printer. Perfect prints — your Project, Printer &amp; Cost Doctors check every model before your U1 ever sees it. Local-first &amp; open source.</p>
+        </div>
       </div>
 
       {/* Hero: open a model + the end-to-end workflow it flows through */}
@@ -126,6 +131,9 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* The Doctors — Studio's first-class, user-facing capabilities. */}
+      <DoctorsGrid />
 
       {/* First-run "why Studio?" — only for a brand-new, empty library. */}
       {status === "success" && projects.length === 0 && (

@@ -37,7 +37,7 @@ export function Sidebar() {
         </div>
         <div className="leading-none">
           <span className="block font-semibold tracking-tight">Snapmaker Studio</span>
-          <span className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Workflow Platform</span>
+          <span className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">The Intelligence Layer</span>
         </div>
       </div>
 

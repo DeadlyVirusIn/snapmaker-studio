@@ -1,17 +1,16 @@
-import { Boxes, Stethoscope, Wand2, ShieldCheck, Printer, ChevronRight } from "lucide-react";
+import { Search, Stethoscope, Wand2, ShieldCheck, Printer, ChevronRight } from "lucide-react";
 
 // The platform story in one strip: the brand workflow every design flows through —
-// Input → Diagnose → Transform → Validate → Output (the Asset Pack mark reads in
-// this direction: ribbons → portal → cube). Each stage maps to a real feature and
-// carries its spectrum colour so the workflow is legible at a glance. This is what
-// reframes Studio as the operating system around multi-material printing, not a
-// one-shot converter.
+// Discover → Diagnose → Fix → Validate → Print (Unified Intelligence Hub Asset
+// Pack). Each stage maps to a real Doctor/feature and carries its spectrum colour
+// so the workflow is legible at a glance — Studio as the Intelligence Layer for
+// open 3D printing, not a one-shot converter.
 const STAGES = [
-  { icon: Boxes, label: "Input", token: "--stage-input", hint: "Any file, any ecosystem — STL or 3MF, kept local" },
-  { icon: Stethoscope, label: "Diagnose", token: "--stage-diagnose", hint: "Fit, colours, first layer & printability — before Orca" },
-  { icon: Wand2, label: "Transform", token: "--stage-transform", hint: "Standardize into a clean U1 project" },
+  { icon: Search, label: "Discover", token: "--stage-input", hint: "Any file, any ecosystem — STL or 3MF, kept local" },
+  { icon: Stethoscope, label: "Diagnose", token: "--stage-diagnose", hint: "The Doctors check fit, colours & first layer — before Orca" },
+  { icon: Wand2, label: "Fix", token: "--stage-transform", hint: "Repair & standardize into a clean U1 project" },
   { icon: ShieldCheck, label: "Validate", token: "--stage-validate", hint: "Watertight, supported, stable & in-bounds" },
-  { icon: Printer, label: "Output", token: "--stage-output", hint: "Print-ready file, sent and monitored on your U1" },
+  { icon: Printer, label: "Print", token: "--stage-output", hint: "Send and monitor live on your U1" },
 ];
 
 export function Workflow() {

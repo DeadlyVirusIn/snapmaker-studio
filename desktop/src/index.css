@@ -32,11 +32,14 @@
 
     /* Workflow stage colours — the spectrum flow Input → Diagnose → Transform →
        Validate → Output (mark reads left→right: ribbons → portal → cube). */
-    --stage-input: 187 100% 42%;      /* cyan   #00E1FF */
-    --stage-diagnose: 201 100% 45%;   /* blue   #00A6FF */
-    --stage-transform: 274 100% 50%;  /* purple #8F00FF */
-    --stage-validate: 120 61% 40%;    /* green  #32CD32 */
-    --stage-output: 31 100% 45%;      /* orange #FF8500 */
+    --stage-input: 187 100% 40%;      /* Discover cyan   */
+    --stage-diagnose: 230 100% 55%;   /* Diagnose blue   #0831FF */
+    --stage-transform: 270 100% 50%;  /* Fix      purple #8000FF */
+    --stage-validate: 120 61% 36%;    /* Validate green  #32CD32 */
+    --stage-output: 31 100% 42%;      /* Print    orange #FF8300 */
+    --doctor-project: 230 100% 55%;
+    --doctor-printer: 270 100% 50%;
+    --doctor-cost: 42 100% 40%;
   }
 
   .dark {
@@ -59,11 +62,18 @@
     --convertible: 201 100% 50%;      /* accent #00A6FF */
     --risk: 302 100% 62%;             /* magenta #FF3DF9 */
 
-    --stage-input: 187 100% 50%;      /* #00E1FF */
-    --stage-diagnose: 201 100% 50%;   /* #00A6FF */
-    --stage-transform: 274 100% 62%;  /* #8F00FF (lifted for dark) */
-    --stage-validate: 120 61% 50%;    /* #32CD32 */
-    --stage-output: 31 100% 55%;      /* #FF8500 */
+    /* Frozen v1.0 workflow ribbon colours: Discover→cyan, Diagnose→blue,
+       Fix→purple, Validate→green, Print→orange. */
+    --stage-input: 187 100% 50%;      /* Discover  cyan   #00E1FF */
+    --stage-diagnose: 230 100% 62%;   /* Diagnose  blue   #0831FF */
+    --stage-transform: 270 100% 62%;  /* Fix       purple #8000FF */
+    --stage-validate: 120 61% 50%;    /* Validate  green  #32CD32 */
+    --stage-output: 31 100% 55%;      /* Print     orange #FF8300 */
+
+    /* The three first-class Doctor pillars (Intelligence Layer pack). */
+    --doctor-project: 230 100% 62%;   /* Project Doctor  blue   */
+    --doctor-printer: 270 100% 62%;   /* Printer Doctor  purple */
+    --doctor-cost: 42 100% 55%;       /* Cost Doctor     gold   */
   }
 
   * {
