@@ -411,6 +411,16 @@ def plate_dry_run(path: str, ui_plate: int, from_filament: int, to_filament: int
     return plate_remap.dry_run(path, int(ui_plate), int(from_filament), int(to_filament))
 
 
+def plate_export(path: str, ui_plate: int, from_filament: int, to_filament: int,
+                 out_path: str | None = None) -> dict:
+    """Per-Plate Filament Remapper — verified safe export (Commit C). Writes a NEW
+    3MF (never the source), changes only the target plate's object extruders, and
+    passes a verification gate or quarantines the output."""
+    from snapstudio_core import plate_remap
+    return plate_remap.export_remap(path, int(ui_plate), int(from_filament),
+                                    int(to_filament), out_path)
+
+
 def demo_report() -> dict:
     """Demo Mode: a complete, representative Studio Intelligence Report with no
     file and no printer — for a sub-10-second reviewer demo."""

@@ -312,6 +312,18 @@ def _make_handler(token: str):
                         str(data.get("query", "")), data.get("risks")))
                 except Exception as e:
                     self._send(500, {"error": str(e)})
+            elif self.path == "/plate_export":
+                path = data.get("path")
+                if not path or data.get("ui_plate") is None:
+                    self._send(400, {"error": "missing 'path' or 'ui_plate'"})
+                    return
+                try:
+                    self._send(200, service.plate_export(
+                        path, int(data["ui_plate"]),
+                        int(data.get("from_filament")), int(data.get("to_filament")),
+                        data.get("out_path")))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
             elif self.path == "/plate_dry_run":
                 path = data.get("path")
                 if not path or data.get("ui_plate") is None:

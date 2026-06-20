@@ -139,3 +139,91 @@ def test_dry_run_same_source_target_warns(tmp_path):
     f = str(tmp_path / "s.3mf"); _make_3mf(f)
     d = pr.dry_run(f, ui_plate=4, from_filament=6, to_filament=6)
     assert any("same" in w for w in d["warnings"])
+
+
+# ---- Commit C: verified writer/export ----
+
+import hashlib
+import zipfile
+
+
+def _entry_hashes(path):
+    out = {}
+    with zipfile.ZipFile(path) as z:
+        for n in z.namelist():
+            out[n] = hashlib.sha256(z.read(n)).hexdigest()
+    return out
+
+
+def test_export_plate4_changes_only_6_to_3(tmp_path):
+    src = str(tmp_path / "s.3mf"); _make_3mf(src)
+    out = str(tmp_path / "out.3mf")
+    r = pr.export_remap(src, 4, 6, 3, out)
+    assert r["passed"] is True
+    assert sorted(c["object_id"] for c in r["changed_objects"]) == [12, 14]
+    re_out = pr.inspect(out)
+    p4 = next(p for p in re_out["plates"] if p["ui_number"] == 4)
+    assert all(o["base_filament"] == 3 for o in p4["objects"])   # both now filament 3
+
+
+def test_export_plate6_unchanged(tmp_path):
+    src = str(tmp_path / "s.3mf"); _make_3mf(src)
+    out = str(tmp_path / "out.3mf")
+    pr.export_remap(src, 4, 6, 3, out)
+    s6 = next(p for p in pr.inspect(src)["plates"] if p["ui_number"] == 6)
+    o6 = next(p for p in pr.inspect(out)["plates"] if p["ui_number"] == 6)
+    sig = lambda p: [(o["object_id"], o["base_filament"]) for o in p["objects"]]
+    assert sig(s6) == sig(o6)            # Plate 6 objects' filaments identical
+    assert sig(o6) == [(18, 6), (99, 4)]  # incl. obj 18 still filament 6
+
+
+def test_export_gold_accents_unchanged(tmp_path):
+    src = str(tmp_path / "s.3mf"); _make_3mf(src)
+    out = str(tmp_path / "out.3mf")
+    pr.export_remap(src, 4, 6, 3, out)
+    # gold object 99 (filament 4) untouched; painted facet counts preserved
+    o99 = next(o for p in pr.inspect(out)["plates"] for o in p["objects"] if o["object_id"] == 99)
+    assert o99["base_filament"] == 4
+    s12 = next(o for p in pr.inspect(src)["plates"] for o in p["objects"] if o["object_id"] == 12)
+    o12 = next(o for p in pr.inspect(out)["plates"] for o in p["objects"] if o["object_id"] == 12)
+    assert s12["painted_facets"] == o12["painted_facets"]   # paint count unchanged
+
+
+def test_export_nontarget_zip_entries_byte_identical(tmp_path):
+    src = str(tmp_path / "s.3mf"); _make_3mf(src)
+    out = str(tmp_path / "out.3mf")
+    pr.export_remap(src, 4, 6, 3, out)
+    hs, ho = _entry_hashes(src), _entry_hashes(out)
+    assert set(hs) == set(ho)
+    differing = [n for n in hs if hs[n] != ho[n]]
+    assert differing == ["Metadata/model_settings.config"]   # ONLY this changed
+
+
+def test_export_output_reopens_and_validates(tmp_path):
+    src = str(tmp_path / "s.3mf"); _make_3mf(src)
+    out = str(tmp_path / "out.3mf")
+    r = pr.export_remap(src, 4, 6, 3, out)
+    assert r["verification"]["passed"] is True
+    assert pr.inspect(out)["available"] is True
+
+
+def test_export_refuses_invalid_mapping(tmp_path):
+    src = str(tmp_path / "s.3mf"); _make_3mf(src)
+    # filament 1 is not used on plate 4 -> no changes -> refuse
+    r = pr.export_remap(src, 4, 1, 3, str(tmp_path / "bad.3mf"))
+    assert r["passed"] is False
+    assert not (tmp_path / "bad.3mf").exists()   # nothing written
+    # target not in palette -> refuse
+    r2 = pr.export_remap(src, 4, 6, 99, str(tmp_path / "bad2.3mf"))
+    assert r2["passed"] is False
+
+
+def test_export_never_mutates_source(tmp_path):
+    src = str(tmp_path / "s.3mf"); _make_3mf(src)
+    before = _entry_hashes(src)
+    pr.export_remap(src, 4, 6, 3, str(tmp_path / "out.3mf"))
+    after = _entry_hashes(src)
+    assert before == after            # source byte-identical after export
+    # and refusing to write to the source path itself
+    r = pr.export_remap(src, 4, 6, 3, src)
+    assert r["passed"] is False

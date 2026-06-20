@@ -177,6 +177,183 @@ def dry_run(path: str, ui_plate: int, from_filament: int, to_filament: int) -> d
     }
 
 
+def _set_object_extruder(ms_xml: str, obj_id: int, from_f: int, to_f: int):
+    """Change ONLY the object-level extruder of <object id=obj_id> from from_f to
+    to_f (the metadata before the first <part>). Returns (new_xml, n_changed)."""
+    pat = re.compile(r'(<object\s+id="%d">)(.*?)(</object>)' % obj_id, re.S)
+    changed = 0
+
+    def repl(m):
+        nonlocal changed
+        head = m.group(2)
+        idx = head.find("<part")
+        pre = head if idx < 0 else head[:idx]
+        post = "" if idx < 0 else head[idx:]
+        new_pre, n = re.subn(r'(key="extruder"\s+value=")%d(")' % from_f,
+                             r"\g<1>%d\g<2>" % to_f, pre, count=1)
+        changed += n
+        return m.group(1) + new_pre + post + m.group(3)
+
+    return pat.subn(repl, ms_xml, count=1)[0], changed
+
+
+def _entry_bytes(z, name):
+    try:
+        return z.read(name)
+    except KeyError:
+        return None
+
+
+def _verify_export(src_path: str, out_path: str, ui_plate: int,
+                   from_f: int, to_f: int, target_ids: list) -> dict:
+    """Reopen output and prove ONLY the intended change happened. Every check must
+    pass or the export is failed."""
+    checks = []
+
+    def chk(name, ok, detail=""):
+        checks.append({"check": name, "pass": bool(ok), "detail": detail})
+        return bool(ok)
+
+    src_rep = inspect(src_path)
+    out_rep = inspect(out_path)
+    chk("output reopens and validates", out_rep.get("available"), out_rep.get("reason", ""))
+    if not out_rep.get("available"):
+        return {"passed": False, "checks": checks}
+
+    # byte-identity of every zip entry except model_settings.config (decompressed)
+    import zipfile
+    with zipfile.ZipFile(src_path) as zs, zipfile.ZipFile(out_path) as zo:
+        sn, on = set(zs.namelist()), set(zo.namelist())
+        chk("zip entry list unchanged", sn == on, f"+{on-sn} -{sn-on}")
+        differing = []
+        for n in sorted(sn & on):
+            if _entry_bytes(zs, n) != _entry_bytes(zo, n):
+                differing.append(n)
+        chk("only model_settings.config differs", differing == [MODEL_SETTINGS],
+            f"differing entries: {differing}")
+        # mesh/paint files byte-identical
+        meshes = [n for n in sn if n.startswith("3D/")]
+        mesh_ok = all(_entry_bytes(zs, n) == _entry_bytes(zo, n) for n in meshes)
+        chk("mesh + paint (.model) byte-identical", mesh_ok)
+
+    src_plates = {p["ui_number"]: p for p in src_rep["plates"]}
+    out_plates = {p["ui_number"]: p for p in out_rep["plates"]}
+
+    # exactly the target objects changed, from_f -> to_f
+    changed_ids, wrong = [], []
+    for pn, sp in src_plates.items():
+        op = out_plates.get(pn, {})
+        so = {o["object_id"]: o for o in sp["objects"]}
+        oo = {o["object_id"]: o for o in op.get("objects", [])}
+        for oid, sobj in so.items():
+            ob = oo.get(oid, {})
+            if sobj.get("base_filament") != ob.get("base_filament"):
+                changed_ids.append(oid)
+                if not (oid in target_ids and sobj.get("base_filament") == from_f
+                        and ob.get("base_filament") == to_f):
+                    wrong.append(oid)
+            # painted facets must never change
+            so_p = {o["object_id"]: o.get("painted_facets") for o in sp["objects"]}
+            if oid in oo and oo[oid].get("painted_facets") != so_p.get(oid):
+                wrong.append(("paint", oid))
+    chk("changed objects == dry-run targets", sorted(set(changed_ids)) == sorted(set(target_ids)),
+        f"changed={sorted(set(changed_ids))} expected={sorted(set(target_ids))}")
+    chk("every change is from %d -> %d (no wrong/paint change)" % (from_f, to_f), not wrong,
+        f"violations: {wrong}")
+
+    # all non-target plates identical (objects' base filaments + painted)
+    untouched_ok = True
+    for pn, sp in src_plates.items():
+        if pn == ui_plate:
+            continue
+        op = out_plates.get(pn, {})
+        sig_s = [(o["object_id"], o.get("base_filament"), o.get("painted_facets")) for o in sp["objects"]]
+        sig_o = [(o["object_id"], o.get("base_filament"), o.get("painted_facets")) for o in op.get("objects", [])]
+        if sig_s != sig_o:
+            untouched_ok = False
+    chk("all other plates unchanged (e.g. Plate 6)", untouched_ok)
+
+    return {"passed": all(c["pass"] for c in checks), "checks": checks,
+            "changed_objects": sorted(set(changed_ids))}
+
+
+def export_remap(path: str, ui_plate: int, from_filament: int, to_filament: int,
+                 out_path: str = None) -> dict:
+    """Commit C: safe per-plate remap export. Dry-runs first, refuses on blocking
+    warnings, writes a NEW file (never the source) changing only the target objects'
+    object-level extruder in model_settings.config, then verifies — quarantining the
+    output if any check fails."""
+    import os
+    import shutil
+    import zipfile
+
+    dr = dry_run(path, ui_plate, from_filament, to_filament)
+    if not dr.get("available"):
+        return {"schema_version": SCHEMA_VERSION, "available": False,
+                "passed": False, "reason": dr.get("reason"), "dry_run": dr}
+    if dr.get("warnings") or dr.get("change_count", 0) == 0:
+        return {"schema_version": SCHEMA_VERSION, "available": True, "passed": False,
+                "reason": "refusing to write: dry-run has blocking warnings or no changes",
+                "dry_run": dr}
+
+    target_ids = [c["object_id"] for c in dr["changes"]]
+
+    if not out_path:
+        stem, ext = os.path.splitext(path)
+        out_path = f"{stem}_plate{ui_plate}_f{from_filament}_to_f{to_filament}{ext or '.3mf'}"
+    if os.path.abspath(out_path) == os.path.abspath(path):
+        return {"schema_version": SCHEMA_VERSION, "available": True, "passed": False,
+                "reason": "output path must differ from source (never mutate original)"}
+
+    # copy every entry verbatim; rewrite only model_settings.config
+    with zipfile.ZipFile(path) as zin:
+        ms = zin.read(MODEL_SETTINGS).decode("utf-8")
+        new_ms = ms
+        total = 0
+        for oid in target_ids:
+            new_ms, n = _set_object_extruder(new_ms, oid, from_filament, to_filament)
+            total += n
+        if total != len(target_ids):
+            return {"schema_version": SCHEMA_VERSION, "available": True, "passed": False,
+                    "reason": f"could not edit all targets ({total}/{len(target_ids)}) — aborted, nothing written"}
+        tmp = out_path + ".part"
+        try:
+            with zipfile.ZipFile(tmp, "w") as zout:
+                for item in zin.infolist():
+                    data = (new_ms.encode("utf-8") if item.filename == MODEL_SETTINGS
+                            else zin.read(item.filename))
+                    zout.writestr(item, data)
+            os.replace(tmp, out_path)
+        except Exception as e:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+            return {"schema_version": SCHEMA_VERSION, "available": True, "passed": False,
+                    "reason": f"write failed: {e}"}
+
+    verification = _verify_export(path, out_path, ui_plate, from_filament, to_filament, target_ids)
+    if not verification["passed"]:
+        quarantine = out_path + ".rejected"
+        try:
+            os.replace(out_path, quarantine)
+        except Exception:
+            quarantine = None
+            if os.path.exists(out_path):
+                os.remove(out_path)
+        return {"schema_version": SCHEMA_VERSION, "available": True, "passed": False,
+                "reason": "verification gate FAILED — output quarantined, original untouched",
+                "quarantined": quarantine, "verification": verification, "dry_run": dr}
+
+    return {"schema_version": SCHEMA_VERSION, "available": True, "passed": True,
+            "output_path": out_path,
+            "changed_objects": dr["changes"],
+            "from_filament": from_filament, "to_filament": to_filament,
+            "ui_plate": ui_plate,
+            "untouched_plates": dr["untouched_plates"],
+            "verification": verification, "warnings": [],
+            "verdict": f"Plate {ui_plate}: filament {from_filament} -> {to_filament} on "
+                       f"{len(target_ids)} object(s); verified only those changed."}
+
+
 def inspect(path: str) -> dict:
     """Read-only report: plates by UI number, their objects, and filaments used."""
     try:
