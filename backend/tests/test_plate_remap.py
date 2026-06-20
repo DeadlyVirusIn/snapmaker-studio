@@ -101,3 +101,41 @@ def test_palette_from_project_settings_colours(tmp_path):
 def test_not_a_3mf_is_unavailable(tmp_path):
     bad = tmp_path / "x.txt"; bad.write_text("nope")
     assert pr.inspect(str(bad))["available"] is False
+
+
+# ---- Commit B: dry-run diff ----
+
+def test_dry_run_plate4_changes_only_plate4(tmp_path):
+    f = str(tmp_path / "s.3mf"); _make_3mf(f)
+    d = pr.dry_run(f, ui_plate=4, from_filament=6, to_filament=3)
+    assert d["available"] and d["change_count"] == 2
+    assert sorted(c["object_id"] for c in d["changes"]) == [12, 14]
+    assert 6 in d["untouched_plates"]            # Plate 6 NOT touched
+    assert d["painted_accents_preserved"] is True
+
+
+def test_dry_run_plate6_only_blue_object_not_gold(tmp_path):
+    f = str(tmp_path / "s.3mf"); _make_3mf(f)
+    d = pr.dry_run(f, ui_plate=6, from_filament=6, to_filament=3)
+    # obj 18 (filament 6) changes; obj 99 (gold filament 4) untouched
+    assert [c["object_id"] for c in d["changes"]] == [18]
+    assert 99 in [u["object_id"] for u in d["unchanged_objects_on_plate"]]
+
+
+def test_dry_run_gold_filament_not_present_on_plate4_is_noop(tmp_path):
+    f = str(tmp_path / "s.3mf"); _make_3mf(f)
+    d = pr.dry_run(f, ui_plate=4, from_filament=4, to_filament=3)
+    assert d["change_count"] == 0
+    assert any("filament 4" in w for w in d["warnings"])
+
+
+def test_dry_run_unknown_plate(tmp_path):
+    f = str(tmp_path / "s.3mf"); _make_3mf(f)
+    d = pr.dry_run(f, ui_plate=99, from_filament=6, to_filament=3)
+    assert d["available"] is False and "not found" in d["reason"]
+
+
+def test_dry_run_same_source_target_warns(tmp_path):
+    f = str(tmp_path / "s.3mf"); _make_3mf(f)
+    d = pr.dry_run(f, ui_plate=4, from_filament=6, to_filament=6)
+    assert any("same" in w for w in d["warnings"])

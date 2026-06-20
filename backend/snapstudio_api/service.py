@@ -405,6 +405,12 @@ def plate_inspect(path: str) -> dict:
     return plate_remap.inspect(path)
 
 
+def plate_dry_run(path: str, ui_plate: int, from_filament: int, to_filament: int) -> dict:
+    """Per-Plate Filament Remapper — dry-run JSON diff, writes nothing (Commit B)."""
+    from snapstudio_core import plate_remap
+    return plate_remap.dry_run(path, int(ui_plate), int(from_filament), int(to_filament))
+
+
 def demo_report() -> dict:
     """Demo Mode: a complete, representative Studio Intelligence Report with no
     file and no printer — for a sub-10-second reviewer demo."""

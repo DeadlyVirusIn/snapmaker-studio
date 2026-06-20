@@ -114,6 +114,69 @@ def _painted_facets(z, model_path):
     return len(re.findall(r'paint_color="', xml))
 
 
+def dry_run(path: str, ui_plate: int, from_filament: int, to_filament: int) -> dict:
+    """Compute exactly what a remap WOULD change — scoped to one UI plate's objects
+    whose base filament == from_filament — without writing anything (Commit B).
+
+    Returns a JSON diff: the object-level extruder changes, plus explicit lists of
+    what stays untouched (other plates, other filaments, painted accents). Painted
+    accents are never in `changes` by design — the writer only touches object base
+    extruder in model_settings.config."""
+    rep = inspect(path)
+    if not rep.get("available"):
+        return {"schema_version": SCHEMA_VERSION, "available": False,
+                "reason": rep.get("reason", "could not read 3MF")}
+    plate = next((p for p in rep["plates"] if p["ui_number"] == ui_plate), None)
+    if plate is None:
+        nums = [p["ui_number"] for p in rep["plates"]]
+        return {"schema_version": SCHEMA_VERSION, "available": False,
+                "reason": f"Plate {ui_plate} not found. Plates present: {nums}"}
+
+    warnings = []
+    if from_filament == to_filament:
+        warnings.append("source and target filament are the same — nothing to do")
+    palette = rep.get("filament_palette", {})
+    if str(to_filament) not in palette:
+        warnings.append(f"target filament {to_filament} is not in this file's palette")
+
+    changes = []
+    unchanged_on_plate = []
+    for o in plate["objects"]:
+        if o.get("base_filament") == from_filament:
+            changes.append({"object_id": o["object_id"], "name": o.get("name"),
+                            "from_filament": from_filament, "to_filament": to_filament,
+                            "painted_facets_preserved": o.get("painted_facets", 0)})
+        else:
+            unchanged_on_plate.append({"object_id": o["object_id"], "name": o.get("name"),
+                                       "base_filament": o.get("base_filament")})
+
+    if not changes:
+        on_plate = sorted({o.get("base_filament") for o in plate["objects"] if o.get("base_filament")})
+        warnings.append(f"no object on Plate {ui_plate} uses filament {from_filament}; "
+                        f"filaments actually on this plate: {on_plate}")
+
+    def _col(fid):
+        return palette.get(str(fid), {}).get("color")
+
+    return {
+        "schema_version": SCHEMA_VERSION, "available": True, "dry_run": True,
+        "ui_plate": ui_plate,
+        "from_filament": {"id": from_filament, "color": _col(from_filament)},
+        "to_filament": {"id": to_filament, "color": _col(to_filament)},
+        "changes": changes,
+        "change_count": len(changes),
+        "unchanged_objects_on_plate": unchanged_on_plate,
+        "untouched_plates": [p["ui_number"] for p in rep["plates"] if p["ui_number"] != ui_plate],
+        "untouched_filaments": sorted(int(k) for k in palette if int(k) != from_filament),
+        "painted_accents_preserved": True,
+        "warnings": warnings,
+        "verdict": (f"Plate {ui_plate}: {len(changes)} object(s) would change filament "
+                    f"{from_filament} → {to_filament}; all other plates, filaments, and "
+                    f"painted accents untouched." if changes else
+                    f"No change: nothing on Plate {ui_plate} uses filament {from_filament}."),
+    }
+
+
 def inspect(path: str) -> dict:
     """Read-only report: plates by UI number, their objects, and filaments used."""
     try:
