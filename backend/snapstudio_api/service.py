@@ -187,6 +187,16 @@ def first_layer(path: str, host: str | None = None, port: int = 7125) -> dict:
     return out
 
 
+def printer_failure_insights(host: str, port: int = 7125, limit: int = 50) -> dict:
+    """Failure-Pattern Learning: read the printer's OWN Moonraker history and surface
+    failure patterns (rate, repeat-offender files, dominant cause, recent streak) as
+    plain-language insight. Read-only; never raises on an empty/unreachable history."""
+    from snapstudio_core import moonraker
+    from snapstudio_core import failure_patterns as fp
+    hist = moonraker.history(host, port, limit)
+    return fp.assess(hist.get("jobs"), hist.get("totals"))
+
+
 def toolhead_fit(path: str, host: str | None = None, port: int = 7125) -> dict:
     """Toolhead-Fit Intelligence: does the design's colour count fit the U1's toolheads?
     Uses the printer's REAL toolhead count when a host is reachable, else the U1's known 4.

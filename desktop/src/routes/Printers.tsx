@@ -2,12 +2,12 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Printer, Loader2, RotateCw, Thermometer, AlertTriangle, CheckCircle2,
-  ShieldCheck, Wifi, Activity, History, HeartPulse, Layers,
+  ShieldCheck, Wifi, Activity, History, HeartPulse, Layers, TrendingUp,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/layout";
-import { printerDiscover, printerStatus, printerHistory, printerDiagnostics, printerFileMetadata } from "@/api";
+import { printerDiscover, printerStatus, printerHistory, printerDiagnostics, printerFileMetadata, printerFailureInsights } from "@/api";
 import { usePrinter } from "@/store/printer";
 
 function fmtDur(s: number | null | undefined): string {
@@ -43,6 +43,12 @@ export default function Printers() {
     queryKey: ["printer-history", connected],
     queryFn: () => printerHistory(connected as string),
     enabled: !!connected, refetchInterval: connected ? 30000 : false,
+  });
+  // Failure-Pattern Learning: insight derived from the printer's own history.
+  const failInsights = useQuery({
+    queryKey: ["printer-failures", connected],
+    queryFn: () => printerFailureInsights(connected as string),
+    enabled: !!connected, refetchInterval: connected ? 60000 : false, retry: false,
   });
   const filename = status.data?.filename ?? null;
   const meta = useQuery({
@@ -165,6 +171,32 @@ export default function Printers() {
                 <p className="text-xs text-muted-foreground">Live, read-only — Studio never changes your printer.</p>
               </>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {connected && failInsights.data?.available && (failInsights.data.failed ?? 0) > 0 && (
+        <Card>
+          <CardContent className="space-y-3 p-5">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-sm font-semibold"><TrendingUp className="h-4 w-4 text-primary" /> What your history is telling you</span>
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                failInsights.data.overall_level === "ok" ? "bg-ready/10 text-ready" : failInsights.data.overall_level === "warn" ? "bg-repairable/10 text-repairable" : "bg-risk/10 text-risk"}`}>
+                {failInsights.data.failed}/{failInsights.data.total} failed
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">{failInsights.data.overall_text}</p>
+            <ul className="space-y-1.5 text-sm">
+              {failInsights.data.findings?.map((f, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  {f.level === "ok"
+                    ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-ready" />
+                    : <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${f.level === "risk" ? "text-risk" : "text-repairable"}`} />}
+                  <span className="text-muted-foreground">{f.text}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-[11px] text-muted-foreground">Learned from your printer's own print history — read-only.</p>
           </CardContent>
         </Card>
       )}

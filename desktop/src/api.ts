@@ -256,6 +256,23 @@ export async function toolheadFit(path: string, host?: string | null): Promise<T
   return r.json();
 }
 
+export interface FailureInsights {
+  available: boolean;
+  overall_level?: "ok" | "warn" | "risk";
+  overall_text?: string;
+  total?: number;
+  failed?: number;
+  failure_rate?: number;
+  recent_failure_streak?: number;
+  top_cause?: string | null;
+  repeat_offenders?: { filename: string; failures: number }[];
+  findings?: { level: "ok" | "warn" | "risk"; text: string }[];
+  reason?: string;
+}
+export function printerFailureInsights(host: string, port = 7125): Promise<FailureInsights> {
+  return printerPost("/printer/failure_insights", { host, port });
+}
+
 export interface MeshReport {
   schema_version: string;
   available: boolean;
