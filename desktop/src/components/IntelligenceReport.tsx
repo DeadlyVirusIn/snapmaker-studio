@@ -1,0 +1,122 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent } from "@/components/ui/card";
+import { intelligenceReport } from "@/api";
+import { AlertTriangle, ArrowRight, ChevronDown, CheckCircle2, Stethoscope } from "lucide-react";
+
+// The Studio Intelligence Report — the product. One screen that answers, in 15s:
+// will it print, what it costs, what to sell it for, the profit, the biggest
+// risk, and the next action. The seven Doctors become the supporting evidence.
+function scoreColor(s?: number | null): string {
+  if (s == null) return "--muted-foreground";
+  if (s >= 75) return "--stage-validate";   // green
+  if (s >= 50) return "--doctor-cost";       // amber
+  return "--risk";                            // red/magenta
+}
+
+export function IntelligenceReport({ filePath, host }: { filePath: string; host?: string | null }) {
+  const [open, setOpen] = useState(false);
+  const { data: r, isLoading } = useQuery({
+    queryKey: ["report", filePath, host],
+    queryFn: () => intelligenceReport(filePath, host),
+    retry: false, staleTime: 30000,
+  });
+  if (isLoading || !r?.available) return null;
+  const cur = r.currency ?? "$";
+  const metric = (label: string, value: string, token?: string) => (
+    <div className="rounded-lg border border-border p-2.5 text-center">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-base font-bold tabular-nums" style={token ? { color: `hsl(var(${token}))` } : undefined}>{value}</p>
+    </div>
+  );
+
+  return (
+    <Card className="overflow-hidden border-primary/30">
+      <CardContent className="space-y-4 p-5">
+        {/* hero: Studio Intelligence Score + headline metrics */}
+        <div className="flex items-center gap-4">
+          <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl"
+               style={{ backgroundColor: `hsl(var(${scoreColor(r.studio_score)}) / 0.12)`, boxShadow: `inset 0 0 0 2px hsl(var(${scoreColor(r.studio_score)}) / 0.5)` }}>
+            <span className="text-2xl font-extrabold tabular-nums" style={{ color: `hsl(var(${scoreColor(r.studio_score)}))` }}>
+              {r.studio_score ?? "—"}
+            </span>
+            <span className="text-[9px] uppercase tracking-wide text-muted-foreground">/ 100</span>
+          </div>
+          <div className="min-w-0">
+            <p className="flex items-center gap-2 text-sm font-semibold">
+              <Stethoscope className="h-4 w-4 text-primary" /> Studio Intelligence Report
+            </p>
+            <p className="text-sm text-muted-foreground">{r.verdict}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground opacity-70">Powered by Studio Intelligence · your Doctors, in one answer</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          {metric("Will it print?", r.print_success_score != null ? `${r.print_success_score}%` : "—", scoreColor(r.print_success_score))}
+          {metric("Cost", r.cost != null ? `${cur}${r.cost}` : "—", "--doctor-cost")}
+          {metric("Sell for", r.suggested_price != null ? `${cur}${r.suggested_price}` : "—", "--stage-validate")}
+          {metric("Margin", r.margin_pct != null ? `${r.margin_pct}%` : "—", "--stage-output")}
+          {metric("Printer", r.printer_compatibility ?? "Unknown")}
+        </div>
+
+        {/* biggest risk + the one next action */}
+        {r.biggest_risk && (
+          <div className="flex items-start gap-2 rounded-md bg-risk/5 px-3 py-2 text-sm text-risk">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span><span className="font-semibold">Biggest risk:</span> {r.biggest_risk.text} <span className="opacity-70">({r.biggest_risk.doctor})</span></span>
+          </div>
+        )}
+        <div className="flex items-start gap-2 rounded-md bg-primary/5 px-3 py-2 text-sm">
+          <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <span><span className="font-semibold">Next:</span> {r.next_action}</span>
+        </div>
+
+        {/* progressive disclosure: risks, recommendations, evidence */}
+        <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-1 text-xs font-medium text-primary">
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+          {open ? "Hide the evidence" : "See risks, recommendations & Doctor findings"}
+        </button>
+
+        {open && (
+          <div className="space-y-3 border-t border-border pt-3 text-xs">
+            {r.risks && r.risks.length > 0 && (
+              <div>
+                <p className="mb-1 font-semibold">Risks</p>
+                <ul className="space-y-1">
+                  {r.risks.map((rk, i) => (
+                    <li key={i} className={`flex items-start gap-1.5 ${rk.level === "risk" ? "text-risk" : "text-repairable"}`}>
+                      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {rk.text} <span className="opacity-60">({rk.doctor})</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {r.recommendations && r.recommendations.length > 0 && (
+              <div>
+                <p className="mb-1 font-semibold">Recommendations</p>
+                <ul className="space-y-1 text-muted-foreground">
+                  {r.recommendations.map((rc, i) => (
+                    <li key={i} className="flex items-start gap-1.5"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ready" /> {rc}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {r.supporting && r.supporting.length > 0 && (
+              <div>
+                <p className="mb-1 font-semibold">Supporting Doctors</p>
+                <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+                  {r.supporting.map((d, i) => (
+                    <li key={i} className="flex items-center justify-between rounded border border-border px-2 py-1">
+                      <span className="font-medium">{d.doctor}</span>
+                      <span className="text-muted-foreground">{d.status}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

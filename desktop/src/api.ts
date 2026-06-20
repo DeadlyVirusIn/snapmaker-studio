@@ -345,6 +345,37 @@ export async function batchPricing(
   return r.json();
 }
 
+// Studio Intelligence Report: the one screen synthesising every Doctor.
+export interface ReportRisk { doctor: string; level: "ok" | "warn" | "risk"; text: string; }
+export interface ReportEvidence { doctor: string; status: string; detail: string; }
+export interface IntelligenceReport {
+  available: boolean;
+  studio_score?: number | null;
+  print_success_score?: number | null;
+  cost?: number | null;
+  suggested_price?: number | null;
+  margin_pct?: number | null;
+  profit_per_print?: number | null;
+  currency?: string;
+  printer_compatibility?: "Compatible" | "Check" | "Unknown";
+  risks?: ReportRisk[];
+  biggest_risk?: ReportRisk | null;
+  recommendations?: string[];
+  next_action?: string;
+  supporting?: ReportEvidence[];
+  verdict?: string;
+  reason?: string;
+}
+export async function intelligenceReport(path: string, host?: string | null): Promise<IntelligenceReport> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/intelligence_report`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify(host ? { path, host } : { path }),
+  });
+  if (!r.ok) throw new Error(`intelligence_report failed (${r.status})`);
+  return r.json();
+}
+
 // Pricing Doctor: hobby / marketplace / premium selling prices.
 export interface PricingTier { label: string; markup_pct: number; price: number; profit: number; margin_pct: number; why: string; }
 export interface PricingDoctor {

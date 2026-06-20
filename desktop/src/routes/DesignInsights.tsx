@@ -17,6 +17,7 @@ import { useOpenFile } from "@/hooks/useOpenFile";
 import { useToast } from "@/store/toast";
 import { StrategyPicker } from "@/components/StrategyPicker";
 import { BusinessDoctors } from "@/components/BusinessDoctors";
+import { IntelligenceReport } from "@/components/IntelligenceReport";
 import { DesignHealth } from "@/components/DesignHealth";
 import { HeartPulse } from "lucide-react";
 import {
@@ -232,6 +233,9 @@ export default function DesignInsights() {
 
       {doctor.status === "done" && d && status && (
         <>
+          {/* Studio Intelligence Report — the one-screen synthesis (the product) */}
+          <IntelligenceReport filePath={file.path} host={u1Host} />
+
           {/* will it print? — pre-print success prediction */}
           {predict?.available && predict.likelihood != null && (
             <Card>
