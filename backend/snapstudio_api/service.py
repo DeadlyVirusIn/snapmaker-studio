@@ -389,6 +389,13 @@ def printer_firmware(host: str, port: int = 7125) -> dict:
                          caps.get("bed_mm"))
 
 
+def demo_report() -> dict:
+    """Demo Mode: a complete, representative Studio Intelligence Report with no
+    file and no printer — for a sub-10-second reviewer demo."""
+    from snapstudio_core import intelligence_report as ir
+    return ir.demo()
+
+
 def intelligence_report(path: str, host: str | None = None, filename: str | None = None,
                         port: int = 7125, currency: str = "$", **factors) -> dict:
     """Studio Intelligence Report: run every Doctor and synthesise one verdict —

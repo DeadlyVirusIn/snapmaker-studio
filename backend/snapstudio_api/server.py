@@ -306,6 +306,11 @@ def _make_handler(token: str):
                         path, data.get("host"), int(data.get("port", 7125))))
                 except Exception as e:
                     self._send(500, {"error": str(e)})
+            elif self.path == "/demo_report":
+                try:
+                    self._send(200, service.demo_report())
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
             elif self.path == "/intelligence_report":
                 path = data.get("path")
                 if not path:

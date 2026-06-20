@@ -72,6 +72,32 @@ def test_doctors_summarised_as_evidence():
     assert all("status" in d for d in out["supporting"])
 
 
+def test_demo_is_a_complete_compelling_report():
+    out = ir.demo()
+    assert out["available"] is True and out["is_demo"] is True
+    assert out["studio_score"] is not None
+    assert out["cost"] and out["suggested_price"]      # money headline present
+    assert out["biggest_risk"] is not None             # shows real value (a caught risk)
+    assert len(out["recommendations"]) >= 1
+    assert len(out["supporting"]) >= 5                  # the Doctors as evidence
+    assert "comparison" in out                          # why-not-Orca
+    assert out["comparison"]["issues_found"] >= 1
+
+
+def test_comparison_present_in_every_report():
+    out = ir.build(
+        bed_fit={"available": True, "overall_level": "risk",
+                 "findings": [{"level": "risk", "text": "Too big"}], "fixes": ["Scale"]},
+        cost={"available": True, "true_cost": 4.0, "suggested_price": 10.0,
+              "margin": 6.0, "margin_pct": 60.0, "currency": "$"},
+    )
+    comp = out["comparison"]
+    assert comp["issues_found"] >= 1
+    assert comp["fixes_offered"] >= 1
+    assert "orca" in comp["orca_line"].lower()
+    assert isinstance(comp["studio_line"], str) and comp["studio_line"]
+
+
 def test_headline_questions_present():
     out = ir.build(predict={"available": True, "likelihood": 70, "band": "uncertain", "factors": []})
     for k in ("studio_score", "print_success_score", "cost", "suggested_price",

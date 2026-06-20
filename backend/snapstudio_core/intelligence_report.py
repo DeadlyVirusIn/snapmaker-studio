@@ -28,6 +28,37 @@ def _push_findings(risks, recs, doctor, doc):
         recs.append(fx)
 
 
+def demo() -> dict:
+    """Demo Mode: a representative report for a typical multicolour U1 model —
+    no file, no printer needed, deterministic, for Innovation Fund reviewers.
+    Built through the REAL synthesis engine from realistic Doctor outputs (with a
+    bed-fit risk + a colour note so the value is visible), then flagged is_demo."""
+    out = build(
+        predict={"available": True, "likelihood": 72, "band": "uncertain",
+                 "factors": ["more colours than toolheads — needs a swap or remap"]},
+        bed_fit={"available": True, "overall_level": "risk",
+                 "overall_text": "It won't fit as-is — this is the out-of-bounds error.",
+                 "findings": [{"level": "risk", "text": "Too big for the bed: 286×140 mm on a 270×270 mm bed — scale to 94% to fit."}],
+                 "fixes": ["Scale to 94% so it fits the 270×270 mm bed.",
+                           "Or rotate it ~45° — the diagonal fits within the bed."]},
+        mm={"available": True, "overall_level": "warn",
+            "overall_text": "Multi-material setup needs a tweak before slicing.",
+            "findings": [{"level": "warn", "text": "5 colours but only 4 toolheads — 1 colour can't load at once."}],
+            "fixes": ["Remap to 4 colours in Orca, or pause-and-swap mid-print."]},
+        first_layer={"overall_level": "ok", "overall_text": "First layer looks solid.", "findings": []},
+        health={"available": True, "score": 88, "grade": "A", "drivers": [],
+                "verdict": "Healthy (88/100) — good to print."},
+        cost={"available": True, "true_cost": 6.40, "suggested_price": 11.84,
+              "margin": 5.44, "margin_pct": 46.0, "currency": "$", "time_known": True,
+              "basis": "printer slicer metadata"},
+        pricing={"available": True, "currency": "$", "verdict": "Marketplace ~$11.84"},
+        profit={"available": True, "profit_per_print": 5.44, "margin_pct": 46.0},
+    )
+    out["is_demo"] = True
+    out["demo_name"] = "Sample: multicolour desk organiser"
+    return out
+
+
 def build(predict=None, bed_fit=None, mm=None, first_layer=None, health=None,
           cost=None, pricing=None, profit=None) -> dict:
     """Combine the Doctors into one report. All inputs are their build() outputs."""
@@ -150,9 +181,30 @@ def build(predict=None, bed_fit=None, mm=None, first_layer=None, health=None,
         bits.append(f"top risk: {biggest_risk['text']}")
     verdict = "; ".join(bits) + "." if bits else "Report ready."
 
+    # --- Before vs After: "why not just use Orca?" ---
+    n_issues = len(risks)
+    n_fixes = len(recommendations)
+    orca_line = ("Orca would slice this as-is" +
+                 (f" — no warning about the {n_issues} issue{'s' if n_issues != 1 else ''} below."
+                  if n_issues else ", and it'd be fine — but it can't tell you that in advance."))
+    money_bit = (f", and it prices the print at {cur}{price_v} ({cur}{profit_v}/print profit)"
+                 if (price_v is not None and profit_v is not None) else "")
+    studio_line = (f"Studio caught {n_issues} issue{'s' if n_issues != 1 else ''} and offered "
+                   f"{n_fixes} fix{'es' if n_fixes != 1 else ''} before you slice{money_bit}."
+                   if n_issues else
+                   f"Studio confirmed it's print-ready{money_bit}.")
+    comparison = {
+        "issues_found": n_issues,
+        "fixes_offered": n_fixes,
+        "prices_the_print": price_v is not None,
+        "orca_line": orca_line,
+        "studio_line": studio_line,
+    }
+
     return {
         "schema_version": SCHEMA_VERSION,
         "available": True,
+        "comparison": comparison,
         "studio_score": studio_score,
         "print_success_score": success,
         "cost": cost_v,
