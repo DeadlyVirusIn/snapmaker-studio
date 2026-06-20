@@ -345,6 +345,30 @@ export async function batchPricing(
   return r.json();
 }
 
+// Multi-Material Doctor: one verdict for a multicolour U1 print.
+export interface MMDoctor {
+  available: boolean;
+  multi_material?: boolean;
+  colors?: number;
+  heads?: number;
+  heads_known?: boolean;
+  overall_level?: "ok" | "warn" | "risk";
+  overall_text?: string;
+  findings?: { level: "ok" | "warn" | "risk"; text: string }[];
+  fixes?: string[];
+  verdict?: string;
+  reason?: string;
+}
+export async function mmDoctor(path: string, host?: string | null): Promise<MMDoctor> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/mm_doctor`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify(host ? { path, host } : { path }),
+  });
+  if (!r.ok) throw new Error(`mm_doctor failed (${r.status})`);
+  return r.json();
+}
+
 // Bed-Fit / Out-of-Bounds Doctor: does it fit the U1 bed, and if not, why + fix.
 export interface BedFit {
   available: boolean;

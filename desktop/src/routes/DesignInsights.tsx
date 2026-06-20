@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/store/session";
-import { insights as apiInsights, report as apiReport, mesh as apiMesh, printerCapabilities, firstLayer as apiFirstLayer, toolheadFit as apiToolheadFit, costEstimate as apiCostEstimate, costToPrice as apiCostToPrice, predictSuccess as apiPredictSuccess, bedFit as apiBedFit } from "@/api";
+import { insights as apiInsights, report as apiReport, mesh as apiMesh, printerCapabilities, firstLayer as apiFirstLayer, toolheadFit as apiToolheadFit, costEstimate as apiCostEstimate, costToPrice as apiCostToPrice, predictSuccess as apiPredictSuccess, bedFit as apiBedFit, mmDoctor as apiMmDoctor } from "@/api";
 import { usePrinter } from "@/store/printer";
 import { useFilament } from "@/store/filament";
 import { useOpenFile } from "@/hooks/useOpenFile";
@@ -110,6 +110,12 @@ export default function DesignInsights() {
   const { data: price } = useQuery({
     queryKey: ["price", file.path, filamentPrice, filamentCurrency],
     queryFn: () => apiCostToPrice(file.path, { pricePerKg: filamentPrice, currency: filamentCurrency }),
+    enabled: doctor.status === "done", retry: false, staleTime: 30000,
+  });
+  // Multi-Material Doctor: one verdict for a multicolour U1 print.
+  const { data: mm } = useQuery({
+    queryKey: ["mmdoctor", file.path, u1Host],
+    queryFn: () => apiMmDoctor(file.path, u1Host),
     enabled: doctor.status === "done", retry: false, staleTime: 30000,
   });
   // Bed-Fit / Out-of-Bounds Doctor: catch Orca's cryptic "out of bounds" pre-slice.
@@ -280,6 +286,39 @@ export default function DesignInsights() {
                   </div>
                 )}
                 <p className="text-[11px] text-muted-foreground opacity-70">Checked against {bed.bed_source} ({bed.bed_mm?.x}×{bed.bed_mm?.y}×{bed.bed_mm?.z} mm) — before Orca even opens.</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* multi-material doctor — only for multicolour designs */}
+          {mm?.available && mm.multi_material && (
+            <Card>
+              <CardContent className="space-y-2 p-5">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-sm font-semibold"><Palette className="h-4 w-4 text-primary" /> Multi-material check</span>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                    mm.overall_level === "ok" ? "bg-ready/10 text-ready" : mm.overall_level === "warn" ? "bg-repairable/10 text-repairable" : "bg-risk/10 text-risk"}`}>
+                    {mm.colors} colours · {mm.heads} toolheads
+                  </span>
+                </div>
+                {mm.overall_text && <p className="text-sm text-muted-foreground">{mm.overall_text}</p>}
+                {mm.findings && mm.findings.map((f, i) => (
+                  <p key={i} className={`flex items-start gap-1.5 text-xs ${f.level === "risk" ? "text-risk" : f.level === "warn" ? "text-repairable" : "text-muted-foreground"}`}>
+                    {f.level === "ok"
+                      ? <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 opacity-60" />
+                      : <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />} {f.text}
+                  </p>
+                ))}
+                {mm.fixes && mm.fixes.length > 0 && (
+                  <div className="rounded-md bg-ready/5 p-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-ready">How to fix it</p>
+                    <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+                      {mm.fixes.map((fx, i) => (
+                        <li key={i} className="flex items-start gap-1.5"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ready" /> {fx}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

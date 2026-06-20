@@ -276,6 +276,16 @@ def _make_handler(token: str):
                         paths, str(data.get("currency", "$")), **factors))
                 except Exception as e:
                     self._send(500, {"error": str(e)})
+            elif self.path == "/mm_doctor":
+                path = data.get("path")
+                if not path:
+                    self._send(400, {"error": "missing 'path'"})
+                    return
+                try:
+                    self._send(200, service.mm_doctor(
+                        path, data.get("host"), int(data.get("port", 7125))))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
             elif self.path == "/bed_fit":
                 path = data.get("path")
                 if not path:

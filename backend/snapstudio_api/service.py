@@ -256,6 +256,30 @@ def batch_pricing(paths: list[str], currency: str = "$", **factors) -> dict:
     return pricing.aggregate(priced)
 
 
+def mm_doctor(path: str, host: str | None = None, port: int = 7125) -> dict:
+    """Multi-Material Doctor: one verdict for a multicolour U1 print — colours vs
+    toolheads, filament-settings consistency, painted-region mapping. Uses the
+    connected U1's real toolhead count when reachable, else the U1's 4. Read-only."""
+    from snapstudio_core.intelligence import project_info
+    from snapstudio_core import mm_doctor as mmd
+    info = project_info(path)
+    issues = info.get("issues") or []
+    metadata_issues = [i for i in issues if "filament metadata inconsistent" in str(i)]
+    heads = None
+    heads_known = False
+    if host:
+        from snapstudio_core import moonraker
+        try:
+            caps = moonraker.capabilities(host, port)
+            if caps.get("toolhead_count"):
+                heads, heads_known = caps["toolhead_count"], True
+        except Exception:
+            pass
+    return mmd.assess(info.get("colors"), heads=heads, heads_known=heads_known,
+                      painted=bool(info.get("painted")), metadata_issues=metadata_issues,
+                      object_count=info.get("objects") or 1)
+
+
 def bed_fit(path: str, host: str | None = None, port: int = 7125) -> dict:
     """Bed-Fit / Out-of-Bounds Doctor: does the model fit the U1 bed, and if not,
     WHY (the cryptic 'out of bounds' error) and HOW to fix it. Uses the connected
