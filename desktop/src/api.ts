@@ -376,6 +376,22 @@ export function printerHealth(host: string, port = 7125): Promise<PrinterHealth>
   return printerPost("/printer/health", { host, port });
 }
 
+// Firmware Capability Intelligence: what the U1's firmware actually exposes.
+export interface FirmwareFeature { name: string; detail?: string; }
+export interface PrinterFirmware {
+  available: boolean;
+  toolhead_count?: number | null;
+  bed_mm?: { x: number; y: number; z: number } | null;
+  macro_count?: number;
+  extended_firmware?: boolean;
+  features?: FirmwareFeature[];
+  summary?: string;
+  reason?: string;
+}
+export function printerFirmware(host: string, port = 7125): Promise<PrinterFirmware> {
+  return printerPost("/printer/firmware", { host, port });
+}
+
 export interface MeshReport {
   schema_version: string;
   available: boolean;

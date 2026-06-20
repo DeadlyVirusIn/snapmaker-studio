@@ -256,6 +256,16 @@ def batch_pricing(paths: list[str], currency: str = "$", **factors) -> dict:
     return pricing.aggregate(priced)
 
 
+def printer_firmware(host: str, port: int = 7125) -> dict:
+    """Firmware Capability Intelligence: interpret the U1's OWN klipper object list
+    into a plain-language capability set (mesh, input shaping, runout, exclusion,
+    custom macros, multi-toolhead) and flag extended firmware. Read-only."""
+    from snapstudio_core import moonraker, firmware_caps as fwc
+    caps = moonraker.capabilities(host, port)
+    return fwc.interpret(caps.get("klipper_objects"), caps.get("toolhead_count"),
+                         caps.get("bed_mm"))
+
+
 def printer_health(host: str, port: int = 7125, limit: int = 50) -> dict:
     """Printer Health Score: fold the U1's OWN read-only signals — firmware/
     connectivity diagnostics + print-history failure patterns — into one 0–100

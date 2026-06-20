@@ -261,4 +261,5 @@ def capabilities(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> d
         "host": host, "port": port,
         "toolhead_count": toolhead_count or None,
         "bed_mm": bed,
+        "klipper_objects": objects,   # raw object list — capability manifest for firmware_caps
     }

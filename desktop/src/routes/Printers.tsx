@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Printer, Loader2, RotateCw, Thermometer, AlertTriangle, CheckCircle2,
-  ShieldCheck, Wifi, Activity, History, HeartPulse, Layers, TrendingUp,
+  ShieldCheck, Wifi, Activity, History, HeartPulse, Layers, TrendingUp, Cpu, Sparkles,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/layout";
-import { printerDiscover, printerStatus, printerHistory, printerDiagnostics, printerFileMetadata, printerFailureInsights, printerHealth } from "@/api";
+import { printerDiscover, printerStatus, printerHistory, printerDiagnostics, printerFileMetadata, printerFailureInsights, printerHealth, printerFirmware } from "@/api";
 import { usePrinter } from "@/store/printer";
 import { useFilament } from "@/store/filament";
 
@@ -65,6 +65,12 @@ export default function Printers() {
     queryKey: ["printer-health", connected],
     queryFn: () => printerHealth(connected as string),
     enabled: !!connected, refetchInterval: connected ? 60000 : false, retry: false,
+  });
+  // Firmware Capability Intelligence: what this U1's firmware actually exposes.
+  const firmware = useQuery({
+    queryKey: ["printer-firmware", connected],
+    queryFn: () => printerFirmware(connected as string),
+    enabled: !!connected, staleTime: 300000, retry: false,
   });
   const filename = status.data?.filename ?? null;
   const meta = useQuery({
@@ -218,6 +224,30 @@ export default function Printers() {
               </ul>
             )}
             {health.data.basis && <p className="text-[11px] text-muted-foreground opacity-70">From {health.data.basis} — read-only.</p>}
+          </CardContent>
+        </Card>
+      )}
+
+      {connected && firmware.data?.available && (firmware.data.features?.length ?? 0) > 0 && (
+        <Card>
+          <CardContent className="space-y-3 p-5">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-sm font-semibold"><Cpu className="h-4 w-4 text-primary" /> What your U1 can do</span>
+              {firmware.data.extended_firmware && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                  <Sparkles className="h-3 w-3" /> Extended firmware
+                </span>
+              )}
+            </div>
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {firmware.data.features!.map((f, i) => (
+                <li key={i} className="flex items-start gap-2 rounded-md border border-border p-2 text-xs">
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ready" />
+                  <span><span className="font-medium text-foreground">{f.name}</span>{f.detail ? <span className="text-muted-foreground"> — {f.detail}</span> : null}</span>
+                </li>
+              ))}
+            </ul>
+            {firmware.data.summary && <p className="text-[11px] text-muted-foreground opacity-70">{firmware.data.summary} Read-only.</p>}
           </CardContent>
         </Card>
       )}
