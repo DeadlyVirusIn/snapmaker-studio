@@ -82,7 +82,8 @@ def assess(dims, bed=None, bed_known: bool = False, object_count: int = 1,
         fixes.append(f"Scale to {scale_pct:.0f}% so it fits the {bx:.0f}×{by:.0f} mm bed.")
         diag = (x + y) / (2 ** 0.5)
         if (over_x ^ over_y) and diag <= min(bx, by):
-            fixes.append(f"Or rotate it ~45° on the plate — the diagonal ({diag:.0f} mm) fits within the bed.")
+            fixes.append(f"Or it may fit rotated ~45° on the plate — the diagonal ({diag:.0f} mm) "
+                         f"is within the bed; try Arrange in Orca to confirm.")
 
     # Almost the whole plate — fits, but brim/skirt/tower can spill over.
     elif x > bx * EDGE_FRAC or y > by * EDGE_FRAC:
@@ -95,12 +96,13 @@ def assess(dims, bed=None, bed_known: bool = False, object_count: int = 1,
     # Multi-material: is there room for the prime/wipe tower?
     if multi_material and not (over_x or over_y):
         mx, my = bx - x, by - y
-        if mx < PRIME_TOWER_MM and my < PRIME_TOWER_MM:
+        if mx < PRIME_TOWER_MM or my < PRIME_TOWER_MM:
             bump("warn")
-            findings.append(_f("warn", f"No room for the multi-material prime/wipe tower "
-                                       f"(~{PRIME_TOWER_MM:.0f} mm): only {mx:.0f}×{my:.0f} mm is free, so "
-                                       f"Orca may push the tower off the bed (out of bounds)."))
-            fixes.append("Shrink the model a little, or reduce the prime-tower size/brim in Orca.")
+            findings.append(_f("warn", f"Little room for the multi-material prime/wipe tower "
+                                       f"(~{PRIME_TOWER_MM:.0f} mm, depending on your Orca tower settings): "
+                                       f"only {mx:.0f}×{my:.0f} mm is free beside the model, so Orca may push "
+                                       f"the tower off the bed (out of bounds)."))
+            fixes.append("Shrink the model a little, or reduce/disable the prime tower in Orca.")
 
     # Multiple parts share the plate — the arrangement must fit, not just one part.
     if object_count and object_count > 1:

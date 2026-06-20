@@ -262,9 +262,11 @@ export default function DesignInsights() {
                   </span>
                 </div>
                 {bed.overall_text && <p className="text-sm text-muted-foreground">{bed.overall_text}</p>}
-                {bed.findings && bed.findings.filter((f) => f.level !== "ok").map((f, i) => (
-                  <p key={i} className={`flex items-start gap-1.5 text-xs ${f.level === "risk" ? "text-risk" : "text-repairable"}`}>
-                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {f.text}
+                {bed.findings && bed.findings.map((f, i) => (
+                  <p key={i} className={`flex items-start gap-1.5 text-xs ${f.level === "risk" ? "text-risk" : f.level === "warn" ? "text-repairable" : "text-muted-foreground"}`}>
+                    {f.level === "ok"
+                      ? <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 opacity-60" />
+                      : <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />} {f.text}
                   </p>
                 ))}
                 {bed.fixes && bed.fixes.length > 0 && (
@@ -272,7 +274,7 @@ export default function DesignInsights() {
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-ready">How to fix it</p>
                     <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
                       {bed.fixes.map((fx, i) => (
-                        <li key={i} className="flex items-start gap-1.5"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ready" /> {fx}</li>
+                        <li key={i} className={`flex items-start gap-1.5 ${i === 0 ? "font-medium text-foreground" : ""}`}><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ready" /> {fx}</li>
                       ))}
                     </ul>
                   </div>
