@@ -16,6 +16,7 @@ import { useFilament } from "@/store/filament";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { useToast } from "@/store/toast";
 import { StrategyPicker } from "@/components/StrategyPicker";
+import { BusinessDoctors } from "@/components/BusinessDoctors";
 import { DesignHealth } from "@/components/DesignHealth";
 import { HeartPulse } from "lucide-react";
 import {
@@ -387,6 +388,9 @@ export default function DesignInsights() {
               </CardContent>
             </Card>
           )}
+
+          {/* Business Intelligence Layer — Cost / Pricing / Profit Doctors */}
+          <BusinessDoctors filePath={file.path} host={u1Host} />
 
           {/* First-Layer Intelligence — design footprint × the printer's real bed */}
           {firstLayer?.available && firstLayer.findings && (
