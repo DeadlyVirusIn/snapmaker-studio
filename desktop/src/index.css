@@ -4,45 +4,66 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Palette transcribed from the Brand Identity Asset Pack (docs/brand/COLOR_PALETTE.md):
+   Primary Dark #0F111A/#0A101C, panel #16192B, text #F2F2F2, muted #94A3B8,
+   border #334155, accent #00A6FF, hover #00E1FF. The brand is DARK-FIRST. The
+   7-colour spectrum is reserved for the brand mark + the multi-material workflow
+   story (the --stage-* tokens), never general UI fills. */
 @layer base {
   :root {
+    /* Light variant — neutral surfaces, brand accent so even light mode is on-brand. */
     --background: 0 0% 100%;
     --foreground: 222 18% 12%;
     --card: 0 0% 100%;
     --card-foreground: 222 18% 12%;
     --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted-foreground: 215 16% 40%;
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 243 75% 59%;
-    --primary: 243 75% 59%;
+    --ring: 201 100% 45%;
+    --primary: 201 100% 45%;
     --primary-foreground: 0 0% 100%;
-    --accent: 243 75% 59%;
+    --accent: 201 100% 45%;
     --accent-foreground: 0 0% 100%;
-    --ready: 137 66% 30%;
+    --ready: 120 61% 34%;
     --repairable: 41 100% 37%;
-    --convertible: 212 92% 45%;
-    --risk: 356 71% 47%;
+    --convertible: 201 100% 45%;
+    --risk: 302 90% 45%;
+
+    /* Workflow stage colours — the spectrum flow Input → Diagnose → Transform →
+       Validate → Output (mark reads left→right: ribbons → portal → cube). */
+    --stage-input: 187 100% 42%;      /* cyan   #00E1FF */
+    --stage-diagnose: 201 100% 45%;   /* blue   #00A6FF */
+    --stage-transform: 274 100% 50%;  /* purple #8F00FF */
+    --stage-validate: 120 61% 40%;    /* green  #32CD32 */
+    --stage-output: 31 100% 45%;      /* orange #FF8500 */
   }
 
   .dark {
-    --background: 222 16% 8%;
-    --foreground: 220 14% 90%;
-    --card: 222 14% 11%;
-    --card-foreground: 220 14% 90%;
-    --muted: 220 13% 16%;
-    --muted-foreground: 220 9% 64%;
-    --border: 222 12% 20%;
-    --input: 222 12% 20%;
-    --ring: 243 75% 66%;
-    --primary: 243 75% 66%;
-    --primary-foreground: 222 16% 8%;
-    --accent: 243 75% 66%;
-    --accent-foreground: 222 16% 8%;
-    --ready: 137 50% 45%;
-    --repairable: 41 90% 55%;
-    --convertible: 212 90% 62%;
-    --risk: 356 75% 62%;
+    /* Brand identity — dark-first, verbatim from the Asset Pack. */
+    --background: 228 28% 8%;         /* Primary Dark #0F111A */
+    --foreground: 0 0% 95%;           /* #F2F2F2 */
+    --card: 230 32% 13%;             /* panel #16192B */
+    --card-foreground: 0 0% 95%;
+    --muted: 230 24% 16%;
+    --muted-foreground: 215 20% 65%;  /* #94A3B8 */
+    --border: 215 25% 27%;            /* #334155 */
+    --input: 215 25% 27%;
+    --ring: 187 100% 50%;             /* hover cyan #00E1FF */
+    --primary: 201 100% 50%;          /* accent #00A6FF */
+    --primary-foreground: 228 28% 8%;
+    --accent: 201 100% 50%;
+    --accent-foreground: 228 28% 8%;
+    --ready: 120 61% 50%;             /* green #32CD32 */
+    --repairable: 54 100% 55%;        /* yellow — legible on dark */
+    --convertible: 201 100% 50%;      /* accent #00A6FF */
+    --risk: 302 100% 62%;             /* magenta #FF3DF9 */
+
+    --stage-input: 187 100% 50%;      /* #00E1FF */
+    --stage-diagnose: 201 100% 50%;   /* #00A6FF */
+    --stage-transform: 274 100% 62%;  /* #8F00FF (lifted for dark) */
+    --stage-validate: 120 61% 50%;    /* #32CD32 */
+    --stage-output: 31 100% 55%;      /* #FF8500 */
   }
 
   * {
@@ -57,7 +78,16 @@
   /* Brand wordmark / accent gradient — the Snapmaker spectrum, used sparingly
      on hero numerals, the logo, and key emphasis. */
   .brand-gradient {
-    @apply bg-gradient-to-r from-primary to-convertible bg-clip-text text-transparent;
+    background-image: linear-gradient(90deg,
+      hsl(var(--stage-input)), hsl(var(--stage-diagnose)),
+      hsl(var(--stage-transform)), hsl(var(--stage-output)));
+    @apply bg-clip-text text-transparent;
+  }
+  /* The spectrum ribbon — a thin left→right multi-material flow accent. */
+  .spectrum-rule {
+    background-image: linear-gradient(90deg,
+      hsl(var(--stage-input)), hsl(var(--stage-diagnose)),
+      hsl(var(--stage-transform)), hsl(var(--stage-validate)), hsl(var(--stage-output)));
   }
   /* Premium interactive surface: subtle lift + ring on hover. */
   .surface-hover {

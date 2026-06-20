@@ -98,8 +98,10 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Get any 3D model ready for your Snapmaker U1</h2>
-        <p className="text-muted-foreground">Open a model — Studio checks it, fixes what it can, and saves a print-ready file. Everything stays on your computer.</p>
+        <h2 className="text-2xl font-semibold tracking-tight">
+          The <span className="brand-gradient">operating system</span> for multi-material 3D printing
+        </h2>
+        <p className="text-muted-foreground">One place. Any file. Any printer. Perfect prints — Studio diagnoses, transforms, and validates every model before your U1 ever sees it. Local-first &amp; open source.</p>
       </div>
 
       {/* Hero: open a model + the end-to-end workflow it flows through */}

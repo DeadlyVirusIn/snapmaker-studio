@@ -6,9 +6,9 @@ function apply(theme: Theme) {
   document.documentElement.classList.toggle("dark", theme === "dark");
 }
 
-const initial: Theme =
-  (localStorage.getItem("theme") as Theme) ||
-  (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+// Brand is dark-first (Asset Pack Primary Dark #0F111A). Default to dark unless
+// the user has explicitly chosen otherwise.
+const initial: Theme = (localStorage.getItem("theme") as Theme) || "dark";
 
 interface ThemeState {
   theme: Theme;
