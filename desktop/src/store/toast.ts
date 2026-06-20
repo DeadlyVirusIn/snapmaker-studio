@@ -15,8 +15,3 @@ export const useToast = create<ToastState>((set, get) => ({
   show: (message) => set({ message, seq: get().seq + 1 }),
   hide: () => set({ message: null }),
 }));
-
-// Convenience helper for Phase A controls that aren't wired yet.
-export function comingSoon(feature: string) {
-  useToast.getState().show(`${feature} — coming soon`);
-}
