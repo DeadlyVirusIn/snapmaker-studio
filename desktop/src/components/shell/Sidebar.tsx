@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { LayoutDashboard, FolderKanban, Settings, Plus, Wand2, Printer, Sparkles, SlidersHorizontal } from "lucide-react";
+import { LayoutDashboard, FolderKanban, Settings, Plus, Wand2, Printer, Sparkles, SlidersHorizontal, GitCompareArrows } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { library } from "@/api";
 import { useSession } from "@/store/session";
@@ -12,6 +12,7 @@ const NAV = [
   { to: "/projects", label: "Projects", icon: FolderKanban, end: false },
   { to: "/batch", label: "Batch prepare", icon: Wand2, end: false },
   { to: "/printers", label: "Printers", icon: Printer, end: false },
+  { to: "/why", label: "Why Studio?", icon: GitCompareArrows, end: false },
 ];
 
 function navClass({ isActive }: { isActive: boolean }) {

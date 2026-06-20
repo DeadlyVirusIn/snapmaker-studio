@@ -8,6 +8,7 @@ import Batch from "@/routes/Batch";
 import WorkspaceSwitch from "@/routes/WorkspaceSwitch";
 import Printers from "@/routes/Printers";
 import Settings from "@/routes/Settings";
+import WhyStudio from "@/routes/WhyStudio";
 import NotFound from "@/routes/NotFound";
 import { useTheme } from "@/store/theme";
 
@@ -32,6 +33,7 @@ export default function App() {
             <Route path="/workspace" element={<WorkspaceSwitch />} />
             <Route path="/printers" element={<Printers />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/why" element={<WhyStudio />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

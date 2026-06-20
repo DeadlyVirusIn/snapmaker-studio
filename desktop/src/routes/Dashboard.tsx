@@ -121,7 +121,15 @@ export default function Dashboard() {
 
       {/* Demo Mode — full Intelligence Report, no file or printer needed */}
       {demoOn && demo.data?.available && (
-        <IntelligenceReport data={demo.data} />
+        <div className="space-y-3">
+          <IntelligenceReport data={demo.data} />
+          <div className="flex justify-end">
+            <button onClick={() => nav("/why")}
+                    className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm">
+              Why Studio? <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Hero: open a model + the end-to-end workflow it flows through */}

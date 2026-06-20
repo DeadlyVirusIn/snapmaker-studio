@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { intelligenceReport, type IntelligenceReport as Report } from "@/api";
-import { AlertTriangle, ArrowRight, ChevronDown, CheckCircle2, Stethoscope, Sparkles, GitCompareArrows } from "lucide-react";
+import { AlertTriangle, ArrowRight, ChevronDown, CheckCircle2, Stethoscope, Sparkles, GitCompareArrows, Users } from "lucide-react";
 
 // The Studio Intelligence Report — the product. One screen that answers, in 15s:
 // will it print, what it costs, what to sell it for, the profit, the biggest
@@ -61,6 +61,18 @@ export function IntelligenceReport({ filePath, host, data }: { filePath?: string
           {metric("Printer", r.printer_compatibility ?? "Unknown")}
         </div>
 
+        {/* Expected Improvement — clearly an estimate */}
+        {r.expected_improvement && r.expected_improvement.after_fixes > r.expected_improvement.current && (
+          <div className="flex items-center gap-3 rounded-md border border-border p-3">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="font-bold tabular-nums text-muted-foreground">{r.expected_improvement.current}%</span>
+              <ArrowRight className="h-4 w-4 text-primary" />
+              <span className="font-bold tabular-nums" style={{ color: "hsl(var(--stage-validate))" }}>{r.expected_improvement.after_fixes}%</span>
+            </div>
+            <span className="text-xs text-muted-foreground">expected print success after the recommended fixes <span className="opacity-70">(estimate)</span></span>
+          </div>
+        )}
+
         {/* biggest risk + the one next action */}
         {r.biggest_risk && (
           <div className="flex items-start gap-2 rounded-md bg-risk/5 px-3 py-2 text-sm text-risk">
@@ -103,8 +115,20 @@ export function IntelligenceReport({ filePath, host, data }: { filePath?: string
                 <p className="mb-1 font-semibold">Risks</p>
                 <ul className="space-y-1">
                   {r.risks.map((rk, i) => (
-                    <li key={i} className={`flex items-start gap-1.5 ${rk.level === "risk" ? "text-risk" : "text-repairable"}`}>
-                      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {rk.text} <span className="opacity-60">({rk.doctor})</span>
+                    <li key={i} className="space-y-1">
+                      <p className={`flex items-start gap-1.5 ${rk.level === "risk" ? "text-risk" : "text-repairable"}`}>
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {rk.text} <span className="opacity-60">({rk.doctor})</span>
+                      </p>
+                      {rk.community && (
+                        <div className="ml-5 rounded-md bg-muted/40 px-2 py-1.5 text-muted-foreground">
+                          <p className="flex items-center gap-1.5"><Users className="h-3 w-3 text-primary" />
+                            <span className="font-medium text-foreground">Community fix</span>
+                            <span className="rounded-full bg-ready/10 px-1.5 text-[9px] font-semibold text-ready">{rk.community.confidence} confidence</span>
+                          </p>
+                          <p className="mt-0.5">{rk.community.fix}</p>
+                          <p className="mt-0.5 opacity-70">{rk.community.success_pattern} · {rk.community.sources.join(", ")}</p>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>

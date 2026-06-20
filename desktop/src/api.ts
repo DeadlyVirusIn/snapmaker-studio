@@ -346,7 +346,10 @@ export async function batchPricing(
 }
 
 // Studio Intelligence Report: the one screen synthesising every Doctor.
-export interface ReportRisk { doctor: string; level: "ok" | "warn" | "risk"; text: string; }
+export interface ReportRisk {
+  doctor: string; level: "ok" | "warn" | "risk"; text: string;
+  community?: { fix: string; success_pattern: string; confidence: string; sources: string[] };
+}
 export interface ReportEvidence { doctor: string; status: string; detail: string; }
 export interface IntelligenceReport {
   available: boolean;
@@ -367,6 +370,7 @@ export interface IntelligenceReport {
   reason?: string;
   is_demo?: boolean;
   demo_name?: string;
+  expected_improvement?: { current: number; after_fixes: number; is_estimate: boolean; label: string } | null;
   comparison?: {
     issues_found: number; fixes_offered: number; prices_the_print: boolean;
     orca_line: string; studio_line: string;
