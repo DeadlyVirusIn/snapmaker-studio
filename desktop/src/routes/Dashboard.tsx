@@ -13,7 +13,9 @@ import { SectionTitle } from "@/components/ui/layout";
 import { Workflow } from "@/components/Workflow";
 import { HeroMark } from "@/components/HeroMark";
 import { DoctorsGrid } from "@/components/DoctorsGrid";
-import { library, printerStatus } from "@/api";
+import { IntelligenceReport } from "@/components/IntelligenceReport";
+import { library, printerStatus, demoReport } from "@/api";
+import { useState } from "react";
 import type { LibraryProject } from "@/api";
 import { useSession } from "@/store/session";
 import { useMode } from "@/store/mode";
@@ -97,6 +99,10 @@ export default function Dashboard() {
 
   const openProject = (p: LibraryProject) => { setFile(p.source_path); nav("/workspace"); };
 
+  // Demo Mode: one click → a full Studio Intelligence Report, no file or printer.
+  const [demoOn, setDemoOn] = useState(false);
+  const demo = useQuery({ queryKey: ["demo-report"], queryFn: () => demoReport(), enabled: demoOn, retry: false });
+
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-5">
@@ -106,8 +112,17 @@ export default function Dashboard() {
             The <span className="brand-gradient">Intelligence Layer</span> for Open 3D Printing
           </h2>
           <p className="text-muted-foreground">One place. Any file. Any printer. Perfect prints — your Project, Printer &amp; Cost Doctors check every model before your U1 ever sees it. Local-first &amp; open source.</p>
+          <button onClick={() => setDemoOn(true)}
+                  className="mt-3 inline-flex h-9 items-center gap-2 rounded-md border border-primary/40 bg-primary/5 px-4 text-sm font-medium text-primary transition-colors hover:bg-primary/10">
+            <Sparkles className="h-4 w-4" /> {demo.isFetching ? "Loading demo…" : "See a 10-second demo"}
+          </button>
         </div>
       </div>
+
+      {/* Demo Mode — full Intelligence Report, no file or printer needed */}
+      {demoOn && demo.data?.available && (
+        <IntelligenceReport data={demo.data} />
+      )}
 
       {/* Hero: open a model + the end-to-end workflow it flows through */}
       <Card className="surface-raised overflow-hidden">

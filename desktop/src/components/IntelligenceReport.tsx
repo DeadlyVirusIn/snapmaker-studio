@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import { intelligenceReport } from "@/api";
-import { AlertTriangle, ArrowRight, ChevronDown, CheckCircle2, Stethoscope } from "lucide-react";
+import { intelligenceReport, type IntelligenceReport as Report } from "@/api";
+import { AlertTriangle, ArrowRight, ChevronDown, CheckCircle2, Stethoscope, Sparkles, GitCompareArrows } from "lucide-react";
 
 // The Studio Intelligence Report — the product. One screen that answers, in 15s:
 // will it print, what it costs, what to sell it for, the profit, the biggest
@@ -14,14 +14,15 @@ function scoreColor(s?: number | null): string {
   return "--risk";                            // red/magenta
 }
 
-export function IntelligenceReport({ filePath, host }: { filePath: string; host?: string | null }) {
+export function IntelligenceReport({ filePath, host, data }: { filePath?: string; host?: string | null; data?: Report }) {
   const [open, setOpen] = useState(false);
-  const { data: r, isLoading } = useQuery({
+  const { data: fetched, isLoading } = useQuery({
     queryKey: ["report", filePath, host],
-    queryFn: () => intelligenceReport(filePath, host),
-    retry: false, staleTime: 30000,
+    queryFn: () => intelligenceReport(filePath as string, host),
+    enabled: !data && !!filePath, retry: false, staleTime: 30000,
   });
-  if (isLoading || !r?.available) return null;
+  const r = data ?? fetched;
+  if ((!data && isLoading) || !r?.available) return null;
   const cur = r.currency ?? "$";
   const metric = (label: string, value: string, token?: string) => (
     <div className="rounded-lg border border-border p-2.5 text-center">
@@ -45,6 +46,7 @@ export function IntelligenceReport({ filePath, host }: { filePath: string; host?
           <div className="min-w-0">
             <p className="flex items-center gap-2 text-sm font-semibold">
               <Stethoscope className="h-4 w-4 text-primary" /> Studio Intelligence Report
+              {r.is_demo && <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary"><Sparkles className="h-3 w-3" /> Demo</span>}
             </p>
             <p className="text-sm text-muted-foreground">{r.verdict}</p>
             <p className="mt-1 text-[11px] text-muted-foreground opacity-70">Powered by Studio Intelligence · your Doctors, in one answer</p>
@@ -70,6 +72,23 @@ export function IntelligenceReport({ filePath, host }: { filePath: string; host?
           <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <span><span className="font-semibold">Next:</span> {r.next_action}</span>
         </div>
+
+        {/* Before vs After — why not just use Orca? */}
+        {r.comparison && (
+          <div className="rounded-md border border-border p-3">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold"><GitCompareArrows className="h-3.5 w-3.5 text-primary" /> Why not just use Orca?</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+                <p className="mb-0.5 font-semibold uppercase tracking-wide text-[10px]">Orca alone</p>
+                {r.comparison.orca_line}
+              </div>
+              <div className="rounded-md p-2 text-xs" style={{ backgroundColor: "hsl(var(--stage-validate) / 0.08)" }}>
+                <p className="mb-0.5 font-semibold uppercase tracking-wide text-[10px]" style={{ color: "hsl(var(--stage-validate))" }}>With Studio</p>
+                {r.comparison.studio_line}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* progressive disclosure: risks, recommendations, evidence */}
         <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-1 text-xs font-medium text-primary">

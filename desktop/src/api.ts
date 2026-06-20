@@ -365,6 +365,21 @@ export interface IntelligenceReport {
   supporting?: ReportEvidence[];
   verdict?: string;
   reason?: string;
+  is_demo?: boolean;
+  demo_name?: string;
+  comparison?: {
+    issues_found: number; fixes_offered: number; prices_the_print: boolean;
+    orca_line: string; studio_line: string;
+  };
+}
+export async function demoReport(): Promise<IntelligenceReport> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/demo_report`, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({}),
+  });
+  if (!r.ok) throw new Error(`demo_report failed (${r.status})`);
+  return r.json();
 }
 export async function intelligenceReport(path: string, host?: string | null): Promise<IntelligenceReport> {
   const { port, token } = await apiInfo();
