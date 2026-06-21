@@ -144,6 +144,8 @@ export default function FindModels() {
         <p>API keys are stored locally and used server-side — they never ship in the app bundle.
            Studio does not mirror or re-host models. Downloads/imports are not available yet
            (v1 is search + link-out). {DISCLAIMER}</p>
+        <p className="mt-1">For now the flow is: search → open on the source site → download
+           manually (respecting its license) → open the file in Studio → run the Project Doctor.</p>
       </div>
     </div>
   );

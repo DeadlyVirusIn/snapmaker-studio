@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { Stethoscope, Loader2, Lightbulb, ListChecks, SlidersHorizontal, Wrench, Ban, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -68,6 +69,14 @@ export default function PrintQuality() {
           <Section icon={Ban} title="What not to change blindly" items={res.avoid} />
           <p className="flex items-start gap-1.5 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {res.disclaimer}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Related: a slicer/profile warning before printing →{" "}
+            <Link to="/compatibility" className="text-primary hover:underline">Compatibility Doctor</Link>;
+            {" "}resize-related risk →{" "}
+            <Link to="/scale" className="text-primary hover:underline">Scale Doctor</Link>;
+            {" "}geometry / fit risk → open a model and run the{" "}
+            <Link to="/doctor/project" className="text-primary hover:underline">Project Doctor</Link>.
           </p>
         </CardContent></Card>
       )}

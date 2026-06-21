@@ -89,6 +89,10 @@ export default function Compatibility() {
             <Link to="/help" className="text-primary hover:underline">troubleshooting checklist</Link>
             {" "}for more detail. <ArrowRight className="inline h-3 w-3" />
           </p>
+          <p className="text-[11px] text-muted-foreground">
+            Already printed and the result looks bad (not a file warning)? Try the{" "}
+            <Link to="/print-quality" className="text-primary hover:underline">Print Quality Doctor</Link>.
+          </p>
         </CardContent></Card>
       )}
     </div>
