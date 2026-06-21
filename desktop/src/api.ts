@@ -726,6 +726,24 @@ export function plateExport(path: string, uiPlate: number, fromFilament: number,
   return platePost("/plate_export", { path, ui_plate: uiPlate, from_filament: fromFilament, to_filament: toFilament });
 }
 
+// ---- Scale Doctor (analysis-only preview) ----
+export interface ScaleResult {
+  available: boolean;
+  reason?: string;
+  scale_percent?: number;
+  original_dimensions?: { x: number; y: number; z: number };
+  scaled_dimensions?: { x: number; y: number; z: number };
+  fits_build_volume?: boolean;
+  estimated_material_delta?: { grams: number; basis: string };
+  estimated_cost_delta?: { amount: number | null; basis: string };
+  risks?: string[];
+  recommendation?: "likely safe" | "caution" | "not recommended";
+  explanation?: string;
+}
+export function scalePreview(path: string, scalePercent: number): Promise<ScaleResult> {
+  return platePost("/scale_preview", { path, scale_percent: scalePercent });
+}
+
 // ---- Model Discovery Hub v1 (search + link-out) ----
 import type { SearchResponse, SearchFilters } from "@/lib/modelSearch";
 export function modelSearch(query: string, filters: SearchFilters = {}): Promise<SearchResponse> {

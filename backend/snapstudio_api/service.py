@@ -16,6 +16,7 @@ from snapstudio_core import library
 from snapstudio_core.batch import run_batch
 from snapstudio_core import compatibility
 from snapstudio_core import model_search
+from snapstudio_core import scale_doctor
 
 API_VERSION = "api/1"
 
@@ -62,6 +63,11 @@ def model_search_query(query: str, filters: dict | None = None) -> dict:
     """Model Discovery Hub v1: metadata search across sanctioned providers.
     No scraping; no import. Returns {results, providers_queried, warnings}."""
     return model_search.search(query, filters)
+
+
+def scale_preview(path: str, scale_percent: float) -> dict:
+    """Scale Doctor: analysis-only uniform-scale preview. Writes nothing."""
+    return scale_doctor.preview(path, float(scale_percent))
 
 
 def convert(path: str, out_dir: str | None = None) -> dict:

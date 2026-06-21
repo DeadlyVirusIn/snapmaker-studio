@@ -114,6 +114,15 @@ def _make_handler(token: str):
                     self._send(200, result)
                 except Exception as e:  # adapter must not crash the server
                     self._send(500, {"error": str(e)})
+            elif self.path == "/scale_preview":
+                path = data.get("path")
+                if not path or data.get("scale_percent") is None:
+                    self._send(400, {"error": "missing 'path' or 'scale_percent'"})
+                    return
+                try:
+                    self._send(200, service.scale_preview(path, data["scale_percent"]))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
             elif self.path == "/model_search":
                 try:
                     self._send(200, service.model_search_query(
