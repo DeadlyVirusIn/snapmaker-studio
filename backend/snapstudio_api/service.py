@@ -18,6 +18,7 @@ from snapstudio_core import compatibility
 from snapstudio_core import model_search
 from snapstudio_core import scale_doctor
 from snapstudio_core import print_quality
+from snapstudio_core import first_layer_doctor
 
 API_VERSION = "api/1"
 
@@ -79,6 +80,11 @@ def quality_check(symptom: str) -> dict:
 def quality_symptoms() -> dict:
     """The pickable symptom list for the Print Quality Doctor."""
     return {"symptoms": print_quality.symptoms()}
+
+
+def first_layer_check(symptom: str) -> dict:
+    """First Layer Doctor: advisory checklist for a first-layer symptom. Static."""
+    return first_layer_doctor.lookup(symptom)
 
 
 def convert(path: str, out_dir: str | None = None) -> dict:

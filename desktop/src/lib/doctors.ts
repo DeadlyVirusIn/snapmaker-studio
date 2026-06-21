@@ -34,7 +34,7 @@ export const DOCTORS: Doctor[] = [
     token: "--doctor-printer", tier: "P0", route: "/printers",
     answers: "Is your U1 healthy? One 0–100 score from its own signals." },
   { id: "first-layer", name: "First Layer Doctor", icon: Layers, stage: "Diagnose",
-    token: "--stage-input", tier: "P0", route: "/doctor/first-layer",
+    token: "--stage-input", tier: "P0", route: "/first-layer",
     answers: "Will the first layer stick? Adhesion & bed-mesh risk, explained." },
   { id: "multi-material", name: "Multi-Material Doctor", icon: Palette, stage: "Diagnose",
     token: "--stage-transform", tier: "P0", route: "/doctor/multi-material",

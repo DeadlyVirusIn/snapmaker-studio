@@ -743,6 +743,23 @@ export function qualityCheck(symptom: string): Promise<QualityResponse> {
   return platePost("/quality_check", { symptom });
 }
 
+// ---- First Layer Doctor (advisory, read-only) ----
+export interface FirstLayerResult {
+  symptom: string;
+  title: string;
+  likely_causes: string[];
+  first_checks: string[];
+  u1_checks: string[];
+  slicer_checks: string[];
+  avoid: string[];
+  evidence_needed: string[];
+  disclaimer: string;
+}
+export interface FirstLayerResponse { result: FirstLayerResult | null; warnings: string[]; }
+export function firstLayerCheck(symptom: string): Promise<FirstLayerResponse> {
+  return platePost("/first_layer_check", { symptom });
+}
+
 // ---- Scale Doctor (analysis-only preview) ----
 export interface ScaleResult {
   available: boolean;

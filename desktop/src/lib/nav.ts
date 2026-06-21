@@ -58,7 +58,7 @@ export const SECONDARY_NAV: NavItem[] = [
 // (/doctor/:id) and validated against DOCTORS below.
 export const STATIC_ROUTES = new Set<string>([
   "/", "/projects", "/batch", "/workspace", "/printers", "/settings",
-  "/why", "/plate-remap", "/compatibility", "/scale", "/print-quality", "/find-models", "/help",
+  "/why", "/plate-remap", "/compatibility", "/scale", "/print-quality", "/first-layer", "/find-models", "/help",
 ]);
 
 /** True when a nav `to` resolves to a real route — guards against blank pages. */
