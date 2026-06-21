@@ -7,7 +7,9 @@ anyone can produce the marketing set consistently.
 
 ## Setup (once)
 1. Build + install: `cd desktop && npm run tauri build`, then run the installer
-   (`..._0.3.0-beta.1_x64-setup.exe`).
+   (`Snapmaker Studio_0.4.0-beta.3_x64-setup.exe`). It is an **unsigned beta** —
+   if you capture the install flow, expect the SmartScreen "Unknown publisher"
+   step and note it as a known beta limitation.
 2. Launch from Start Menu (or `npm run tauri dev` for iteration).
 3. **Display:** 1440x900 logical, 100% scale, **light theme** (Settings -> Light)
    for high-contrast marketing; capture a dark-theme variant of each too.
@@ -59,6 +61,29 @@ anyone can produce the marketing set consistently.
 - **Message:** platform ambition, not a one-trick tool.
 - **File:** `roadmap.png`. (Designed card, not an app screen — assemble from the
   brand assets + roadmap text.)
+
+### 6 — Sidebar navigation (beta.3)
+- **Route:** any page; the focus is the left sidebar.
+- **Compose:** primary group shows every Doctor directly (Project, Printer, First
+  Layer, Multi-Material, Plate Color Remap next to Multi-Material, Cost, Pricing,
+  Profit, Batch Prepare); the secondary/bottom group shows **Why Studio?**,
+  Docs/Help, Settings.
+- **Message:** "judge-ready IA — no hunting for Doctors; Why Studio? supports the
+  story without blocking the workflow."
+- **File:** `nav-sidebar.png` (+ dark).
+
+### 7 — Plate Color Remap, beginner proof cards (beta.3)
+- **Steps:** Plate Color Remap -> open a 3MF -> pick a plate -> choose from/to
+  colour -> Preview changes.
+- **Compose:** the "Review before creating copy" card showing **What will change**
+  (from→to colour swatches + names, object count, "this plate only") and **What
+  will stay the same** (painted/gold protected, other plates untouched), plus the
+  **"Create safe copy — original stays unchanged"** button. Optionally also capture
+  the "Verified safe copy created" proof card after export.
+- **Message:** "answers 'will the gold star stay gold?' in plain language."
+- **File:** `plate-remap.png` (+ dark). Use a generic multicolor 3MF
+  (`example.3mf` / a real-world multicolor fixture) — never a paid/commercial
+  model name.
 
 ## Output naming + location
 Save to a local `marketing/screenshots/` folder (do **not** commit binaries to

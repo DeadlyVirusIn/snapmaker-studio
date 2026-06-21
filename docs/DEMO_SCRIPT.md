@@ -17,6 +17,17 @@ print-ready — and tells you if it will print."
 | **45–60s** | Open the converted `example_SnapmakerU1.3mf` in Snapmaker Orca. **No warnings.** Slice/print-ready. | "Open it in Snapmaker Orca. Zero warnings. Ready to print." | Screen-record Orca loading the output clean (the after-state). |
 | **60–90s** | Slow pan over roadmap cards: Understand . Validate . Prepare . Monitor -> "more ecosystems, more printers, plugins." End on logo + tagline. | "This is the start. We're building the workflow platform for modern 3D printing — understand, validate, and get any design print-ready." | Title cards from ROADMAP.md pillars + logo. |
 
+## beta.3 additions (optional beats)
+For a judge/Innovation-Fund cut, add two short beats after the convert success:
+- **Navigation (≈5s):** pan the sidebar — every Doctor directly reachable; "Why
+  Studio?" now in the secondary/help group. VO: "Every Doctor, one click away."
+- **Plate Color Remap (≈8s):** open a generic multicolor 3MF (`example.3mf` / a
+  real-world multicolor fixture — never a paid model name), pick a plate and a
+  from→to colour, show the "What will change / What will stay the same" cards and
+  the "Create safe copy — original stays unchanged" button, then the "Verified
+  safe copy created" proof. VO: "Change one plate's colour — gold details and
+  other plates stay exactly as they are, and your original file is never touched."
+
 ## End card
 - Project brand assets: `docs/brand/` (mark `logo.svg`, banner `hero.svg`,
   share `social-preview.svg`). Dark background (`#0B0F19`).
@@ -59,7 +70,7 @@ print-ready — and tells you if it will print."
 
 ## Recording guide
 - **Tools:** OBS (or built-in recorder) at 1920×1080/60; cursor highlight on.
-- **App:** installed `0.3.0-beta.1`, light theme, 1280×800 client area, no
+- **App:** installed `0.4.0-beta.3`, light theme, 1280×800 client area, no
   personal paths visible.
 - **Takes:** record each beat separately (B–E in Studio, A+F in Orca) for clean
   edits; do 2–3 takes of the drag and the click.
