@@ -33,9 +33,34 @@ export default function Help() {
               <span className="text-muted-foreground"> — {d.answers}</span>
             </li>
           ))}
+        </ul>
+        <p className="text-[11px] text-muted-foreground">
+          The model-based Doctors run on an open model in the workspace — open a model, and they check it automatically.
+        </p>
+      </CardContent></Card>
+
+      <Card><CardContent className="space-y-2 p-5">
+        <p className="text-sm font-semibold">Fix &amp; diagnose tools — when to use each</p>
+        <ul className="space-y-1.5 text-sm">
+          <li>
+            <Link to="/compatibility" className="text-primary hover:underline">Compatibility Doctor</Link>
+            <span className="text-muted-foreground"> — <b>before slicing</b>: a 3MF won't open cleanly or carries foreign/stale settings. Next: open the 3MF; read-only, no auto-fix.</span>
+          </li>
+          <li>
+            <Link to="/print-quality" className="text-primary hover:underline">Print Quality Doctor</Link>
+            <span className="text-muted-foreground"> — <b>after a bad print/preview</b>: pick the symptom for likely causes + safe first checks. Advisory only.</span>
+          </li>
+          <li>
+            <Link to="/scale" className="text-primary hover:underline">Scale Doctor</Link>
+            <span className="text-muted-foreground"> — <b>before resizing</b>: preview U1 fit and material/cost of a uniform scale. Analysis-only; no file changes.</span>
+          </li>
           <li>
             <Link to="/plate-remap" className="text-primary hover:underline">Plate Color Remap</Link>
-            <span className="text-muted-foreground"> — change one plate's colour, safely, with a verified copy.</span>
+            <span className="text-muted-foreground"> — change one plate's colour safely; writes a verified copy, original untouched.</span>
+          </li>
+          <li>
+            <Link to="/find-models" className="text-primary hover:underline">Find Models</Link>
+            <span className="text-muted-foreground"> — search model sites + link out; check license before you use a model. No downloads yet.</span>
           </li>
         </ul>
       </CardContent></Card>
