@@ -5,7 +5,7 @@ unsigned** (no code-signing certificate yet), so Windows SmartScreen will likely
 show a warning such as:
 
 > **Windows protected your PC**
-> App: `Snapmaker.Studio_0.4.0-beta.3_x64-setup.exe`
+> App: `Snapmaker.Studio_0.4.0-beta.4_x64-setup.exe`
 > Publisher: Unknown publisher
 
 This warning is expected for an unsigned beta from a new publisher. It does not
@@ -15,7 +15,7 @@ by itself mean the file is unsafe — but you should still take normal precautio
 
 Only download the installer from the official GitHub release page:
 
-- https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.3
+- https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.4
 
 Do not run installers for this app obtained from anywhere else.
 
@@ -24,15 +24,15 @@ Do not run installers for this app obtained from anywhere else.
 Before installing, confirm the file's SHA256 checksum matches the value below.
 
 ```
-File:    Snapmaker.Studio_0.4.0-beta.3_x64-setup.exe
-Size:    16,028,790 bytes
-SHA256:  B1935D66F96E448DB4EF8C34D95294A14FAEAC88BE938A0EADDC8775F5DF15D3
+File:    Snapmaker.Studio_0.4.0-beta.4_x64-setup.exe
+Size:    16,031,077 bytes
+SHA256:  0FDDD084F678FA0182B5676F04849248868E362DEF90062176E75F33E8398C09
 ```
 
 Check it in PowerShell:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 ".\Snapmaker.Studio_0.4.0-beta.3_x64-setup.exe"
+Get-FileHash -Algorithm SHA256 ".\Snapmaker.Studio_0.4.0-beta.4_x64-setup.exe"
 ```
 
 If the printed hash does not match, **do not run the installer** — delete it and
