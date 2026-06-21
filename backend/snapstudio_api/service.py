@@ -15,6 +15,7 @@ from snapstudio_core.container import ThreeMF
 from snapstudio_core import library
 from snapstudio_core.batch import run_batch
 from snapstudio_core import compatibility
+from snapstudio_core import model_search
 
 API_VERSION = "api/1"
 
@@ -55,6 +56,12 @@ def compatibility_check(path: str) -> dict:
     """Read-only Compatibility Doctor: detect common U1/Orca project issues.
     Never modifies the file."""
     return compatibility.check(path)
+
+
+def model_search_query(query: str, filters: dict | None = None) -> dict:
+    """Model Discovery Hub v1: metadata search across sanctioned providers.
+    No scraping; no import. Returns {results, providers_queried, warnings}."""
+    return model_search.search(query, filters)
 
 
 def convert(path: str, out_dir: str | None = None) -> dict:

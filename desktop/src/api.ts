@@ -726,6 +726,12 @@ export function plateExport(path: string, uiPlate: number, fromFilament: number,
   return platePost("/plate_export", { path, ui_plate: uiPlate, from_filament: fromFilament, to_filament: toFilament });
 }
 
+// ---- Model Discovery Hub v1 (search + link-out) ----
+import type { SearchResponse, SearchFilters } from "@/lib/modelSearch";
+export function modelSearch(query: string, filters: SearchFilters = {}): Promise<SearchResponse> {
+  return platePost("/model_search", { query, filters });
+}
+
 // ---- Compatibility Doctor (read-only) ----
 export interface CompatibilityFinding {
   id: string;
