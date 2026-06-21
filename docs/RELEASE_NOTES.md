@@ -70,8 +70,8 @@ from the official GitHub release, and verify the checksum before installing.
 
 ```
 File:    Snapmaker.Studio_0.4.0-beta.5_x64-setup.exe
-Size:    __SIZE__ bytes
-SHA256:  __SHA256__
+Size:    16,056,194 bytes
+SHA256:  0D6706D0DD65A566E4D08BA776BD2BA6B2A64ED364F1208DA97634C4CF5542E1
 ```
 
 Full guidance: [docs/windows-install.md](windows-install.md). Code-signing
