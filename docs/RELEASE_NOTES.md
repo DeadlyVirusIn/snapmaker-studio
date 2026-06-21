@@ -41,6 +41,15 @@ Large projects (e.g. ~90 MB) can take around **30 seconds** to export, because
 Studio re-zips and then re-opens the result to run the full verification gate. The
 UI stays responsive and shows progress.
 
+## Compatibility
+- **U1 compatibility troubleshooting checklist.** A new beginner-friendly guide
+  covers the most common community errors — "invalid values found in the 3MF"
+  (out-of-range profile settings carried in from foreign/stale project files) and
+  the relative-extruder / `G92 E0` layer-gcode warning — with the safest next step
+  for each. See [docs/u1-compatibility-troubleshooting.md](u1-compatibility-troubleshooting.md).
+- Studio diagnoses and explains; it does not auto-fix these today. A read-only
+  Compatibility Doctor is planned for a future release (not in this build).
+
 ## Quality
 - Backend: 186 automated tests passing.
 - Frontend: vitest 12/12; TypeScript clean; production build clean.
