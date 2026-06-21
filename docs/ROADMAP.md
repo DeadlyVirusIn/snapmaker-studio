@@ -28,6 +28,15 @@ a **local-first Printer Hub** is feasible. Full feasibility audit:
 - Optionally evaluate **Microsoft Store** distribution later as an additional
   trusted channel.
 
+### Diagnostic Doctors (RC+1 / RC+2)
+- **Compatibility Doctor** (read-only) and **Scale Doctor** (analysis-only preview)
+  are implemented and awaiting a prerelease — not in beta.3.
+- **Print Quality Doctor** (planned) — after a bad print/preview, a beginner picks
+  a symptom (stringing, warping, ringing, layer shift, under-extrusion, poor first
+  layer, bridging, etc.) and gets likely causes + safe first checks, advisory only
+  (never auto-edits settings). MVP in RC+1; evidence integration (Printer/Project
+  Doctor) in RC+2. Plan: [`design/PRINT_QUALITY_DOCTOR.md`](design/PRINT_QUALITY_DOCTOR.md).
+
 ### v0.5 — Printer Hub Phase A (read-only monitoring)
 - Discover the U1 on the LAN (mDNS `U1.local` / port `7125`)
 - Connect via Moonraker (server-side, no auth needed on-LAN)
