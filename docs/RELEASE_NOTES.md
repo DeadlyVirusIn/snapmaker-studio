@@ -29,10 +29,12 @@ Change **one plate's** filament assignment without touching anything else.
 - **Verification gate.** Every export reopens the output and confirms only the
   intended objects changed and every mesh/paint entry is byte-identical; if any
   check fails, the output is quarantined and the export is reported as failed.
-- **Real-file validated (Freedom Torch).** Plate 4, filament 6 -> 3, objects 12 and
+- **Real-file validated (real 9-plate multicolor U1 project).** Plate 4, filament 6 -> 3, objects 12 and
   14 changed; Plate 6 unchanged; gold accents and meshes byte-identical; only
   `model_settings.config` differs; original byte-identical. Confirmed by automated
-  tests and a manual in-app UI pass.
+  tests and a manual in-app UI pass. Real-world validation fixtures are not
+  included in the repository because they may be copyrighted or commercially
+  licensed.
 - **Orca-compatible.** Verified against the OrcaSlicer 3MF reader — editing only
   `model_settings.config` object extruders is safe to open in Snapmaker Orca.
 

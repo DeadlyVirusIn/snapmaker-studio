@@ -1,8 +1,9 @@
-"""Commit E — real Freedom Torch fixture validation (conditional).
+"""Commit E — real multicolor fixture validation (conditional).
 
-Proves the full A->B->C path on the real 9-plate file when it's available. The
-fixture is ~90 MB so it is NOT committed; the test locates it via the
-SNAPSTUDIO_FT_FIXTURE env var or the known Downloads path, and SKIPS cleanly if
+Proves the full A->B->C path on a real 9-plate multicolor U1 project when it's
+available. Real-world validation fixtures are NOT included in the repository
+because they may be copyrighted or commercially licensed; the test locates the
+fixture via the SNAPSTUDIO_REAL_MULTICOLOR_FIXTURE env var, and SKIPS cleanly if
 absent (synthetic-fixture coverage in test_plate_remap.py still runs).
 
 Fixture safety rules enforced here:
@@ -20,9 +21,8 @@ import pytest
 from snapstudio_core import plate_remap as pr
 
 _CANDIDATES = [
-    os.environ.get("SNAPSTUDIO_FT_FIXTURE"),
-    r"C:/Users/kunal/Downloads/Freedom Torch_U1_UpdatedB.3mf",
-    os.path.join(os.path.dirname(__file__), "..", "..", "examples", "Freedom Torch_U1_UpdatedB.3mf"),
+    os.environ.get("SNAPSTUDIO_REAL_MULTICOLOR_FIXTURE"),
+    os.path.join(os.path.dirname(__file__), "..", "..", "examples", "real_multicolor_u1.3mf"),
 ]
 
 
@@ -50,10 +50,10 @@ def _entry_hashes(path):
 
 
 pytestmark = pytest.mark.skipif(_fixture() is None,
-                                reason="Freedom Torch fixture not available (set SNAPSTUDIO_FT_FIXTURE)")
+                                reason="real multicolor fixture not available (set SNAPSTUDIO_REAL_MULTICOLOR_FIXTURE)")
 
 
-def test_freedom_torch_full_path(tmp_path):
+def test_real_multicolor_full_path(tmp_path):
     real = _fixture()
     # copy the fixture; NEVER touch the original
     src = str(tmp_path / "ft.3mf")

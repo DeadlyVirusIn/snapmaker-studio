@@ -8,16 +8,16 @@ def _db(tmp_path):
 def test_upsert_list_and_update(tmp_path):
     conn = _db(tmp_path)
     pid = library.upsert_project(
-        conn, name="Fox Sake", source_path="C:/x/Fox Sake.3mf",
+        conn, name="Sample Project", source_path="C:/x/Sample Project.3mf",
         source_family="bambu", verdict="REPAIRABLE", score=90, filament_count=5,
         last_action="doctor", updated_at="2026-06-18T20:00:00Z")
     rows = library.list_projects(conn)
-    assert len(rows) == 1 and rows[0]["name"] == "Fox Sake" and rows[0]["score"] == 90
+    assert len(rows) == 1 and rows[0]["name"] == "Sample Project" and rows[0]["score"] == 90
 
     # upsert by same source_path updates in place (no duplicate row)
     pid2 = library.upsert_project(
-        conn, name="Fox Sake", source_path="C:/x/Fox Sake.3mf",
-        source_family="bambu", output_path="C:/x/Fox Sake_SnapmakerU1.3mf",
+        conn, name="Sample Project", source_path="C:/x/Sample Project.3mf",
+        source_family="bambu", output_path="C:/x/Sample Project_SnapmakerU1.3mf",
         verdict="READY", score=100, filament_count=5, last_action="convert",
         updated_at="2026-06-18T20:05:00Z")
     assert pid2 == pid

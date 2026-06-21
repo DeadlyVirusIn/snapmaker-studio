@@ -10,7 +10,7 @@ UI number, the objects on each, and the filaments in use. Authoritative mapping 
 automated fix changed the wrong plate by assuming sequential object IDs; this
 module never does that.
 
-Validated against a real 9-plate file (Freedom Torch): Plate 4 -> objects 12,14
+Validated against a real 9-plate multicolor U1 project: Plate 4 -> objects 12,14
 (both extruder 6) and Plate 6 -> objects 18,19 (also extruder 6). A naive
 "change object N" or "change all filament 6" would hit the wrong plate — only the
 plater_id->object_ids scope is correct.

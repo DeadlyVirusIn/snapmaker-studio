@@ -11,8 +11,8 @@ anyone can produce the marketing set consistently.
 2. Launch from Start Menu (or `npm run tauri dev` for iteration).
 3. **Display:** 1440x900 logical, 100% scale, **light theme** (Settings -> Light)
    for high-contrast marketing; capture a dark-theme variant of each too.
-4. Use a real file: `Fox Sake.3mf` (Bambu, 5-color) and its converted output
-   `Fox Sake_SnapmakerU1.3mf`.
+4. Use a real file: `example.3mf` (Bambu, 5-color) and its converted output
+   `example_SnapmakerU1.3mf`.
 5. Window: maximize or 1280x800 client area; hide personal paths if needed.
 6. Capture PNG at native res; export 2x for retina/marketing.
 
@@ -26,8 +26,8 @@ anyone can produce the marketing set consistently.
 - **File:** `dashboard.png` (+ `dashboard-dark.png`).
 
 ### 2 — Doctor analysis
-- **Steps:** Open -> pick `Fox Sake.3mf` -> land on LiveWorkspace; Doctor auto-runs.
-- **Compose:** file name `Fox Sake.3mf`, **READY** badge, **score 100** ring,
+- **Steps:** Open -> pick `example.3mf` -> land on LiveWorkspace; Doctor auto-runs.
+- **Compose:** file name `example.3mf`, **READY** badge, **score 100** ring,
   recommended action, compatibility checklist, Source inspector (5 colours).
 - **Message:** "instant, trustworthy diagnosis."
 - **File:** `doctor.png` (+ dark).
@@ -35,7 +35,7 @@ anyone can produce the marketing set consistently.
 ### 3 — Conversion success
 - **Steps:** click **Make U1-ready** -> wait for completion.
 - **Compose:** green **"Saved U1-ready project"** card, output name
-  `Fox Sake_SnapmakerU1.3mf`, full path, **"Validated — ready to slice in
+  `example_SnapmakerU1.3mf`, full path, **"Validated — ready to slice in
   Snapmaker Orca."**
 - **Message:** "one click, done, verified."
 - **File:** `conversion-success.png` (+ dark).
@@ -44,7 +44,7 @@ anyone can produce the marketing set consistently.
 - **Compose:** side-by-side, 50/50:
   - **Before:** Snapmaker Orca loading the original Bambu file showing the
     "Customized Preset" / "newer version" warnings.
-  - **After:** Snapmaker Orca loading `Fox Sake_SnapmakerU1.3mf` with **no
+  - **After:** Snapmaker Orca loading `example_SnapmakerU1.3mf` with **no
     warnings**, on the U1 plate.
 - **Overlay labels:** "Bambu file -> warnings" vs "U1-ready -> zero warnings."
 - **Message:** the core proof.
@@ -68,6 +68,6 @@ the designed card for 5; export @1x and @2x.
 ## QA checklist per shot
 - No personal data in visible paths.
 - Status badge colors match the verdict (READY = green).
-- Real file names (`Fox Sake.3mf` / `..._SnapmakerU1.3mf`), real score (100).
+- Real file names (`example.3mf` / `..._SnapmakerU1.3mf`), real score (100).
 - Consistent window size + theme within each light/dark set.
 - Crisp at 100% (no upscaling); 2x export for hero use.

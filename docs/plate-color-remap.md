@@ -44,12 +44,17 @@ UI stays responsive and shows progress (inspect -> preview -> export & verify).
 5. **diff** the input vs output zip entries — only `Metadata/model_settings.config`
    should differ; every `3D/` entry must be byte-identical.
 
-## Freedom Torch example (real, validated)
+## Real-world validation example (anonymized)
+Validated against a real 9-plate multicolor U1 project (a user-provided
+validation fixture):
 - Plate 4, user-visible white -> green = internally **filament 6 -> 3**.
 - Target objects: **12 and 14**.
 - After export: **Plate 6 unchanged**, **gold accents unchanged**, painted facets
   and meshes byte-identical, only `model_settings.config` differs, original file
   byte-identical.
 - Covered by `backend/tests/test_plate_remap_fixture.py` (runs when the real file
-  is present via `SNAPSTUDIO_FT_FIXTURE` or the known path; skips cleanly otherwise)
+  is present via `SNAPSTUDIO_REAL_MULTICOLOR_FIXTURE`; skips cleanly otherwise)
   and by synthetic-fixture tests in `backend/tests/test_plate_remap.py`.
+
+> Real-world validation fixtures are not included in the repository because they
+> may be copyrighted or commercially licensed.

@@ -64,9 +64,9 @@ The full machine-generated results (also written to `validation/report.md`):
 | File | Family | MB | Filaments | Before | After | Score | Valid | Cat | Notes |
 |---|---|---|---|---|---|---|---|---|---|
 | Deadpool_Printables.3mf | bambu | 9.4 | 4 | REPAIRABLE | READY | 100 | True |  |  |
-| Fox Sake.3mf | bambu | 39.7 | 5 | REPAIRABLE | READY | 100 | True |  |  |
-| jesus KeyChain.3mf | bambu | 1.6 | 4 | REPAIRABLE | READY | 100 | True |  |  |
-| Jesus.3mf | bambu | 1.6 | 4 | REPAIRABLE | READY | 100 | True |  |  |
+| example.3mf | bambu | 39.7 | 5 | REPAIRABLE | READY | 100 | True |  |  |
+| sample_keychain.3mf | bambu | 1.6 | 4 | REPAIRABLE | READY | 100 | True |  |  |
+| sample_model.3mf | bambu | 1.6 | 4 | REPAIRABLE | READY | 100 | True |  |  |
 | Liberty Eagle Classic - Body_PXL.3mf | prusa(geometry) | 31.6 | 0 | REPAIRABLE | READY | 100 | True |  |  |
 | Liberty Eagle Flag -Wings Only_PXL.3mf | prusa(geometry) | 12.1 | 0 | REPAIRABLE | READY | 100 | True |  |  |
 | Liberty Eagle Whole.3mf | bambu | 11.2 | 7 | REPAIRABLE | READY | 100 | True |  |  |

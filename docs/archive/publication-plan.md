@@ -137,7 +137,7 @@ Remove every occurrence of the following from public files (code + README + exam
 - `project_settings` internal field names and structure
 - object-mapping / model-structure internals
 - experiment names (expG / expH / expI and similar)
-- personal model names (Freedom Torch, Jesus, Fox Sake, Shadow_AMS, Calibration Cube, etc.)
+- personal / commercial validation model names and any paid-fixture filenames
 - reverse-engineering / forensic / investigation history
 - milestone tags (M1, M1.1f, …)
 - competitor tool names used as references

@@ -12,9 +12,9 @@ print-ready — and tells you if it will print."
 | Time | On screen | Voiceover | Capture |
 |---|---|---|---|
 | **0–10s** | A Bambu/Orca file opened in Snapmaker Orca showing the "Customized Preset" / "newer version" warnings (the failure). | "3D printing workflows are fragmented. Your files get trapped between slicers and printers." | Screen-record Orca loading a foreign file with warnings (the before-state). |
-| **10–25s** | Open Snapmaker Studio. Drag **Fox Sake.3mf** onto the drop zone. Doctor auto-runs; shows verdict + issues. | "Open Snapmaker Studio. Drop in any file. The Doctor checks it instantly — and tells you exactly what's wrong." | Studio: Dashboard -> drag-drop -> LiveWorkspace Doctor result. |
+| **10–25s** | Open Snapmaker Studio. Drag **example.3mf** onto the drop zone. Doctor auto-runs; shows verdict + issues. | "Open Snapmaker Studio. Drop in any file. The Doctor checks it instantly — and tells you exactly what's wrong." | Studio: Dashboard -> drag-drop -> LiveWorkspace Doctor result. |
 | **25–45s** | Click **Make U1-ready**. Loading -> green "Saved U1-ready project" with output path + "Validated". | "One click. Studio rebuilds it as a clean Snapmaker U1 project — your geometry and colors preserved, nothing lost." | Studio: convert action -> success state. |
-| **45–60s** | Open the converted `Fox Sake_SnapmakerU1.3mf` in Snapmaker Orca. **No warnings.** Slice/print-ready. | "Open it in Snapmaker Orca. Zero warnings. Ready to print." | Screen-record Orca loading the output clean (the after-state). |
+| **45–60s** | Open the converted `example_SnapmakerU1.3mf` in Snapmaker Orca. **No warnings.** Slice/print-ready. | "Open it in Snapmaker Orca. Zero warnings. Ready to print." | Screen-record Orca loading the output clean (the after-state). |
 | **60–90s** | Slow pan over roadmap cards: Understand . Validate . Prepare . Monitor -> "more ecosystems, more printers, plugins." End on logo + tagline. | "This is the start. We're building the workflow platform for modern 3D printing — understand, validate, and get any design print-ready." | Title cards from ROADMAP.md pillars + logo. |
 
 ## End card
@@ -27,7 +27,7 @@ print-ready — and tells you if it will print."
   "Local-first · Open source · github.com/DeadlyVirusIn/snapmaker-studio"
 
 ## Capture notes
-- Use real files (Fox Sake.3mf -> Fox Sake_SnapmakerU1.3mf) — the before/after is
+- Use real files (example.3mf -> example_SnapmakerU1.3mf) — the before/after is
   the whole pitch; do not fake it.
 - Record at 1440p, light theme for the app (high contrast for screen capture).
 - Keep cursor movements deliberate; pause ~1s on the green success state and on
@@ -69,7 +69,7 @@ print-ready — and tells you if it will print."
 - **Export:** 1080p H.264 MP4 + a captioned variant (autoplay-muted social).
 
 ## Production checklist
-- [ ] Real `Fox Sake.3mf` ready; output deleted beforehand so the save is live.
+- [ ] Real `example.3mf` ready; output deleted beforehand so the save is live.
 - [ ] Orca pre-opened twice (before-file and after-file) for clean A/F takes.
 - [ ] Brand end card built from `docs/brand/` + tagline.
 - [ ] Captions written from the narration block.

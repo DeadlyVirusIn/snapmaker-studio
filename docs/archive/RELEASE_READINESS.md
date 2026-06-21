@@ -52,7 +52,7 @@ Status as of the pre-release hardening pass. Target: RC-beta on top of `main`
   for beta; **required for public GA**.
 - **Manual GUI/Orca pass:** the in-app drag->convert and multi-file Orca
   zero-warning check are human steps (engine + lifecycle verified headlessly;
-  Fox Sake confirmed zero-warning by the user).
+  the example file confirmed zero-warning by the user).
 
 ## Recommendation
 **Ready for an internal/beta RC and for PR to `main`.** Not yet public-GA:
