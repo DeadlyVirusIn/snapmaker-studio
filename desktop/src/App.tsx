@@ -14,6 +14,7 @@ import DoctorLanding from "@/routes/DoctorLanding";
 import Compatibility from "@/routes/Compatibility";
 import FindModels from "@/routes/FindModels";
 import ScaleDoctor from "@/routes/ScaleDoctor";
+import PrintQuality from "@/routes/PrintQuality";
 import Help from "@/routes/Help";
 import NotFound from "@/routes/NotFound";
 import { useTheme } from "@/store/theme";
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="/compatibility" element={<Compatibility />} />
             <Route path="/find-models" element={<FindModels />} />
             <Route path="/scale" element={<ScaleDoctor />} />
+            <Route path="/print-quality" element={<PrintQuality />} />
             <Route path="/doctor/:id" element={<DoctorLanding />} />
             <Route path="*" element={<NotFound />} />
           </Route>

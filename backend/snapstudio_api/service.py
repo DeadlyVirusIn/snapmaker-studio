@@ -17,6 +17,7 @@ from snapstudio_core.batch import run_batch
 from snapstudio_core import compatibility
 from snapstudio_core import model_search
 from snapstudio_core import scale_doctor
+from snapstudio_core import print_quality
 
 API_VERSION = "api/1"
 
@@ -68,6 +69,16 @@ def model_search_query(query: str, filters: dict | None = None) -> dict:
 def scale_preview(path: str, scale_percent: float) -> dict:
     """Scale Doctor: analysis-only uniform-scale preview. Writes nothing."""
     return scale_doctor.preview(path, float(scale_percent))
+
+
+def quality_check(symptom: str) -> dict:
+    """Print Quality Doctor: advisory checklist for a symptom. Static, read-only."""
+    return print_quality.lookup(symptom)
+
+
+def quality_symptoms() -> dict:
+    """The pickable symptom list for the Print Quality Doctor."""
+    return {"symptoms": print_quality.symptoms()}
 
 
 def convert(path: str, out_dir: str | None = None) -> dict:

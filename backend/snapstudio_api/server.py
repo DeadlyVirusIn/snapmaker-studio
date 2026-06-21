@@ -114,6 +114,11 @@ def _make_handler(token: str):
                     self._send(200, result)
                 except Exception as e:  # adapter must not crash the server
                     self._send(500, {"error": str(e)})
+            elif self.path == "/quality_check":
+                try:
+                    self._send(200, service.quality_check(data.get("symptom", "")))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
             elif self.path == "/scale_preview":
                 path = data.get("path")
                 if not path or data.get("scale_percent") is None:

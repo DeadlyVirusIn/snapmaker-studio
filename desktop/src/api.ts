@@ -726,6 +726,23 @@ export function plateExport(path: string, uiPlate: number, fromFilament: number,
   return platePost("/plate_export", { path, ui_plate: uiPlate, from_filament: fromFilament, to_filament: toFilament });
 }
 
+// ---- Print Quality Doctor (advisory, read-only) ----
+export interface QualityResult {
+  symptom: string;
+  title: string;
+  likely_causes: string[];
+  first_checks: string[];
+  orca_paths: string[];
+  hardware_checks: string[];
+  avoid: string[];
+  evidence_needed: string[];
+  disclaimer: string;
+}
+export interface QualityResponse { result: QualityResult | null; warnings: string[]; }
+export function qualityCheck(symptom: string): Promise<QualityResponse> {
+  return platePost("/quality_check", { symptom });
+}
+
 // ---- Scale Doctor (analysis-only preview) ----
 export interface ScaleResult {
   available: boolean;
