@@ -37,6 +37,11 @@ a **local-first Printer Hub** is feasible. Full feasibility audit:
   (never auto-edits settings). MVP in RC+1; evidence integration (Printer/Project
   Doctor) in RC+2. Plan: [`design/PRINT_QUALITY_DOCTOR.md`](design/PRINT_QUALITY_DOCTOR.md).
 
+### Plate Color Remap — rendered preview (planned)
+- The remap wizard ships a colour/part summary fallback (changing slot highlighted,
+  protected slots shown separately). A true **rendered 3D plate preview** from the
+  3MF geometry is still **deferred** — planned for a later release.
+
 ### v0.5 — Printer Hub Phase A (read-only monitoring)
 - Discover the U1 on the LAN (mDNS `U1.local` / port `7125`)
 - Connect via Moonraker (server-side, no auth needed on-LAN)

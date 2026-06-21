@@ -128,13 +128,24 @@ export default function PlateRemap() {
                       renderer is available; until then show this colour summary. */}
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <span className="text-xs text-muted-foreground">Colors on this plate:</span>
-                    {(plate.filaments_used ?? []).map((f) => (
-                      <span key={f.id} className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Swatch color={f.color} /> {colorName(f.color) ?? `slot ${f.id}`}
-                      </span>
-                    ))}
+                    {(plate.filaments_used ?? []).map((f) => {
+                      const changing = sel.fromFilament === f.id;
+                      return (
+                        <span key={f.id}
+                          className="flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs"
+                          style={changing
+                            ? { borderColor: `hsl(var(${BLUE}))`, color: `hsl(var(${BLUE}))` }
+                            : { borderColor: "hsl(var(--stage-validate) / 0.5)", color: "hsl(var(--stage-validate))" }}>
+                          <Swatch color={f.color} /> {colorName(f.color) ?? `slot ${f.id}`}
+                          <span className="opacity-70">· {changing ? "changing" : "protected"}</span>
+                        </span>
+                      );
+                    })}
                     {(plate.filaments_used ?? []).length === 0 && <span className="text-xs text-muted-foreground">—</span>}
                   </div>
+                  {sel.fromFilament == null && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">Pick the colour to change below — every other colour on this plate stays protected.</p>
+                  )}
                   <p className="mt-2 flex items-start gap-1.5 text-[11px] text-muted-foreground">
                     <ImageOff className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {COPY.previewUnavailable}
                   </p>
