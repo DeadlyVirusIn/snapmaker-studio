@@ -1,4 +1,4 @@
-# Snapmaker Studio v0.4.0-beta.4
+# Snapmaker Studio v0.4.0-beta.5
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
@@ -9,57 +9,59 @@ reads your model and your Snapmaker U1 (read-only) and tells you whether it will
 print, what it costs, and what to sell it for — one screen, plain language.
 
 ### Doctor pillars
-- **Project Doctor** — will it fit and print on your U1? Catches out-of-bounds and
-  printability problems before Orca does.
+- **Project Doctor** — will it fit and print on your U1?
 - **Printer Doctor** — a 0–100 health score from the U1's own signals.
-- **Cost Doctor** — true cost, suggested price, and profit (with Pricing/Profit).
+- **Cost Doctor** — true cost, suggested price, and profit.
 
-The **Studio Intelligence Report** synthesises these into one verdict; the Doctors
-become the supporting evidence.
+## New in beta.5
 
-## New in beta.4
+### Print Quality Doctor (MVP)
+A bad print or preview? Pick the symptom (stringing, ringing, layer shift,
+warping, first layer, blobs, under-extrusion, rough surface, bridging,
+multi-material colour bleed) and get likely causes, safe first checks, where to
+look in Snapmaker Orca, hardware/material checks and what not to change blindly.
+**Advisory only — Studio never changes your settings or g-code, never guarantees
+a fix, and never tells you to ignore a bad preview.**
 
-### Compatibility Doctor (read-only)
-Open a 3MF and Studio checks it for common Snapmaker U1 / Orca / Snorca problems
-before you slice: out-of-range slicer values (e.g. `wall_filament`,
-`tree_support_wall_count`), a non-U1 / foreign profile signature, and relative
-extrusion without a `G92 E0` layer reset. Each finding explains the likely cause,
-the safest next step, and the exact setting. **It is read-only and does not
-auto-fix anything** — it diagnoses and points you to the fix.
+### First Layer Doctor (MVP)
+Fix the first layer before wasting filament. Pick what you see (won't stick,
+nozzle too high/low, wrinkles, gaps, lifting corners, blob drag, area-specific,
+toolhead-specific, breaks loose) for likely causes, beginner-first checks,
+U1-specific checks (clearly marked **advanced**, e.g. heated-bed leveling, PEI
+condition, bed-mesh/Fluidd range, toolhead 1), and slicer settings to inspect.
+Advisory only; no printer/config/g-code changes.
 
-### Model Discovery Hub v1 (search + link-out)
-A "Find Models" page to search 3D-model sites and check a model's source and
-license before you commit. v1 is **metadata search + link-out only**: sanctioned
-providers (Thingiverse, MyMiniFactory, Cults3D) via their own APIs, plus link-out
-tiles for Printables, Thangs and MakerWorld. **No scraping, and no downloads or
-imports in v1** — every result opens on its source site. Provider search needs
-API keys configured; until then it honestly reports search as disabled rather than
-showing fake results. License/attribution is always shown and a disclaimer asks
-you to respect each model's terms.
+### Beginner workflow guidance
+A new **Get Started** page — "from model to first print" — walks a first-timer
+through finding a model, checking it in Studio, fixing issues, then slicing in
+Orca and printing. Steps that happen **outside Studio** (slicing, preparing the
+printer) are labelled as such — Studio does not slice or send prints.
 
-### Scale Doctor preview (analysis-only)
-Preview a uniform resize before you commit: scaled dimensions, whether it still
-fits the U1 build volume, and the material/cost change. It is **analysis-only —
-it writes no files and does not resize or export your model**, uses
-"likely safe / caution / not recommended" wording (**never guarantees a successful
-print**), and warns that holes, threads, snap-fits, joints and tolerances may not
-scale and that the thin-wall check is approximate.
+### Polish
+- Doctor navigation cohesion: every Doctor/tool reachable from the sidebar; a
+  "when to use each" overview; "Why Studio?" stays in the secondary/help area.
+- Plate Color Remap confidence: the plate colour map tags each colour as
+  **changing** or **protected**, so it's clear other colours and plates are safe.
+- Model Discovery: clearer key-missing state ("connect provider API keys to
+  enable live search"), link-out-only providers explained, privacy note (keys stay
+  local/server-side; Studio never mirrors/re-hosts; no downloads/imports in v1).
+- Scale Doctor: plain material multiplier ("about Nx the material at P%", an
+  estimate), explicit joints/threads/holes/snap-fits and thin-detail warnings.
+- Doctors cross-link to the right next Doctor.
 
-### Also in beta.4
-- **Code-signing readiness plan** documented (no certificate used; this build is
-  still an unsigned beta — see below).
-- **Print Quality Doctor is planned only and is NOT shipped in this release**
-  (design doc only).
+## Carried from earlier betas
+- Compatibility Doctor (read-only; no auto-fix), Scale Doctor (analysis-only; no
+  writes), Plate Color Remap (verified safe copy; original untouched), navigation
+  cleanup, and the beginner Plate Remap proof cards.
+- Visual 3D plate preview remains deferred (colour/part summary fallback).
 
-## Carried from beta.3
-- Clearer navigation: every Doctor directly reachable from the sidebar; "Why
-  Studio?" in a secondary/help area; Plate Color Remap grouped next to the
-  Multi-Material Doctor.
-- Beginner-friendly Plate Color Remap with "what will change / what will stay the
-  same" proof cards, protected painted/gold details, "Create safe copy — original
-  stays unchanged", and a verified-safe-copy success card. Real-world validation
-  fixtures are not included in the repository (they may be copyrighted/commercial).
-- Visual 3D plate preview remains deferred (colour/part summary fallback shipped).
+## Safety
+- All new Doctors are **advisory and read-only**: no printer control, no auto-fix,
+  no profile/g-code/settings writes, no guaranteed-print claims.
+- Model Discovery does not download or import models (v1 is search + link-out), and
+  never scrapes.
+- Real-world validation fixtures are not included in the repository (they may be
+  copyrighted/commercial).
 
 ## Windows install (unsigned beta)
 This beta installer is **currently unsigned**, so Windows SmartScreen may show
@@ -67,20 +69,18 @@ This beta installer is **currently unsigned**, so Windows SmartScreen may show
 from the official GitHub release, and verify the checksum before installing.
 
 ```
-File:    Snapmaker.Studio_0.4.0-beta.4_x64-setup.exe
-Size:    16,031,077 bytes
-SHA256:  0FDDD084F678FA0182B5676F04849248868E362DEF90062176E75F33E8398C09
+File:    Snapmaker.Studio_0.4.0-beta.5_x64-setup.exe
+Size:    __SIZE__ bytes
+SHA256:  __SHA256__
 ```
 
 Full guidance: [docs/windows-install.md](windows-install.md). Code-signing
-readiness plan: [docs/windows-code-signing.md](windows-code-signing.md). Signing
-is planned before any wider public launch (a signed file can still take time to
-build SmartScreen reputation).
+readiness plan: [docs/windows-code-signing.md](windows-code-signing.md).
 
 ## Quality
-- Backend: 210 automated tests (207 passed, 3 conditional real-fixture tests skip
+- Backend: 223 automated tests (220 passed, 3 conditional real-fixture tests skip
   when the fixture is absent).
-- Frontend: vitest 43/43; TypeScript clean; production build clean.
+- Frontend: vitest 48/48; TypeScript clean; production build clean.
 - Local installer builds, launches, sidecar starts, `/health` 200, 0 orphan
   processes on exit.
 
