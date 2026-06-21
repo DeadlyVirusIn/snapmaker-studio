@@ -52,6 +52,21 @@ UI stays responsive and shows progress.
 - Studio diagnoses and explains; it does not auto-fix these today. A read-only
   Compatibility Doctor is planned for a future release (not in this build).
 
+## Windows install (unsigned beta)
+This beta installer is **currently unsigned**, so Windows SmartScreen may show
+**"Unknown publisher."** That is expected for an unsigned beta. Only download it
+from the official GitHub release, and verify the checksum before installing.
+
+```
+File:    Snapmaker.Studio_0.4.0-beta.2_x64-setup.exe
+Size:    16,025,551 bytes
+SHA256:  874D2C73742E8CB0725D419823B537C898A5ED2A8D10877CC40EB7EF9C2DD99F
+```
+
+Full guidance: [docs/windows-install.md](windows-install.md). Code signing is
+planned before any wider public launch (a signed file can still take time to
+build SmartScreen reputation).
+
 ## Quality
 - Backend: 186 automated tests passing.
 - Frontend: vitest 12/12; TypeScript clean; production build clean.

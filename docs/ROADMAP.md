@@ -19,6 +19,15 @@ Concrete next releases. Now that Snapmaker has open-sourced the U1 firmware
 a **local-first Printer Hub** is feasible. Full feasibility audit:
 [`design/PRINTER_HUB.md`](design/PRINTER_HUB.md). _(No printer code is shipped yet.)_
 
+### Distribution & trust
+- The current Windows beta installer is **unsigned**, so SmartScreen shows
+  "Unknown publisher" (see [`windows-install.md`](windows-install.md)).
+- **Acquire and use a code-signing certificate before any wider public launch.**
+  Signing improves trust, though newly signed files may still need time to build
+  SmartScreen reputation.
+- Optionally evaluate **Microsoft Store** distribution later as an additional
+  trusted channel.
+
 ### v0.5 — Printer Hub Phase A (read-only monitoring)
 - Discover the U1 on the LAN (mDNS `U1.local` / port `7125`)
 - Connect via Moonraker (server-side, no auth needed on-LAN)
