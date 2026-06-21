@@ -79,6 +79,13 @@ export default function ScaleDoctor() {
               <p>{res.estimated_material_delta ? `${res.estimated_material_delta.grams >= 0 ? "+" : ""}${res.estimated_material_delta.grams} g` : "—"}
                 {res.estimated_cost_delta?.amount != null ? ` · ${res.estimated_cost_delta.amount >= 0 ? "+" : ""}$${Math.abs(res.estimated_cost_delta.amount).toFixed(2)}` : ""}</p></div>
           </div>
+          {res.scale_percent != null && (
+            <p className="text-sm">
+              {res.scale_percent >= 100 ? "Making it bigger" : "Making it smaller"}: about{" "}
+              <b>{Math.pow(res.scale_percent / 100, 3).toFixed(res.scale_percent >= 100 ? 1 : 2)}×</b>{" "}
+              the material at {res.scale_percent}% scale (volume estimate, not slicer-accurate).
+            </p>
+          )}
           {res.risks && res.risks.length > 0 && (
             <ul className="space-y-1 text-xs text-muted-foreground">
               {res.risks.map((r, i) => (
