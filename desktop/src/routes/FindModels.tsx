@@ -112,15 +112,24 @@ export default function FindModels() {
         </div>
       )}
       {resp && shown.length === 0 && (
-        <p className="text-sm text-muted-foreground">
-          No results to show yet. Provider search needs API keys configured; meanwhile use the link-out sites below.
-        </p>
+        <div className="rounded-md border border-border p-3 text-sm">
+          <p className="font-medium">Connect provider API keys to enable live search</p>
+          <p className="mt-1 text-muted-foreground">
+            Live metadata search uses each provider's official API (Thingiverse,
+            MyMiniFactory, Cults3D) and needs an API key configured server-side.
+            Until then, use the link-out sites below to search on the source site.
+          </p>
+        </div>
       )}
 
       {/* link-out tiles */}
       <Card><CardContent className="space-y-2 p-5">
-        <p className="text-sm font-semibold">Search on other sites</p>
-        <div className="flex flex-wrap gap-2">
+        <p className="text-sm font-semibold">Search on other sites (link-out only)</p>
+        <p className="text-xs text-muted-foreground">
+          Printables, Thangs and MakerWorld open in their own search — Studio does not
+          fetch, scrape, mirror or re-host their results.
+        </p>
+        <div className="flex flex-wrap gap-2 pt-1">
           {LINK_OUT_PROVIDERS.map((p) => (
             <Button key={p.id} size="sm" variant="secondary" asChild disabled={!query.trim()}>
               <a href={query.trim() ? linkOutUrl(p.id, query) : undefined} target="_blank" rel="noreferrer">
@@ -131,7 +140,11 @@ export default function FindModels() {
         </div>
       </CardContent></Card>
 
-      <p className="text-xs text-muted-foreground">{DISCLAIMER}</p>
+      <div className="rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">
+        <p>API keys are stored locally and used server-side — they never ship in the app bundle.
+           Studio does not mirror or re-host models. Downloads/imports are not available yet
+           (v1 is search + link-out). {DISCLAIMER}</p>
+      </div>
     </div>
   );
 }
