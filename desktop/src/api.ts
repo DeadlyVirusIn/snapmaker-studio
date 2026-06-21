@@ -726,6 +726,25 @@ export function plateExport(path: string, uiPlate: number, fromFilament: number,
   return platePost("/plate_export", { path, ui_plate: uiPlate, from_filament: fromFilament, to_filament: toFilament });
 }
 
+// ---- Compatibility Doctor (read-only) ----
+export interface CompatibilityFinding {
+  id: string;
+  severity: "error" | "warning" | "info";
+  title: string;
+  explanation: string;
+  setting_path: string;
+  suggested_action: string;
+  evidence: string;
+}
+export interface CompatibilityResult {
+  findings: CompatibilityFinding[];
+  summary: string;
+  recommendation: string;
+}
+export function compatibilityCheck(path: string): Promise<CompatibilityResult> {
+  return platePost("/compatibility_check", { path });
+}
+
 // 3MF-only picker for the plate remap wizard (projects only — not bare STLs).
 export async function open3mfDialog(): Promise<string | null> {
   const picked = await open({ multiple: false, filters: [{ name: "3MF project", extensions: ["3mf"] }] });

@@ -11,6 +11,7 @@ import Settings from "@/routes/Settings";
 import WhyStudio from "@/routes/WhyStudio";
 import PlateRemap from "@/routes/PlateRemap";
 import DoctorLanding from "@/routes/DoctorLanding";
+import Compatibility from "@/routes/Compatibility";
 import Help from "@/routes/Help";
 import NotFound from "@/routes/NotFound";
 import { useTheme } from "@/store/theme";
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/why" element={<WhyStudio />} />
             <Route path="/help" element={<Help />} />
             <Route path="/plate-remap" element={<PlateRemap />} />
+            <Route path="/compatibility" element={<Compatibility />} />
             <Route path="/doctor/:id" element={<DoctorLanding />} />
             <Route path="*" element={<NotFound />} />
           </Route>

@@ -14,6 +14,7 @@ from snapstudio_core.diff import diff_projects
 from snapstudio_core.container import ThreeMF
 from snapstudio_core import library
 from snapstudio_core.batch import run_batch
+from snapstudio_core import compatibility
 
 API_VERSION = "api/1"
 
@@ -48,6 +49,12 @@ def health() -> dict:
 def doctor(path: str) -> dict:
     """Read-only U1 compatibility diagnosis for a file path. Never modifies the file."""
     return diagnose_path(path).to_dict()
+
+
+def compatibility_check(path: str) -> dict:
+    """Read-only Compatibility Doctor: detect common U1/Orca project issues.
+    Never modifies the file."""
+    return compatibility.check(path)
 
 
 def convert(path: str, out_dir: str | None = None) -> dict:

@@ -46,6 +46,14 @@ export default function DoctorLanding() {
           )}
         </div>
 
+        {doc.id === "project" && (
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <GitCompareArrows className="h-3.5 w-3.5" />
+            Foreign or stale 3MF?{" "}
+            <Link to="/compatibility" className="text-primary hover:underline">Run the Compatibility Doctor</Link>
+          </p>
+        )}
+
         {doc.id === "multi-material" && (
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <GitCompareArrows className="h-3.5 w-3.5" />

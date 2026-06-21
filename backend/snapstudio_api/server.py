@@ -114,6 +114,15 @@ def _make_handler(token: str):
                     self._send(200, result)
                 except Exception as e:  # adapter must not crash the server
                     self._send(500, {"error": str(e)})
+            elif self.path == "/compatibility_check":
+                path = data.get("path")
+                if not path:
+                    self._send(400, {"error": "missing 'path'"})
+                    return
+                try:
+                    self._send(200, service.compatibility_check(path))
+                except Exception as e:
+                    self._send(500, {"error": str(e)})
             elif self.path == "/convert":
                 path = data.get("path")
                 if not path:
