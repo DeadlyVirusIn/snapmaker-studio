@@ -47,7 +47,8 @@ from somewhere other than the official release — do not continue.
 
 ## Code signing (planned)
 
-Code signing is planned before any wider public launch. A signed installer
+Code signing is planned before any wider public launch (readiness plan:
+[windows-code-signing.md](windows-code-signing.md)). A signed installer
 identifies the publisher and generally improves trust, but note that newly
 signed files can still take time to build SmartScreen reputation, so a warning
 may persist for a while even after signing. Microsoft Store distribution may also
