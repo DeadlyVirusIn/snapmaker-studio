@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   COPY, emptySelection, canDryRun, canExport, plateByUiNumber, fromOptions,
   toOptions, exportView,
+  colorName, isGoldish, slotLabel, plateSummary, changeSummary, staysSame,
   type Selection, type PlateInspect, type PlateDryRun, type PlateExport,
 } from "./plateRemapWizard";
 
@@ -108,5 +109,70 @@ describe("8. copy never implies mesh/paint edits", () => {
     expect(COPY.safety.toLowerCase()).toContain("painted facets");
     expect(COPY.safety.toLowerCase()).toContain("unchanged");
     expect(all).not.toMatch(/edit (the )?mesh|change (the )?paint|repaint|modify mesh/);
+  });
+});
+
+describe("9. plain-English colour naming", () => {
+  it("names common palette colours", () => {
+    expect(colorName("#FFFFFF")).toBe("white");
+    expect(colorName("#000000")).toBe("black");
+    expect(colorName("#008000")).toBe("green");
+    expect(colorName("#F7D959")).toBe("gold/yellow");
+    expect(colorName("#A3D8E1")).toBe("light blue");
+    expect(colorName(null)).toBeNull();
+  });
+  it("detects gold/yellow accents", () => {
+    expect(isGoldish("#F7D959")).toBe(true);
+    expect(isGoldish("#008000")).toBe(false);
+  });
+  it("labels a filament slot with its colour", () => {
+    expect(slotLabel(6, "#A3D8E1")).toBe("light blue slot 6");
+    expect(slotLabel(3, null)).toBe("slot 3");
+  });
+});
+
+describe("10. beginner plate summary (what's on this plate)", () => {
+  it("counts objects and flags painted details", () => {
+    const s = plateSummary(plateByUiNumber(inspect, 4))!;
+    expect(s.objectCount).toBe(2);
+    expect(s.hasPainted).toBe(true);
+    expect(s.sentence).toContain("Plate 4 has 2 objects and painted details");
+  });
+});
+
+describe("11. what will change (plain English)", () => {
+  it("describes from→to using colour names + slots", () => {
+    const c = changeSummary(inspect, sel4)!;
+    expect(c.fromName).toBe("light blue");
+    expect(c.toName).toBe("green");
+    expect(c.sentence).toContain("light blue slot 6");
+    expect(c.sentence).toContain("green slot 3");
+    expect(c.sentence.toLowerCase()).toContain("default color");
+  });
+});
+
+describe("12. what will stay the same (protected details + untouched plates)", () => {
+  it("plate 4: painted protected but colours unlabeled, Plate 6 untouched", () => {
+    const plate4 = plateByUiNumber(inspect, 4);
+    const s = staysSame(inspect, plate4, sel4, goodDryRun);
+    expect(s.paintedProtected).toBe(true);
+    expect(s.paintedColorsUnlabeled).toBe(true);   // painted present, no labelable base colour
+    expect(s.otherPlates).toContain(6);            // Plate 6 untouched, from dry-run
+  });
+  it("detects gold/yellow as protected when a gold filament stays on the plate", () => {
+    const plate6 = plateByUiNumber(inspect, 6);
+    const sel6: Selection = { path: "/x.3mf", uiPlate: 6, fromFilament: 6, toFilament: 3 };
+    const s = staysSame(inspect, plate6, sel6, null);
+    expect(s.goldDetected).toBe(true);
+    expect(s.protectedColorLabels).toContain("gold/yellow");
+  });
+});
+
+describe("13. no technical jargon in primary beginner copy", () => {
+  it("export CTA and questions avoid 'object-level extruder assignment'", () => {
+    const beginner = `${COPY.exportCta} ${COPY.questionFrom} ${COPY.questionTo} ${COPY.safety}`.toLowerCase();
+    expect(beginner).not.toContain("object-level extruder assignment");
+    expect(beginner).not.toContain("extruder");
+    expect(COPY.exportCta.toLowerCase()).toContain("safe copy");
   });
 });

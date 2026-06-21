@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { DOCTORS } from "@/lib/doctors";
 import { Stethoscope } from "lucide-react";
 
@@ -16,7 +17,8 @@ export function DoctorsGrid({ showP1 = true }: { showP1?: boolean }) {
       </div>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {doctors.map((d) => (
-          <div key={d.id} className="surface-hover flex items-start gap-3 rounded-lg border border-border p-3">
+          <Link key={d.id} to={d.route}
+            className="surface-hover flex items-start gap-3 rounded-lg border border-border p-3 transition-colors hover:border-primary/40">
             <div
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
               style={{
@@ -37,7 +39,7 @@ export function DoctorsGrid({ showP1 = true }: { showP1?: boolean }) {
               </p>
               <p className="text-xs leading-snug text-muted-foreground">{d.answers}</p>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

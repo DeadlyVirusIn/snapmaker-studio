@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   GitCompareArrows, FilePlus, ShieldCheck, AlertTriangle, CheckCircle2,
-  Loader2, ArrowRight, Layers,
+  Loader2, ArrowRight, Layers, Lock, ImageOff,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/layout";
 import { open3mfDialog, plateInspect, plateDryRun, plateExport } from "@/api";
 import {
   COPY, canDryRun, canExport, plateByUiNumber, fromOptions, toOptions, exportView,
+  colorName, plateSummary, changeSummary, staysSame,
   type Selection, type PlateInspect, type PlateDryRun, type PlateExport,
 } from "@/lib/plateRemapWizard";
 
@@ -59,6 +60,11 @@ export default function PlateRemap() {
   const tos = toOptions(inspectData);
   const view = exportView(result);
   const exporting = exportM.isPending;
+
+  // Beginner-facing summaries (pure; derived from inspect/dry-run — no writer change).
+  const summary = plateSummary(plate);
+  const change = changeSummary(inspectData, sel);
+  const stays = staysSame(inspectData, plate, sel, dryRun);
 
   // staged status checklist (the real async steps)
   const steps = [
@@ -112,32 +118,56 @@ export default function PlateRemap() {
           </div>
 
           {plate && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <p className="mb-1 text-xs font-medium text-muted-foreground">Change filament (used on this plate)</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {froms.map((f) => (
-                    <button key={f.id} onClick={() => update({ fromFilament: f.id })}
-                      className={`flex items-center gap-1.5 rounded border px-2 py-1 text-xs ${sel.fromFilament === f.id ? "border-foreground text-foreground" : "border-border text-muted-foreground"}`}>
-                      <Swatch color={f.color} /> Filament {f.id}
-                    </button>
-                  ))}
-                  {froms.length === 0 && <span className="text-xs text-muted-foreground">no base filaments detected on this plate</span>}
+            <>
+              {/* beginner summary of the selected plate */}
+              {summary && (
+                <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
+                  <p className="font-medium">{summary.sentence}</p>
+                  {/* visual fallback: colour/part summary. TODO(beta.4+): render an
+                      actual plate/model preview from the 3MF geometry when a
+                      renderer is available; until then show this colour summary. */}
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Colors on this plate:</span>
+                    {(plate.filaments_used ?? []).map((f) => (
+                      <span key={f.id} className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Swatch color={f.color} /> {colorName(f.color) ?? `slot ${f.id}`}
+                      </span>
+                    ))}
+                    {(plate.filaments_used ?? []).length === 0 && <span className="text-xs text-muted-foreground">—</span>}
+                  </div>
+                  <p className="mt-2 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                    <ImageOff className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {COPY.previewUnavailable}
+                  </p>
+                </div>
+              )}
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">{COPY.questionFrom}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {froms.map((f) => (
+                      <button key={f.id} onClick={() => update({ fromFilament: f.id })}
+                        className={`flex items-center gap-1.5 rounded border px-2 py-1 text-xs ${sel.fromFilament === f.id ? "border-foreground text-foreground" : "border-border text-muted-foreground"}`}>
+                        <Swatch color={f.color} /> {colorName(f.color) ?? `Filament ${f.id}`} <span className="opacity-60">(slot {f.id})</span>
+                      </button>
+                    ))}
+                    {froms.length === 0 && <span className="text-xs text-muted-foreground">no base colors detected on this plate</span>}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">{COPY.questionTo}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tos.map((f) => (
+                      <button key={f.id} onClick={() => update({ toFilament: f.id })}
+                        disabled={sel.fromFilament === f.id}
+                        className={`flex items-center gap-1.5 rounded border px-2 py-1 text-xs disabled:opacity-40 ${sel.toFilament === f.id ? "border-foreground text-foreground" : "border-border text-muted-foreground"}`}>
+                        <Swatch color={f.color} /> {colorName(f.color) ?? `Filament ${f.id}`} <span className="opacity-60">(slot {f.id})</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-              <div>
-                <p className="mb-1 text-xs font-medium text-muted-foreground">To filament (your loaded slot)</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {tos.map((f) => (
-                    <button key={f.id} onClick={() => update({ toFilament: f.id })}
-                      disabled={sel.fromFilament === f.id}
-                      className={`flex items-center gap-1.5 rounded border px-2 py-1 text-xs disabled:opacity-40 ${sel.toFilament === f.id ? "border-foreground text-foreground" : "border-border text-muted-foreground"}`}>
-                      <Swatch color={f.color} /> Filament {f.id}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+            </>
           )}
 
           <Button size="sm" onClick={() => dryRunM.mutate()} disabled={!canDryRun(sel) || dryRunM.isPending}>
@@ -149,29 +179,51 @@ export default function PlateRemap() {
       {/* 3. dry-run preview (required before export) */}
       {dryRun && (
         <Card><CardContent className="space-y-3 p-5">
-          <p className="flex items-center gap-2 text-sm font-semibold"><GitCompareArrows className="h-4 w-4" style={{ color: `hsl(var(${BLUE}))` }} /> Preview — nothing has been written yet</p>
+          <p className="flex items-center gap-2 text-sm font-semibold"><GitCompareArrows className="h-4 w-4" style={{ color: `hsl(var(${BLUE}))` }} /> {COPY.confirmTitle} — nothing has been written yet</p>
           {!dryRun.available && <p className="text-sm text-risk">{dryRun.reason}</p>}
           {dryRun.available && (
             <>
-              <p className="text-sm text-muted-foreground">{dryRun.verdict}</p>
-              <div className="grid gap-3 sm:grid-cols-2 text-xs">
-                <div>
-                  <p className="mb-1 font-semibold">Objects that will change ({dryRun.change_count ?? 0})</p>
-                  <ul className="space-y-0.5 text-muted-foreground">
-                    {(dryRun.changes ?? []).map((c) => (
-                      <li key={c.object_id}>• {c.name || `object ${c.object_id}`}: filament {c.from_filament} → {c.to_filament}</li>
-                    ))}
-                    {(dryRun.change_count ?? 0) === 0 && <li>none</li>}
-                  </ul>
-                </div>
-                <div>
-                  <p className="mb-1 font-semibold">Untouched plates</p>
-                  <p className="text-muted-foreground">{(dryRun.untouched_plates ?? []).join(", ") || "—"}</p>
-                </div>
+              {/* What will change — plain English */}
+              <div className="rounded-md border border-border p-3">
+                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">What will change</p>
+                {change && (
+                  <p className="flex flex-wrap items-center gap-1.5 text-sm">
+                    <Swatch color={change.fromColor} /> {change.fromName ?? `slot ${change.fromId}`}
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Swatch color={change.toColor} /> {change.toName ?? `slot ${change.toId}`}
+                    <span className="text-muted-foreground">· {dryRun.change_count ?? 0} object{(dryRun.change_count ?? 0) === 1 ? "" : "s"} on Plate {sel.uiPlate} only</span>
+                  </p>
+                )}
+                {change && <p className="mt-1 text-xs text-muted-foreground">{change.sentence}</p>}
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Changed: {(dryRun.changes ?? []).map((c) => c.name || `object ${c.object_id}`).join(", ") || "none"}
+                </p>
               </div>
-              <p className="flex items-center gap-1.5 text-xs" style={{ color: `hsl(var(--stage-validate))` }}>
-                <ShieldCheck className="h-3.5 w-3.5" /> Painted facets, gold accents, and mesh data will not be touched.
-              </p>
+
+              {/* What will stay the same — protected details + untouched plates */}
+              <div className="rounded-md border p-3" style={{ borderColor: "hsl(var(--stage-validate) / 0.4)" }}>
+                <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide" style={{ color: "hsl(var(--stage-validate))" }}>
+                  <Lock className="h-3.5 w-3.5" /> What will stay the same
+                </p>
+                <ul className="space-y-1 text-xs text-muted-foreground">
+                  {stays.paintedProtected && (
+                    <li className="flex items-start gap-1.5"><ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      {stays.protectedColorLabels.length > 0
+                        ? `Protected colors on this plate: ${stays.protectedColorLabels.join(", ")}.`
+                        : COPY.paintedUnlabeled}
+                    </li>
+                  )}
+                  {stays.goldDetected && (
+                    <li className="flex items-start gap-1.5"><ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" /> Gold/yellow accents stay unchanged.</li>
+                  )}
+                  {stays.otherFilaments.length > 0 && (
+                    <li className="flex items-start gap-1.5"><ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" /> Other colors on this plate ({stays.otherFilaments.map((f) => f.name ?? `slot ${f.id}`).join(", ")}) stay unchanged.</li>
+                  )}
+                  <li className="flex items-start gap-1.5"><ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" /> Other plates untouched: {stays.otherPlates.join(", ") || "—"}.</li>
+                  <li className="flex items-start gap-1.5"><ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" /> Painted facets and mesh data are not edited. Your original file is never changed.</li>
+                </ul>
+              </div>
+
               {(dryRun.warnings ?? []).length > 0 && (
                 <div className="rounded-md bg-repairable/5 p-2 text-xs text-repairable">
                   {(dryRun.warnings ?? []).map((w, i) => (
@@ -181,7 +233,7 @@ export default function PlateRemap() {
               )}
               <Button size="sm" onClick={() => exportM.mutate()} disabled={!canExport(sel, dryRun) || exporting}
                       style={canExport(sel, dryRun) ? { backgroundColor: `hsl(var(${BLUE}))` } : undefined}>
-                {exporting ? <><Loader2 className="h-4 w-4 animate-spin" /> Exporting & verifying… (large files ~30s)</> : <>Export verified copy <ArrowRight className="h-4 w-4" /></>}
+                {exporting ? <><Loader2 className="h-4 w-4 animate-spin" /> Creating safe copy… (large files ~30s)</> : <>{COPY.exportCta} <ArrowRight className="h-4 w-4" /></>}
               </Button>
             </>
           )}
@@ -209,15 +261,26 @@ export default function PlateRemap() {
       )}
       {view?.kind === "success" && (
         <Card><CardContent className="space-y-2 p-5">
-          <p className="flex items-center gap-2 text-sm font-semibold text-ready"><CheckCircle2 className="h-4 w-4" /> {view.message}</p>
-          <p className="text-xs"><span className="font-medium">Saved to:</span> <span className="break-all text-muted-foreground">{view.outputPath}</span></p>
-          <p className="text-xs text-muted-foreground">Changed: {view.changedObjects.map((c) => c.name || `obj ${c.object_id}`).join(", ")}</p>
-          <p className="text-xs text-muted-foreground">Untouched plates: {view.untouchedPlates.join(", ")}</p>
-          <ul className="space-y-0.5 text-[11px] text-muted-foreground">
-            {view.checks.map((c, i) => (
-              <li key={i} className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3 text-ready" /> {c.check}</li>
-            ))}
+          <p className="flex items-center gap-2 text-sm font-semibold text-ready"><CheckCircle2 className="h-4 w-4" /> {COPY.proofTitle}</p>
+          <p className="text-xs text-muted-foreground">{view.message}</p>
+          <ul className="space-y-1 pt-1 text-xs text-muted-foreground">
+            <li className="flex items-start gap-1.5"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ready" /> Changed objects: {view.changedObjects.map((c) => c.name || `object ${c.object_id}`).join(", ") || "none"}</li>
+            <li className="flex items-start gap-1.5"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ready" /> Untouched plates: {view.untouchedPlates.join(", ") || "—"}</li>
+            <li className="flex items-start gap-1.5"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ready" /> Painted details unchanged.</li>
+            <li className="flex items-start gap-1.5"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ready" /> Mesh data unchanged.</li>
+            <li className="flex items-start gap-1.5"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ready" /> Original file unchanged.</li>
           </ul>
+          <p className="pt-1 text-xs"><span className="font-medium">Safe copy saved to:</span> <span className="break-all text-muted-foreground">{view.outputPath}</span></p>
+          {view.checks.length > 0 && (
+            <details className="pt-1 text-[11px] text-muted-foreground">
+              <summary className="cursor-pointer">Verification checks ({view.checks.length})</summary>
+              <ul className="mt-1 space-y-0.5">
+                {view.checks.map((c, i) => (
+                  <li key={i} className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3 text-ready" /> {c.check}</li>
+                ))}
+              </ul>
+            </details>
+          )}
         </CardContent></Card>
       )}
       {view?.kind === "failure" && (

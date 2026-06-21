@@ -1,20 +1,12 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { LayoutDashboard, FolderKanban, Settings, Plus, Wand2, Printer, Sparkles, SlidersHorizontal, GitCompareArrows, Palette } from "lucide-react";
+import { Plus, Sparkles, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { library } from "@/api";
 import { useSession } from "@/store/session";
 import { useMode } from "@/store/mode";
 import { useOpenFile } from "@/hooks/useOpenFile";
-
-const NAV = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/projects", label: "Projects", icon: FolderKanban, end: false },
-  { to: "/batch", label: "Batch prepare", icon: Wand2, end: false },
-  { to: "/printers", label: "Printers", icon: Printer, end: false },
-  { to: "/why", label: "Why Studio?", icon: GitCompareArrows, end: false },
-  { to: "/plate-remap", label: "Plate Color Remap", icon: Palette, end: false },
-];
+import { PRIMARY_NAV, SECONDARY_NAV } from "@/lib/nav";
 
 function navClass({ isActive }: { isActive: boolean }) {
   return cn(
@@ -54,17 +46,17 @@ export function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex flex-col gap-1 p-3">
-        {NAV.map((n) => (
+      <button onClick={openFile} className="mx-3 mt-3 mb-1 flex items-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted/60 hover:text-foreground">
+        <Plus className="h-4 w-4" /> Open a model
+      </button>
+
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
+        {PRIMARY_NAV.map((n) => (
           <NavLink key={n.to} to={n.to} end={n.end} className={navClass}>
             <n.icon className="h-4 w-4" /> {n.label}
           </NavLink>
         ))}
       </nav>
-
-      <button onClick={openFile} className="mx-3 mb-2 flex items-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted/60 hover:text-foreground">
-        <Plus className="h-4 w-4" /> Open a model
-      </button>
 
       {recent.length > 0 && (
         <>
@@ -111,9 +103,13 @@ export function Sidebar() {
             </button>
           </div>
         </div>
-        <NavLink to="/settings" className={navClass}>
-          <Settings className="h-4 w-4" /> Settings
-        </NavLink>
+        <nav className="flex flex-col gap-1">
+          {SECONDARY_NAV.map((n) => (
+            <NavLink key={n.to} to={n.to} end={n.end} className={navClass}>
+              <n.icon className="h-4 w-4" /> {n.label}
+            </NavLink>
+          ))}
+        </nav>
       </div>
     </aside>
   );
