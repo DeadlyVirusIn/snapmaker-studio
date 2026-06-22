@@ -2,5 +2,5 @@
 # Install before running desktop/scripts/build-sidecar.ps1:
 #   pip install -e backend
 #   pip install -r backend/requirements-build.txt
-pyinstaller>=6
-lxml>=5
+pyinstaller>=6.21,<7
+lxml>=6.1,<7
