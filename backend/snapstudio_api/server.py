@@ -147,6 +147,16 @@ def _make_handler(token: str):
                     self._send(400, {"error": str(e)})
                 except Exception:
                     self._send(500, {"error": "internal error"})
+            elif self.path == "/scale_options":
+                try:
+                    path = rv.require_path_string(data)
+                    printer = rv.optional_str(data, "printer", "snapmaker_u1")
+                    margin = rv.optional_float(data, "margin_mm", 5.0)
+                    self._send(200, service.scale_options(path, printer, margin))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
             elif self.path == "/model_search":
                 try:
                     self._send(200, service.model_search_query(

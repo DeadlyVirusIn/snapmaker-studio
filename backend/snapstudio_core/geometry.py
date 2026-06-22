@@ -58,6 +58,129 @@ def _parse_3mf_model(raw: bytes, verts: list, faces: list) -> None:
                 raise _TooLarge()
 
 
+_3MF_PROD_NS = "{http://schemas.microsoft.com/3dmanufacturing/production/2015/06}"
+_MAX_VERTS = 8_000_000
+
+
+def _xform(s):
+    """Parse a 3MF transform string (12 floats) -> list, or None."""
+    if not s:
+        return None
+    try:
+        f = [float(x) for x in s.split()]
+        return f if len(f) == 12 else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _apply(v, m):
+    if not m:
+        return v
+    x, y, z = v
+    return (m[0] * x + m[3] * y + m[6] * z + m[9],
+            m[1] * x + m[4] * y + m[7] * z + m[10],
+            m[2] * x + m[5] * y + m[8] * z + m[11])
+
+
+def _compose(a, b):
+    """a∘b — apply b then a (both 12-float 3x4 transforms)."""
+    if a is None:
+        return b
+    if b is None:
+        return a
+    def appA(v):
+        x, y, z = v
+        return (a[0] * x + a[3] * y + a[6] * z, a[1] * x + a[4] * y + a[7] * z, a[2] * x + a[5] * y + a[8] * z)
+    c0, c1, c2 = appA(b[0:3]), appA(b[3:6]), appA(b[6:9])
+    t = appA(b[9:12])
+    return [c0[0], c0[1], c0[2], c1[0], c1[1], c1[2], c2[0], c2[1], c2[2],
+            t[0] + a[9], t[1] + a[10], t[2] + a[11]]
+
+
+def build_item_dims(path: str) -> list[dict]:
+    """Per-build-item bounding-box dimensions (mm), with the 3MF build transform and
+    nested component transforms applied — i.e. each placed object's real on-plate
+    size. Read-only, exception-safe (returns [] on any failure). Used by the Scale
+    Doctor size-options ladder for per-plate dimensions."""
+    try:
+        tm = ThreeMF.open(path)
+    except Exception:
+        return []
+    try:
+        model_files = {p: tm.read_part(p) for p in tm.list_parts() if p.endswith(".model")}
+        if sum(len(b) for b in model_files.values()) > _MAX_BYTES:
+            return []
+
+        # object_id -> (verts, [(component_objectid, component_path, component_xform)]), per file
+        parsed: dict[str, dict[str, tuple]] = {}
+        for fname, raw in model_files.items():
+            root = load_model_settings(raw)
+            objs: dict[str, tuple] = {}
+            for ob in root.iter(f"{_3MF_CORE_NS}object"):
+                oid = ob.get("id")
+                verts = []
+                mesh = ob.find(f"{_3MF_CORE_NS}mesh")
+                if mesh is not None:
+                    vn = mesh.find(f"{_3MF_CORE_NS}vertices")
+                    if vn is not None:
+                        for v in vn.iterfind(f"{_3MF_CORE_NS}vertex"):
+                            verts.append((float(v.get("x", 0)), float(v.get("y", 0)), float(v.get("z", 0))))
+                comps = []
+                cn = ob.find(f"{_3MF_CORE_NS}components")
+                if cn is not None:
+                    for c in cn.iterfind(f"{_3MF_CORE_NS}component"):
+                        comps.append((c.get("objectid"),
+                                      c.get(f"{_3MF_PROD_NS}path"),
+                                      _xform(c.get("transform"))))
+                objs[oid] = (verts, comps)
+            parsed[fname] = objs
+
+        root_file = "3D/3dmodel.model"
+        if root_file not in parsed:
+            return []
+
+        def find_obj(objid, prefer):
+            if prefer in parsed and objid in parsed[prefer]:
+                return prefer
+            for f, oo in parsed.items():
+                if objid in oo:
+                    return f
+            return None
+
+        budget = [0]
+
+        def collect(objid, prefer_file, xform, acc):
+            f = find_obj(objid, prefer_file)
+            if f is None:
+                return
+            verts, comps = parsed[f][objid]
+            for v in verts:
+                acc.append(_apply(v, xform))
+                budget[0] += 1
+                if budget[0] > _MAX_VERTS:
+                    raise _TooLarge()
+            for cid, cpath, ctf in comps:
+                collect(cid, cpath or f, _compose(xform, ctf), acc)
+
+        out = []
+        for it in load_model_settings(model_files[root_file]).iter(f"{_3MF_CORE_NS}item"):
+            oid = it.get("objectid")
+            acc: list = []
+            collect(oid, root_file, _xform(it.get("transform")), acc)
+            if not acc:
+                continue
+            xs = [p[0] for p in acc]; ys = [p[1] for p in acc]; zs = [p[2] for p in acc]
+            out.append({"object_id": oid, "dimensions": {
+                "x": round(max(xs) - min(xs), 2),
+                "y": round(max(ys) - min(ys), 2),
+                "z": round(max(zs) - min(zs), 2)}})
+        return out
+    except _TooLarge:
+        return []
+    except Exception:
+        return []
+
+
 def load_mesh(path: str) -> Mesh | None:
     """Load an STL or 3MF into one indexed mesh, or None if unreadable / too large.
     Best-effort and exception-safe (returns None, never raises out to callers)."""

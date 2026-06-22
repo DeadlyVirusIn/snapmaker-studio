@@ -778,6 +778,40 @@ export function scalePreview(path: string, scalePercent: number): Promise<ScaleR
   return platePost("/scale_preview", { path, scale_percent: scalePercent });
 }
 
+// ---- Scale Options Ladder ----
+export interface ScalePartDims {
+  plate_index: number;
+  name: string;
+  dimensions: { x: number; y: number; z: number };
+  fits_build_volume?: boolean;
+}
+export interface ScaleOption {
+  label: string;
+  scale_percent: number;
+  risk_level: "low" | "medium" | "high";
+  recommendation: string;
+  dimensions_by_part: ScalePartDims[];
+  explanation: string;
+}
+export interface ScaleOptionsResult {
+  available: boolean;
+  reason?: string;
+  printer?: string;
+  margin_mm?: number;
+  build_volume?: { x: number; y: number; z: number };
+  current_parts?: { plate_index: number; name: string; dimensions: { x: number; y: number; z: number } }[];
+  group_scaling_recommended?: boolean;
+  limiting_part?: string;
+  limiting_axis?: string;
+  recommended_scale_percent?: number;
+  options?: ScaleOption[];
+  warnings?: string[];
+  next_steps?: string[];
+}
+export function scaleOptions(path: string, marginMm = 5): Promise<ScaleOptionsResult> {
+  return platePost("/scale_options", { path, printer: "snapmaker_u1", margin_mm: marginMm });
+}
+
 // ---- Model Discovery Hub v1 (search + link-out) ----
 import type { SearchResponse, SearchFilters } from "@/lib/modelSearch";
 export function modelSearch(query: string, filters: SearchFilters = {}): Promise<SearchResponse> {

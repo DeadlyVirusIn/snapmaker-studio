@@ -4,7 +4,8 @@ import { Maximize2, FilePlus, Loader2, AlertTriangle, CheckCircle2, Info } from 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/layout";
-import { openModelDialog, scalePreview, type ScaleResult } from "@/api";
+import { openModelDialog, scalePreview, scaleOptions, type ScaleResult, type ScaleOptionsResult } from "@/api";
+import { SCALE_LADDER_COPY, recommendBlurb, isRecommended, isCaution, riskLabel, fmtDims, partLabel } from "@/lib/scaleOptions";
 
 function recTone(rec?: string): { token: string; label: string } {
   if (rec === "not recommended") return { token: "--stage-input", label: "Not recommended" };
@@ -20,16 +21,27 @@ export default function ScaleDoctor() {
   const [path, setPath] = useState<string | null>(null);
   const [pct, setPct] = useState(100);
   const [res, setRes] = useState<ScaleResult | null>(null);
+  const [opts, setOpts] = useState<ScaleOptionsResult | null>(null);
+  const [copied, setCopied] = useState<number | null>(null);
 
   const m = useMutation({
     mutationFn: () => scalePreview(path!, pct),
     onSuccess: (d) => setRes(d),
   });
 
+  const om = useMutation({
+    mutationFn: () => scaleOptions(path!),
+    onSuccess: (d) => setOpts(d),
+  });
+
   async function pick() {
     const p = await openModelDialog();
     if (!p) return;
-    setPath(p); setRes(null);
+    setPath(p); setRes(null); setOpts(null);
+  }
+
+  async function copyScale(p: number) {
+    try { await navigator.clipboard.writeText(String(p)); setCopied(p); setTimeout(() => setCopied(null), 1500); } catch { /* clipboard unavailable */ }
   }
 
   const tone = recTone(res?.recommendation);
@@ -94,6 +106,85 @@ export default function ScaleDoctor() {
             </ul>
           )}
           <p className="text-xs text-muted-foreground">{res.explanation}</p>
+        </CardContent></Card>
+      )}
+
+      {/* Size Options Ladder */}
+      {path && (
+        <Card><CardContent className="space-y-3 p-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold">Size options for Snapmaker U1</p>
+            <Button className="ml-auto" size="sm" variant="secondary"
+              onClick={() => om.mutate()} disabled={om.isPending}>
+              {om.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Maximize2 className="h-4 w-4" />} Show size options
+            </Button>
+          </div>
+
+          {om.isError && <p className="text-sm text-risk">Couldn't read that file: {(om.error as Error).message}</p>}
+          {opts && !opts.available && <p className="text-sm text-risk">{opts.reason}</p>}
+
+          {opts?.available && opts.options && (
+            <>
+              <p className="text-sm">{recommendBlurb(opts)}</p>
+              {opts.group_scaling_recommended && (
+                <div className="flex items-start gap-2 rounded-md border border-border p-2.5 text-xs text-muted-foreground">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                  <span>{SCALE_LADDER_COPY.groupSame} {SCALE_LADDER_COPY.groupSeparate}</span>
+                </div>
+              )}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="text-muted-foreground">
+                    <tr>
+                      <th className="py-1 pr-3">Scale</th>
+                      {opts.current_parts?.map((p) => (
+                        <th key={p.plate_index} className="py-1 pr-3">{partLabel(p as any)}</th>
+                      ))}
+                      <th className="py-1 pr-3">Fit</th>
+                      <th className="py-1 pr-3">Recommendation</th>
+                      <th className="py-1">Risk</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {opts.options.map((o) => {
+                      const rec = isRecommended(o, opts);
+                      const caution = isCaution(o);
+                      return (
+                        <tr key={o.label}
+                          className={rec ? "bg-stage-validate/10 font-medium" : ""}
+                          style={rec ? { boxShadow: "inset 2px 0 0 0 hsl(var(--stage-validate))" } : undefined}>
+                          <td className="py-1.5 pr-3 align-top">
+                            <button className="inline-flex items-center gap-1 underline-offset-2 hover:underline"
+                              onClick={() => copyScale(o.scale_percent)} title="Copy scale %">
+                              {o.scale_percent}% {copied === o.scale_percent && <span className="text-stage-validate">copied</span>}
+                            </button>
+                            {rec && <span className="ml-1 rounded bg-stage-validate/15 px-1 text-[10px] text-stage-validate">recommended</span>}
+                          </td>
+                          {o.dimensions_by_part.map((d, i) => (
+                            <td key={i} className="py-1.5 pr-3 align-top">{fmtDims(d.dimensions)}</td>
+                          ))}
+                          <td className="py-1.5 pr-3 align-top">
+                            {o.dimensions_by_part.every((d) => d.fits_build_volume) ? "Fits" : "Too big"}
+                          </td>
+                          <td className="py-1.5 pr-3 align-top">
+                            {caution && <AlertTriangle className="mr-1 inline h-3 w-3 text-risk" />}{o.recommendation}
+                          </td>
+                          <td className="py-1.5 align-top">{riskLabel(o.risk_level)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                {opts.options.map((o) => (
+                  <li key={o.label}><b>{o.label}:</b> {o.explanation}</li>
+                ))}
+                <li>{SCALE_LADDER_COPY.theoretical}</li>
+                <li>{SCALE_LADDER_COPY.notGuarantee}</li>
+              </ul>
+            </>
+          )}
         </CardContent></Card>
       )}
     </div>

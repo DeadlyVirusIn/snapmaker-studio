@@ -72,6 +72,11 @@ def scale_preview(path: str, scale_percent: float) -> dict:
     return scale_doctor.preview(path, float(scale_percent))
 
 
+def scale_options(path: str, printer: str = "snapmaker_u1", margin_mm: float = 5.0) -> dict:
+    """Scale Doctor size-options ladder. Analysis-only; writes nothing."""
+    return scale_doctor.scale_options(path, printer, margin_mm)
+
+
 def quality_check(symptom: str) -> dict:
     """Print Quality Doctor: advisory checklist for a symptom. Static, read-only."""
     return print_quality.lookup(symptom)
