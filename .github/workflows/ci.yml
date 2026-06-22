@@ -40,7 +40,9 @@ jobs:
 
   frontend:
     name: Frontend (vitest + tsc + build)
-    runs-on: ubuntu-latest
+    # Windows runner matches the product target (Windows-only desktop app) and
+    # the Windows-authored package-lock.json, so `npm ci` is reproducible.
+    runs-on: windows-latest
     defaults:
       run:
         working-directory: desktop
