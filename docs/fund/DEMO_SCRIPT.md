@@ -14,7 +14,7 @@ warm. Window at ~1280×860, dark theme (default).
 | 0:24–0:32 | Point to **Expected Improvement + biggest risk** | "72% → 90% after fixes (estimate)"; red biggest-risk banner; next action | "It found the real risk — too big for the bed — and the exact fix: scale to 94%." |
 | 0:32–0:42 | Expand **"See risks & Doctor findings"** → a **Community Fix** | Risk with "Community fix · High confidence" + sources (r/snapmaker…) | "And it brings the community's known fix in-app — no more hunting Facebook groups." |
 | 0:42–0:50 | Point to **Cost / Pricing / Profit** (headline + Doctors as evidence) | Cost $6.40 · Sell $11.84 · Margin 46% · Profit/print | "Cost, a fair selling price, and profit — nothing else in the U1 world does this." |
-| 0:50–0:60 | Click **"Why Studio?"** | Outcome table: Orca / Fluidd / Studio | "Orca slices, Fluidd monitors — Studio decides. That's the gap we fill." |
+| 0:50–0:60 | Click **"Why Studio?"** | Outcome table: Orca / Fluidd / Studio | "Orca slices, Fluidd monitors — Studio helps decide what to fix before you print. That's the gap we fill." |
 
 **Total: ~60 seconds.** Backup line if asked "is it real?": "Everything's computed
 locally from the model's geometry and the U1's own open Moonraker data — read-only,

@@ -45,7 +45,7 @@ export default function FirstLayer() {
   return (
     <div className="space-y-6">
       <PageHeader icon={Layers} title="First Layer Doctor"
-        subtitle="Fix the first layer before wasting filament." />
+        subtitle="Advisory, read-only first-layer checks (Studio changes nothing) — fix it before wasting filament." />
 
       <div className="flex items-start gap-2 rounded-md border border-border p-3 text-sm">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />

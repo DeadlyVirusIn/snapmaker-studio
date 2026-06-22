@@ -4,9 +4,10 @@
 > "Snapmaker" is a trademark of its respective owner.
 
 ## The Intelligence Layer for Open 3D Printing
-Orca slices. Fluidd monitors. **Studio decides.** Before a layer is sliced, Studio
-reads your model and your Snapmaker U1 (read-only) and tells you whether it will
-print, what it costs, and what to sell it for — one screen, plain language.
+Orca slices. Fluidd monitors. **Studio helps decide what to fix before you print.**
+Before a layer is sliced, Studio reads your model and your Snapmaker U1 (read-only)
+and surfaces likely print risks, what it costs, and what to sell it for — one
+screen, plain language. Advisory only; not a guarantee of print success.
 
 ### Doctor pillars
 - **Project Doctor** — will it fit and print on your U1?

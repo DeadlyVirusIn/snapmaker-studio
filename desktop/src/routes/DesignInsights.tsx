@@ -144,9 +144,10 @@ export default function DesignInsights() {
               <CheckCircle2 className="h-9 w-9" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold">Ready to print!</h2>
+              <h2 className="text-xl font-semibold">Looks U1-ready</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                We made a print-ready copy of <b>{file.name}</b>. Your original is kept safe.
+                We made a validated U1 copy of <b>{file.name}</b> and your original is kept
+                safe. This is an advisory check, not a guarantee — slice in Orca to confirm.
               </p>
             </div>
             <div className="w-full rounded-lg border border-border bg-muted/30 p-3 text-left text-sm">

@@ -15,9 +15,9 @@ export default function Help() {
       <Card><CardContent className="space-y-3 p-5 text-sm">
         <p className="font-semibold">The Intelligence Layer for Open 3D Printing</p>
         <p className="text-muted-foreground">
-          Orca slices. Fluidd monitors. Studio decides. Studio checks a model and
-          your U1 before a layer is sliced — local-first, nothing leaves your
-          computer.
+          Orca slices. Fluidd monitors. Studio helps decide what to fix before you
+          print. Studio checks a model and your U1 before a layer is sliced —
+          local-first, nothing leaves your computer.
         </p>
         <Link to="/why" className="inline-flex items-center gap-1 text-primary hover:underline">
           Why Studio? <ArrowRight className="h-3.5 w-3.5" />

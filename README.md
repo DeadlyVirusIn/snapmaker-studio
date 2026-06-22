@@ -9,7 +9,7 @@
 
 **The Intelligence Layer for Open 3D Printing.**
 
-_Project Doctor. Printer Doctor. Cost Doctor — Studio checks every model, tells you if it will print, what it costs, and what to sell it for, before your U1 ever sees it._
+_Project Doctor. Printer Doctor. Cost Doctor — Studio checks every model, surfaces likely print risks, estimates cost, and helps you price it, before your U1 ever sees it._
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.** "Snapmaker" is a trademark of its respective owner.
 
@@ -22,15 +22,17 @@ walks it through the whole pre-print workflow:
 3. **Prepare** — make a clean, print-ready copy. Your originals are never changed.
 4. **Monitor** — watch your printer's live status while it prints (read-only).
 
-It's not a converter — it's the layer that tells you whether a design will print, and
-why, *before* you waste filament. (Converting to a clean U1 project is just one step.)
+It's not a converter — it's the layer that surfaces the likely print risks, and
+why, *before* you waste filament, so you can decide what to fix. (Converting to a
+clean U1 project is just one step.) It's advisory: it doesn't guarantee a print.
 
 Runs entirely on your machine. No cloud, no account, no upload — local-first and
 open source.
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
-> Validated on a real-world Bambu/Orca corpus — **112 files → 100% U1-ready**
-> (see [PROOF.md](PROOF.md)). More context:
+> Validated on an internal real-world Bambu/Orca corpus — **112 files → 100%
+> Doctor-READY** (internal result, not a guarantee of print success; see
+> [PROOF.md](PROOF.md)). More context:
 > [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) ·
 > [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md) ·
 > [`docs/INNOVATION_FUND.md`](docs/INNOVATION_FUND.md) ·
@@ -92,7 +94,7 @@ printer target; the workflow is built to grow across ecosystems.
 ## What makes it different
 
 - **Design-first and novice-friendly.** It explains a design in plain language and
-  tells you whether it will print — before you ever open a slicer.
+  surfaces likely print risks — before you ever open a slicer.
 - **Local-first.** Everything runs on your machine. No cloud, no account, no upload.
 - **Multi-ecosystem foundation.** Bambu, OrcaSlicer, and plain STL are first-class
   today; PrusaSlicer files are *detected* (full preservation is on the roadmap). The

@@ -37,7 +37,7 @@ export default function PrintQuality() {
   return (
     <div className="space-y-6">
       <PageHeader icon={Stethoscope} title="Print Quality Doctor"
-        subtitle="A bad print or preview? Pick the symptom and get safe first checks." />
+        subtitle="A bad print or preview? Pick the symptom for advisory, read-only first checks (Studio changes nothing)." />
 
       <div className="flex items-start gap-2 rounded-md border border-border p-3 text-sm">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
