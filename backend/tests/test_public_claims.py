@@ -94,7 +94,8 @@ _BANNED_INTERNAL = [
     ("security surface", r"security surface"),
     ("nan", r"\bnan\b"),
     ("infinity", r"\binfinity\b"),
-    ("csp", r"\bcsp\b"),
+    # NOTE: "CSP" is intentionally NOT banned — "CSP hardening is planned" is
+    # legitimate public roadmap copy, not exploit detail. token/NaN/Infinity stay banned.
     ("token", r"\btoken\b"),
     ("exploit", r"\bexploit"),
 ]
