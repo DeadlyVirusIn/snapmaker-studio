@@ -8,6 +8,8 @@ exports — it is preview/advice only and uses hedged language ("likely safe",
 """
 from __future__ import annotations
 
+import math
+
 from .geometry import load_mesh
 from .bed_fit import U1_BED
 from .cost_estimate import estimate as cost_estimate
@@ -43,9 +45,9 @@ def _fits(dims: dict, bed: dict) -> bool:
 
 def preview(path: str, scale_percent: float) -> dict:
     """Read-only uniform-scale preview. Returns analysis, writes nothing."""
-    if not scale_percent or scale_percent <= 0:
+    if not isinstance(scale_percent, (int, float)) or not math.isfinite(scale_percent) or scale_percent <= 0:
         return {"schema_version": SCHEMA_VERSION, "available": False,
-                "reason": "scale_percent must be a positive number"}
+                "reason": "scale_percent must be a positive, finite number"}
 
     mesh = load_mesh(path)
     if mesh is None:

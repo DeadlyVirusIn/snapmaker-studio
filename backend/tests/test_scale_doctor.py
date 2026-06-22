@@ -68,3 +68,9 @@ def test_no_guarantee_language():
 def test_invalid_scale_rejected():
     res = sd.preview(_SAMPLE, 0)
     assert res["available"] is False
+
+
+def test_nonfinite_scale_rejected():
+    for bad in (float("nan"), float("inf"), float("-inf")):
+        res = sd.preview(_SAMPLE, bad)
+        assert res["available"] is False

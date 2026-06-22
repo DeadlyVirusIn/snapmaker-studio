@@ -93,15 +93,15 @@ def _make_handler(token: str):
         def do_POST(self):
             # Always drain the request body BEFORE responding. Replying (e.g. 401)
             # with an unread body resets the connection on Windows (WinError 10053).
+            # Guard the parse (a non-numeric Content-Length must not crash the
+            # handler), but still drain any valid body before responding — an
+            # unread body resets the connection on Windows (WinError 10053).
             try:
                 length = int(self.headers.get("Content-Length", 0) or 0)
             except (TypeError, ValueError):
                 self._send(400, {"error": "invalid Content-Length"})
                 return
-            if length < 0 or length > 256 * 1024 * 1024:   # bodies are small JSON; cap defensively
-                self._send(413, {"error": "request body too large"})
-                return
-            raw = self.rfile.read(length) if length else b""
+            raw = self.rfile.read(length) if length > 0 else b""
             if self.headers.get("X-Auth-Token") != token:
                 self._send(401, {"error": "unauthorized"})
                 return
