@@ -38,11 +38,41 @@ CREATE TABLE IF NOT EXISTS history (
 """
 
 
+class LibraryVersionError(RuntimeError):
+    """The library DB was written by a newer app version than this one understands."""
+
+
+# version N -> N+1 migration callables. Empty until the schema actually evolves;
+# add migrations here (e.g. _MIGRATIONS[1] = _v1_to_v2) when bumping SCHEMA_VERSION.
+_MIGRATIONS: dict = {}
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Bring the DB to SCHEMA_VERSION. Additive `CREATE TABLE IF NOT EXISTS` schema
+    is always applied; the recorded ``PRAGMA user_version`` drives migrations and
+    forward-compat safety. Never drops/rewrites existing rows."""
+    conn.executescript(_SCHEMA)
+    cur = conn.execute("PRAGMA user_version").fetchone()[0]
+    if cur == SCHEMA_VERSION:
+        return
+    if cur > SCHEMA_VERSION:
+        raise LibraryVersionError(
+            f"library DB is version {cur} but this app supports {SCHEMA_VERSION}; "
+            "update Snapmaker Studio to open it.")
+    # cur < SCHEMA_VERSION: a fresh DB (0) or an older one. The base schema matches
+    # version 1, so jump 0->1 with no data change; run any registered step migrations.
+    for v in range(max(cur, 1), SCHEMA_VERSION):
+        mig = _MIGRATIONS.get(v)
+        if mig:
+            mig(conn)
+    with conn:
+        conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+
+
 def connect(db_path: str) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
-    conn.executescript(_SCHEMA)
-    conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+    _migrate(conn)
     return conn
 
 
