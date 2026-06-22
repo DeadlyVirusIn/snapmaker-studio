@@ -157,6 +157,21 @@ def _make_handler(token: str):
                     self._send(400, {"error": str(e)})
                 except Exception:
                     self._send(500, {"error": "internal error"})
+            elif self.path == "/print_failure_troubleshoot":
+                try:
+                    path = rv.require_path_string(data)
+                    kg = data.get("known_good_print")
+                    self._send(200, service.print_failure_troubleshoot(
+                        path,
+                        rv.optional_str(data, "symptom", "fails_even_with_supports"),
+                        bool(kg) if kg is not None else None,
+                        rv.optional_str(data, "known_good_material", "") or None,
+                        rv.optional_str(data, "failed_material", "") or None,
+                        rv.optional_str(data, "failure_stage", "unknown")))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
             elif self.path == "/model_search":
                 try:
                     self._send(200, service.model_search_query(

@@ -812,6 +812,39 @@ export function scaleOptions(path: string, marginMm = 5): Promise<ScaleOptionsRe
   return platePost("/scale_options", { path, printer: "snapmaker_u1", margin_mm: marginMm });
 }
 
+// ---- Print Failure Troubleshooter (known-good aware) ----
+export interface PrintFailureFinding {
+  id: string;
+  severity: string;
+  title: string;
+  evidence: string;
+  explanation: string;
+  suggested_action: string;
+  safe_starting_point?: string;
+}
+export interface PrintFailureResult {
+  available: boolean;
+  reason?: string;
+  summary?: string;
+  confidence?: string;
+  known_good_print?: boolean;
+  known_good_context?: string;
+  findings?: PrintFailureFinding[];
+  troubleshooting_steps?: string[];
+  compare_against_known_good?: string[];
+  disclaimers?: string[];
+}
+export interface PrintFailureInput {
+  path: string;
+  known_good_print?: boolean;
+  known_good_material?: string;
+  failed_material?: string;
+  failure_stage?: string;
+}
+export function printFailureTroubleshoot(input: PrintFailureInput): Promise<PrintFailureResult> {
+  return platePost("/print_failure_troubleshoot", { symptom: "fails_even_with_supports", ...input });
+}
+
 // ---- Model Discovery Hub v1 (search + link-out) ----
 import type { SearchResponse, SearchFilters } from "@/lib/modelSearch";
 export function modelSearch(query: string, filters: SearchFilters = {}): Promise<SearchResponse> {

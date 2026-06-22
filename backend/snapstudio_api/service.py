@@ -77,6 +77,15 @@ def scale_options(path: str, printer: str = "snapmaker_u1", margin_mm: float = 5
     return scale_doctor.scale_options(path, printer, margin_mm)
 
 
+def print_failure_troubleshoot(path: str, symptom: str = "fails_even_with_supports",
+                               known_good_print: bool | None = None, known_good_material: str | None = None,
+                               failed_material: str | None = None, failure_stage: str = "unknown") -> dict:
+    """Print Failure Troubleshooter (known-good aware). Read-only; writes nothing."""
+    from snapstudio_core import print_failure
+    return print_failure.troubleshoot(path, symptom, known_good_print,
+                                      known_good_material, failed_material, failure_stage)
+
+
 def quality_check(symptom: str) -> dict:
     """Print Quality Doctor: advisory checklist for a symptom. Static, read-only."""
     return print_quality.lookup(symptom)
