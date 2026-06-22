@@ -59,6 +59,29 @@ def _watch_parent_then_exit() -> None:
         return
 
 
+def cors_allow_origin(origin: str | None) -> str | None:
+    """Return the Origin to echo in Access-Control-Allow-Origin, or None to omit it.
+
+    Loopback-only service: allow only local app/dev origins (the Tauri webview and
+    Vite dev server) instead of a wildcard, so an arbitrary remote web page can no
+    longer read even unauthenticated responses. POSTs remain token-gated regardless.
+    Covers Windows/Linux/macOS Tauri webview origins and localhost dev ports.
+    """
+    if not origin:
+        return None
+    o = origin.strip()
+    if o.startswith("tauri://"):
+        return o
+    from urllib.parse import urlparse
+    try:
+        host = (urlparse(o).hostname or "").lower()
+    except ValueError:
+        return None
+    if host in ("localhost", "127.0.0.1", "tauri.localhost", "::1") or host.endswith(".localhost"):
+        return o
+    return None
+
+
 def _make_handler(token: str):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):  # silence default logging
@@ -66,8 +89,13 @@ def _make_handler(token: str):
 
         def _cors(self):
             # Loopback-only service; the Tauri webview is a different origin, so
-            # responses need CORS headers or the in-app fetch is blocked.
-            self.send_header("Access-Control-Allow-Origin", "*")
+            # responses need CORS headers or the in-app fetch is blocked. Echo only
+            # allowed local origins (not '*'); requests with no Origin (non-browser)
+            # need no header.
+            allowed = cors_allow_origin(self.headers.get("Origin"))
+            if allowed:
+                self.send_header("Access-Control-Allow-Origin", allowed)
+                self.send_header("Vary", "Origin")
             self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Auth-Token")
 

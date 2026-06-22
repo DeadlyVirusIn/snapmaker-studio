@@ -296,6 +296,20 @@ def test_server_batch_pricing_bad_factor_is_400(tmp_path):
         httpd.shutdown()
 
 
+def test_cors_allow_origin_allowlist():
+    from snapstudio_api.server import cors_allow_origin
+    # allowed local app/dev origins are echoed
+    for ok in ("http://tauri.localhost", "https://tauri.localhost", "tauri://localhost",
+               "http://localhost:1420", "http://127.0.0.1:5173"):
+        assert cors_allow_origin(ok) == ok
+    # arbitrary remote pages are not granted permissive CORS
+    for bad in ("https://evil.example.com", "http://attacker.test", "http://localhost.evil.com"):
+        assert cors_allow_origin(bad) is None
+    # no Origin (non-browser/local) -> no header needed
+    assert cors_allow_origin(None) is None
+    assert cors_allow_origin("") is None
+
+
 # ---- library index ----
 def test_library_record_and_list(tmp_path, monkeypatch):
     monkeypatch.setenv("SNAPSTUDIO_DATA_DIR", str(tmp_path / "data"))
