@@ -1,0 +1,61 @@
+name: CI
+
+# Runs the same quality gates that were previously only manual. The beta.4
+# stale-sidecar regression shipped because nothing automated enforced these.
+# Scope: backend tests + frontend tests/typecheck/build. The Windows installer +
+# PyInstaller sidecar freeze stay manual (see docs/RELEASE_CHECKLIST.md) — they
+# need a Windows runner + Rust + PyInstaller and are release-time concerns.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest
+      - name: Test
+        run: python -m pytest -q
+
+  frontend:
+    name: Frontend (vitest + tsc + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Unit tests
+        run: npm run test
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: Production build
+        run: npx vite build
