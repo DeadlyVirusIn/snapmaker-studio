@@ -56,6 +56,14 @@ def test_multimaterial_reserves_prime_tower_room():
     assert mm["overall_level"] != "ok" or solo["overall_level"] == "ok"
 
 
+def test_degenerate_zero_width_does_not_crash():
+    # A flat model (zero width in X) that is over-size in Y must not ZeroDivision.
+    out = bed_fit.assess({"x": 0, "y": 300, "z": 40})   # y 300 > 270 bed
+    assert out["available"] is True
+    assert out["overall_level"] == "risk"
+    assert any("scale" in s.lower() for s in out["fixes"])
+
+
 def test_uses_real_bed_when_known():
     # A smaller connected bed should flag a model the default U1 bed would pass.
     out = bed_fit.assess({"x": 200, "y": 80, "z": 40},

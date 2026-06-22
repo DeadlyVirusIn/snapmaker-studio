@@ -75,7 +75,10 @@ def assess(dims, bed=None, bed_known: bool = False, object_count: int = 1,
     # Too big in X/Y — the actual "out of bounds" most people hit.
     if over_x or over_y:
         bump("risk")
-        scale_pct = min(bx / x, by / y) * 100.0
+        # Only divide by dimensions that are positive — a degenerate model can have
+        # a zero-width/zero-depth axis (flat plane) which would ZeroDivision here.
+        _factors = ([bx / x] if x > 0 else []) + ([by / y] if y > 0 else [])
+        scale_pct = (min(_factors) if _factors else 0.0) * 100.0
         findings.append(_f("risk", f"Too big for the bed: {x:.0f}×{y:.0f} mm on a "
                                    f"{bx:.0f}×{by:.0f} mm bed — this is the “out of bounds” error "
                                    f"Orca shows without saying which way. Scale to {scale_pct:.0f}% to fit."))

@@ -50,6 +50,12 @@ def _bbox_and_triangles(tm: ThreeMF):
 
 def _stl_bbox_and_triangles(path: str):
     from .stl_io import parse_stl
+    from .geometry import _MAX_BYTES
+    try:
+        if Path(path).stat().st_size > _MAX_BYTES:
+            return None, None   # too large to analyze — degrade gracefully
+    except OSError:
+        return None, None
     verts, tris = parse_stl(Path(path).read_bytes())
     if not verts:
         return None, (len(tris) or None)
