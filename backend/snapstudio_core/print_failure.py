@@ -140,11 +140,12 @@ def troubleshoot(path: str, symptom: str = "fails_even_with_supports",
 
     ow = s.get("outer_wall_speed"); sp = s.get("support_speed")
     if (ow and ow > 150) or (sp and sp > 120):
+        _parts = ([f"outer wall ~{ow:.0f} mm/s"] if ow else []) + ([f"support ~{sp:.0f} mm/s"] if sp else [])
         findings.append({
             "id": "speed_knob",
             "severity": "info",
             "title": "Speed is a possible troubleshooting knob",
-            "evidence": f"Outer wall ~{ow:.0f} mm/s, support ~{sp:.0f} mm/s." if (ow and sp)
+            "evidence": ("Current speeds: " + ", ".join(_parts) + ".") if _parts
                         else "Wall/support speeds are set for normal printing.",
             "explanation": "Wall/support speeds are a possible troubleshooting knob for difficult silk or "
                            "support-heavy prints. The current speed is not necessarily wrong.",

@@ -795,6 +795,7 @@ export interface ScaleOption {
 }
 export interface ScaleOptionsResult {
   available: boolean;
+  schema_version?: number;
   reason?: string;
   printer?: string;
   margin_mm?: number;
@@ -808,8 +809,8 @@ export interface ScaleOptionsResult {
   warnings?: string[];
   next_steps?: string[];
 }
-export function scaleOptions(path: string, marginMm = 5): Promise<ScaleOptionsResult> {
-  return platePost("/scale_options", { path, printer: "snapmaker_u1", margin_mm: marginMm });
+export function scaleOptions(path: string, marginMm = 5, printer = "snapmaker_u1"): Promise<ScaleOptionsResult> {
+  return platePost("/scale_options", { path, printer, margin_mm: marginMm });
 }
 
 // ---- Print Failure Troubleshooter (known-good aware) ----
@@ -824,6 +825,7 @@ export interface PrintFailureFinding {
 }
 export interface PrintFailureResult {
   available: boolean;
+  schema_version?: string;
   reason?: string;
   summary?: string;
   confidence?: string;
@@ -836,6 +838,7 @@ export interface PrintFailureResult {
 }
 export interface PrintFailureInput {
   path: string;
+  symptom?: string;
   known_good_print?: boolean;
   known_good_material?: string;
   failed_material?: string;
