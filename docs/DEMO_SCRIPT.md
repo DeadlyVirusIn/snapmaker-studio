@@ -70,7 +70,7 @@ For a judge/Innovation-Fund cut, add two short beats after the convert success:
 
 ## Recording guide
 - **Tools:** OBS (or built-in recorder) at 1920×1080/60; cursor highlight on.
-- **App:** installed `0.4.0-beta.3`, light theme, 1280×800 client area, no
+- **App:** installed `0.4.0-beta.5`, light theme, 1280×800 client area, no
   personal paths visible.
 - **Takes:** record each beat separately (B–E in Studio, A+F in Orca) for clean
   edits; do 2–3 takes of the drag and the click.

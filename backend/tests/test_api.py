@@ -161,6 +161,52 @@ def test_server_doctor_requires_token(tmp_path):
         httpd.shutdown()
 
 
+def _post(port, route, payload, token):
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{port}{route}", data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json", "X-Auth-Token": token})
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return r.code
+    except urllib.error.HTTPError as e:
+        return e.code
+
+
+def test_server_plate_dry_run_rejects_missing_filament(tmp_path):
+    # bad input must be a clean 400, not a 500 crash from int(None)
+    httpd, token = build_server(port=0)
+    _run(httpd)
+    try:
+        port = httpd.server_address[1]
+        out = _sample_u1(tmp_path)
+        code = _post(port, "/plate_dry_run", {"path": str(out), "ui_plate": 1}, token)
+        assert code == 400
+    finally:
+        httpd.shutdown()
+
+
+def test_server_new_endpoints_are_routed():
+    # Regression guard for the beta.4 stale-sidecar bug: these routes must exist
+    # (a missing route returns 404; an executed route returns 200/400/500).
+    httpd, token = build_server(port=0)
+    _run(httpd)
+    try:
+        port = httpd.server_address[1]
+        for route, payload in [
+            ("/compatibility_check", {"path": "none"}),
+            ("/scale_preview", {"path": "none", "scale_percent": 100}),
+            ("/model_search", {"query": "x"}),
+            ("/quality_check", {"symptom": "stringing"}),
+            ("/first_layer_check", {"symptom": "not_stick"}),
+        ]:
+            assert _post(port, route, payload, token) != 404, f"{route} not routed"
+        # valid advisory symptoms succeed
+        assert _post(port, "/quality_check", {"symptom": "stringing"}, token) == 200
+        assert _post(port, "/first_layer_check", {"symptom": "not_stick"}, token) == 200
+    finally:
+        httpd.shutdown()
+
+
 # ---- library index ----
 def test_library_record_and_list(tmp_path, monkeypatch):
     monkeypatch.setenv("SNAPSTUDIO_DATA_DIR", str(tmp_path / "data"))

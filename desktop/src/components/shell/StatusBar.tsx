@@ -11,7 +11,7 @@ export function StatusBar() {
         <span className={`h-1.5 w-1.5 rounded-full ${online ? "bg-ready" : status === "pending" ? "bg-repairable" : "bg-risk"}`} />
         {online ? "Ready" : status === "pending" ? "Starting up…" : "Reconnecting…"}
       </span>
-      <span>v0.4.0-beta.1</span>
+      <span>v{__APP_VERSION__}</span>
       <span className="ml-auto">Local-only · nothing leaves your computer</span>
     </footer>
   );

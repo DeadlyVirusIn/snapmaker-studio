@@ -348,8 +348,9 @@ def _make_handler(token: str):
                     self._send(500, {"error": str(e)})
             elif self.path == "/plate_export":
                 path = data.get("path")
-                if not path or data.get("ui_plate") is None:
-                    self._send(400, {"error": "missing 'path' or 'ui_plate'"})
+                if (not path or data.get("ui_plate") is None
+                        or data.get("from_filament") is None or data.get("to_filament") is None):
+                    self._send(400, {"error": "missing 'path', 'ui_plate', 'from_filament' or 'to_filament'"})
                     return
                 try:
                     self._send(200, service.plate_export(
@@ -360,8 +361,9 @@ def _make_handler(token: str):
                     self._send(500, {"error": str(e)})
             elif self.path == "/plate_dry_run":
                 path = data.get("path")
-                if not path or data.get("ui_plate") is None:
-                    self._send(400, {"error": "missing 'path' or 'ui_plate'"})
+                if (not path or data.get("ui_plate") is None
+                        or data.get("from_filament") is None or data.get("to_filament") is None):
+                    self._send(400, {"error": "missing 'path', 'ui_plate', 'from_filament' or 'to_filament'"})
                     return
                 try:
                     self._send(200, service.plate_dry_run(

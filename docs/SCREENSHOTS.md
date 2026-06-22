@@ -7,7 +7,7 @@ anyone can produce the marketing set consistently.
 
 ## Setup (once)
 1. Build + install: `cd desktop && npm run tauri build`, then run the installer
-   (`Snapmaker Studio_0.4.0-beta.3_x64-setup.exe`). It is an **unsigned beta** —
+   (`Snapmaker Studio_0.4.0-beta.5_x64-setup.exe`). It is an **unsigned beta** —
    if you capture the install flow, expect the SmartScreen "Unknown publisher"
    step and note it as a known beta limitation.
 2. Launch from Start Menu (or `npm run tauri dev` for iteration).
