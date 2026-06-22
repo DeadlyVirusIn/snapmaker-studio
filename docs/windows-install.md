@@ -45,10 +45,29 @@ trust the source (the official GitHub release) and you have verified the checksu
 above. If anything looks off — the checksum doesn't match, or you got the file
 from somewhere other than the official release — do not continue.
 
+## Install steps
+
+1. Download `Snapmaker.Studio_0.4.0-beta.9_x64-setup.exe` from the official
+   release page above.
+2. Verify the SHA256 (see above). If it doesn't match, stop and re-download.
+3. Run the installer. On the SmartScreen prompt, choose **More info → Run anyway**
+   only after you have verified the checksum and trust the source.
+4. Launch **Snapmaker Studio** from the Start menu. No account or cloud is needed.
+
+## Uninstall steps
+
+1. Open **Settings → Apps → Installed apps** (or **Apps & features**).
+2. Find **Snapmaker Studio** in the list.
+3. Choose **Uninstall** and confirm. You can also use the uninstall entry in the
+   Start menu folder, if present.
+
+Studio is local-first: it runs entirely on your machine and does not upload
+anything automatically, so removing the app leaves nothing behind in the cloud.
+
 ## Code signing (planned)
 
 Code signing is planned before any wider public launch (readiness plan:
-[windows-code-signing.md](windows-code-signing.md)). A signed installer
+[windows-code-signing.md](windows-code-signing.md)). Code signing
 identifies the publisher and generally improves trust, but note that newly
 signed files can still take time to build SmartScreen reputation, so a warning
 may persist for a while even after signing. Microsoft Store distribution may also

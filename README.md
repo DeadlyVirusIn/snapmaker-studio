@@ -29,6 +29,14 @@ clean U1 project is just one step.) It's advisory: it doesn't guarantee a print.
 Runs entirely on your machine. No cloud, no account, no upload — local-first and
 open source.
 
+**Who it's for:** Snapmaker U1 owners — especially beginners working with
+multicolor or support-heavy prints — who want to diagnose, prepare, troubleshoot,
+and estimate a print *before* opening the slicer.
+
+**What it's not:** not a slicer, not a printer controller, and not a guarantee of
+print success. Studio gives advisory readiness checks and guidance; Orca slices,
+Fluidd monitors, and the U1 prints.
+
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > Validated on an internal real-world Bambu/Orca corpus — **112 files → 100%
 > Doctor-READY** (internal result, not a guarantee of print success; see
@@ -46,6 +54,28 @@ open source.
 Open the downloaded `…_x64-setup.exe`, install, and launch **Snapmaker Studio**.
 No account, no cloud, nothing leaves your computer. Older builds and checksums are
 on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
+
+## Try beta.9
+
+- Release: [v0.4.0-beta.9](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.9)
+- Installer: `Snapmaker.Studio_0.4.0-beta.9_x64-setup.exe`
+- SHA256: `89700D29A0788E16373A23F181D04607E6D722B95175F37163F0D4E1EFBE017D`
+- Unsigned beta: the installer is not code-signed yet, so Windows SmartScreen may show “Unknown publisher.” That is expected for this beta. Download only from the release link above and verify the SHA256 before installing.
+
+Install:
+
+1. Download the `.exe` from the release page.
+2. Verify the checksum. It must match the SHA256 above:
+
+```powershell
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.9_x64-setup.exe
+```
+
+3. Run it. On the SmartScreen prompt choose **More info → Run anyway** only after verifying the hash.
+4. Launch Snapmaker Studio from the Start menu.
+
+Full guidance and uninstall: [docs/windows-install.md](docs/windows-install.md). New here? See [docs/JUDGE_OVERVIEW.md](docs/JUDGE_OVERVIEW.md) and [docs/WHAT_TO_TEST_FIRST.md](docs/WHAT_TO_TEST_FIRST.md).
+
 
 ## Screenshots
 
