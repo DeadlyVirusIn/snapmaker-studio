@@ -46,7 +46,7 @@ export default function Batch() {
     refetchInterval: (q) => {
       const d = q.state.data;
       if (q.state.status === "error" || d?.status === "error" || d?.result?.finished) return false;
-      return 400;
+      return 2000;   // local engine job; 2s keeps UI responsive without hammering
     },
   });
 
