@@ -191,7 +191,7 @@ Local-first, no network. Layers:
 - **Engine** — `snapstudio_core`, pure Python (no net, no UI): detect →
   understand → validate → prepare, preserving geometry/painting/color. A
   source-neutral canonical model is the seam for multi-ecosystem support.
-- **Local API** — `snapstudio_api`, a loopback (`127.0.0.1`) JSON server, token-gated,
+- **Local API** — `snapstudio_api`, a loopback (`127.0.0.1`) JSON server, request-authenticated,
   frozen with PyInstaller into a single sidecar binary (no Python install needed).
 - **Desktop app** — Tauri (Rust) + React + TypeScript. Spawns the sidecar as a
   child process (zero orphans on exit) and talks to it over loopback.
