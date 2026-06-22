@@ -67,3 +67,20 @@ so users can verify. Signing readiness: `docs/windows-code-signing.md`.
 - **Code signing** — acquire a cert; see `docs/windows-code-signing.md`.
 - **CSP hardening** — `tauri.conf.json` currently has `csp: null`; harden + GUI-verify
   before GA. See `docs/SECURITY.md`. (Acceptable for beta: local-only renderer.)
+
+## 9. Public release-notes protocol (EVERY release)
+`docs/RELEASE_NOTES.md` becomes the GitHub release body. It is public/marketing.
+- **User-facing only.** Describe features and fixes. NEVER mention internal review
+  tools, AI model names, the security-review process, implementation mechanics, or
+  exploit-style detail (e.g. octo/`/octo:review`, Codex/Claude/Sonnet/Gemini/
+  Antigravity, multi-provider review, body-drain, NaN/Infinity, CSP, tokens,
+  security surfaces). Use safe wording: "improved validation/reliability", "release
+  packaging checks", "advisory wording", "planned security hardening".
+- **No guarantees / no paid model names** (the unqualified-claim + tooling-term
+  guards in `backend/tests/test_public_claims.py` enforce both — keep them green).
+- **Absolute links.** A GitHub *release page* resolves relative links against the
+  repo ROOT, not `docs/`, so `(windows-install.md)` 404s. Link with a full URL:
+  `https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v<version>/docs/<file>`.
+- **Verify the LIVE body after publishing:** open the release, click every link
+  (no 404s), confirm SHA256 + unsigned notice present, asset attached, and no banned
+  terms. Same protocol when adding any "superseded" notice to an older release.

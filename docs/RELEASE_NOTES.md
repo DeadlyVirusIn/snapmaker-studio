@@ -67,6 +67,6 @@ Size:    16,057,930 bytes
 SHA256:  E9F6E0A6FA33908E532655F42117B043CD6065ED56CF9FE3D48A1792A3C9A547
 ```
 
-Full guidance: [docs/windows-install.md](windows-install.md).
+Full guidance: [docs/windows-install.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.6/docs/windows-install.md).
 
 _Beta — local-first; nothing leaves your computer._
