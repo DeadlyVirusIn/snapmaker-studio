@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
-import { Stethoscope, Loader2, Lightbulb, ListChecks, SlidersHorizontal, Wrench, Ban, Info } from "lucide-react";
+import { Stethoscope, Loader2, Lightbulb, ListChecks, SlidersHorizontal, Wrench, Ban, Info, FilePlus, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/layout";
 import { qualityCheck, openModelDialog, printFailureTroubleshoot, type QualityResult, type PrintFailureResult } from "@/api";
 import { QUALITY_SYMPTOMS, QUALITY_INTRO } from "@/lib/printQuality";
-import { FAILURE_STAGES, PRINT_FAILURE_COPY, failureMode } from "@/lib/printFailure";
+import { FAILURE_STAGES, PRINT_FAILURE_COPY, failureMode, isBlameFree } from "@/lib/printFailure";
 import { Button } from "@/components/ui/button";
-import { FilePlus, AlertTriangle } from "lucide-react";
 
 function Section({ icon: Icon, title, items }: { icon: typeof Lightbulb; title: string; items: string[] }) {
   if (!items || items.length === 0) return null;
@@ -88,13 +87,15 @@ function FailsWithSupports() {
             </Button>
           </div>
 
+          {m.isError && <p className="text-sm text-risk">Couldn't analyze that: {(m.error as Error).message}</p>}
+
           {res?.available && mode && (
             <div className="space-y-3 border-t border-border pt-3">
               <p className="text-sm font-semibold">{mode.title}</p>
               <ul className="space-y-0.5 text-sm text-muted-foreground">
                 {mode.points.map((p, i) => <li key={i} className="flex gap-1.5"><span>•</span><span>{p}</span></li>)}
               </ul>
-              {res.findings?.map((f) => (
+              {isBlameFree(res) && res.findings?.map((f) => (
                 <div key={f.id} className="rounded-md border border-border p-2.5 text-xs">
                   <p className="font-medium text-foreground">{f.title}</p>
                   <p className="text-muted-foreground">{f.explanation}</p>

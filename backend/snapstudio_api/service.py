@@ -17,6 +17,7 @@ from snapstudio_core.batch import run_batch
 from snapstudio_core import compatibility
 from snapstudio_core import model_search
 from snapstudio_core import scale_doctor
+from snapstudio_core import print_failure
 from snapstudio_core import print_quality
 from snapstudio_core import first_layer_doctor
 
@@ -81,7 +82,6 @@ def print_failure_troubleshoot(path: str, symptom: str = "fails_even_with_suppor
                                known_good_print: bool | None = None, known_good_material: str | None = None,
                                failed_material: str | None = None, failure_stage: str = "unknown") -> dict:
     """Print Failure Troubleshooter (known-good aware). Read-only; writes nothing."""
-    from snapstudio_core import print_failure
     return print_failure.troubleshoot(path, symptom, known_good_print,
                                       known_good_material, failed_material, failure_stage)
 

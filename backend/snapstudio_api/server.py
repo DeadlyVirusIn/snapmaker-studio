@@ -161,10 +161,14 @@ def _make_handler(token: str):
                 try:
                     path = rv.require_path_string(data)
                     kg = data.get("known_good_print")
+                    if isinstance(kg, str):
+                        kg = kg.strip().lower() in ("true", "1", "yes")
+                    elif kg is not None:
+                        kg = bool(kg)
                     self._send(200, service.print_failure_troubleshoot(
                         path,
                         rv.optional_str(data, "symptom", "fails_even_with_supports"),
-                        bool(kg) if kg is not None else None,
+                        kg,
                         rv.optional_str(data, "known_good_material", "") or None,
                         rv.optional_str(data, "failed_material", "") or None,
                         rv.optional_str(data, "failure_stage", "unknown")))

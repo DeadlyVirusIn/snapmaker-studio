@@ -71,6 +71,27 @@ def troubleshoot(path: str, symptom: str = "fails_even_with_supports",
     silk = _is_silk(s, known_good_material or "", failed_material or "")
     findings: list[dict] = []
 
+    _STAGE_FOCUS = {
+        "first_layer": ("Focus first on the first layer", "first-layer adhesion, bed leveling/mesh, and nozzle height",
+                        "Check first-layer adhesion and bed leveling before anything else."),
+        "supports": ("Focus first on support contact", "support contact, support Z distance, and where supports meet the model",
+                     "Check support contact and Z distance before changing speeds or temperature."),
+        "small_details": ("Focus first on cooling and speed on small features", "part cooling and wall/support speed on fine details",
+                          "On small details, check part cooling first, then try a slower troubleshooting pass."),
+        "mid_print": ("Focus first on adhesion drift and material flow", "layer adhesion over height, material flow/dryness, and cooling",
+                      "For mid-print failures, check material dryness/flow and adhesion over height."),
+    }
+    if failure_stage in _STAGE_FOCUS:
+        t, area, act = _STAGE_FOCUS[failure_stage]
+        findings.append({
+            "id": "failure_stage",
+            "severity": "info",
+            "title": t,
+            "evidence": f"You said it fails at: {failure_stage.replace('_', ' ')}.",
+            "explanation": f"Failures at this stage most often relate to {area}.",
+            "suggested_action": act,
+        })
+
     if known_good_print:
         known_good_context = (
             "This file/profile has printed successfully before, so the settings are "

@@ -98,6 +98,16 @@ def test_malformed_settings_safe(monkeypatch):
     assert isinstance(r["findings"], list) and r["findings"]
 
 
+def test_failure_stage_affects_output(monkeypatch):
+    _patch(monkeypatch)
+    r = pf.troubleshoot("x.3mf", failure_stage="first_layer")
+    f = next((x for x in r["findings"] if x["id"] == "failure_stage"), None)
+    assert f is not None and "first layer" in (f["title"] + f["explanation"]).lower()
+    # 'unknown' adds no stage finding
+    r2 = pf.troubleshoot("x.3mf", failure_stage="unknown")
+    assert not any(x["id"] == "failure_stage" for x in r2["findings"])
+
+
 def test_one_change_at_a_time_present(monkeypatch):
     _patch(monkeypatch)
     r = pf.troubleshoot("x.3mf")
