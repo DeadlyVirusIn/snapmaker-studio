@@ -72,9 +72,15 @@ install — that is the real test (bundled sidecar, no dev tooling).
 
 ## Build
 ```
-cd backend && ./build-sidecar.ps1            # PyInstaller -> snapstudio-api.exe
-cd ../desktop && npm ci && npm run release:windows
+cd desktop && npm ci && npm run release:windows
 ```
+`npm run release:windows` ALWAYS re-freezes the PyInstaller sidecar first
+(`build:sidecar` = `pwsh scripts/build-sidecar.ps1`) and then runs `tauri build`,
+so the installer can never bundle a stale sidecar. **Build the sidecar only via
+`build-sidecar.ps1` / `npm run release:windows` — never from a hand-written
+PyInstaller `.spec`** (committed specs are gitignored build artifacts and may have
+empty `datas`, which would ship an engine missing its `data/*.json`). Do not run
+`tauri build` directly for a release.
 Expected artifact:
 `desktop/src-tauri/target/release/bundle/nsis/Snapmaker Studio_0.3.0-beta.1_x64-setup.exe`
 
