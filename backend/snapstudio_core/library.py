@@ -8,6 +8,7 @@ timestamp in (the engine never reads the wall clock itself), keeping it testable
 """
 from __future__ import annotations
 import sqlite3
+from collections.abc import Callable
 
 SCHEMA_VERSION = 1
 
@@ -44,21 +45,21 @@ class LibraryVersionError(RuntimeError):
 
 # version N -> N+1 migration callables. Empty until the schema actually evolves;
 # add migrations here (e.g. _MIGRATIONS[1] = _v1_to_v2) when bumping SCHEMA_VERSION.
-_MIGRATIONS: dict = {}
+_MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {}
 
 
 def _migrate(conn: sqlite3.Connection) -> None:
-    """Bring the DB to SCHEMA_VERSION. Additive `CREATE TABLE IF NOT EXISTS` schema
-    is always applied; the recorded ``PRAGMA user_version`` drives migrations and
-    forward-compat safety. Never drops/rewrites existing rows."""
-    conn.executescript(_SCHEMA)
+    """Bring the DB to SCHEMA_VERSION. Checks the recorded ``PRAGMA user_version``
+    FIRST: a newer DB is refused without touching it. Otherwise applies the additive
+    `CREATE TABLE IF NOT EXISTS` schema and runs migrations. Never drops/rewrites rows."""
     cur = conn.execute("PRAGMA user_version").fetchone()[0]
-    if cur == SCHEMA_VERSION:
-        return
     if cur > SCHEMA_VERSION:
         raise LibraryVersionError(
             f"library DB is version {cur} but this app supports {SCHEMA_VERSION}; "
             "update Snapmaker Studio to open it.")
+    conn.executescript(_SCHEMA)
+    if cur == SCHEMA_VERSION:
+        return
     # cur < SCHEMA_VERSION: a fresh DB (0) or an older one. The base schema matches
     # version 1, so jump 0->1 with no data change; run any registered step migrations.
     for v in range(max(cur, 1), SCHEMA_VERSION):
@@ -72,7 +73,11 @@ def _migrate(conn: sqlite3.Connection) -> None:
 def connect(db_path: str) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
-    _migrate(conn)
+    try:
+        _migrate(conn)
+    except Exception:
+        conn.close()   # don't leak the connection if migration refuses the DB
+        raise
     return conn
 
 

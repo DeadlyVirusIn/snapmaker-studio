@@ -11,6 +11,7 @@ import os
 import secrets
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlparse
 from . import service
 from . import request_validation as rv
 from .request_validation import ValidationError
@@ -70,9 +71,8 @@ def cors_allow_origin(origin: str | None) -> str | None:
     if not origin:
         return None
     o = origin.strip()
-    if o.startswith("tauri://"):
+    if o == "tauri://localhost":
         return o
-    from urllib.parse import urlparse
     try:
         host = (urlparse(o).hostname or "").lower()
     except ValueError:
