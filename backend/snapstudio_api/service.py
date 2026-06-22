@@ -77,11 +77,6 @@ def quality_check(symptom: str) -> dict:
     return print_quality.lookup(symptom)
 
 
-def quality_symptoms() -> dict:
-    """The pickable symptom list for the Print Quality Doctor."""
-    return {"symptoms": print_quality.symptoms()}
-
-
 def first_layer_check(symptom: str) -> dict:
     """First Layer Doctor: advisory checklist for a first-layer symptom. Static."""
     return first_layer_doctor.lookup(symptom)

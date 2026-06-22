@@ -185,6 +185,23 @@ def test_server_plate_dry_run_rejects_missing_filament(tmp_path):
         httpd.shutdown()
 
 
+def test_server_bad_content_length_is_400():
+    # malformed Content-Length must be a clean 400, not a pre-auth crash
+    import socket
+    httpd, token = build_server(port=0)
+    _run(httpd)
+    try:
+        port = httpd.server_address[1]
+        s = socket.create_connection(("127.0.0.1", port), timeout=5)
+        s.sendall(b"POST /doctor HTTP/1.1\r\nHost: x\r\n"
+                  b"Content-Length: notanumber\r\nConnection: close\r\n\r\n")
+        resp = s.recv(256)
+        s.close()
+        assert b"400" in resp.split(b"\r\n", 1)[0]
+    finally:
+        httpd.shutdown()
+
+
 def test_server_new_endpoints_are_routed():
     # Regression guard for the beta.4 stale-sidecar bug: these routes must exist
     # (a missing route returns 404; an executed route returns 200/400/500).

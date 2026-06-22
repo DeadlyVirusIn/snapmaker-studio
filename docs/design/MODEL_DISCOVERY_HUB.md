@@ -20,7 +20,7 @@ waste filament."*
 
 | Source | Official search API | Direct download via API | Thumbnail allowed | License/price metadata | Auth / rate limits | Recommendation |
 |---|---|---|---|---|---|---|
-| **Thingiverse** | Yes — REST, `/search/{term}`, Swagger docs | Yes, gated by each thing's license | Yes (API-provided URLs) | Yes (license field; mostly CC, attribution) | App token / OAuth; rate-limited | **Include v1** (search + import-when-licensed) |
+| **Thingiverse** | Yes — REST, `/search/{term}`, Swagger docs | Yes, gated by each thing's license | Yes (API-provided URLs) | Yes (license field; mostly CC, attribution) | App token / OAuth; rate-limited | **Include v1** (search + link-out (import later, when licensed)) |
 | **MyMiniFactory** | Yes — documented API + OAuth2; free & paid | Yes for free objects via authed user; paid never | Yes (API images) | Yes (license + price; paid marketplace mix) | OAuth2 client; guidelines forbid scraping/recreating/competing | **Include v1** (metadata + link-out; import free-only, later) |
 | **Cults3D** | Yes — GraphQL, search/trending/filters | **No** — files stay on Cults "for legal reasons" | Yes (photos in API) | Yes (price/license; mostly paid) | API key, HTTP Basic; ~60 req/30s, 500/day | **Include v1 metadata + link-out only** (never import) |
 | **Printables** | **No official public API** (only unofficial/community) | No sanctioned path | Via site only | On site | n/a (unofficial would risk ToS) | **Link-out only** (open printables.com search; no programmatic results) |

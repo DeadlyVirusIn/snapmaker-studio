@@ -6,7 +6,7 @@ data). This doc gives **exact, reproducible** capture steps + per-shot specs so
 anyone can produce the marketing set consistently.
 
 ## Setup (once)
-1. Build + install: `cd desktop && npm run tauri build`, then run the installer
+1. Build + install: `cd desktop && npm run release:windows`, then run the installer
    (`Snapmaker Studio_0.4.0-beta.5_x64-setup.exe`). It is an **unsigned beta** —
    if you capture the install flow, expect the SmartScreen "Unknown publisher"
    step and note it as a known beta limitation.

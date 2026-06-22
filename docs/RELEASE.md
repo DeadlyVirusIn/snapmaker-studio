@@ -20,7 +20,7 @@ box above the "Publish" line is ticked.**
 - [ ] Verify the card by sharing the repo URL (or via a link debugger).
 
 ## 2. Windows installer smoke test
-- [ ] On a clean Windows host: `cd desktop && npm ci && npm run tauri build`.
+- [ ] On a clean Windows host: `cd desktop && npm ci && npm run release:windows`.
 - [ ] NSIS `.exe` produced under `desktop/src-tauri/target/release/bundle/nsis/`.
 - [ ] Installer icon shows the Pack app-icon (rebuilt `icon.ico`).
 - [ ] Install → app launches → window title "Snapmaker Studio".
@@ -73,7 +73,7 @@ install — that is the real test (bundled sidecar, no dev tooling).
 ## Build
 ```
 cd backend && ./build-sidecar.ps1            # PyInstaller -> snapstudio-api.exe
-cd ../desktop && npm ci && npm run tauri build
+cd ../desktop && npm ci && npm run release:windows
 ```
 Expected artifact:
 `desktop/src-tauri/target/release/bundle/nsis/Snapmaker Studio_0.3.0-beta.1_x64-setup.exe`
@@ -154,7 +154,7 @@ status badge. SemVer pre-release; next would be `v0.3.0-beta.2` (fixes) or
 
 ## Release checklist
 - [ ] Tag `v0.3.0-beta.1` on `public-b3-conversion` head (`36b80be`).
-- [ ] Build the Windows installer (`npm run tauri build`) → NSIS `.exe`.
+- [ ] Build the Windows installer (`npm run release:windows`) → NSIS `.exe`.
 - [ ] Smoke-test the installer on a clean Windows box (install → open → convert → uninstall).
 - [ ] Create GitHub release, paste notes above, attach the installer `.exe`.
 - [ ] Upload social preview (`docs/brand/social-preview.png`) in repo Settings.
