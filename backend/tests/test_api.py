@@ -282,6 +282,20 @@ def test_server_400_body_has_no_traceback(tmp_path):
         httpd.shutdown()
 
 
+def test_server_batch_pricing_bad_factor_is_400(tmp_path):
+    httpd, token = build_server(port=0)
+    _run(httpd)
+    try:
+        port = httpd.server_address[1]
+        out = str(_sample_u1(tmp_path))
+        c, _ = _post_full(port, "/batch_pricing", {"paths": [out], "price_per_kg": "abc"}, token)
+        assert c == 400
+        c, _ = _post_full(port, "/batch_pricing", {"paths": [out], "price_per_kg": 25.0}, token)
+        assert c == 200
+    finally:
+        httpd.shutdown()
+
+
 # ---- library index ----
 def test_library_record_and_list(tmp_path, monkeypatch):
     monkeypatch.setenv("SNAPSTUDIO_DATA_DIR", str(tmp_path / "data"))

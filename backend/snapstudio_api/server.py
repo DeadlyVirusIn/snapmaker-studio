@@ -351,7 +351,7 @@ def _make_handler(token: str):
                                    "machine_price", "machine_life_hours", "labor_hours",
                                    "labor_rate", "failure_rate_pct", "markup_pct",
                                    "marketplace_fee_pct")
-                    factors = {k: data[k] for k in factor_keys if data.get(k) is not None}
+                    factors = {k: rv.optional_float(data, k, 0.0) for k in factor_keys if data.get(k) is not None}
                     self._send(200, service.batch_pricing(
                         paths, str(data.get("currency", "$")), **factors))
                 except ValidationError as e:
@@ -453,7 +453,7 @@ def _make_handler(token: str):
                                    "machine_price", "machine_life_hours", "labor_hours",
                                    "labor_rate", "failure_rate_pct", "markup_pct",
                                    "marketplace_fee_pct")
-                    factors = {k: data[k] for k in factor_keys if data.get(k) is not None}
+                    factors = {k: rv.optional_float(data, k, 0.0) for k in factor_keys if data.get(k) is not None}
                     self._send(200, service.intelligence_report(
                         path, data.get("host"), data.get("filename"),
                         rv.require_port(data), str(data.get("currency", "$")),
@@ -472,7 +472,7 @@ def _make_handler(token: str):
                                    "machine_price", "machine_life_hours", "labor_hours",
                                    "labor_rate", "failure_rate_pct", "markup_pct",
                                    "marketplace_fee_pct")
-                    factors = {k: data[k] for k in factor_keys if data.get(k) is not None}
+                    factors = {k: rv.optional_float(data, k, 0.0) for k in factor_keys if data.get(k) is not None}
                     common = dict(host=data.get("host"), filename=data.get("filename"),
                                   port=rv.require_port(data),
                                   currency=rv.optional_str(data, "currency", "$"))
@@ -498,7 +498,7 @@ def _make_handler(token: str):
                                    "machine_price", "machine_life_hours", "labor_hours",
                                    "labor_rate", "failure_rate_pct", "markup_pct",
                                    "marketplace_fee_pct")
-                    factors = {k: data[k] for k in factor_keys if data.get(k) is not None}
+                    factors = {k: rv.optional_float(data, k, 0.0) for k in factor_keys if data.get(k) is not None}
                     self._send(200, service.cost_to_price(
                         path, data.get("host"), data.get("filename"),
                         rv.require_port(data), rv.optional_str(data, "currency", "$"),
