@@ -137,8 +137,8 @@ export default function ScaleDoctor() {
                   <thead className="text-muted-foreground">
                     <tr>
                       <th className="py-1 pr-3">Scale</th>
-                      {opts.current_parts?.map((p) => (
-                        <th key={p.plate_index} className="py-1 pr-3">{partLabel(p as any)}</th>
+                      {opts.current_parts?.map((p, i) => (
+                        <th key={i} className="py-1 pr-3">{partLabel(p as any)}</th>
                       ))}
                       <th className="py-1 pr-3">Fit</th>
                       <th className="py-1 pr-3">Recommendation</th>

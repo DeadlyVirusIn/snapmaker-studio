@@ -149,10 +149,14 @@ def build_item_dims(path: str) -> list[dict]:
 
         budget = [0]
 
-        def collect(objid, prefer_file, xform, acc):
+        def collect(objid, prefer_file, xform, acc, seen):
             f = find_obj(objid, prefer_file)
             if f is None:
                 return
+            key = (f, objid)
+            if key in seen or len(seen) > 4096:   # cycle / runaway-nesting guard
+                return
+            seen = seen | {key}
             verts, comps = parsed[f][objid]
             for v in verts:
                 acc.append(_apply(v, xform))
@@ -160,20 +164,22 @@ def build_item_dims(path: str) -> list[dict]:
                 if budget[0] > _MAX_VERTS:
                     raise _TooLarge()
             for cid, cpath, ctf in comps:
-                collect(cid, cpath or f, _compose(xform, ctf), acc)
+                collect(cid, cpath or f, _compose(xform, ctf), acc, seen)
 
         out = []
         for it in load_model_settings(model_files[root_file]).iter(f"{_3MF_CORE_NS}item"):
             oid = it.get("objectid")
             acc: list = []
-            collect(oid, root_file, _xform(it.get("transform")), acc)
+            collect(oid, root_file, _xform(it.get("transform")), acc, frozenset())
             if not acc:
                 continue
             xs = [p[0] for p in acc]; ys = [p[1] for p in acc]; zs = [p[2] for p in acc]
-            out.append({"object_id": oid, "dimensions": {
-                "x": round(max(xs) - min(xs), 2),
-                "y": round(max(ys) - min(ys), 2),
-                "z": round(max(zs) - min(zs), 2)}})
+            lo = (min(xs), min(ys), min(zs)); hi = (max(xs), max(ys), max(zs))
+            out.append({"object_id": oid,
+                        "dimensions": {"x": round(hi[0] - lo[0], 2),
+                                       "y": round(hi[1] - lo[1], 2),
+                                       "z": round(hi[2] - lo[2], 2)},
+                        "bounds": {"min": lo, "max": hi}})
         return out
     except _TooLarge:
         return []

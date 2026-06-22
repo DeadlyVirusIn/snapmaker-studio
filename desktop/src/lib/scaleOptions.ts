@@ -5,7 +5,7 @@ import type { ScaleOption, ScaleOptionsResult, ScalePartDims } from "@/api";
 export const SCALE_LADDER_COPY = {
   groupSame: "Use the same scale on all related parts.",
   groupSeparate:
-    "Do not scale Plate 1 and Plate 2 differently if they need to fit together.",
+    "Do not scale related plates differently if they need to fit together.",
   theoretical:
     "The theoretical max leaves almost no room for brim, bed adhesion, or placement error.",
   notGuarantee: "This is a readiness estimate, not a guarantee of print success.",

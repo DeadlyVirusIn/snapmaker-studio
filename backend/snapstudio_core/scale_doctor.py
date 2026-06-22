@@ -159,14 +159,34 @@ def scale_options(path: str, printer: str = "snapmaker_u1", margin_mm: float = 5
                 "reason": "could not read placed object dimensions from this file"}
 
     pmap = _plate_map(path)
-    current_parts = []
+    # Group build items by plate and UNION their footprints, so a plate holding
+    # several objects is constrained by their combined bounding box (not each part
+    # individually, which would overestimate the safe scale).
+    groups: dict = {}
     for i, p in enumerate(raw):
         meta = pmap.get(p["object_id"], {})
+        idx = meta.get("plate_index")
+        key = ("plate", idx) if idx is not None else ("obj", i)
+        b = p.get("bounds")
+        if b:
+            lo = list(b["min"]); hi = list(b["max"])
+        else:
+            d = p["dimensions"]; lo = [0.0, 0.0, 0.0]; hi = [d["x"], d["y"], d["z"]]
+        g = groups.get(key)
+        if g is None:
+            groups[key] = {"plate_index": idx if idx is not None else (i + 1),
+                           "name": meta.get("name") or f"Object {p['object_id']}",
+                           "min": lo, "max": hi}
+        else:
+            for a in range(3):
+                g["min"][a] = min(g["min"][a], lo[a]); g["max"][a] = max(g["max"][a], hi[a])
+    current_parts = []
+    for g in sorted(groups.values(), key=lambda x: x["plate_index"]):
         current_parts.append({
-            "plate_index": meta.get("plate_index") or (i + 1),
-            "name": meta.get("name") or f"Object {p['object_id']}",
-            "dimensions": p["dimensions"],
-        })
+            "plate_index": g["plate_index"], "name": g["name"],
+            "dimensions": {"x": round(g["max"][0] - g["min"][0], 2),
+                           "y": round(g["max"][1] - g["min"][1], 2),
+                           "z": round(g["max"][2] - g["min"][2], 2)}})
 
     def fit(d, ux, uy, uz):
         facs = ([ux / d["x"]] if d["x"] > 0 else []) + \
@@ -174,8 +194,9 @@ def scale_options(path: str, printer: str = "snapmaker_u1", margin_mm: float = 5
                ([uz / d["z"]] if d["z"] > 0 else [])
         return min(facs) if facs else None
 
-    usable_xy = bv["x"] - 2 * margin
-    safe = [(fit(p["dimensions"], usable_xy, usable_xy, bv["z"]), p) for p in current_parts]
+    usable_x = bv["x"] - 2 * margin
+    usable_y = bv["y"] - 2 * margin
+    safe = [(fit(p["dimensions"], usable_x, usable_y, bv["z"]), p) for p in current_parts]
     safe = [(f, p) for f, p in safe if f is not None and f > 0]
     absf = [(fit(p["dimensions"], bv["x"], bv["y"], bv["z"]), p) for p in current_parts]
     absf = [(f, p) for f, p in absf if f is not None and f > 0]
