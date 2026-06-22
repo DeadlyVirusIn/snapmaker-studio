@@ -62,3 +62,8 @@ gh release create v<version> --title "Snapmaker Studio v<version>" \
 ## 7. Reminder
 The installer is **unsigned** (SmartScreen "Unknown publisher"); ship the SHA256
 so users can verify. Signing readiness: `docs/windows-code-signing.md`.
+
+## 8. Pre-GA blockers (OK for beta, must close before a wider/signed public launch)
+- **Code signing** — acquire a cert; see `docs/windows-code-signing.md`.
+- **CSP hardening** — `tauri.conf.json` currently has `csp: null`; harden + GUI-verify
+  before GA. See `docs/SECURITY.md`. (Acceptable for beta: local-only renderer.)
