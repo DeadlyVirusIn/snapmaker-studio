@@ -5,6 +5,7 @@ requires the per-launch X-Auth-Token. On start, prints one JSON line
 {"port": N, "token": "..."} to stdout so the Tauri shell can connect.
 """
 from __future__ import annotations
+import hmac
 import json
 import os
 import secrets
@@ -104,7 +105,7 @@ def _make_handler(token: str):
                 self._send(400, {"error": "invalid Content-Length"})
                 return
             raw = self.rfile.read(length) if length > 0 else b""
-            if self.headers.get("X-Auth-Token") != token:
+            if not hmac.compare_digest(self.headers.get("X-Auth-Token") or "", token):
                 self._send(401, {"error": "unauthorized"})
                 return
             try:
