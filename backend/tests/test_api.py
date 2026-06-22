@@ -224,6 +224,64 @@ def test_server_new_endpoints_are_routed():
         httpd.shutdown()
 
 
+def _post_full(port, route, raw_or_payload, token):
+    """Returns (code, body_text). raw_or_payload may be bytes (sent verbatim)."""
+    data = raw_or_payload if isinstance(raw_or_payload, (bytes, bytearray)) else json.dumps(raw_or_payload).encode()
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{port}{route}", data=data,
+        headers={"Content-Type": "application/json", "X-Auth-Token": token})
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return r.code, r.read().decode()
+    except urllib.error.HTTPError as e:
+        return e.code, e.read().decode()
+
+
+def test_server_input_validation_returns_400(tmp_path):
+    httpd, token = build_server(port=0)
+    _run(httpd)
+    try:
+        port = httpd.server_address[1]
+        out = str(_sample_u1(tmp_path))
+        # bad string for a numeric field
+        c, b = _post_full(port, "/scale_preview", {"path": out, "scale_percent": "abc"}, token)
+        assert c == 400 and "scale_percent" in b
+        # NaN / Infinity (Python json accepts these tokens; server must reject)
+        for bad in ('{"path": "%s", "scale_percent": NaN}' % out,
+                    '{"path": "%s", "scale_percent": Infinity}' % out):
+            c, b = _post_full(port, "/scale_preview", bad.encode(), token)
+            assert c == 400, f"expected 400 for {bad}"
+        # missing required field (plate_export without to_filament)
+        c, _ = _post_full(port, "/plate_export",
+                          {"path": out, "ui_plate": 1, "from_filament": 0}, token)
+        assert c == 400
+        # bad port
+        c, _ = _post_full(port, "/printer/status", {"host": "127.0.0.1", "port": "notaport"}, token)
+        assert c == 400
+        # malformed JSON
+        c, _ = _post_full(port, "/scale_preview", b"{not json", token)
+        assert c == 400
+        # valid request still works (200; advisory result may be available:false)
+        c, _ = _post_full(port, "/scale_preview", {"path": "none", "scale_percent": 100}, token)
+        assert c == 200
+    finally:
+        httpd.shutdown()
+
+
+def test_server_400_body_has_no_traceback(tmp_path):
+    httpd, token = build_server(port=0)
+    _run(httpd)
+    try:
+        port = httpd.server_address[1]
+        out = str(_sample_u1(tmp_path))
+        c, b = _post_full(port, "/scale_preview", {"path": out, "scale_percent": "abc"}, token)
+        assert c == 400
+        lower = b.lower()
+        assert "traceback" not in lower and "file \"" not in lower and "line " not in lower
+    finally:
+        httpd.shutdown()
+
+
 # ---- library index ----
 def test_library_record_and_list(tmp_path, monkeypatch):
     monkeypatch.setenv("SNAPSTUDIO_DATA_DIR", str(tmp_path / "data"))
