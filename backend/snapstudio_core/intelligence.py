@@ -54,9 +54,12 @@ def _stl_bbox_and_triangles(path: str):
     try:
         if Path(path).stat().st_size > _MAX_BYTES:
             return None, None   # too large to analyze — degrade gracefully
+        raw = Path(path).read_bytes()   # in the try: file may vanish/change after stat
     except OSError:
         return None, None
-    verts, tris = parse_stl(Path(path).read_bytes())
+    if len(raw) > _MAX_BYTES:           # TOCTOU: file may have grown between stat and read
+        return None, None
+    verts, tris = parse_stl(raw)
     if not verts:
         return None, (len(tris) or None)
     xs = [v[0] for v in verts]; ys = [v[1] for v in verts]; zs = [v[2] for v in verts]

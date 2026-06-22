@@ -8,6 +8,17 @@ Score. Pure synthesis over already-computed dicts — no network here.
 from snapstudio_core import intelligence_report as ir
 
 
+def test_stl_bbox_guard_handles_missing_and_oversized(tmp_path, monkeypatch):
+    from snapstudio_core import intelligence
+    # missing file -> graceful (None, None), no uncaught OSError (read_bytes guarded)
+    assert intelligence._stl_bbox_and_triangles(str(tmp_path / "nope.stl")) == (None, None)
+    # oversized -> graceful (None, None)
+    import snapstudio_core.geometry as geo
+    monkeypatch.setattr(geo, "_MAX_BYTES", 5)
+    big = tmp_path / "big.stl"; big.write_bytes(b"x" * 50)
+    assert intelligence._stl_bbox_and_triangles(str(big)) == (None, None)
+
+
 def test_unavailable_with_nothing():
     out = ir.build()
     assert out["available"] is False

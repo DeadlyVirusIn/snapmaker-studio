@@ -41,11 +41,41 @@ def test_no_print_success_guarantees(rel):
         assert phrase not in text, f"banned claim '{phrase}' found in {rel}"
 
 
-# Public release surfaces: must not reveal internal review tooling / AI models /
-# implementation mechanics. Marketing/release docs only — NOT engineering docs.
-_RELEASE_SURFACES = [
+# AI-tool / process / mechanics names that must never appear in ANY public doc.
+_BANNED_TOOLS = [
+    ("octo", r"\bocto\b"),
+    ("/octo", r"/octo"),
+    ("codex", r"\bcodex\b"),
+    ("claude", r"\bclaude\b"),
+    ("sonnet", r"\bsonnet\b"),
+    ("gemini", r"\bgemini\b"),
+    ("antigravity", r"\bantigravity\b"),
+    ("multi-provider", r"multi-?provider"),
+    ("body-drain", r"body-?drain"),
+    ("request-hardening", r"request-?hardening"),
+    ("security surface", r"security surface"),
+    ("exploit", r"\bexploit"),
+]
+
+
+@pytest.mark.parametrize("rel", [
     os.path.join("docs", "RELEASE_NOTES.md"),
     os.path.join("docs", "windows-install.md"),
+])
+def test_public_docs_have_no_tooling_names(rel):
+    path = os.path.join(_ROOT, rel)
+    if not os.path.exists(path):
+        pytest.skip(f"{rel} not present")
+    text = open(path, encoding="utf-8").read().lower()
+    for label, pattern in _BANNED_TOOLS:
+        assert not re.search(pattern, text), f"tooling term '{label}' found in {rel}"
+
+
+# The marketing release body additionally must not carry low-level mechanics terms
+# (token/CSP/NaN/Infinity). Scoped to RELEASE_NOTES.md only — an install guide may
+# legitimately use words like "token", so it is exempt from this stricter set.
+_RELEASE_SURFACES = [
+    os.path.join("docs", "RELEASE_NOTES.md"),
 ]
 
 # (label, regex) — word-boundaries where a short token would false-match (e.g.
