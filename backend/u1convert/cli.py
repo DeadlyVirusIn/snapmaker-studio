@@ -43,7 +43,8 @@ def _run_repair(path, mode, remap, out, dry_run, opt_profile=None):
         res = do_validate(ThreeMF.open(out_p), against=None)   # generation -> structural+rules
         write_fix_report(out_p.parent / "FIX_REPORT.json",
                          [{"file": Path(path).name, "output": out_p.name, "source": "stl",
-                           "generated": True, "validated_ok": res.ok, "errors": res.errors}])
+                           "generated": True, "validated_ok": res.ok, "errors": res.errors}],
+                         base_dir=out_p.parent)
         click.echo(f"wrapped STL -> {out_p}  (validated_ok={res.ok})")
         return
     src = Path(path)
@@ -61,7 +62,7 @@ def _run_repair(path, mode, remap, out, dry_run, opt_profile=None):
     res = do_validate(ThreeMF.open(out), against=src_fp)
     entry = {"file": src.name, "output": out.name, **outcome.report,
              "validated_ok": res.ok, "errors": res.errors}
-    write_fix_report(out.parent / "FIX_REPORT.json", [entry])
+    write_fix_report(out.parent / "FIX_REPORT.json", [entry], base_dir=out.parent)
     click.echo(f"wrote {out}  (validated_ok={res.ok})")
 
 @cli.command()
