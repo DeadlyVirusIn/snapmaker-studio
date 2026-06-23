@@ -90,17 +90,21 @@ only from the official release and verified by SHA256.
 ## Visual walkthrough
 
 Captured from the live beta.10 UI on a sample file. Full set in
-[SCREENSHOTS_BETA9.md](SCREENSHOTS_BETA9.md).
+[SCREENSHOTS_BETA10.md](SCREENSHOTS_BETA10.md).
 
-![Dashboard](screenshots/beta9/dashboard-beta9.png)
+![Dashboard](screenshots/beta10/dashboard-beta10.png)
 
-![Scale Options Ladder](screenshots/beta9/scale-options-beta9.png)
+![Find Models](screenshots/beta10/find-models-beta10.png)
 
-![Print Quality — fails even with supports](screenshots/beta9/print-quality-fails-with-supports-beta9.png)
+![Project Doctor — result](screenshots/beta10/project-doctor-result-beta10.png)
 
-![Plate Color Remap](screenshots/beta9/plate-color-remap-beta9.png)
+![Scale Options Ladder](screenshots/beta10/scale-options-beta10.png)
 
-![Release page with SHA256](screenshots/beta9/release-beta9-sha256.png)
+![Print Quality — fails even with supports](screenshots/beta10/print-quality-beta10.png)
+
+![Snapmaker Orca handoff](screenshots/beta10/orca-handoff-beta10.png)
+
+![Plate Color Remap](screenshots/beta10/plate-remap-beta10.png)
 
 ## 5–7 minute demo flow
 

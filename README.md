@@ -84,11 +84,11 @@ The desktop app — local-first, dark-first. The whole workflow in one place:
 
 | Dashboard | Project Doctor |
 |---|---|
-| ![Dashboard](docs/screenshots/beta9/dashboard-beta9.png) | ![Project Doctor](docs/screenshots/beta9/project-doctor-beta9.png) |
+| ![Dashboard](docs/screenshots/beta10/dashboard-beta10.png) | ![Project Doctor](docs/screenshots/beta10/project-doctor-result-beta10.png) |
 | **Scale Options Ladder** | **Plate Color Remap** |
-| ![Scale Options Ladder](docs/screenshots/beta9/scale-options-beta9.png) | ![Plate Color Remap](docs/screenshots/beta9/plate-color-remap-beta9.png) |
+| ![Scale Options Ladder](docs/screenshots/beta10/scale-options-beta10.png) | ![Plate Color Remap](docs/screenshots/beta10/plate-remap-beta10.png) |
 
-More beta.10 screenshots: [docs/SCREENSHOTS_BETA9.md](docs/SCREENSHOTS_BETA9.md).
+More beta.10 screenshots: [docs/SCREENSHOTS_BETA10.md](docs/SCREENSHOTS_BETA10.md).
 
 ## Why
 
