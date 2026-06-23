@@ -1,4 +1,4 @@
-# Snapmaker Studio v0.4.0-beta.9
+# Snapmaker Studio v0.4.0-beta.10
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
@@ -11,7 +11,7 @@ Before a layer is sliced, Studio reads your model and your Snapmaker U1 (read-on
 and surfaces likely print risks, what it costs, and what to sell it for — one
 screen, plain language. Advisory only; not a guarantee of print success.
 
-## New in beta.9
+## New in beta.10
 - **"Fails even with supports" troubleshooting** added inside Print Quality Doctor.
 - **Known-good print mode** — if a file has printed successfully before, Studio
   compares what *changed* instead of blaming the file or profile.
@@ -56,11 +56,11 @@ screen, plain language. Advisory only; not a guarantee of print success.
 Only download from the official GitHub release, and verify the checksum.
 
 ```
-File:    Snapmaker.Studio_0.4.0-beta.9_x64-setup.exe
+File:    Snapmaker.Studio_0.4.0-beta.10_x64-setup.exe
 Size:    16,079,395 bytes
-SHA256:  89700D29A0788E16373A23F181D04607E6D722B95175F37163F0D4E1EFBE017D
+SHA256:  <published with the v0.4.0-beta.10 release>
 ```
 
-Full guidance: [docs/windows-install.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.9/docs/windows-install.md).
+Full guidance: [docs/windows-install.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.10/docs/windows-install.md).
 
 _Beta — local-first; nothing leaves your computer._

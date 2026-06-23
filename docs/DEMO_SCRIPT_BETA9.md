@@ -1,4 +1,4 @@
-# Snapmaker Studio — Demo Script (beta.9)
+# Snapmaker Studio — Demo Script (beta.10)
 
 A 5–7 minute walkthrough for judges and first-time viewers. Everything runs
 locally; nothing is uploaded. Findings are advisory readiness estimates, not
@@ -8,7 +8,7 @@ guarantees of print success.
 
 ## Before you start
 
-- Have Snapmaker Studio (beta.9) installed and open.
+- Have Snapmaker Studio (beta.10) installed and open.
 - Have a sample U1 3MF file ready (the repo's `examples/` folder has sample cubes).
 - Optionally have one known-good print result on hand for the comparison step.
 

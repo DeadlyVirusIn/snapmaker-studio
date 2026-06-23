@@ -55,20 +55,20 @@ Open the downloaded `…_x64-setup.exe`, install, and launch **Snapmaker Studio*
 No account, no cloud, nothing leaves your computer. Older builds and checksums are
 on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
-## Try beta.9
+## Try beta.10
 
-- Release: [v0.4.0-beta.9](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.9)
-- Installer: `Snapmaker.Studio_0.4.0-beta.9_x64-setup.exe`
-- SHA256: `89700D29A0788E16373A23F181D04607E6D722B95175F37163F0D4E1EFBE017D`
+- Release: [v0.4.0-beta.10](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.10) — _link goes live once the build is published_
+- Installer: `Snapmaker.Studio_0.4.0-beta.10_x64-setup.exe`
+- SHA256: _published with the v0.4.0-beta.10 release_
 - Unsigned beta: the installer is not code-signed yet, so Windows SmartScreen may show “Unknown publisher.” That is expected for this beta. Download only from the release link above and verify the SHA256 before installing.
 
 Install:
 
 1. Download the `.exe` from the release page.
-2. Verify the checksum. It must match the SHA256 above:
+2. Verify the checksum. It must match the SHA256 published on the release:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.9_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.10_x64-setup.exe
 ```
 
 3. Run it. On the SmartScreen prompt choose **More info → Run anyway** only after verifying the hash.
@@ -88,7 +88,7 @@ The desktop app — local-first, dark-first. The whole workflow in one place:
 | **Scale Options Ladder** | **Plate Color Remap** |
 | ![Scale Options Ladder](docs/screenshots/beta9/scale-options-beta9.png) | ![Plate Color Remap](docs/screenshots/beta9/plate-color-remap-beta9.png) |
 
-More beta.9 screenshots: [docs/SCREENSHOTS_BETA9.md](docs/SCREENSHOTS_BETA9.md).
+More beta.10 screenshots: [docs/SCREENSHOTS_BETA9.md](docs/SCREENSHOTS_BETA9.md).
 
 ## Why
 

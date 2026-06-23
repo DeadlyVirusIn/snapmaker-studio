@@ -1,4 +1,4 @@
-# Snapmaker Studio — Judge Overview (beta.9)
+# Snapmaker Studio — Judge Overview (beta.10)
 
 > Independent open-source project — not affiliated with or endorsed by Snapmaker.
 > "Snapmaker" is a trademark of its respective owner.
@@ -41,7 +41,7 @@ Snapmaker U1 owners, especially beginners working with multicolor or
 support-heavy prints, who want to diagnose, prepare, troubleshoot, and estimate a
 print before opening the slicer.
 
-## beta.9 capabilities
+## beta.10 capabilities
 
 - Print Failure Troubleshooter — walks through likely causes when a print fails,
   including the "fails even with supports" path.
@@ -89,7 +89,7 @@ only from the official release and verified by SHA256.
 
 ## Visual walkthrough
 
-Captured from the live beta.9 UI on a sample file. Full set in
+Captured from the live beta.10 UI on a sample file. Full set in
 [SCREENSHOTS_BETA9.md](SCREENSHOTS_BETA9.md).
 
 ![Dashboard](screenshots/beta9/dashboard-beta9.png)
