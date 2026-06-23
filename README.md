@@ -82,11 +82,13 @@ Full guidance and uninstall: [docs/windows-install.md](docs/windows-install.md).
 The desktop app — local-first, dark-first. The whole workflow in one place:
 **Understand → Validate → Prepare → Monitor**.
 
-| Dashboard | Design Insights |
+| Dashboard | Project Doctor |
 |---|---|
-| ![Dashboard](docs/qa-beta/ux_01_dashboard.png) | ![Design Insights](docs/qa-beta/ux_02_design_insights.png) |
-| **Validation Center** | **Printer Hub (read-only)** |
-| ![Validation Center](docs/qa-beta/ux_03_validation_center.png) | ![Printer Hub](docs/qa-beta/ux_06_printer_hub.png) |
+| ![Dashboard](docs/screenshots/beta9/dashboard-beta9.png) | ![Project Doctor](docs/screenshots/beta9/project-doctor-beta9.png) |
+| **Scale Options Ladder** | **Plate Color Remap** |
+| ![Scale Options Ladder](docs/screenshots/beta9/scale-options-beta9.png) | ![Plate Color Remap](docs/screenshots/beta9/plate-color-remap-beta9.png) |
+
+More beta.9 screenshots: [docs/SCREENSHOTS_BETA9.md](docs/SCREENSHOTS_BETA9.md).
 
 ## Why
 

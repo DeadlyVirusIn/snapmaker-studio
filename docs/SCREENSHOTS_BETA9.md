@@ -8,16 +8,17 @@ shown. Everything is local; nothing is uploaded.
 
 ## Checklist
 
-- [ ] Dashboard — the main view with the available Doctors.
-- [ ] Project Doctor — the design-health / readiness summary on a real mesh.
-- [ ] Scale Options Ladder — the size options the Scale Doctor presents.
-- [ ] Print Quality Doctor — the "Fails even with supports" path.
-- [ ] Known-good mode — comparing a problem file against a print that worked.
-- [ ] Compatibility Doctor — readiness estimate against the U1, with reasons.
-- [ ] Plate Color Remap — before/after of a multicolor plate/color remap.
-- [ ] Cost / Pricing / Profit Doctor — cost estimate and pricing view.
-- [ ] GitHub release page — the v0.4.0-beta.9 release showing the installer asset
-      and its SHA256.
+All captured from the live beta.9 UI on a sample file (`examples/sample_cube_U1.3mf`).
+
+- [x] Dashboard — the Doctors grid and your library, local-first. ![Dashboard](screenshots/beta9/dashboard-beta9.png)
+- [x] Project Doctor — Design Health on the real mesh: watertight, geometry, stability, supports, bed fit. ![Project Doctor](screenshots/beta9/project-doctor-beta9.png)
+- [x] Scale Options Ladder — size options for the U1 with fit and risk levels. ![Scale Options Ladder](screenshots/beta9/scale-options-beta9.png)
+- [x] Print Quality Doctor — the "fails even with supports" path. ![Print Quality — fails even with supports](screenshots/beta9/print-quality-fails-with-supports-beta9.png)
+- [x] Known-good troubleshooting — guidance when the file printed before, one change at a time. ![Known-good troubleshooting](screenshots/beta9/known-good-troubleshooting-beta9.png)
+- [x] Compatibility Doctor — read-only U1 / Orca readiness check. ![Compatibility Doctor](screenshots/beta9/compatibility-doctor-beta9.png)
+- [x] Plate Color Remap — change one plate's color on a verified copy; the original is never modified. ![Plate Color Remap](screenshots/beta9/plate-color-remap-beta9.png)
+- [x] Cost / Pricing / Profit — true cost, suggested price, and margin in the Studio Intelligence Report. ![Cost / Pricing / Profit](screenshots/beta9/cost-pricing-profit-beta9.png)
+- [x] GitHub release page — the v0.4.0-beta.9 release showing the installer asset and its SHA256. ![Release page with SHA256](screenshots/beta9/release-beta9-sha256.png)
 
 ## Capture tips
 

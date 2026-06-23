@@ -87,6 +87,21 @@ only from the official release and verified by SHA256.
 - Continued reliability hardening and expanded readiness checks.
 - Windows code-signing ahead of any wider public launch.
 
+## Visual walkthrough
+
+Captured from the live beta.9 UI on a sample file. Full set in
+[SCREENSHOTS_BETA9.md](SCREENSHOTS_BETA9.md).
+
+![Dashboard](screenshots/beta9/dashboard-beta9.png)
+
+![Scale Options Ladder](screenshots/beta9/scale-options-beta9.png)
+
+![Print Quality — fails even with supports](screenshots/beta9/print-quality-fails-with-supports-beta9.png)
+
+![Plate Color Remap](screenshots/beta9/plate-color-remap-beta9.png)
+
+![Release page with SHA256](screenshots/beta9/release-beta9-sha256.png)
+
 ## 5–7 minute demo flow
 
 1. Open Studio and show the Dashboard with the available Doctors.
