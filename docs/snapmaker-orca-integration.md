@@ -83,3 +83,36 @@ Action items (read-only audit, no writer changes without tests):
 - The opener (v2) is scoped to opening the user's prepared file; Studio never
   passes slicing commands or controls Orca.
 - No private filesystem paths surfaced in the UI.
+
+## Verified this gate (Snapmaker Orca repo, main)
+
+- Printer **model/profile name: "Snapmaker U1"** (variants `Snapmaker U1 (0.2/0.4/0.6/0.8 nozzle).json`, all `inherits: fdm_U1`). Studio's "Snapmaker U1" naming matches.
+- **printable_height: 270.05 mm** → Z ≈ 270. Studio's 270 Z assumption is correct.
+- **Multi-toolhead** (`single_extruder_multi_material: 0`); the 0.4 variant's tool-change/purge handles **T0–T3 = 4 toolheads**. Studio's "4 toolheads" assumption matches.
+- Default bed: "Textured PEI Plate".
+- **Not numerically captured:** exact X/Y `printable_area`. Studio uses 270×270; Z is confirmed and the bed family is consistent — confirm the X/Y values against the profile before treating 270×270 as exact.
+
+Result: Studio's U1 bed/toolhead/profile-name assumptions align with the Orca U1 profile. No bed/toolhead correction needed for beta.10.
+
+## Manual Windows smoke test (REQUIRED before publishing beta.10)
+
+Cannot be run in this environment (no Snapmaker Orca install, no GUI). Run on a
+Windows machine with Snapmaker Orca installed:
+
+1. Install Snapmaker Orca (official release).
+2. In Studio, open a sample 3MF (`examples/sample_cube_U1.3mf`), run Project Doctor.
+3. "Make U1-ready" to export the safe copy.
+4. Open the exported 3MF in Snapmaker Orca; select the **Snapmaker U1** profile.
+5. Confirm it loads without errors, geometry/plates/colours intact, and slices.
+6. Repeat with a Plate Color Remap export and a multicolor file.
+
+If all open + slice cleanly → the Orca compatibility gate is fully PASS. If any
+fail → that's a P0 to fix before publishing.
+
+## Gate result
+
+Code/copy/assumptions: **PASS** — Doctors name Snapmaker Orca + Snapmaker U1
+correctly, U1 bed/toolhead facts align with the verified profile, no
+slice/control claims, no fake compatibility guarantees. **Conditional on** the
+manual Windows smoke test above (real "opens + slices in Snapmaker Orca"), which
+this environment can't run. Hold publish until that one manual test passes.
