@@ -122,8 +122,9 @@ fail → that's a P0 to fix before publishing.
 
 ## Gate result
 
-Code/copy/assumptions: **PASS** — Doctors name Snapmaker Orca + Snapmaker U1
-correctly, U1 bed/toolhead facts align with the verified profile, no
-slice/control claims, no fake compatibility guarantees. **Conditional on** the
-manual Windows smoke test above (real "opens + slices in Snapmaker Orca"), which
-this environment can't run. Hold publish until that one manual test passes.
+**PASS (full).** Code/copy/assumptions: Doctors name Snapmaker Orca + Snapmaker U1
+correctly, U1 bed/toolhead facts align with the verified profile, no slice/control
+claims, no fake compatibility guarantees. **Smoke test PASSED on a real install:**
+a Studio-exported U1 3MF opened cleanly in Snapmaker Orca
+(`C:\Program Files\Snapmaker_Orca\snapmaker-orca.exe`) on the **Snapmaker U1**
+profile (operator-confirmed). The Orca gate no longer blocks beta.10.
