@@ -1,4 +1,4 @@
-# What to Test First (beta.10)
+# What to Test First (beta.11)
 
 Three short beginner paths through Snapmaker Studio. Everything runs locally;
 nothing is uploaded. Originals are never modified, and findings are advisory
@@ -34,9 +34,13 @@ Steps:
 3. Open Plate Color Remap.
 4. Apply the suggested remap and review the before/after.
 5. Prepare a clean copy (your original stays untouched).
+6. Click **Open in Snapmaker Orca** to hand the prepared copy to the slicer (or
+   **Copy path** and open it yourself). If Orca isn't installed, use **Install
+   Snapmaker Orca**.
 
 Expected outcome: a tidied color/plate mapping and a clean, print-ready copy, with
-the original file unchanged.
+the original file unchanged — handed off to Snapmaker Orca to slice. Studio never
+slices or controls Orca.
 
 ## Path 3 — Failed print user
 

@@ -55,11 +55,11 @@ Open the downloaded `…_x64-setup.exe`, install, and launch **Snapmaker Studio*
 No account, no cloud, nothing leaves your computer. Older builds and checksums are
 on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
-## Try beta.10
+## Try beta.11
 
-- Release: [v0.4.0-beta.10](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.10) — _link goes live once the build is published_
-- Installer: `Snapmaker.Studio_0.4.0-beta.10_x64-setup.exe`
-- SHA256: `b507e28385fc9715a399ac6b5808c7d47d4cec32478bd44312a0afad0b12fe59`
+- Release: [v0.4.0-beta.11](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.11)
+- Installer: `Snapmaker.Studio_0.4.0-beta.11_x64-setup.exe`
+- SHA256: `9818f1a8ea5507257a58831c419303d32014bd34efb0f81c2bcde27cd5d78a56`
 - Unsigned beta: the installer is not code-signed yet, so Windows SmartScreen may show “Unknown publisher.” That is expected for this beta. Download only from the release link above and verify the SHA256 before installing.
 
 Install:
@@ -68,7 +68,7 @@ Install:
 2. Verify the checksum. It must match the SHA256 published on the release:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.10_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.11_x64-setup.exe
 ```
 
 3. Run it. On the SmartScreen prompt choose **More info → Run anyway** only after verifying the hash.
@@ -82,13 +82,13 @@ Full guidance and uninstall: [docs/windows-install.md](docs/windows-install.md).
 The desktop app — local-first, dark-first. The whole workflow in one place:
 **Understand → Validate → Prepare → Monitor**.
 
-| Dashboard | Project Doctor |
+| Dashboard | Open in Snapmaker Orca |
 |---|---|
-| ![Dashboard](docs/screenshots/beta10/dashboard-beta10.png) | ![Project Doctor](docs/screenshots/beta10/project-doctor-result-beta10.png) |
-| **Scale Options Ladder** | **Plate Color Remap** |
-| ![Scale Options Ladder](docs/screenshots/beta10/scale-options-beta10.png) | ![Plate Color Remap](docs/screenshots/beta10/plate-remap-beta10.png) |
+| ![Dashboard](docs/screenshots/beta11/dashboard-beta11.png) | ![Open in Snapmaker Orca](docs/screenshots/beta11/orca-handoff-beta11.png) |
+| **Find Models** | **Print Quality Doctor** |
+| ![Find Models](docs/screenshots/beta11/find-models-beta11.png) | ![Print Quality Doctor](docs/screenshots/beta11/print-quality-beta11.png) |
 
-More beta.10 screenshots: [docs/SCREENSHOTS_BETA10.md](docs/SCREENSHOTS_BETA10.md).
+More beta.11 screenshots: [docs/SCREENSHOTS_BETA11.md](docs/SCREENSHOTS_BETA11.md).
 
 ## Why
 

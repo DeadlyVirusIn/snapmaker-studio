@@ -1,4 +1,4 @@
-# Snapmaker Studio — Judge Overview (beta.10)
+# Snapmaker Studio — Judge Overview (beta.11)
 
 > Independent open-source project — not affiliated with or endorsed by Snapmaker.
 > "Snapmaker" is a trademark of its respective owner.
@@ -41,8 +41,14 @@ Snapmaker U1 owners, especially beginners working with multicolor or
 support-heavy prints, who want to diagnose, prepare, troubleshoot, and estimate a
 print before opening the slicer.
 
-## beta.10 capabilities
+## beta.11 capabilities
 
+- One-click "Open in Snapmaker Orca" — once a validated U1 copy is prepared,
+  hand it straight to an installed Snapmaker Orca to slice (one-way handoff;
+  Studio never slices or controls Orca). Falls back to "Install Snapmaker Orca"
+  and "Copy path" when Orca isn't installed.
+- Approved-site Model Browser v1 — browse trusted sites inside Studio's locked
+  window; manual download/open only; no scraping, no auto-import, no API keys.
 - Print Failure Troubleshooter — walks through likely causes when a print fails,
   including the "fails even with supports" path.
 - Known-good print comparison — compare a problem file against a print that
@@ -89,22 +95,16 @@ only from the official release and verified by SHA256.
 
 ## Visual walkthrough
 
-Captured from the live beta.10 UI on a sample file. Full set in
-[SCREENSHOTS_BETA10.md](SCREENSHOTS_BETA10.md).
+Captured from the live beta.11 UI on a sample file. Full set in
+[SCREENSHOTS_BETA11.md](SCREENSHOTS_BETA11.md).
 
-![Dashboard](screenshots/beta10/dashboard-beta10.png)
+![Dashboard](screenshots/beta11/dashboard-beta11.png)
 
-![Find Models](screenshots/beta10/find-models-beta10.png)
+![Find Models](screenshots/beta11/find-models-beta11.png)
 
-![Project Doctor — result](screenshots/beta10/project-doctor-result-beta10.png)
+![Open in Snapmaker Orca](screenshots/beta11/orca-handoff-beta11.png)
 
-![Scale Options Ladder](screenshots/beta10/scale-options-beta10.png)
-
-![Print Quality — fails even with supports](screenshots/beta10/print-quality-beta10.png)
-
-![Snapmaker Orca handoff](screenshots/beta10/orca-handoff-beta10.png)
-
-![Plate Color Remap](screenshots/beta10/plate-remap-beta10.png)
+![Print Quality Doctor](screenshots/beta11/print-quality-beta11.png)
 
 ## 5–7 minute demo flow
 
