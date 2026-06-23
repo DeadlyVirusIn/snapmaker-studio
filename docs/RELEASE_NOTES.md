@@ -58,7 +58,7 @@ Only download from the official GitHub release, and verify the checksum.
 ```
 File:    Snapmaker.Studio_0.4.0-beta.10_x64-setup.exe
 Size:    16,079,395 bytes
-SHA256:  b66c4544238dbc58e2fb86b5c00abc643011f29f88e25332f821dbe9b89240ab
+SHA256:  b507e28385fc9715a399ac6b5808c7d47d4cec32478bd44312a0afad0b12fe59
 ```
 
 Full guidance: [docs/windows-install.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.10/docs/windows-install.md).

@@ -59,7 +59,7 @@ on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/release
 
 - Release: [v0.4.0-beta.10](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.10) — _link goes live once the build is published_
 - Installer: `Snapmaker.Studio_0.4.0-beta.10_x64-setup.exe`
-- SHA256: `b66c4544238dbc58e2fb86b5c00abc643011f29f88e25332f821dbe9b89240ab`
+- SHA256: `b507e28385fc9715a399ac6b5808c7d47d4cec32478bd44312a0afad0b12fe59`
 - Unsigned beta: the installer is not code-signed yet, so Windows SmartScreen may show “Unknown publisher.” That is expected for this beta. Download only from the release link above and verify the SHA256 before installing.
 
 Install:
