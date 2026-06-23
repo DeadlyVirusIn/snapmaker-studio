@@ -3,7 +3,8 @@ import {
   COPY, emptySelection, canDryRun, canExport, plateByUiNumber, fromOptions,
   toOptions, exportView,
   colorName, isGoldish, slotLabel, plateSummary, changeSummary, staysSame,
-  type Selection, type PlateInspect, type PlateDryRun, type PlateExport,
+  hasSwappableColors,
+  type Selection, type PlateInspect, type PlateDryRun, type PlateExport, type PlateInfo,
 } from "./plateRemapWizard";
 
 const inspect: PlateInspect = {
@@ -18,6 +19,22 @@ const inspect: PlateInspect = {
   ],
   warnings: [],
 };
+
+describe("hasSwappableColors (no-base-colour empty state)", () => {
+  it("is true when the plate has base filament slots", () => {
+    expect(hasSwappableColors(inspect.plates![1])).toBe(true);
+  });
+  it("is false for a painted-only plate with no filament slots", () => {
+    const painted: PlateInfo = { ui_number: 9, objects: [{ object_id: 1, painted_facets: 200 }], filaments_used: [], painted_accents_present: true };
+    expect(hasSwappableColors(painted)).toBe(false);
+  });
+  it("is false for null", () => {
+    expect(hasSwappableColors(null)).toBe(false);
+  });
+  it("the no-swappable copy never claims the original is modified", () => {
+    expect(COPY.noSwappableColors.toLowerCase()).toContain("never modified");
+  });
+});
 
 const goodDryRun: PlateDryRun = {
   available: true, ui_plate: 4, change_count: 2,

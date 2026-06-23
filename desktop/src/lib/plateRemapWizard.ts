@@ -14,9 +14,16 @@ export const COPY = {
   exportCta: "Create safe copy — original stays unchanged",
   confirmTitle: "Review before creating copy",
   proofTitle: "Verified safe copy created",
-  previewUnavailable: "Visual preview is not available for this file yet. Studio still verified the file data. Open the exported copy in Orca before printing.",
+  previewUnavailable: "This colour + plate preview shows exactly what will change and what stays protected. A full 3D render of the plate is planned for a later release; open the exported copy in Snapmaker Orca to see it on the plate.",
   paintedUnlabeled: "Painted details are protected by verification, but Studio cannot label their exact colors yet.",
+  noSwappableColors: "This plate's colours are painted per-face rather than assigned to whole-object filament slots, so there's no base slot colour to swap here. Plate Color Remap changes a plate's default filament-slot colour — use it on a plate that assigns objects to filament slots. Your file is never modified either way.",
 } as const;
+
+/** True when the selected plate has no swappable base-slot colour (painted/
+ *  per-face colour only). Drives a clear empty state instead of a dead end. */
+export function hasSwappableColors(plate: PlateInfo | null): boolean {
+  return (plate?.filaments_used ?? []).length > 0;
+}
 
 // ---- backend JSON shapes (subset we use) ----
 export interface PlateFilament { id: number; color?: string | null; type?: string | null; role?: string; }

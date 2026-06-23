@@ -4,10 +4,11 @@ from snapstudio_core import print_quality as pq
 _EXPECTED = {
     "stringing", "ringing", "layer_shift", "warping", "first_layer",
     "blobs", "under_extrusion", "rough_surface", "bridging", "color_bleed",
+    "bed_adhesion", "support_failure",
 }
 
 
-def test_all_ten_symptoms_present():
+def test_all_symptoms_present():
     ids = {s["id"] for s in pq.symptoms()}
     assert ids == _EXPECTED
 

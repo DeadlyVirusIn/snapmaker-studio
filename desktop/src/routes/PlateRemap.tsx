@@ -162,7 +162,7 @@ export default function PlateRemap() {
                         <Swatch color={f.color} /> {colorName(f.color) ?? `Filament ${f.id}`} <span className="opacity-60">(slot {f.id})</span>
                       </button>
                     ))}
-                    {froms.length === 0 && <span className="text-xs text-muted-foreground">no base colors detected on this plate</span>}
+                    {froms.length === 0 && <p className="text-xs text-muted-foreground">{COPY.noSwappableColors}</p>}
                   </div>
                 </div>
                 <div>

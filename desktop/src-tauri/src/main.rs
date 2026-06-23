@@ -205,9 +205,10 @@ fn bind_to_kill_on_close_job(child: &Child) {
             std::mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32,
         );
         AssignProcessToJobObject(job, child.as_raw_handle() as _);
-        // Leak the job handle on purpose: it must stay open for the app's whole
-        // lifetime. When this process dies the OS closes it -> kills the tree.
-        std::mem::forget(job);
+        // Keep the job handle open for the app's whole lifetime: the OS closes it
+        // when this process dies, which kills the sidecar tree. The handle is a raw
+        // pointer (Copy), so there is nothing to drop — binding to `_` is enough.
+        let _ = job;
     }
 }
 
