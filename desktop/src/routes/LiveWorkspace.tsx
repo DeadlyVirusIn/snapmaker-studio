@@ -206,6 +206,10 @@ export default function LiveWorkspace() {
                     <AlertTriangle className="h-3.5 w-3.5" /> Saved, but validation reported issues
                   </p>
                 )}
+                <p className="text-xs text-muted-foreground">
+                  Studio checks the model first. Snapmaker Orca slices it next.{" "}
+                  <a href="https://github.com/Snapmaker/OrcaSlicer/releases" target="_blank" rel="noreferrer" className="text-primary hover:underline">Install Snapmaker Orca</a>
+                </p>
               </CardContent>
             </Card>
           )}
