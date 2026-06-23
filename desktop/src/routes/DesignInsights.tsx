@@ -142,7 +142,7 @@ export default function DesignInsights() {
               <h2 className="text-xl font-semibold">Looks U1-ready</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 We made a validated U1 copy of <b>{file.name}</b> and your original is kept
-                safe. This is an advisory check, not a guarantee — slice in Orca to confirm.
+                safe. This is an advisory check, not a guarantee — slice in Snapmaker Orca to confirm.
               </p>
             </div>
             <div className="w-full rounded-lg border border-border bg-muted/30 p-3 text-left text-sm">
@@ -152,7 +152,7 @@ export default function DesignInsights() {
             <div className="text-left text-sm text-muted-foreground">
               <p className="mb-1 font-medium text-foreground">What now?</p>
               <p>1. Open it in Snapmaker Orca to slice and print (one click below)</p>
-              <p>2. Or copy the file path and open it in Orca yourself</p>
+              <p>2. Or copy the file path and open it in Snapmaker Orca yourself</p>
             </div>
             <OrcaHandoff outputPath={convert.data.output_path} />
             <div className="flex flex-wrap justify-center gap-2">
