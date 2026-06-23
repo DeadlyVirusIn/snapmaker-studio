@@ -17,7 +17,56 @@ use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
-use tauri::{Manager, RunEvent, State};
+use tauri::{Manager, RunEvent, State, Url, WebviewUrl, WebviewWindowBuilder};
+
+// Model Browser allowlist — the ONLY domains the in-app browser may navigate to.
+// Enforced in Rust at open time and on every navigation; off-allowlist top-level
+// navigations are blocked. The browser window gets no capabilities (no IPC).
+const ALLOWED_MODEL_DOMAINS: &[&str] = &[
+    "printables.com",
+    "thingiverse.com",
+    "myminifactory.com",
+    "cults3d.com",
+    "thangs.com",
+    "makerworld.com",
+];
+
+fn model_host_allowed(url: &Url) -> bool {
+    match url.host_str() {
+        Some(h) => {
+            let h = h.to_ascii_lowercase();
+            ALLOWED_MODEL_DOMAINS
+                .iter()
+                .any(|d| h == *d || h.ends_with(&format!(".{d}")))
+        }
+        None => false,
+    }
+}
+
+/// Open (or reuse) the locked in-app Model Browser at an approved-site URL.
+/// The frontend builds the (encoded) URL; Rust is the security boundary: it
+/// refuses anything not https + on the approved-domain allowlist, and blocks any
+/// later navigation that leaves the allowlist.
+#[tauri::command]
+fn open_model_browser(app: tauri::AppHandle, url: String) -> Result<(), String> {
+    let parsed = Url::parse(&url).map_err(|_| "invalid url".to_string())?;
+    if parsed.scheme() != "https" || !model_host_allowed(&parsed) {
+        return Err("url is not on the approved model-site allowlist".into());
+    }
+    let label = "model-browser";
+    if let Some(w) = app.get_webview_window(label) {
+        w.navigate(parsed).map_err(|e| e.to_string())?;
+        let _ = w.set_focus();
+        return Ok(());
+    }
+    WebviewWindowBuilder::new(&app, label, WebviewUrl::External(parsed))
+        .title("Snapmaker Studio — Model Browser (approved sites only)")
+        .inner_size(1180.0, 820.0)
+        .on_navigation(|u| model_host_allowed(u))
+        .build()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
 
 #[derive(Default, Clone, Serialize, Deserialize)]
 struct ApiInfo {
@@ -129,7 +178,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .manage(ApiState(Mutex::new(ApiInfo::default())))
         .manage(SidecarProc(Mutex::new(None)))
-        .invoke_handler(tauri::generate_handler![get_api_info])
+        .invoke_handler(tauri::generate_handler![get_api_info, open_model_browser])
         .setup(|app| {
             let (info, child) = spawn_sidecar();
             *app.state::<ApiState>().0.lock().unwrap() = info;

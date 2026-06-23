@@ -61,5 +61,16 @@ low-permission WebviewWindow**, separate from the main app webview:
 
 ## Status
 
-v1 copy/IA shipped. The locked-WebView in-app browser is a future build (this
-note is the direction + guardrails for it).
+**v1 shipped — the in-app Model Browser is live.** In Find Models, "Browse trusted
+model sites" opens a dedicated, isolated Tauri WebviewWindow (label `model-browser`)
+restricted to the approved domains. The allowlist is enforced in Rust
+(`open_model_browser` validates the URL is https + on-allowlist; `on_navigation`
+blocks any later off-allowlist top-level navigation). The browser window is granted
+no capabilities, so remote pages have no Tauri IPC. In a plain browser (dev) it
+falls back to a normal tab.
+
+Download stays **manual** in v1: browse and download on the site, then "Open
+downloaded file" → Project Doctor. Download interception is deferred to v2 — it is
+not reliable cross-platform via WebView2/Tauri today. Third-party login redirects
+(e.g. signing in with Google) navigate off-allowlist and are blocked in-app; sign
+in on the site's own domain, or use those sites signed-out for browsing.

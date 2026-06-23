@@ -7,7 +7,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/layout";
-import { modelSearch } from "@/api";
+import { modelSearch, openModelBrowser } from "@/api";
 import { useMode } from "@/store/mode";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import {
@@ -26,6 +26,17 @@ export default function FindModels() {
   const [resp, setResp] = useState<SearchResponse | null>(null);
   const advanced = useMode((s) => s.mode) === "advanced";
   const openFile = useOpenFile();
+
+  // Open an approved site inside Studio's locked Model Browser. Falls back to a
+  // normal browser tab when not running in the desktop app (e.g. dev in a browser).
+  async function browse(siteId: string) {
+    const url = linkOutUrl(siteId, query);
+    try {
+      await openModelBrowser(url);
+    } catch {
+      window.open(url, "_blank", "noreferrer");
+    }
+  }
 
   const searchM = useMutation({
     mutationFn: () => modelSearch(query, { sources: filters.sources }),
@@ -78,15 +89,14 @@ export default function FindModels() {
       <Card><CardContent className="space-y-2 p-5">
         <p className="text-sm font-semibold">Browse trusted model sites</p>
         <p className="text-xs text-muted-foreground">
-          Opens the site in your browser. Download the STL or 3MF there, then open it
-          in Studio below — Studio never scrapes, imports, or bypasses a site's terms.
+          Opens inside Studio's Model Browser (approved sites only). Download the STL
+          or 3MF there, then open it in Studio below — Studio never scrapes, imports,
+          or bypasses a site's login or terms.
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           {BROWSE_PROVIDERS.map((p) => (
-            <Button key={p.id} size="sm" variant="secondary" asChild>
-              <a href={linkOutUrl(p.id, query)} target="_blank" rel="noreferrer">
-                <ExternalLink className="h-4 w-4" /> {p.label}
-              </a>
+            <Button key={p.id} size="sm" variant="secondary" onClick={() => browse(p.id)}>
+              <ExternalLink className="h-4 w-4" /> {p.label}
             </Button>
           ))}
         </div>
@@ -167,8 +177,9 @@ export default function FindModels() {
       )}
 
       <div className="rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">
-        <p>Studio opens these sites in your browser — it doesn't fetch, scrape, mirror, or
-           re-host their models, and doesn't bypass any login or paywall. Downloads and
+        <p>Studio opens these sites in an approved-sites-only Model Browser window — it
+           doesn't fetch, scrape, mirror, or re-host their models, and doesn't bypass any
+           login or paywall. Navigation off the approved sites is blocked. Downloads and
            one-click import are not available; download from the site, then open the file
            in Studio. {DISCLAIMER}</p>
       </div>

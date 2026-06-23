@@ -11,6 +11,12 @@ async function apiInfo(): Promise<ApiInfo> {
   return cached;
 }
 
+// Open the locked in-app Model Browser at an approved-site URL. Rust validates
+// the URL against the domain allowlist; this is a thin pass-through.
+export async function openModelBrowser(url: string): Promise<void> {
+  await invoke("open_model_browser", { url });
+}
+
 export async function health(): Promise<any> {
   const { port } = await apiInfo();
   const r = await fetch(`http://127.0.0.1:${port}/health`);

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   filterResults, linkOutUrl, importReasonLabel, DISCLAIMER,
   LINK_OUT_PROVIDERS, SANCTIONED_SOURCES, BROWSE_PROVIDERS, siteHomeUrl,
+  APPROVED_MODEL_DOMAINS, isApprovedModelUrl,
   type ModelSearchResult,
 } from "./modelSearch";
 
@@ -100,5 +101,29 @@ describe("13. Model Browser: all six approved sites are browsable (link-out)", (
       expect(linkOutUrl(p.id, "")).toBe(siteHomeUrl(p.id));
       expect(siteHomeUrl(p.id).startsWith("https://")).toBe(true);
     }
+  });
+});
+
+describe("14. Model Browser allowlist (in-app browser security boundary)", () => {
+  it("covers the six approved sites", () => {
+    expect([...APPROVED_MODEL_DOMAINS]).toEqual([
+      "printables.com", "thingiverse.com", "myminifactory.com",
+      "cults3d.com", "thangs.com", "makerworld.com",
+    ]);
+  });
+  it("approves every browse provider's start URL (and its subdomains)", () => {
+    for (const p of BROWSE_PROVIDERS) {
+      expect(isApprovedModelUrl(linkOutUrl(p.id, "cube"))).toBe(true);
+      expect(isApprovedModelUrl(siteHomeUrl(p.id))).toBe(true);
+    }
+    expect(isApprovedModelUrl("https://account.makerworld.com/login")).toBe(true);
+  });
+  it("blocks off-allowlist, non-https, and junk URLs", () => {
+    expect(isApprovedModelUrl("https://evil.com/malware")).toBe(false);
+    expect(isApprovedModelUrl("https://google.com")).toBe(false);
+    expect(isApprovedModelUrl("http://printables.com")).toBe(false);   // not https
+    expect(isApprovedModelUrl("https://notprintables.com")).toBe(false);
+    expect(isApprovedModelUrl("javascript:alert(1)")).toBe(false);
+    expect(isApprovedModelUrl("not a url")).toBe(false);
   });
 });

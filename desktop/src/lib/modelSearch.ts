@@ -61,6 +61,25 @@ export function siteHomeUrl(source: string): string {
   return BROWSE_PROVIDERS.find((p) => p.id === source)?.home ?? "";
 }
 
+// Mirror of the Rust allowlist (desktop/src-tauri/src/main.rs). This is a
+// frontend convenience check only — Rust is the real security boundary that
+// blocks off-allowlist navigation in the in-app Model Browser.
+export const APPROVED_MODEL_DOMAINS = [
+  "printables.com", "thingiverse.com", "myminifactory.com",
+  "cults3d.com", "thangs.com", "makerworld.com",
+] as const;
+
+export function isApprovedModelUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "https:") return false;
+    const h = u.hostname.toLowerCase();
+    return APPROVED_MODEL_DOMAINS.some((d) => h === d || h.endsWith(`.${d}`));
+  } catch {
+    return false;
+  }
+}
+
 export function linkOutUrl(source: string, query: string): string {
   const q = encodeURIComponent(query || "");
   if (!q) return siteHomeUrl(source);
