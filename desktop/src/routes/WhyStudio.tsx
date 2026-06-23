@@ -67,7 +67,7 @@ export default function WhyStudio() {
         </CardContent>
       </Card>
       <p className="text-center text-sm text-muted-foreground">
-        Orca slices. Fluidd monitors. <span className="font-semibold text-foreground">Studio tells you if it will print, what it costs, and what to sell it for</span> — in one screen.
+        Orca slices. Fluidd monitors. <span className="font-semibold text-foreground">Studio flags print risks, estimates the cost, and suggests a price</span> — in one screen.
       </p>
     </div>
   );

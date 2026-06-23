@@ -18,7 +18,7 @@ import { useToast } from "@/store/toast";
 import { cn } from "@/lib/utils";
 
 function eventLabel(action: string): string {
-  if (action === "convert") return "Made ready to print";
+  if (action === "convert") return "Made U1-ready";
   if (action === "doctor") return "Checked";
   return action;
 }
@@ -169,7 +169,7 @@ export default function Projects() {
               <span>{total} design{total === 1 ? "" : "s"}</span>
               <span>·</span>
               <CheckCircle2 className="h-3.5 w-3.5 text-ready" />
-              <span>{readyCount} ready to print</span>
+              <span>{readyCount} U1-ready</span>
               {total - readyCount > 0 && <span>· {total - readyCount} need prep</span>}
             </span>
           ) : (
@@ -236,7 +236,7 @@ export default function Projects() {
               <EmptyState
                 icon={FolderKanban}
                 title="Your design library starts here"
-                description="Every model you open is checked, scored, and kept here with its full history — so you always know what's ready to print."
+                description="Every model you open is checked, scored, and kept here with its full history — so you always know what's U1-ready."
                 action={<Button size="sm" onClick={() => nav("/")}><Plus className="h-4 w-4" /> Open your first model</Button>}
               />
             ) : (
