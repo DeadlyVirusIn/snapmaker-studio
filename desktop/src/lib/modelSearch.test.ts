@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   filterResults, linkOutUrl, importReasonLabel, DISCLAIMER,
-  LINK_OUT_PROVIDERS, SANCTIONED_SOURCES,
+  LINK_OUT_PROVIDERS, SANCTIONED_SOURCES, BROWSE_PROVIDERS, siteHomeUrl,
   type ModelSearchResult,
 } from "./modelSearch";
 
@@ -77,6 +77,28 @@ describe("12. link-out providers are separate from sanctioned search providers",
     expect(linkout).toEqual(["printables", "thangs", "makerworld"]);
     for (const id of linkout) {
       expect(SANCTIONED_SOURCES).not.toContain(id as unknown as (typeof SANCTIONED_SOURCES)[number]);
+    }
+  });
+});
+
+describe("13. Model Browser: all six approved sites are browsable (link-out)", () => {
+  it("lists the six approved sites", () => {
+    expect(BROWSE_PROVIDERS.map((p) => p.id)).toEqual([
+      "printables", "thingiverse", "myminifactory", "cults3d", "thangs", "makerworld",
+    ]);
+  });
+  it("builds a search URL per site for a query", () => {
+    expect(linkOutUrl("thingiverse", "cat toy")).toContain("thingiverse.com/search?q=cat%20toy");
+    expect(linkOutUrl("myminifactory", "cat toy")).toContain("myminifactory.com/search?query=cat%20toy");
+    expect(linkOutUrl("cults3d", "cat toy")).toContain("cults3d.com/en/search?q=cat%20toy");
+    for (const p of BROWSE_PROVIDERS) {
+      expect(linkOutUrl(p.id, "cat toy").startsWith("https://")).toBe(true);
+    }
+  });
+  it("falls back to the site home when there is no query (browse, not API)", () => {
+    for (const p of BROWSE_PROVIDERS) {
+      expect(linkOutUrl(p.id, "")).toBe(siteHomeUrl(p.id));
+      expect(siteHomeUrl(p.id).startsWith("https://")).toBe(true);
     }
   });
 });

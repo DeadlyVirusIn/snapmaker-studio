@@ -45,10 +45,30 @@ export const LINK_OUT_PROVIDERS = [
 export const DISCLAIMER =
   "Models are provided by their source websites. Respect each model's license and creator terms.";
 
+// Model Browser direction: the approved-site list a novice browses (link-out).
+// Every entry has a home page and a search URL — Studio only ever opens these in
+// the browser; it never scrapes, imports, or bypasses a site's terms.
+export const BROWSE_PROVIDERS = [
+  { id: "printables", label: "Printables", home: "https://www.printables.com" },
+  { id: "thingiverse", label: "Thingiverse", home: "https://www.thingiverse.com" },
+  { id: "myminifactory", label: "MyMiniFactory", home: "https://www.myminifactory.com" },
+  { id: "cults3d", label: "Cults3D", home: "https://cults3d.com" },
+  { id: "thangs", label: "Thangs", home: "https://thangs.com" },
+  { id: "makerworld", label: "MakerWorld", home: "https://makerworld.com" },
+] as const;
+
+export function siteHomeUrl(source: string): string {
+  return BROWSE_PROVIDERS.find((p) => p.id === source)?.home ?? "";
+}
+
 export function linkOutUrl(source: string, query: string): string {
   const q = encodeURIComponent(query || "");
+  if (!q) return siteHomeUrl(source);
   switch (source) {
     case "printables": return `https://www.printables.com/search/models?q=${q}`;
+    case "thingiverse": return `https://www.thingiverse.com/search?q=${q}&type=things`;
+    case "myminifactory": return `https://www.myminifactory.com/search?query=${q}`;
+    case "cults3d": return `https://cults3d.com/en/search?q=${q}`;
     case "thangs": return `https://thangs.com/search/${q}`;
     case "makerworld": return `https://makerworld.com/en/search/models?keyword=${q}`;
     default: return "";
