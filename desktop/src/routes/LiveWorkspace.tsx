@@ -15,6 +15,7 @@ import { useOpenFile } from "@/hooks/useOpenFile";
 import { StrategyPicker } from "@/components/StrategyPicker";
 import { DesignHealth } from "@/components/DesignHealth";
 import { mesh as apiMesh, insights as apiInsights, toolheadFit as apiToolheadFit } from "@/api";
+import { OrcaHandoff } from "@/components/OrcaHandoff";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { HeartPulse } from "lucide-react";
@@ -206,10 +207,9 @@ export default function LiveWorkspace() {
                     <AlertTriangle className="h-3.5 w-3.5" /> Saved, but validation reported issues
                   </p>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  Studio checks the model first. Snapmaker Orca slices it next.{" "}
-                  <a href="https://github.com/Snapmaker/OrcaSlicer/releases" target="_blank" rel="noreferrer" className="text-primary hover:underline">Install Snapmaker Orca</a>
-                </p>
+                <div className="pt-1">
+                  <OrcaHandoff outputPath={convert.data.output_path} />
+                </div>
               </CardContent>
             </Card>
           )}

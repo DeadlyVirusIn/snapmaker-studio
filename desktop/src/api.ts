@@ -17,6 +17,17 @@ export async function openModelBrowser(url: string): Promise<void> {
   await invoke("open_model_browser", { url });
 }
 
+// Snapmaker Orca handoff. detectOrca() returns the install path (or null); the UI
+// never displays that path. openInOrca() launches the verified Orca exe with the
+// prepared file — a one-way handoff. Studio does not slice and does not control Orca.
+export async function detectOrca(): Promise<string | null> {
+  return invoke<string | null>("detect_orca");
+}
+
+export async function openInOrca(path: string): Promise<void> {
+  await invoke("open_in_orca", { path });
+}
+
 export async function health(): Promise<any> {
   const { port } = await apiInfo();
   const r = await fetch(`http://127.0.0.1:${port}/health`);

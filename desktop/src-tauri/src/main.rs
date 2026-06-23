@@ -13,6 +13,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::io::{BufRead, BufReader};
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 
@@ -65,6 +66,66 @@ fn open_model_browser(app: tauri::AppHandle, url: String) -> Result<(), String> 
         .on_navigation(|u| model_host_allowed(u))
         .build()
         .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// ---- Snapmaker Orca handoff (one-way: Studio prepares, Orca slices) ----------
+//
+// Studio never slices and never controls Orca. These commands only (a) detect an
+// installed Snapmaker Orca at a verified location and (b) launch that exact
+// executable with the user's prepared 3MF as a single argument. No shell, no
+// extra flags, no slicing commands. A path is only ever reported/used if it
+// actually exists on disk — no guessed path is treated as truth.
+
+/// Known Snapmaker Orca install locations on Windows, most-trusted first.
+#[cfg(windows)]
+fn orca_candidates() -> Vec<PathBuf> {
+    let exe = "snapmaker-orca.exe";
+    let mut v = Vec::new();
+    // Verified default install (per-machine).
+    match std::env::var("ProgramFiles") {
+        Ok(pf) => v.push(Path::new(&pf).join("Snapmaker_Orca").join(exe)),
+        Err(_) => v.push(PathBuf::from(r"C:\Program Files").join("Snapmaker_Orca").join(exe)),
+    }
+    if let Ok(pf86) = std::env::var("ProgramFiles(x86)") {
+        v.push(Path::new(&pf86).join("Snapmaker_Orca").join(exe));
+    }
+    // Per-user install location.
+    if let Ok(la) = std::env::var("LOCALAPPDATA") {
+        v.push(Path::new(&la).join("Programs").join("Snapmaker_Orca").join(exe));
+    }
+    v
+}
+
+#[cfg(not(windows))]
+fn orca_candidates() -> Vec<PathBuf> {
+    Vec::new()
+}
+
+/// First candidate that is a real file on disk (never a guessed path).
+fn first_existing(candidates: &[PathBuf]) -> Option<PathBuf> {
+    candidates.iter().find(|p| p.is_file()).cloned()
+}
+
+/// Return the path to an installed Snapmaker Orca, or null if none is found.
+#[tauri::command]
+fn detect_orca() -> Option<String> {
+    first_existing(&orca_candidates()).map(|p| p.to_string_lossy().into_owned())
+}
+
+/// Hand the prepared 3MF to Snapmaker Orca: launch the verified Orca exe with the
+/// file as a single argument. The user drives slicing from there.
+#[tauri::command]
+fn open_in_orca(path: String) -> Result<(), String> {
+    let file = Path::new(path.trim());
+    if path.trim().is_empty() || !file.is_file() {
+        return Err("prepared-file-missing".into());
+    }
+    let orca = first_existing(&orca_candidates()).ok_or_else(|| "orca-not-found".to_string())?;
+    Command::new(&orca)
+        .arg(file)
+        .spawn()
+        .map_err(|e| format!("launch-failed: {e}"))?;
     Ok(())
 }
 
@@ -178,7 +239,12 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .manage(ApiState(Mutex::new(ApiInfo::default())))
         .manage(SidecarProc(Mutex::new(None)))
-        .invoke_handler(tauri::generate_handler![get_api_info, open_model_browser])
+        .invoke_handler(tauri::generate_handler![
+            get_api_info,
+            open_model_browser,
+            detect_orca,
+            open_in_orca
+        ])
         .setup(|app| {
             let (info, child) = spawn_sidecar();
             *app.state::<ApiState>().0.lock().unwrap() = info;
@@ -197,4 +263,44 @@ fn main() {
             }
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn first_existing_returns_none_when_no_candidate_exists() {
+        let candidates = vec![
+            PathBuf::from(r"C:\does\not\exist\snapmaker-orca.exe"),
+            PathBuf::from("/does/not/exist/snapmaker-orca"),
+        ];
+        assert!(first_existing(&candidates).is_none());
+    }
+
+    #[test]
+    fn first_existing_picks_the_first_real_file() {
+        // The test binary itself is guaranteed to exist on disk.
+        let real = std::env::current_exe().expect("current exe");
+        let candidates = vec![
+            PathBuf::from(r"C:\nope\snapmaker-orca.exe"),
+            real.clone(),
+        ];
+        assert_eq!(first_existing(&candidates), Some(real));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_candidates_include_verified_program_files_path() {
+        let c = orca_candidates();
+        assert!(!c.is_empty());
+        let tail = Path::new("Snapmaker_Orca").join("snapmaker-orca.exe");
+        assert!(c.iter().any(|p| p.ends_with(&tail)));
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn non_windows_has_no_candidates() {
+        assert!(orca_candidates().is_empty());
+    }
 }

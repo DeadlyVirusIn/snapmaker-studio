@@ -15,6 +15,7 @@ import { usePrinter } from "@/store/printer";
 import { useFilament } from "@/store/filament";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { useToast } from "@/store/toast";
+import { OrcaHandoff } from "@/components/OrcaHandoff";
 import { StrategyPicker } from "@/components/StrategyPicker";
 import { BusinessDoctors } from "@/components/BusinessDoctors";
 import { IntelligenceReport } from "@/components/IntelligenceReport";
@@ -150,9 +151,10 @@ export default function DesignInsights() {
             </div>
             <div className="text-left text-sm text-muted-foreground">
               <p className="mb-1 font-medium text-foreground">What now?</p>
-              <p>1. Copy the file path (or find it in the folder shown above)</p>
-              <p>2. Open it in Snapmaker Orca to slice and print</p>
+              <p>1. Open it in Snapmaker Orca to slice and print (one click below)</p>
+              <p>2. Or copy the file path and open it in Orca yourself</p>
             </div>
+            <OrcaHandoff outputPath={convert.data.output_path} />
             <div className="flex flex-wrap justify-center gap-2">
               <Button variant="secondary" onClick={() => copyPath(convert.data!.output_path)}>
                 <Copy className="h-4 w-4" /> Copy path
