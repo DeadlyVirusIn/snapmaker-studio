@@ -13,7 +13,7 @@ const VERDICT_STYLES: Record<Verdict, string> = {
 // Plain-language labels so cards never show raw engine enums to a novice.
 // The raw verdict is kept in title/aria-label for power users & debugging.
 const VERDICT_LABEL: Record<Verdict, string> = {
-  READY: "Print-ready",
+  READY: "Looks U1-ready",
   REPAIRABLE: "Fixable",
   CONVERTIBLE: "Needs prep",
   HIGH_RISK: "Needs review",

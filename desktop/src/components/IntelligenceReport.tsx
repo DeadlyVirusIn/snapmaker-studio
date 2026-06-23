@@ -14,6 +14,14 @@ function scoreColor(s?: number | null): string {
   return "--risk";                            // red/magenta
 }
 
+// Advisory readiness shown as a word, never a bare "100%" that reads as a guarantee.
+function readinessLabel(s?: number | null): string {
+  if (s == null) return "—";
+  if (s >= 75) return "Likely ready";
+  if (s >= 50) return "Uncertain";
+  return "Needs work";
+}
+
 export function IntelligenceReport({ filePath, host, data }: { filePath?: string; host?: string | null; data?: Report }) {
   const [open, setOpen] = useState(false);
   const { data: fetched, isLoading } = useQuery({
@@ -53,13 +61,26 @@ export function IntelligenceReport({ filePath, host, data }: { filePath?: string
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-          {metric("Will it print?", r.print_success_score != null ? `${r.print_success_score}%` : "—", scoreColor(r.print_success_score))}
-          {metric("Cost", r.cost != null ? `${cur}${r.cost}` : "—", "--doctor-cost")}
-          {metric("Sell for", r.suggested_price != null ? `${cur}${r.suggested_price}` : "—", "--stage-validate")}
-          {metric("Margin", r.margin_pct != null ? `${r.margin_pct}%` : "—", "--stage-output")}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {metric("Readiness (est.)", readinessLabel(r.print_success_score), scoreColor(r.print_success_score))}
+          {metric("Material cost", r.cost != null ? `${cur}${r.cost}` : "—", "--doctor-cost")}
           {metric("Printer", r.printer_compatibility ?? "Unknown")}
         </div>
+        <p className="text-[11px] text-muted-foreground opacity-70">
+          Advisory readiness estimate — not a guarantee of print success. Review settings before printing.
+        </p>
+
+        {/* Pricing is a secondary, opt-in estimate — not the headline on a readiness screen. */}
+        {(r.suggested_price != null || r.margin_pct != null) && (
+          <details className="rounded-md border border-border px-3 py-2 text-xs">
+            <summary className="cursor-pointer font-medium text-muted-foreground">Optional business estimate</summary>
+            <p className="mt-1 text-muted-foreground">
+              Estimated sell price {r.suggested_price != null ? `~${cur}${r.suggested_price}` : "—"}
+              {r.margin_pct != null ? ` · margin ~${r.margin_pct}%` : ""}.{" "}
+              <a href="/doctor/pricing" className="text-primary hover:underline">View pricing estimate</a>
+            </p>
+          </details>
+        )}
 
         {/* Expected Improvement — clearly an estimate */}
         {r.expected_improvement && r.expected_improvement.after_fixes > r.expected_improvement.current && (

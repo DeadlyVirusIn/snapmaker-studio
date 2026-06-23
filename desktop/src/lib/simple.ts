@@ -27,7 +27,7 @@ export function familyLabel(family: string | null | undefined): string {
 /** Verdict → friendly status (no READY/REPAIRABLE jargon). */
 export function verdictStatus(verdict: string | null | undefined): { icon: string; label: string; tone: Tone } {
   switch ((verdict || "").toUpperCase()) {
-    case "READY": return { icon: "✅", label: "Ready to print", tone: "ready" };
+    case "READY": return { icon: "✅", label: "Looks U1-ready", tone: "ready" };
     case "REPAIRABLE": return { icon: "🛠", label: "Needs a quick fix — we can do it", tone: "repairable" };
     case "CONVERTIBLE": return { icon: "✨", label: "We'll turn this into a print-ready project", tone: "convertible" };
     case "HIGH_RISK": return { icon: "⚠️", label: "Might not print — review needed", tone: "risk" };

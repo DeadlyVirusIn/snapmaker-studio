@@ -113,11 +113,12 @@ export default function FindModels() {
       )}
       {resp && shown.length === 0 && (
         <div className="rounded-md border border-border p-3 text-sm">
-          <p className="font-medium">Connect provider API keys to enable live search</p>
+          <p className="font-medium">Live in-app search is optional</p>
           <p className="mt-1 text-muted-foreground">
-            Live metadata search uses each provider's official API (Thingiverse,
-            MyMiniFactory, Cults3D) and needs an API key configured server-side.
-            Until then, use the link-out sites below to search on the source site.
+            Most users don't need API keys. Search the model sites directly with the
+            buttons below, download the 3MF/STL there, then open it in Studio to check
+            it for your U1. (Live in-app search needs provider API keys and isn't set
+            up in this beta.)
           </p>
         </div>
       )}

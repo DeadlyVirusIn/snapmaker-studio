@@ -46,6 +46,14 @@ export default function DoctorLanding() {
           )}
         </div>
 
+        {!file && (
+          <p className="text-xs text-muted-foreground">
+            Open a 3MF or STL to check it for your U1. New here? See the demo on the{" "}
+            <Link to="/" className="text-primary hover:underline">Dashboard</Link> to
+            see how Studio works — nothing leaves your computer.
+          </p>
+        )}
+
         {doc.id === "project" && (
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <GitCompareArrows className="h-3.5 w-3.5" />

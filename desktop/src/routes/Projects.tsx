@@ -25,7 +25,7 @@ function eventLabel(action: string): string {
 
 const FILTERS: { label: string; match: (v: string | null) => boolean }[] = [
   { label: "All", match: () => true },
-  { label: "Ready to print", match: (v) => v === "READY" },
+  { label: "Looks U1-ready", match: (v) => v === "READY" },
   { label: "Needs prep", match: (v) => v !== "READY" },
 ];
 

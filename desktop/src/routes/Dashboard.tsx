@@ -288,7 +288,7 @@ export default function Dashboard() {
                     <p><span className="text-2xl font-semibold text-foreground">{projects.length}</span> project{projects.length === 1 ? "" : "s"}</p>
                     {projects.length > 0 ? (
                       <p className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-ready" />{ready} ready to print · {needsWork} need prep
+                        <CheckCircle2 className="h-3.5 w-3.5 text-ready" />{ready} U1-ready · {needsWork} need prep
                       </p>
                     ) : (
                       <p>Nothing indexed yet.</p>

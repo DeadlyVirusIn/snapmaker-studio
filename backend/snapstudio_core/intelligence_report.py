@@ -172,10 +172,8 @@ def build(predict=None, bed_fit=None, mm=None, first_layer=None, health=None,
     # --- the one next action ---
     if biggest_risk:
         next_action = recommendations[0] if recommendations else f"Address: {biggest_risk['text']}"
-    elif avail["cost"] and price_v:
-        next_action = f"Looks good — prepare it and sell around {cur}{price_v}."
     else:
-        next_action = "Looks good — prepare it for your U1 and print."
+        next_action = "Looks U1-ready — review the recommendations, then prepare a clean copy before slicing."
 
     # --- supporting evidence (each Doctor's one-line status) ---
     supporting = []
@@ -203,10 +201,10 @@ def build(predict=None, bed_fit=None, mm=None, first_layer=None, health=None,
     bits = []
     if studio_score is not None:
         bits.append(f"Studio score {studio_score}/100")
-    if price_v is not None:
-        bits.append(f"sell ~{cur}{price_v}")
     if biggest_risk:
         bits.append(f"top risk: {biggest_risk['text']}")
+    else:
+        bits.append("no major blockers found")
     verdict = "; ".join(bits) + "." if bits else "Report ready."
 
     # --- Before vs After: "why not just use Orca?" ---
@@ -220,7 +218,7 @@ def build(predict=None, bed_fit=None, mm=None, first_layer=None, health=None,
     studio_line = (f"Studio caught {n_issues} issue{'s' if n_issues != 1 else ''} and offered "
                    f"{n_fixes} fix{'es' if n_fixes != 1 else ''} before you slice{money_bit}."
                    if n_issues else
-                   f"Studio confirmed it's print-ready{money_bit}.")
+                   f"Studio checked it and found no major blockers{money_bit}.")
     comparison = {
         "issues_found": n_issues,
         "fixes_offered": n_fixes,

@@ -87,7 +87,7 @@ def predict(readiness=None, toolfit=None, first_layer=None, health=None,
 
 def _verdict(likelihood: int, band: str) -> str:
     if band == "likely":
-        return f"Likely to print ({likelihood}%) — good to go."
+        return f"Likely to print ({likelihood}%) — review settings before printing."
     if band == "uncertain":
         return f"Could go either way ({likelihood}%) — clear the points below first."
     return f"Risky ({likelihood}%) — fix the points below before starting a long print."

@@ -2,7 +2,7 @@ import { Navigate, Link } from "react-router-dom";
 import {
   Boxes, FileBox, Loader2, Sparkles, AlertTriangle, RotateCw, Wand2,
   CheckCircle2, Plus, Star, StarHalf, Palette, Layers, ChevronDown,
-  Ruler, Gauge, ShieldCheck, Copy, Printer, Box, Coins, TrendingUp,
+  Ruler, Gauge, ShieldCheck, Copy, Printer, Box, Coins,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/store/session";
-import { insights as apiInsights, report as apiReport, mesh as apiMesh, printerCapabilities, firstLayer as apiFirstLayer, toolheadFit as apiToolheadFit, costEstimate as apiCostEstimate, costToPrice as apiCostToPrice, predictSuccess as apiPredictSuccess, bedFit as apiBedFit, mmDoctor as apiMmDoctor } from "@/api";
+import { insights as apiInsights, report as apiReport, mesh as apiMesh, printerCapabilities, firstLayer as apiFirstLayer, toolheadFit as apiToolheadFit, costEstimate as apiCostEstimate, predictSuccess as apiPredictSuccess, bedFit as apiBedFit, mmDoctor as apiMmDoctor } from "@/api";
 import { usePrinter } from "@/store/printer";
 import { useFilament } from "@/store/filament";
 import { useOpenFile } from "@/hooks/useOpenFile";
@@ -106,12 +106,6 @@ export default function DesignInsights() {
   const { data: cost } = useQuery({
     queryKey: ["cost", file.path, filamentPrice, filamentCurrency],
     queryFn: () => apiCostEstimate(file.path, filamentPrice, filamentCurrency),
-    enabled: doctor.status === "done", retry: false, staleTime: 30000,
-  });
-  // Cost-to-Price: what it truly costs to make and what it could sell for.
-  const { data: price } = useQuery({
-    queryKey: ["price", file.path, filamentPrice, filamentCurrency],
-    queryFn: () => apiCostToPrice(file.path, { pricePerKg: filamentPrice, currency: filamentCurrency }),
     enabled: doctor.status === "done", retry: false, staleTime: 30000,
   });
   // Multi-Material Doctor: one verdict for a multicolour U1 print.
@@ -242,12 +236,12 @@ export default function DesignInsights() {
             <Card>
               <CardContent className="space-y-2 p-5">
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm font-semibold"><Gauge className="h-4 w-4 text-primary" /> Will it print?</span>
+                  <span className="flex items-center gap-2 text-sm font-semibold"><Gauge className="h-4 w-4 text-primary" /> Print readiness <span className="text-[11px] font-normal text-muted-foreground">(estimate)</span></span>
                   <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-bold ${
                     predict.band === "likely" ? "bg-ready/10 text-ready"
                       : predict.band === "uncertain" ? "bg-repairable/10 text-repairable" : "bg-risk/10 text-risk"}`}>
-                    <span className="tabular-nums">{predict.likelihood}%</span>
-                    <span className="capitalize">{predict.band}</span>
+                    {predict.band !== "likely" && <span className="tabular-nums">{predict.likelihood}%</span>}
+                    <span className="capitalize">{predict.band === "likely" ? "Likely ready" : predict.band}</span>
                   </span>
                 </div>
                 {predict.verdict && <p className="text-sm text-muted-foreground">{predict.verdict}</p>}
@@ -347,15 +341,8 @@ export default function DesignInsights() {
                     <span className="text-xs text-muted-foreground">({cost.grams} g at {cost.currency}{cost.price_per_kg}/kg)</span>
                   </li>
                 )}
-                {price?.available && price.suggested_price != null && (
-                  <li className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-ready" />
-                    Could sell for ~{price.currency}{price.suggested_price}
-                    <span className="text-xs text-muted-foreground">
-                      ({price.currency}{price.true_cost} cost · ~{price.currency}{price.margin} profit{price.time_known ? "" : ", material + margin"})
-                    </span>
-                  </li>
-                )}
+                {/* Pricing intentionally lives only in the dedicated Cost / Pricing / Profit
+                    section below — not as a hero line on the readiness summary. */}
                 {/* Advanced detail kept available but out of the novice's first glance */}
                 {showMore && (
                   <>

@@ -109,3 +109,30 @@ def test_release_notes_have_no_internal_tooling_terms(rel):
     text = open(path, encoding="utf-8").read().lower()
     for label, pattern in _BANNED_INTERNAL:
         assert not re.search(pattern, text), f"internal/tooling term '{label}' found in {rel}"
+
+
+# --- Generated Doctor copy must stay advisory (no guarantees, pricing not the
+#     headline on a readiness result). Guards intelligence_report + success_predict. ---
+from snapstudio_core import intelligence_report as _ir, success_predict as _sp
+
+_BANNED_READINESS = ["good to go", "confirmed it's print-ready", "sell around"]
+
+
+def test_intelligence_report_copy_is_advisory():
+    clean = _ir.build(
+        predict={"available": True, "likelihood": 100, "band": "likely", "factors": []},
+        cost={"available": True, "true_cost": 0.21, "suggested_price": 0.37,
+              "margin": 0.16, "margin_pct": 43.0, "currency": "$", "time_known": True},
+        profit={"available": True, "profit_per_print": 0.16, "margin_pct": 43.0},
+    )
+    blob = " ".join(str(clean.get(k, "")) for k in ("next_action", "verdict")).lower()
+    blob += " " + str(_ir.demo().get("next_action", "")).lower()
+    for p in _BANNED_READINESS:
+        assert p not in blob, f"banned readiness phrase '{p}' in generated report copy"
+    # Selling price must not be the primary verdict on the readiness result.
+    assert "sell ~" not in str(clean.get("verdict", "")).lower()
+
+
+def test_success_predict_verdict_not_overconfident():
+    v = _sp.predict(readiness={"ready": True, "warnings": []})["verdict"].lower()
+    assert "good to go" not in v
