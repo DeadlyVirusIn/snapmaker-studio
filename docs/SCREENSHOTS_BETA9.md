@@ -1,4 +1,7 @@
-# Screenshots Checklist (beta.10)
+# Screenshots Checklist (ARCHIVED — beta.9, not current beta.10)
+
+> **ARCHIVED — beta.9, not current beta.10.** These shots are from the beta.9 UI.
+> The current set is in [SCREENSHOTS_BETA10.md](SCREENSHOTS_BETA10.md).
 
 Capture these screenshots for the beta.10 judge/demo package. Use a sample U1 3MF
 (see the repo's `examples/` folder) so no private or commercial model files are

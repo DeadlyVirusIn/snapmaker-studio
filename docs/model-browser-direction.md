@@ -1,5 +1,11 @@
 # Model Discovery → "Model Browser" direction
 
+> **Direction / future doc — not a description of current beta.10 behavior.** Any
+> live API search, "Import to Studio," or one-click download ideas here are
+> future/aspirational and are **not shipped in beta.10**. Beta.10 ships an
+> approved-site Model Browser with manual download/open, no API keys, and no
+> auto-import.
+
 Product decision: Model Discovery is an **approved-site browser**, not an
 API-key search. Beginners browse trusted 3D-model sites, download an STL/3MF from
 the site, then open it in Studio. No API keys in the beginner flow, no scraping,

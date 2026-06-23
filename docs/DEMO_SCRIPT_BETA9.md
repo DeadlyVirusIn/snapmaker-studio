@@ -1,4 +1,7 @@
-# Snapmaker Studio — Demo Script (beta.10)
+# Snapmaker Studio — Demo Script (ARCHIVED — beta.9, not current beta.10)
+
+> **ARCHIVED — beta.9, not current beta.10.** May not match the current beta.10 UI.
+> See [JUDGE_OVERVIEW.md](JUDGE_OVERVIEW.md) for the current demo flow.
 
 A 5–7 minute walkthrough for judges and first-time viewers. Everything runs
 locally; nothing is uploaded. Findings are advisory readiness estimates, not

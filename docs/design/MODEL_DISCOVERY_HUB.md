@@ -1,5 +1,10 @@
 # Model Discovery Hub — Feasibility Audit (research only, not implemented)
 
+> **FUTURE / ASPIRATIONAL — NOT shipped in beta.10.** Any API access, auto-import,
+> or download-interception ideas in this document are research only. Beta.10 ships
+> an approved-site **Model Browser** with manual download/open, **no API keys**, and
+> **no auto-import**. Do not read this doc as a description of current behavior.
+
 > Status: **research/plan only. No code, no scraping, no downloads.** Decide scope
 > before any implementation. Sources verified June 2026; APIs and ToS change —
 > re-verify before building.
