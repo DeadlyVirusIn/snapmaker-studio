@@ -257,7 +257,7 @@ export default function LiveWorkspace() {
                       <div className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-border bg-muted/40 px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                         <span>Metric</span><span>Original</span><span>U1-ready</span>
                       </div>
-                      {([["Objects", "object_count"], ["Plates", "plate_count"], ["Filaments", "filament_count"], ["Painted △", "painted_triangles"]] as [string, string][]).map(([label, key]) => {
+                      {([["Objects", "object_count"], ["Plates", "plate_count"], ["Filaments", "filament_count"], ["Painted faces", "painted_triangles"]] as [string, string][]).map(([label, key]) => {
                         const v = diff.data[key] || [0, 0];
                         return (
                           <div key={key} className="grid grid-cols-[1fr_auto_auto] gap-3 px-3 py-2">

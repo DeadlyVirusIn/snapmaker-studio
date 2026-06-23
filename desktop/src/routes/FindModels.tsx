@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/layout";
 import { modelSearch } from "@/api";
+import { useMode } from "@/store/mode";
 import {
   filterResults, linkOutUrl, importReasonLabel, DISCLAIMER, LINK_OUT_PROVIDERS,
   SANCTIONED_SOURCES, type SearchFilters, type SearchResponse, type ModelSource,
@@ -37,6 +38,7 @@ export default function FindModels() {
     });
   }
 
+  const advanced = useMode((s) => s.mode) === "advanced";
   const shown = resp ? filterResults(resp.results, filters) : [];
 
   const chip = (on: boolean) =>
@@ -60,19 +62,21 @@ export default function FindModels() {
             {searchM.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} Search
           </Button>
         </div>
-        {/* filters */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button className={chip(!!filters.freeOnly)} onClick={() => setFilters((f) => ({ ...f, freeOnly: !f.freeOnly }))}>Free only</button>
-          <button className={chip(!!filters.commercialUse)} onClick={() => setFilters((f) => ({ ...f, commercialUse: !f.commercialUse }))}>Commercial-use</button>
-          <button className={chip(!!filters.multiColor)} onClick={() => setFilters((f) => ({ ...f, multiColor: !f.multiColor }))}>Multi-color</button>
-          {FORMATS.map((fmt) => (
-            <button key={fmt} className={chip((filters.formats ?? []).includes(fmt))} onClick={() => toggleFormat(fmt)}>{fmt}</button>
-          ))}
-          <span className="mx-1 text-[11px] text-muted-foreground">source:</span>
-          {SANCTIONED_SOURCES.map((s) => (
-            <button key={s} className={chip((filters.sources ?? []).includes(s))} onClick={() => toggleSource(s)}>{s}</button>
-          ))}
-        </div>
+        {/* filters — advanced only; novices just search + link out */}
+        {advanced && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button className={chip(!!filters.freeOnly)} onClick={() => setFilters((f) => ({ ...f, freeOnly: !f.freeOnly }))}>Free only</button>
+            <button className={chip(!!filters.commercialUse)} onClick={() => setFilters((f) => ({ ...f, commercialUse: !f.commercialUse }))}>Commercial-use</button>
+            <button className={chip(!!filters.multiColor)} onClick={() => setFilters((f) => ({ ...f, multiColor: !f.multiColor }))}>Multi-color</button>
+            {FORMATS.map((fmt) => (
+              <button key={fmt} className={chip((filters.formats ?? []).includes(fmt))} onClick={() => toggleFormat(fmt)}>{fmt}</button>
+            ))}
+            <span className="mx-1 text-[11px] text-muted-foreground">source:</span>
+            {SANCTIONED_SOURCES.map((s) => (
+              <button key={s} className={chip((filters.sources ?? []).includes(s))} onClick={() => toggleSource(s)}>{s}</button>
+            ))}
+          </div>
+        )}
       </CardContent></Card>
 
       {/* warnings (e.g. provider disabled — no API key) */}
@@ -100,11 +104,13 @@ export default function FindModels() {
                 <Button size="sm" variant="secondary" asChild>
                   <a href={r.source_url} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /> Open on source site</a>
                 </Button>
-                <Button size="sm" disabled title={importReasonLabel(r.reason_import_not_allowed)}>
-                  <Lock className="h-4 w-4" /> Import to Studio
-                </Button>
+                {advanced && (
+                  <Button size="sm" disabled title={importReasonLabel(r.reason_import_not_allowed)}>
+                    <Lock className="h-4 w-4" /> Import to Studio
+                  </Button>
+                )}
               </div>
-              {!r.import_allowed && (
+              {advanced && !r.import_allowed && (
                 <p className="text-[11px] text-muted-foreground">{importReasonLabel(r.reason_import_not_allowed)}</p>
               )}
             </CardContent></Card>

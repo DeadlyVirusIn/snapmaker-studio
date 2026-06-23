@@ -47,6 +47,17 @@ export const PRIMARY_NAV: NavItem[] = [
   { to: "/batch", label: "Batch Prepare", icon: Wand2 },
 ];
 
+// Simple mode IA: a short beginner path up top, the rest tucked under "More
+// tools". Advanced mode keeps the full PRIMARY_NAV. Derived from PRIMARY_NAV so
+// there's still one source of truth (and routes stay validated).
+const BEGINNER_ROUTES: string[] = [
+  "/", "/start", doctorRoute("project"), "/find-models", "/projects",
+];
+export const BEGINNER_NAV: NavItem[] =
+  BEGINNER_ROUTES.map((r) => PRIMARY_NAV.find((n) => n.to === r)!);
+export const MORE_NAV: NavItem[] =
+  PRIMARY_NAV.filter((n) => !BEGINNER_ROUTES.includes(n.to));
+
 // Secondary — supporting / about / help. "Why Studio?" is here on purpose so it
 // supports the story without interrupting the task flow.
 export const SECONDARY_NAV: NavItem[] = [

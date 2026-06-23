@@ -5,7 +5,7 @@ import type { CompatibilityFinding } from "@/api";
 
 export const COMPAT_COPY = {
   title: "Compatibility Doctor",
-  subtitle: "Checks a 3MF for common Snapmaker U1 / Orca / Snorca problems — read-only.",
+  subtitle: "Checks a 3MF for common Snapmaker U1 and Orca slicer problems — read-only.",
   cleanTitle: "No known compatibility issues",
   intro: "Open a 3MF project and Studio reads its settings to spot issues before you slice.",
   // Explicitly NOT an auto-fix claim:
