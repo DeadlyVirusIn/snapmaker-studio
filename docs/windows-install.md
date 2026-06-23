@@ -25,8 +25,8 @@ Before installing, confirm the file's SHA256 checksum matches the value below.
 
 ```
 File:    Snapmaker.Studio_0.4.0-beta.10_x64-setup.exe
-Size:    <published with the v0.4.0-beta.10 release>
-SHA256:  <published with the v0.4.0-beta.10 release>
+Size:    16,077,541 bytes
+SHA256:  b66c4544238dbc58e2fb86b5c00abc643011f29f88e25332f821dbe9b89240ab
 ```
 
 Check it in PowerShell:
