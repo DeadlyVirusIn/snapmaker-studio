@@ -94,6 +94,17 @@ Action items (read-only audit, no writer changes without tests):
 
 Result: Studio's U1 bed/toolhead/profile-name assumptions align with the Orca U1 profile. No bed/toolhead correction needed for beta.10.
 
+### Verified install (this machine)
+
+- Executable: `C:\Program Files\Snapmaker_Orca\snapmaker-orca.exe` (registry name
+  "Snapmaker_Orca"). This is the real, verified path the v2 "Open in Snapmaker
+  Orca" launch should use (do not hardcode a different guess; detect via the
+  registry/known path).
+- Smoke launch: opening a Studio-exported 3MF
+  (`examples/sample_cube_SnapmakerU1_SnapmakerU1.3mf`) with that exe launched
+  Snapmaker Orca successfully (process stayed alive, no error-exit). Visual
+  confirmation of load/plates/colours/slice is the operator's to verify on screen.
+
 ## Manual Windows smoke test (REQUIRED before publishing beta.10)
 
 Cannot be run in this environment (no Snapmaker Orca install, no GUI). Run on a
