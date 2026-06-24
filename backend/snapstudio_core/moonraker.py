@@ -263,3 +263,90 @@ def capabilities(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> d
         "bed_mm": bed,
         "klipper_objects": objects,   # raw object list — capability manifest for firmware_caps
     }
+
+
+# ---------------------------------------------------------------------------
+# Printer Hub Phase B — CONTROL (user-initiated only).
+#
+# These functions issue Moonraker POSTs that move the machine. They are ONLY ever
+# called from an explicit, user-confirmed action in the Studio UI (start/pause/
+# resume/cancel/upload/emergency-stop). Nothing here runs automatically, on a
+# timer, or as a side effect of monitoring. The UI is the safety gate: it must
+# confirm start/cancel/emergency-stop before the corresponding function is called.
+# LAN-trusted Moonraker (no auth) — same trust boundary as the read-only client.
+# ---------------------------------------------------------------------------
+
+def _post(host: str, port: int, path: str, timeout: float, body: bytes | None = None,
+          content_type: str | None = None) -> dict:
+    """User-initiated HTTP POST against Moonraker. Raises on failure."""
+    url = f"http://{host}:{port}{path}"
+    headers = {"Content-Type": content_type} if content_type else {}
+    req = urllib.request.Request(url, data=body or b"", method="POST", headers=headers)
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        raw = r.read()
+        try:
+            return json.loads(raw) if raw else {"result": "ok"}
+        except Exception:
+            return {"result": "ok"}
+
+
+def pause(host: str, port: int = DEFAULT_PORT, timeout: float = 5.0) -> dict:
+    """Pause the running print (safe, reversible). POST /printer/print/pause."""
+    return {"ok": True, "action": "pause", "result": _post(host, port, "/printer/print/pause", timeout).get("result")}
+
+
+def resume(host: str, port: int = DEFAULT_PORT, timeout: float = 5.0) -> dict:
+    """Resume a paused print. POST /printer/print/resume."""
+    return {"ok": True, "action": "resume", "result": _post(host, port, "/printer/print/resume", timeout).get("result")}
+
+
+def cancel(host: str, port: int = DEFAULT_PORT, timeout: float = 5.0) -> dict:
+    """Cancel the running print (NOT reversible — UI must confirm). POST /printer/print/cancel."""
+    return {"ok": True, "action": "cancel", "result": _post(host, port, "/printer/print/cancel", timeout).get("result")}
+
+
+def start(host: str, filename: str, port: int = DEFAULT_PORT, timeout: float = 5.0) -> dict:
+    """Start printing a gcode file ALREADY on the printer (UI must confirm + show the
+    filename and a 'printer clear/loaded/ready' warning). POST /printer/print/start?filename=."""
+    from urllib.parse import quote
+    path = "/printer/print/start?filename=" + quote(filename.lstrip("/"))
+    return {"ok": True, "action": "start", "filename": filename,
+            "result": _post(host, port, path, timeout).get("result")}
+
+
+def emergency_stop(host: str, port: int = DEFAULT_PORT, timeout: float = 5.0) -> dict:
+    """Emergency stop — cut heaters + halt motion immediately (UI must confirm on a
+    dedicated screen). POST /printer/emergency_stop. Klipper then needs FIRMWARE_RESTART."""
+    return {"ok": True, "action": "emergency_stop",
+            "result": _post(host, port, "/printer/emergency_stop", timeout).get("result")}
+
+
+def job_queue(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:
+    """Read-only: the Moonraker job queue (list + state). GET /server/job_queue/status."""
+    res = _get(host, port, "/server/job_queue/status", timeout).get("result", {}) or {}
+    jobs = res.get("queued_jobs", []) or []
+    return {"queue_state": res.get("queue_state"),
+            "jobs": [{"filename": j.get("filename"), "id": j.get("job_id")} for j in jobs],
+            "count": len(jobs)}
+
+
+def upload_gcode(host: str, file_path: str, port: int = DEFAULT_PORT, timeout: float = 60.0) -> dict:
+    """Upload a sliced .gcode to the printer (user-initiated). POST multipart /server/files/upload.
+    Only .gcode/.g files; the file is read from a local path the user chose."""
+    import os
+    name = os.path.basename(file_path)
+    ext = os.path.splitext(name)[1].lower()
+    if ext not in (".gcode", ".g", ".gco"):
+        raise ValueError("only sliced gcode (.gcode/.g) can be uploaded to the printer")
+    with open(file_path, "rb") as f:
+        content = f.read()
+    boundary = "----snapstudioupload"
+    pre = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; "
+           f"filename=\"{name}\"\r\nContent-Type: application/octet-stream\r\n\r\n").encode()
+    post = f"\r\n--{boundary}--\r\n".encode()
+    body = pre + content + post
+    res = _post(host, port, "/server/files/upload", timeout, body=body,
+                content_type=f"multipart/form-data; boundary={boundary}")
+    item = res.get("item", {}) if isinstance(res, dict) else {}
+    return {"ok": True, "action": "upload", "filename": name,
+            "path": item.get("path", name), "size": len(content)}

@@ -10,6 +10,8 @@ import { PageHeader } from "@/components/ui/layout";
 import { printerDiscover, printerStatus, printerHistory, printerDiagnostics, printerFileMetadata, printerFailureInsights, printerHealth, printerFirmware } from "@/api";
 import { usePrinter } from "@/store/printer";
 import { useFilament } from "@/store/filament";
+import { PrinterControls } from "@/components/PrinterControls";
+import { toPrintState } from "@/lib/printerControl";
 
 function fmtDur(s: number | null | undefined): string {
   if (s == null) return "—";
@@ -194,11 +196,20 @@ export default function Printers() {
                     <div key={t.index} className="rounded-md border border-border p-2"><p className="flex items-center gap-1 text-xs text-muted-foreground"><Thermometer className="h-3 w-3" /> Tool {t.index + 1}</p><p>{t.temperature ?? "—"}° / {t.target ?? "—"}°</p></div>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground">Live, read-only — Studio never changes your printer.</p>
+                <p className="text-xs text-muted-foreground">Live status — updates automatically.</p>
               </>
             )}
           </CardContent>
         </Card>
+      )}
+
+      {connected && (
+        <PrinterControls
+          host={connected}
+          printState={toPrintState(state)}
+          online={!!status.data && !status.isError}
+          onChanged={() => { status.refetch(); hist.refetch(); }}
+        />
       )}
 
       {connected && health.data?.available && health.data.score != null && (

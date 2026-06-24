@@ -367,6 +367,38 @@ def _make_handler(token: str):
                     self._send(400, {"error": str(e)})
                 except Exception:
                     self._send(500, {"error": "internal error"})
+            elif self.path in ("/printer/control/pause", "/printer/control/resume",
+                               "/printer/control/cancel", "/printer/control/start",
+                               "/printer/control/emergency_stop", "/printer/job_queue",
+                               "/printer/upload_gcode"):
+                # Printer Hub Phase B control. The Studio UI is the safety gate: it
+                # confirms start/cancel/emergency-stop before calling these. The backend
+                # only relays the user-confirmed action to Moonraker.
+                host = data.get("host")
+                if not host:
+                    self._send(400, {"error": "missing 'host'"})
+                    return
+                port = rv.require_port(data)
+                try:
+                    if self.path == "/printer/control/pause":
+                        out = service.printer_pause(host, port)
+                    elif self.path == "/printer/control/resume":
+                        out = service.printer_resume(host, port)
+                    elif self.path == "/printer/control/cancel":
+                        out = service.printer_cancel(host, port)
+                    elif self.path == "/printer/control/start":
+                        out = service.printer_start(host, data.get("filename"), port)
+                    elif self.path == "/printer/control/emergency_stop":
+                        out = service.printer_emergency_stop(host, port)
+                    elif self.path == "/printer/job_queue":
+                        out = service.printer_job_queue(host, port)
+                    else:  # /printer/upload_gcode
+                        out = service.printer_upload_gcode(host, data.get("path"), port)
+                    self._send(200, out)
+                except (ValidationError, ValueError) as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(502, {"error": "could not reach the printer or it refused the command"})
             elif self.path == "/first_layer":
                 path = data.get("path")
                 if not path:

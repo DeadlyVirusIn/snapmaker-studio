@@ -710,6 +710,38 @@ export function printerCapabilities(host: string, port = 7125): Promise<PrinterC
   return printerPost("/printer/capabilities", { host, port });
 }
 
+// ---- Printer Hub Phase B: control (every start/cancel/e-stop is confirmed in the UI) ----
+export interface PrinterControlResult { ok?: boolean; action?: string; result?: string; filename?: string; path?: string; size?: number; }
+export interface PrinterQueue { queue_state: string | null; jobs: { filename: string | null; id: string | null }[]; count: number; }
+
+export function printerPause(host: string, port = 7125): Promise<PrinterControlResult> {
+  return printerPost("/printer/control/pause", { host, port });
+}
+export function printerResume(host: string, port = 7125): Promise<PrinterControlResult> {
+  return printerPost("/printer/control/resume", { host, port });
+}
+export function printerCancel(host: string, port = 7125): Promise<PrinterControlResult> {
+  return printerPost("/printer/control/cancel", { host, port });
+}
+export function printerStartPrint(host: string, filename: string, port = 7125): Promise<PrinterControlResult> {
+  return printerPost("/printer/control/start", { host, filename, port });
+}
+export function printerEmergencyStop(host: string, port = 7125): Promise<PrinterControlResult> {
+  return printerPost("/printer/control/emergency_stop", { host, port });
+}
+export function printerJobQueue(host: string, port = 7125): Promise<PrinterQueue> {
+  return printerPost("/printer/job_queue", { host, port });
+}
+export function printerUploadGcode(host: string, path: string, port = 7125): Promise<PrinterControlResult> {
+  return printerPost("/printer/upload_gcode", { host, path, port });
+}
+
+// Native picker limited to sliced gcode, for uploading to the printer.
+export async function openGcodeDialog(): Promise<string | null> {
+  const picked = await open({ multiple: false, filters: [{ name: "Sliced gcode", extensions: ["gcode", "g", "gco"] }] });
+  return typeof picked === "string" ? picked : null;
+}
+
 export async function printerDiscover(hosts?: string[]): Promise<PrinterProbe[]> {
   const { port, token } = await apiInfo();
   const r = await fetch(`http://127.0.0.1:${port}/printer/discover`, {

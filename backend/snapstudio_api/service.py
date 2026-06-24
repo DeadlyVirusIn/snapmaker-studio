@@ -207,6 +207,56 @@ def printer_bed_mesh(host: str, port: int = 7125) -> dict:
     return moonraker.bed_mesh(host, port)
 
 
+# ---- Printer Hub Phase B: control (user-initiated; UI confirms start/cancel/e-stop) ----
+
+def printer_pause(host: str, port: int = 7125) -> dict:
+    """Pause the running print (safe, reversible)."""
+    from snapstudio_core import moonraker
+    return moonraker.pause(host, port)
+
+
+def printer_resume(host: str, port: int = 7125) -> dict:
+    """Resume a paused print."""
+    from snapstudio_core import moonraker
+    return moonraker.resume(host, port)
+
+
+def printer_cancel(host: str, port: int = 7125) -> dict:
+    """Cancel the running print (the UI must confirm before calling this)."""
+    from snapstudio_core import moonraker
+    return moonraker.cancel(host, port)
+
+
+def printer_start(host: str, filename: str, port: int = 7125) -> dict:
+    """Start printing a gcode file already on the printer (the UI must confirm + show
+    the filename before calling this)."""
+    from snapstudio_core import moonraker
+    if not filename:
+        raise ValueError("missing 'filename'")
+    return moonraker.start(host, filename, port)
+
+
+def printer_emergency_stop(host: str, port: int = 7125) -> dict:
+    """Emergency stop — cut heaters + halt motion (the UI must confirm on a dedicated
+    screen before calling this)."""
+    from snapstudio_core import moonraker
+    return moonraker.emergency_stop(host, port)
+
+
+def printer_job_queue(host: str, port: int = 7125) -> dict:
+    """Read-only: the Moonraker job queue."""
+    from snapstudio_core import moonraker
+    return moonraker.job_queue(host, port)
+
+
+def printer_upload_gcode(host: str, path: str, port: int = 7125) -> dict:
+    """Upload a sliced gcode file (chosen by the user) to the printer."""
+    from snapstudio_core import moonraker
+    if not path:
+        raise ValueError("missing 'path'")
+    return moonraker.upload_gcode(host, path, port)
+
+
 def first_layer(path: str, host: str | None = None, port: int = 7125) -> dict:
     """First-Layer Intelligence: fuse the design's footprint/stability with the printer's
     REAL measured bed (when a host is reachable) into plain-language first-layer findings.
