@@ -1,5 +1,10 @@
 # Printer Hub — Feasibility Report (design only, no implementation)
 
+> **Historical design note (superseded).** Printer Hub has since shipped — monitoring +
+> user-confirmed control + send — starting in beta.14, and was hardware-verified on a real
+> Snapmaker U1 in beta.16.x (see [PRINTER_HUB_VERIFICATION.md](../PRINTER_HUB_VERIFICATION.md)).
+> The "no printer code" status below reflects this document's original 2026-06-18 date only.
+
 **Date:** 2026-06-18 · **Status:** research/design only — no printer code written.
 
 ## Context
