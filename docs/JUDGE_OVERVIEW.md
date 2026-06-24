@@ -47,8 +47,12 @@ print before opening the slicer.
   Studio-owned browser window (no Chrome/Edge); download, then open in Studio.
 - **Printer Hub — monitor + control + send (beta.14)** — discover the U1, watch live
   status/temps/toolheads, and (user-confirmed) pause/resume/cancel/start, upload sliced
-  gcode, emergency stop. Studio never auto-starts. Hardware verification: manual
-  checklist (no U1 in CI) — see [`PRINTER_HUB_VERIFICATION.md`](PRINTER_HUB_VERIFICATION.md).
+  gcode, emergency stop. Studio never auto-starts. **Hardware-verified on a real U1
+  (2026-06-24):** read-only monitoring (live state, bed + 4 toolhead temps, bed volume,
+  firmware, 16-job history) and the gcode upload/send path (no print started) were
+  confirmed against a physical Snapmaker U1; start/cancel/emergency-stop are
+  contract-tested and left to the operator. See
+  [`PRINTER_HUB_VERIFICATION.md`](PRINTER_HUB_VERIFICATION.md).
 - **Plate Color Remap 2D preview (beta.15)** — visual plate map; full 3D render is future.
 - **Print Quality Doctor evidence (beta.15)** — symptom advice grounded in the user's file.
 - **Source Check (beta.15)** — detects the source slicer (STL/3MF/Bambu-family/Prusa/Cura),
