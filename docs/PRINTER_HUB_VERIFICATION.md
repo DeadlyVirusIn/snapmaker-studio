@@ -9,21 +9,28 @@ Snapmaker U1 (firmware 1.4.1.6) on 2026-06-24.
 
 ## Verification summary
 
-**✅ HARDWARE-VERIFIED on a real U1** — connection by IP (mDNS fallback), live printer
-state, bed + toolhead temperatures, all 4 toolheads, bed volume, firmware version, job
-history, gcode **upload/send** (no print started), and **start / pause / cancel** (on a
-supervised, no-motion/no-heat dwell-only test gcode).
+**✅ HARDWARE-VERIFIED on a real U1** (2026-06-24, firmware 1.4.1.6) — connection by IP
+(mDNS fallback), live printer state, bed + toolhead temperatures, all 4 toolheads, bed
+volume, firmware version, job history, gcode **upload/send** (no print started), and the
+full **start / pause / resume / cancel** control loop. Resume was verified on a real,
+**supervised, homed cold-motion print**: `printing → paused → printing → cancelled →
+ready`, no anomaly. (An earlier "resume anomaly" was caused by an *unhomed/no-motion*
+synthetic test — an invalid resume context — plus a too-short request timeout, not an app
+endpoint bug.)
 
 **✅ CODE / CONTRACT-VERIFIED** — Emergency Stop now uses canonical `M112` via
 `/printer/gcode/script` (that endpoint confirmed **HTTP 200** on the real U1 after
 `/printer/emergency_stop` was found to **404**); offline-blocks-all-controls gating; and
 start/cancel/emergency-stop confirmation gating (unit-tested).
 
-**◻ NOT FULLY VERIFIED (pending)** — **resume** on a *normal, homed, heated* print (the
-no-motion test raised a U1 firmware anomaly — invalid resume context), and **actually
-firing** Emergency Stop on hardware (intentionally skipped — it forces a klipper shutdown
-+ firmware restart; the M112 path is code-verified). Both require explicit operator
-approval and a supervised machine.
+**Control-timeout finding (fixed):** the U1's pause/resume macros park/restore the
+toolhead and can take **>20 s**. The app's 5 s control timeout would time out and surface
+a false error even though the command succeeds. Fixed in `cc41cbc` — start/pause/resume/
+cancel/emergency-stop timeouts raised to **60 s**.
+
+**◻ NOT FULLY VERIFIED (pending)** — **actually firing** Emergency Stop on hardware
+(intentionally skipped — it forces a klipper shutdown + firmware restart; the M112 path is
+code-verified). Requires explicit operator approval and a supervised machine.
 
 Studio does not slice and never takes autonomous control. Printer Hub provides local,
 user-confirmed printer actions; Studio never auto-starts a print.
@@ -39,7 +46,7 @@ user-confirmed printer actions; Studio never auto-starts a print.
 | Bed volume (axis_maximum) | Real U1 (toolhead object) | ✅ **HARDWARE-VERIFIED** (271×335×275 mm) |
 | Firmware version | Real U1 (`/printer/info.software_version`) | ✅ **HARDWARE-VERIFIED** (1.4.1.6, extended firmware) |
 | History / totals | Real U1 (`/server/history/totals`) | ✅ **HARDWARE-VERIFIED** (16 jobs) |
-| Control: pause/resume/cancel/start endpoints | `test_printer_control.py` (mocked Moonraker) | **Contract-verified; hardware test pending safety approval** |
+| Control: start / pause / resume / cancel | **Real U1, 2026-06-24** | ✅ **HARDWARE-VERIFIED** (full loop on a supervised homed cold-motion print; long timeout needed) |
 | Upload sliced gcode (multipart) | **Real U1, 2026-06-24** | ✅ **HARDWARE-VERIFIED** (file created on printer, `print_started: false` — no actuation; then deleted) |
 | Emergency stop endpoint | `test_printer_control.py` | **Contract-verified; intentionally NOT fired on hardware** |
 | UI safety gating (offline blocks; start/cancel/e-stop confirm) | `printerControl.test.ts` (8 tests) | ✅ **Verified (pure logic)** |
@@ -50,9 +57,9 @@ toolheads (mcu e0–e3), bed volume, firmware version (1.4.1.6 — a community *
 firmware**; the firmware-capability reader walks the Klipper object list, so the extra
 macros are handled gracefully), and job history — exactly the data the Printer Hub
 parses. Network identifiers (IP, hostname) are redacted from this doc and all
-screenshots. **Control was NOT issued to the real printer** in this pass: per the safety
-rules, no start / pause / resume / cancel / upload / emergency-stop runs without explicit
-operator confirmation that the machine is supervised, the bed is clear, and it is safe.
+screenshots. **Control was exercised only with explicit operator approval** (supervised,
+bed clear): upload/send, and the start/pause/resume/cancel loop on a no-heat homed test
+print. Emergency-stop firing was **not** run (it forces a klipper shutdown + restart).
 
 ## Manual verification checklist (run on a real U1 on the LAN)
 
