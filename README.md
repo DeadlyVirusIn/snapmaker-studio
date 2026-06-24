@@ -95,11 +95,11 @@ The desktop app — local-first, dark-first. The whole workflow in one place:
 
 | Dashboard | Open in Snapmaker Orca |
 |---|---|
-| ![Dashboard](docs/screenshots/beta11/dashboard-beta11.png) | ![Open in Snapmaker Orca](docs/screenshots/beta11/orca-handoff-beta11.png) |
+| ![Dashboard](docs/screenshots/beta16/dashboard.png) | ![Source Check](docs/screenshots/beta16/source_check.png) |
 | **Studio Model Browser (Printables)** | **Find Models control center** |
-| ![Studio Model Browser](docs/screenshots/beta13/model_browser_printables.png) | ![Find Models control center](docs/screenshots/beta13/find_models_control_center.png) |
+| ![Studio Model Browser](docs/screenshots/beta16/model_browser.png) | ![Find Models control center](docs/screenshots/beta16/find_models.png) |
 
-More beta.11 screenshots: [docs/SCREENSHOTS_BETA11.md](docs/SCREENSHOTS_BETA11.md).
+Proof captures + manual shot list: [docs/SCREENSHOTS_BETA16.md](docs/SCREENSHOTS_BETA16.md). Submission index: [docs/SUBMISSION_STATUS.md](docs/SUBMISSION_STATUS.md).
 
 ## Why
 
