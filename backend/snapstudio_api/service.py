@@ -114,6 +114,13 @@ def quality_check(symptom: str, path: str | None = None) -> dict:
     return resp
 
 
+def source_compatibility(path: str) -> dict:
+    """File/source ecosystem detection: what kind of file/project this is, what Studio
+    can read, what it can't convert yet, and the recommended next step. Read-only."""
+    from snapstudio_core import source_compatibility as sc
+    return sc.detect_detailed(path)
+
+
 def first_layer_check(symptom: str) -> dict:
     """First Layer Doctor: advisory checklist for a first-layer symptom. Static."""
     return first_layer_doctor.lookup(symptom)

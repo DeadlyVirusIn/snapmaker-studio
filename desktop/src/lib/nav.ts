@@ -10,7 +10,7 @@
 import {
   LayoutDashboard, FolderKanban, Wand2, Palette, GitCompareArrows,
   Settings, BookOpen, FileCheck2, HeartPulse, Layers, Coins, Tag, TrendingUp,
-  ShieldCheck, Compass, Maximize2, Stethoscope, Rocket, type LucideIcon,
+  ShieldCheck, Compass, Maximize2, Stethoscope, Rocket, FileSearch, type LucideIcon,
 } from "lucide-react";
 import { DOCTORS } from "@/lib/doctors";
 
@@ -33,6 +33,7 @@ export const PRIMARY_NAV: NavItem[] = [
   { to: "/start", label: "Get Started", icon: Rocket },
   { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/find-models", label: "Find Models", icon: Compass },
+  { to: "/source", label: "Source Check", icon: FileSearch },
   { to: doctorRoute("project"), label: "Project Doctor", icon: FileCheck2, doctorId: "project" },
   { to: "/compatibility", label: "Compatibility Doctor", icon: ShieldCheck },
   { to: "/scale", label: "Scale Doctor", icon: Maximize2 },
@@ -70,7 +71,7 @@ export const SECONDARY_NAV: NavItem[] = [
 // (/doctor/:id) and validated against DOCTORS below.
 export const STATIC_ROUTES = new Set<string>([
   "/", "/projects", "/batch", "/workspace", "/printers", "/settings",
-  "/why", "/plate-remap", "/compatibility", "/scale", "/print-quality", "/first-layer", "/find-models", "/start", "/help",
+  "/why", "/plate-remap", "/compatibility", "/scale", "/print-quality", "/first-layer", "/find-models", "/start", "/help", "/source",
 ]);
 
 /** True when a nav `to` resolves to a real route — guards against blank pages. */

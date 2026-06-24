@@ -166,6 +166,17 @@ def _make_handler(token: str):
                     self._send(400, {"error": str(e)})
                 except Exception:
                     self._send(500, {"error": "internal error"})
+            elif self.path == "/source_compatibility":
+                path = data.get("path")
+                if not path:
+                    self._send(400, {"error": "missing 'path'"})
+                    return
+                try:
+                    self._send(200, service.source_compatibility(path))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
             elif self.path == "/scale_preview":
                 try:
                     path = rv.require_path_string(data)

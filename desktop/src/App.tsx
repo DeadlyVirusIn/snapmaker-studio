@@ -13,6 +13,7 @@ import PlateRemap from "@/routes/PlateRemap";
 import DoctorLanding from "@/routes/DoctorLanding";
 import Compatibility from "@/routes/Compatibility";
 import FindModels from "@/routes/FindModels";
+import SourceCompatibility from "@/routes/SourceCompatibility";
 import ScaleDoctor from "@/routes/ScaleDoctor";
 import PrintQuality from "@/routes/PrintQuality";
 import FirstLayer from "@/routes/FirstLayer";
@@ -47,6 +48,7 @@ export default function App() {
             <Route path="/plate-remap" element={<PlateRemap />} />
             <Route path="/compatibility" element={<Compatibility />} />
             <Route path="/find-models" element={<FindModels />} />
+            <Route path="/source" element={<SourceCompatibility />} />
             <Route path="/scale" element={<ScaleDoctor />} />
             <Route path="/print-quality" element={<PrintQuality />} />
             <Route path="/first-layer" element={<FirstLayer />} />

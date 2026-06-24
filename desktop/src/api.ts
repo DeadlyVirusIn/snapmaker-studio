@@ -810,6 +810,24 @@ export function qualityCheck(symptom: string, path?: string): Promise<QualityRes
   return platePost("/quality_check", path ? { symptom, path } : { symptom });
 }
 
+// ---- File/source ecosystem detection (read-only, advisory) ----
+export interface SourceCompatibilityReport {
+  schema_version: string;
+  ecosystem: string;          // bambu-family | prusa | cura | generic | stl | unknown
+  ecosystem_label: string;
+  source_app: string | null;
+  printer_model: string | null;
+  is_u1: boolean;
+  readable_settings: Record<string, unknown>;
+  can_read: string[];
+  cannot_convert: string[];
+  risks: string[];
+  recommended_next_step: string;
+}
+export function sourceCompatibility(path: string): Promise<SourceCompatibilityReport> {
+  return platePost("/source_compatibility", { path });
+}
+
 // ---- First Layer Doctor (advisory, read-only) ----
 export interface FirstLayerResult {
   symptom: string;
