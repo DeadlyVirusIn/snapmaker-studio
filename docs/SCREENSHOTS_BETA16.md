@@ -16,19 +16,23 @@
 | Printer Hub | `printer_monitor.png` | The Printer Hub page (connect / monitor / control) |
 | Dashboard | `dashboard.png` | App shell + entry points |
 
-## Still requires manual capture (needs a file or hardware — not faked)
+## Submission shot list — still requires manual capture (NOT faked)
 
-These views only appear after the OS file picker or with real hardware, which can't be
-automated headlessly. Capture in the installed app:
+Each of these only appears after the OS file picker, or needs the real printer (whose IP
+must be redacted), so it can't be captured headlessly. Capture in the installed app, then
+redact any IP/hostname/path. Why each is manual:
 
-- **Plate Remap 2D preview, populated** — pick a multicolor 3MF, a plate, and a from/to
-  colour → the colour-chip map with from→to + protected accents.
-- **Print Quality evidence panel** — pick a symptom, Add your file → "What Studio found
-  in your file".
-- **Source Check report** — choose a non-U1 / PrusaSlicer file → the can-read /
-  cannot-convert / next-step report.
-- **Project Doctor result** — open a model → readiness verdict + findings.
-- **Open in Snapmaker Orca** — with Orca installed (see ORCA_2_3_4_VALIDATION.md).
-- **Printer Hub monitor + control on a real U1** (see PRINTER_HUB_VERIFICATION.md).
+| Shot | Why it can't be auto-captured |
+|------|-------------------------------|
+| Dashboard **with the "Start your first print" card** | `dashboard.png` predates beta.16's card — re-capture `/` in the installed app (trivial, no file needed) |
+| Plate Remap **populated 2D preview** | needs a multicolor 3MF chosen via the native file dialog |
+| Print Quality **evidence panel** | needs a file added via the native dialog |
+| Source Check **report** (e.g. a PrusaSlicer file) | needs a file chosen via the native dialog |
+| Project Doctor **result** | needs a model opened via the native dialog |
+| Open in Snapmaker Orca **handoff** | needs Orca installed (see ORCA_2_3_4_VALIDATION.md) |
+| Printer Hub **connected to U1** (live telemetry) | needs the real U1; **redact the printer IP** before sharing |
+| Control **confirmation dialog** (start/cancel) | only renders with a connected printer + an active control |
+| Emergency Stop **confirmation dialog** (not fired) | renders the confirm copy; do **not** confirm/fire it |
 
-Steps for each are in [`JUDGE_DEMO.md`](JUDGE_DEMO.md).
+Steps for each are in [`JUDGE_DEMO.md`](JUDGE_DEMO.md). A 60–90s shot list / voiceover is
+in [`DEMO_VIDEO_SCRIPT.md`](DEMO_VIDEO_SCRIPT.md).

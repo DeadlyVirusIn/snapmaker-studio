@@ -110,7 +110,8 @@ only from the official release and verified by SHA256.
 
 - Advisory only — Studio estimates readiness and explains risk; it does not
   guarantee a print will succeed.
-- Not a slicer and not a printer controller.
+- Not a slicer. Studio does not slice and never takes autonomous control; Printer Hub
+  provides local, user-confirmed printer actions (no auto-start) and does not control Orca.
 - Windows beta installer is not code-signed yet.
 - Validated mostly on a real-world file corpus; coverage continues to grow.
 

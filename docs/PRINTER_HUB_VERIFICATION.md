@@ -1,10 +1,32 @@
-# Printer Hub — verification status (v0.4.0-beta.15)
+# Printer Hub — verification status (v0.4.0-beta.16.1)
 
 > Independent open-source project — not affiliated with or endorsed by Snapmaker.
 
 Honest statement of what is verified vs unverified. The U1 runs stock Moonraker/Klipper
 on the LAN (confirmed by Snapmaker's own `u1-moonraker` / `u1-klipper` / `u1-fluidd`
-repos), so the Printer Hub talks to a standard, documented API.
+repos), so the Printer Hub talks to a standard, documented API. Tested on a real
+Snapmaker U1 (firmware 1.4.1.6) on 2026-06-24.
+
+## Verification summary
+
+**✅ HARDWARE-VERIFIED on a real U1** — connection by IP (mDNS fallback), live printer
+state, bed + toolhead temperatures, all 4 toolheads, bed volume, firmware version, job
+history, gcode **upload/send** (no print started), and **start / pause / cancel** (on a
+supervised, no-motion/no-heat dwell-only test gcode).
+
+**✅ CODE / CONTRACT-VERIFIED** — Emergency Stop now uses canonical `M112` via
+`/printer/gcode/script` (that endpoint confirmed **HTTP 200** on the real U1 after
+`/printer/emergency_stop` was found to **404**); offline-blocks-all-controls gating; and
+start/cancel/emergency-stop confirmation gating (unit-tested).
+
+**◻ NOT FULLY VERIFIED (pending)** — **resume** on a *normal, homed, heated* print (the
+no-motion test raised a U1 firmware anomaly — invalid resume context), and **actually
+firing** Emergency Stop on hardware (intentionally skipped — it forces a klipper shutdown
++ firmware restart; the M112 path is code-verified). Both require explicit operator
+approval and a supervised machine.
+
+Studio does not slice and never takes autonomous control. Printer Hub provides local,
+user-confirmed printer actions; Studio never auto-starts a print.
 
 ## What is mocked / what is verified / what is unverified
 
