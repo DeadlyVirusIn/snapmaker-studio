@@ -86,9 +86,32 @@ def print_failure_troubleshoot(path: str, symptom: str = "fails_even_with_suppor
                                       known_good_material, failed_material, failure_stage)
 
 
-def quality_check(symptom: str) -> dict:
-    """Print Quality Doctor: advisory checklist for a symptom. Static, read-only."""
-    return print_quality.lookup(symptom)
+def quality_check(symptom: str, path: str | None = None) -> dict:
+    """Print Quality Doctor: advisory checklist for a symptom. Read-only.
+
+    When a file path is given, enrich the advice with file-specific *evidence* from the
+    other doctors (mesh, insights, bed-fit, first-layer) so the guidance is grounded in
+    this model. Each evidence fetch is best-effort: a doctor that errors is skipped and
+    the advisory result is still returned. Advisory only — no guarantees, no auto-fix."""
+    resp = dict(print_quality.lookup(symptom))
+    if path and resp.get("result"):
+        from snapstudio_core import quality_evidence
+
+        def _safe(fn):
+            try:
+                return fn()
+            except Exception:
+                return None
+
+        ev = quality_evidence.evidence_for(
+            symptom,
+            _safe(lambda: mesh(path)),
+            _safe(lambda: insights(path)),
+            _safe(lambda: bed_fit(path)),
+            _safe(lambda: first_layer(path)),
+        )
+        resp["result"] = {**resp["result"], "evidence": ev, "evidence_available": bool(ev)}
+    return resp
 
 
 def first_layer_check(symptom: str) -> dict:

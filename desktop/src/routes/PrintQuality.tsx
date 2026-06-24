@@ -128,14 +128,21 @@ function FailsWithSupports() {
 export default function PrintQuality() {
   const [sel, setSel] = useState<string | null>(null);
   const [res, setRes] = useState<QualityResult | null>(null);
+  const [filePath, setFilePath] = useState<string | null>(null);
 
   const m = useMutation({
-    mutationFn: (s: string) => qualityCheck(s),
+    mutationFn: ({ s, path }: { s: string; path: string | null }) => qualityCheck(s, path ?? undefined),
     onSuccess: (d) => setRes(d.result),
   });
 
   function pick(id: string) {
-    setSel(id); setRes(null); m.mutate(id);
+    setSel(id); setRes(null); m.mutate({ s: id, path: filePath });
+  }
+  async function addFile() {
+    const p = await openModelDialog();
+    if (!p) return;
+    setFilePath(p);
+    if (sel) { setRes(null); m.mutate({ s: sel, path: p }); }
   }
 
   return (
@@ -158,6 +165,14 @@ export default function PrintQuality() {
             </button>
           ))}
         </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
+          <Button size="sm" variant="secondary" onClick={addFile}>
+            <FilePlus className="h-4 w-4" /> {filePath ? "Change file" : "Add your file for file-specific checks"}
+          </Button>
+          {filePath
+            ? <span>Studio grounds the advice in your model — read-only, nothing is changed.</span>
+            : <span>Optional: add the STL/3MF and Studio adds evidence from its own checks.</span>}
+        </div>
       </CardContent></Card>
 
       {m.isPending && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> loading…</p>}
@@ -171,6 +186,25 @@ export default function PrintQuality() {
           <Section icon={SlidersHorizontal} title="Where to look in Snapmaker Orca" items={res.orca_paths} />
           <Section icon={Wrench} title="Hardware / material checks" items={res.hardware_checks} />
           <Section icon={Ban} title="What not to change blindly" items={res.avoid} />
+          {res.evidence && res.evidence.length > 0 && (
+            <div className="rounded-md border border-border bg-muted/20 p-3">
+              <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <Lightbulb className="h-3.5 w-3.5" /> What Studio found in your file
+              </p>
+              <ul className="space-y-1 text-sm">
+                {res.evidence.map((e, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className={`mt-1.5 inline-block h-2 w-2 shrink-0 rounded-full ${e.level === "risk" ? "bg-risk" : e.level === "warn" ? "bg-repairable" : "bg-ready"}`} />
+                    <span><span className="font-medium">{e.label}:</span> <span className="text-muted-foreground">{e.text}</span></span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1.5 text-[11px] text-muted-foreground">Advisory evidence from Studio's read-only checks — not a guarantee.</p>
+            </div>
+          )}
+          {res.evidence_available === false && filePath && (
+            <p className="text-[11px] text-muted-foreground">No strong file-specific signals for this symptom — the checks above still apply.</p>
+          )}
           <p className="flex items-start gap-1.5 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {res.disclaimer}
           </p>

@@ -791,6 +791,7 @@ export function plateExport(path: string, uiPlate: number, fromFilament: number,
 }
 
 // ---- Print Quality Doctor (advisory, read-only) ----
+export interface QualityEvidence { label: string; level: "ok" | "warn" | "risk"; text: string; doctor: string; }
 export interface QualityResult {
   symptom: string;
   title: string;
@@ -801,10 +802,12 @@ export interface QualityResult {
   avoid: string[];
   evidence_needed: string[];
   disclaimer: string;
+  evidence?: QualityEvidence[];        // file-specific findings (when a file is given)
+  evidence_available?: boolean;
 }
 export interface QualityResponse { result: QualityResult | null; warnings: string[]; }
-export function qualityCheck(symptom: string): Promise<QualityResponse> {
-  return platePost("/quality_check", { symptom });
+export function qualityCheck(symptom: string, path?: string): Promise<QualityResponse> {
+  return platePost("/quality_check", path ? { symptom, path } : { symptom });
 }
 
 // ---- First Layer Doctor (advisory, read-only) ----

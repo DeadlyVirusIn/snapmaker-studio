@@ -161,7 +161,7 @@ def _make_handler(token: str):
                     self._send(500, {"error": "internal error"})
             elif self.path == "/quality_check":
                 try:
-                    self._send(200, service.quality_check(data.get("symptom", "")))
+                    self._send(200, service.quality_check(data.get("symptom", ""), data.get("path")))
                 except ValidationError as e:
                     self._send(400, {"error": str(e)})
                 except Exception:
