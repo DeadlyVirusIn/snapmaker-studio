@@ -41,9 +41,8 @@ monitor your U1 and, with an explicit confirmation each time, control a print
 control Orca.
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
-> Validated on an internal real-world Bambu/Orca corpus — **112 files → 100%
-> Doctor-READY** (internal result, not a guarantee of print success; see
-> [PROOF.md](PROOF.md)). More context:
+> Internal validation corpus: **112/112 outputs passed the U1-clean validation gate —
+> not a print-success guarantee** (see [PROOF.md](PROOF.md)). More context:
 > [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) ·
 > [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md) ·
 > [`docs/INNOVATION_FUND.md`](docs/INNOVATION_FUND.md) ·
@@ -60,13 +59,18 @@ on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/release
 
 ## Try beta.16.2 — control timeout patch
 
-Three roadmap features land together: a visual 2D **Plate Color Remap preview** (see
-exactly what colour changes and what stays protected), **evidence-backed Print Quality**
-advice grounded in your own model (overhangs, tip risk, first-layer area, bed fit,
-materials), and a **Source Check** that reads any STL/3MF and tells you the source
-slicer, what Studio can read, what it can't convert yet, and the safe next step for your
-U1. All local, read-only, advisory — no cloud, no account, no guarantees. Plus the
-carried-forward Model Browser and Printer Hub.
+beta.16.2 is the **Printer Hub control-timeout patch**: the control request timeout is
+raised to 60 seconds so real-U1 actions that legitimately take longer (the U1 parks and
+restores the toolhead on pause/resume, which can exceed 20 seconds) no longer report a
+false timeout error even though the action succeeded. The Printer Hub integration is
+**hardware-verified on a real U1** (monitoring, upload/send, and the full start / pause /
+resume / cancel loop) — see [docs/PRINTER_HUB_VERIFICATION.md](docs/PRINTER_HUB_VERIFICATION.md).
+
+Carried forward from beta.15: the visual 2D **Plate Color Remap preview** (see exactly
+what colour changes and what stays protected), **evidence-backed Print Quality** advice
+grounded in your own model, and **Source Check** (reads any STL/3MF and tells you the
+source slicer, what Studio can read, what it can't convert yet, and the safe next step).
+All local, advisory — no cloud, no account, no guarantees.
 
 - Release: [v0.4.0-beta.16.2](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.16.2)
 - Installer: `Snapmaker.Studio_0.4.0-beta.16.2_x64-setup.exe`
@@ -93,7 +97,7 @@ Full guidance and uninstall: [docs/windows-install.md](docs/windows-install.md).
 The desktop app — local-first, dark-first. The whole workflow in one place:
 **Understand → Validate → Prepare → Monitor**.
 
-| Dashboard | Open in Snapmaker Orca |
+| Dashboard | Source Check |
 |---|---|
 | ![Dashboard](docs/screenshots/beta16/dashboard.png) | ![Source Check](docs/screenshots/beta16/source_check.png) |
 | **Studio Model Browser (Printables)** | **Find Models control center** |
@@ -249,7 +253,7 @@ validation is mandatory and never removed. Full detail in
 ## Roadmap
 
 **Shipped (beta):** desktop app (Project Intelligence · Validation Center · Prepare ·
-Batch · Design Library · read-only Printer Hub), engine + CLI, one-click Windows
+Batch · Design Library · Printer Hub monitor + user-confirmed control/send), engine + CLI, one-click Windows
 installer with bundled engine.
 
 **Next:**
