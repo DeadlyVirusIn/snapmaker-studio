@@ -1,4 +1,19 @@
-# What to Test First (beta.12 — beta.11 completion)
+# What to Test First (v0.4.0-beta.15)
+
+**New since beta.12 — try these first:**
+1. **Source Check** (sidebar) → pick any STL/3MF → see the detected slicer, what Studio
+   can read, and the safe next step.
+2. **Find Models** → click an approved site → it opens in the locked Studio Model Browser;
+   download a file, then **Open downloaded file** → Project Doctor.
+3. **Plate Color Remap** → a multicolor 3MF → pick a plate + a from/to colour → the **2D
+   plate preview** shows what changes and what stays protected.
+4. **Print Quality Doctor** → pick a symptom → **Add your file** → the "What Studio found
+   in your file" evidence panel.
+5. **Printer Hub** → connect a U1 (or see the clear offline state) → monitor, then the
+   confirmed control card (pause/cancel/start, upload gcode, emergency stop).
+
+---
+
 
 Three short beginner paths through Snapmaker Studio. Everything runs locally;
 nothing is uploaded. Originals are never modified, and findings are advisory

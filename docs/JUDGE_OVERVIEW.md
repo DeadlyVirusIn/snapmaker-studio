@@ -1,4 +1,4 @@
-# Snapmaker Studio — Judge Overview (beta.12 — beta.11 completion)
+# Snapmaker Studio — Judge Overview (v0.4.0-beta.15)
 
 > Independent open-source project — not affiliated with or endorsed by Snapmaker.
 > "Snapmaker" is a trademark of its respective owner.
@@ -40,6 +40,23 @@ risk in plain language fills that gap without locking anyone into a cloud accoun
 Snapmaker U1 owners, especially beginners working with multicolor or
 support-heavy prints, who want to diagnose, prepare, troubleshoot, and estimate a
 print before opening the slicer.
+
+## Shipped since beta.12 (beta.13 → beta.15) — all live in the current release
+
+- **Studio Model Browser (beta.13)** — browse approved 3D-model sites in a locked,
+  Studio-owned browser window (no Chrome/Edge); download, then open in Studio.
+- **Printer Hub — monitor + control + send (beta.14)** — discover the U1, watch live
+  status/temps/toolheads, and (user-confirmed) pause/resume/cancel/start, upload sliced
+  gcode, emergency stop. Studio never auto-starts. Hardware verification: manual
+  checklist (no U1 in CI) — see [`PRINTER_HUB_VERIFICATION.md`](PRINTER_HUB_VERIFICATION.md).
+- **Plate Color Remap 2D preview (beta.15)** — visual plate map; full 3D render is future.
+- **Print Quality Doctor evidence (beta.15)** — symptom advice grounded in the user's file.
+- **Source Check (beta.15)** — detects the source slicer (STL/3MF/Bambu-family/Prusa/Cura),
+  what Studio can read vs cannot convert yet, and the safe next step. Migration (preparing
+  a non-U1 source) is planned.
+
+Demo path + walkthrough: [`JUDGE_DEMO.md`](JUDGE_DEMO.md). Proof captures:
+[`SCREENSHOTS_BETA16.md`](SCREENSHOTS_BETA16.md).
 
 ## beta.12 capabilities (completes beta.11)
 
