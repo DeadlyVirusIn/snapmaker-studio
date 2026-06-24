@@ -18,7 +18,10 @@ use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
-use tauri::{Manager, RunEvent, State, Url, WebviewUrl, WebviewWindowBuilder};
+use tauri::webview::WebviewBuilder;
+use tauri::{
+    LogicalPosition, LogicalSize, Manager, RunEvent, State, Url, WebviewUrl, WebviewWindowBuilder,
+};
 
 // Model Browser allowlist — the ONLY domains the in-app browser may navigate to.
 // Enforced in Rust at open time and on every navigation; off-allowlist top-level
@@ -146,6 +149,79 @@ fn is_model_browser_open(app: tauri::AppHandle) -> bool {
     app.get_webview_window("model-browser").is_some()
 }
 
+// ---- Embedded Model Browser (a child webview INSIDE the main window) ----------
+//
+// The approved site renders in a child webview labelled "model-embed", positioned
+// over a placeholder region the React UI reserves below its toolbar. The child
+// webview is on NO capability, so the remote page gets zero Studio IPC. Navigation
+// is allowlist-locked. Studio's controls stay in the trusted main webview.
+const EMBED_LABEL: &str = "model-embed";
+
+#[tauri::command]
+fn open_embedded_browser(
+    app: tauri::AppHandle,
+    url: String,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+) -> Result<(), String> {
+    let parsed = Url::parse(&url).map_err(|_| "invalid url".to_string())?;
+    if parsed.scheme() != "https" || !model_host_allowed(&parsed) {
+        return Err("url is not on the approved model-site allowlist".into());
+    }
+    // Already embedded: just navigate + reposition.
+    if let Some(wv) = app.get_webview(EMBED_LABEL) {
+        wv.navigate(parsed).map_err(|e| e.to_string())?;
+        let _ = wv.set_position(LogicalPosition::new(x, y));
+        let _ = wv.set_size(LogicalSize::new(width.max(1.0), height.max(1.0)));
+        return Ok(());
+    }
+    let window = app
+        .get_window("main")
+        .ok_or_else(|| "no main window".to_string())?;
+    let builder = WebviewBuilder::new(EMBED_LABEL, WebviewUrl::External(parsed))
+        .on_navigation(|u| model_host_allowed(u));
+    window
+        .add_child(
+            builder,
+            LogicalPosition::new(x, y),
+            LogicalSize::new(width.max(1.0), height.max(1.0)),
+        )
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn set_embedded_bounds(
+    app: tauri::AppHandle,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+) -> Result<(), String> {
+    if let Some(wv) = app.get_webview(EMBED_LABEL) {
+        wv.set_position(LogicalPosition::new(x, y))
+            .map_err(|e| e.to_string())?;
+        wv.set_size(LogicalSize::new(width.max(1.0), height.max(1.0)))
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn close_embedded_browser(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(wv) = app.get_webview(EMBED_LABEL) {
+        wv.close().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn is_embedded_browser_open(app: tauri::AppHandle) -> bool {
+    app.get_webview(EMBED_LABEL).is_some()
+}
+
 #[derive(Default, Clone, Serialize, Deserialize)]
 struct ApiInfo {
     port: u16,
@@ -262,6 +338,10 @@ fn main() {
             open_model_browser,
             close_model_browser,
             is_model_browser_open,
+            open_embedded_browser,
+            set_embedded_bounds,
+            close_embedded_browser,
+            is_embedded_browser_open,
             detect_orca,
             open_in_orca
         ])
