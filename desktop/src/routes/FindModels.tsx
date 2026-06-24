@@ -2,14 +2,15 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
-  Search, ExternalLink, Loader2, Lock, Info, Compass, FolderOpen, Stethoscope,
+  Search, ExternalLink, Loader2, Lock, Info, Compass, FolderOpen, Stethoscope, X, RotateCw,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/layout";
-import { modelSearch, openModelBrowser } from "@/api";
+import { modelSearch, openModelBrowser, closeModelBrowser } from "@/api";
 import { useMode } from "@/store/mode";
 import { useOpenFile } from "@/hooks/useOpenFile";
+import { MODEL_BROWSER_COPY, closedPanel, panelLabel, showPanel, type BrowserPanelState } from "@/lib/modelBrowser";
 import {
   filterResults, linkOutUrl, importReasonLabel, DISCLAIMER, BROWSE_PROVIDERS,
   SANCTIONED_SOURCES, type SearchFilters, type SearchResponse, type ModelSource,
@@ -26,16 +27,27 @@ export default function FindModels() {
   const [resp, setResp] = useState<SearchResponse | null>(null);
   const advanced = useMode((s) => s.mode) === "advanced";
   const openFile = useOpenFile();
+  const [browser, setBrowser] = useState<BrowserPanelState>(closedPanel);
 
-  // Open an approved site inside Studio's locked Model Browser. Falls back to a
-  // normal browser tab when not running in the desktop app (e.g. dev in a browser).
+  const providerLabel = (siteId: string) =>
+    BROWSE_PROVIDERS.find((p) => p.id === siteId)?.label ?? siteId;
+
+  // Open an approved site inside Studio's locked Model Browser. The remote page is
+  // isolated (no IPC); the trusted control panel below reflects and controls it.
   async function browse(siteId: string) {
     const url = linkOutUrl(siteId, query);
     try {
       await openModelBrowser(url);
+      setBrowser({ open: true, site: providerLabel(siteId) });
     } catch {
+      // Not in the desktop app (e.g. dev in a browser) — fall back to a normal tab.
       window.open(url, "_blank", "noreferrer");
     }
+  }
+
+  async function closeBrowser() {
+    try { await closeModelBrowser(); } catch { /* not in the desktop app */ }
+    setBrowser(closedPanel);
   }
 
   const searchM = useMutation({
@@ -101,6 +113,35 @@ export default function FindModels() {
           ))}
         </div>
       </CardContent></Card>
+
+      {/* TRUSTED control panel for the locked Model Browser window — Studio-side
+          only; the remote page never gets any of these controls or any IPC. */}
+      {showPanel(browser) && (
+        <Card><CardContent className="space-y-3 p-5">
+          <p className="flex items-center gap-2 text-sm font-semibold">
+            <Compass className="h-4 w-4 text-primary" /> {panelLabel(browser)}
+          </p>
+          <p className="text-xs text-muted-foreground">{MODEL_BROWSER_COPY.flow}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={openFile}><FolderOpen className="h-4 w-4" /> Open downloaded file</Button>
+            <Button size="sm" variant="secondary" asChild>
+              <Link to="/doctor/project"><Stethoscope className="h-4 w-4" /> Run Project Doctor</Link>
+            </Button>
+            <Button size="sm" variant="secondary" onClick={closeBrowser}><X className="h-4 w-4" /> Close Model Browser</Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] text-muted-foreground">Reopen / choose another site:</span>
+            {BROWSE_PROVIDERS.map((p) => (
+              <Button key={p.id} size="sm" variant="secondary" onClick={() => browse(p.id)}>
+                <RotateCw className="h-3.5 w-3.5" /> {p.label}
+              </Button>
+            ))}
+          </div>
+          <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+            <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {MODEL_BROWSER_COPY.trust}
+          </p>
+        </CardContent></Card>
+      )}
 
       {/* PRIMARY: bring a downloaded file into Studio */}
       <Card><CardContent className="space-y-2 p-5">

@@ -17,6 +17,16 @@ export async function openModelBrowser(url: string): Promise<void> {
   await invoke("open_model_browser", { url });
 }
 
+// Studio-side control of the locked Model Browser window (the remote page never
+// gets any IPC). The trusted Find Models panel uses these to close / reflect state.
+export async function closeModelBrowser(): Promise<void> {
+  await invoke("close_model_browser");
+}
+
+export async function isModelBrowserOpen(): Promise<boolean> {
+  return invoke<boolean>("is_model_browser_open");
+}
+
 // Snapmaker Orca handoff. detectOrca() returns the install path (or null); the UI
 // never displays that path. openInOrca() launches the verified Orca exe with the
 // prepared file — a one-way handoff. Studio does not slice and does not control Orca.

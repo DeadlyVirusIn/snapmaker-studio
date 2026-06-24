@@ -129,6 +129,23 @@ fn open_in_orca(path: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Close the in-app Model Browser window if it is open. Studio-side control only;
+/// the remote page never gets any command channel.
+#[tauri::command]
+fn close_model_browser(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(w) = app.get_webview_window("model-browser") {
+        w.close().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// Whether the in-app Model Browser window is currently open (so the trusted
+/// Studio control panel can reflect its state).
+#[tauri::command]
+fn is_model_browser_open(app: tauri::AppHandle) -> bool {
+    app.get_webview_window("model-browser").is_some()
+}
+
 #[derive(Default, Clone, Serialize, Deserialize)]
 struct ApiInfo {
     port: u16,
@@ -243,6 +260,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             get_api_info,
             open_model_browser,
+            close_model_browser,
+            is_model_browser_open,
             detect_orca,
             open_in_orca
         ])
