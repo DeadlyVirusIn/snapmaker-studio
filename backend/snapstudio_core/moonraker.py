@@ -290,22 +290,22 @@ def _post(host: str, port: int, path: str, timeout: float, body: bytes | None = 
             return {"result": "ok"}
 
 
-def pause(host: str, port: int = DEFAULT_PORT, timeout: float = 5.0) -> dict:
+def pause(host: str, port: int = DEFAULT_PORT, timeout: float = 60.0) -> dict:
     """Pause the running print (safe, reversible). POST /printer/print/pause."""
     return {"ok": True, "action": "pause", "result": _post(host, port, "/printer/print/pause", timeout).get("result")}
 
 
-def resume(host: str, port: int = DEFAULT_PORT, timeout: float = 5.0) -> dict:
+def resume(host: str, port: int = DEFAULT_PORT, timeout: float = 60.0) -> dict:
     """Resume a paused print. POST /printer/print/resume."""
     return {"ok": True, "action": "resume", "result": _post(host, port, "/printer/print/resume", timeout).get("result")}
 
 
-def cancel(host: str, port: int = DEFAULT_PORT, timeout: float = 5.0) -> dict:
+def cancel(host: str, port: int = DEFAULT_PORT, timeout: float = 60.0) -> dict:
     """Cancel the running print (NOT reversible — UI must confirm). POST /printer/print/cancel."""
     return {"ok": True, "action": "cancel", "result": _post(host, port, "/printer/print/cancel", timeout).get("result")}
 
 
-def start(host: str, filename: str, port: int = DEFAULT_PORT, timeout: float = 5.0) -> dict:
+def start(host: str, filename: str, port: int = DEFAULT_PORT, timeout: float = 60.0) -> dict:
     """Start printing a gcode file ALREADY on the printer (UI must confirm + show the
     filename and a 'printer clear/loaded/ready' warning). POST /printer/print/start?filename=."""
     from urllib.parse import quote
@@ -314,7 +314,7 @@ def start(host: str, filename: str, port: int = DEFAULT_PORT, timeout: float = 5
             "result": _post(host, port, path, timeout).get("result")}
 
 
-def emergency_stop(host: str, port: int = DEFAULT_PORT, timeout: float = 5.0) -> dict:
+def emergency_stop(host: str, port: int = DEFAULT_PORT, timeout: float = 60.0) -> dict:
     """Emergency stop — cut heaters + halt motion immediately (UI must confirm on a
     dedicated screen). Klipper then needs FIRMWARE_RESTART to recover.
 
