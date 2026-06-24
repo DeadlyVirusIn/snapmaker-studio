@@ -113,7 +113,11 @@ export function PrinterControls({
               Only start a print if the U1 is clear, loaded, and ready. Studio sends the command but does not check the bed for you.
             </p>
 
-            <div className="border-t border-border pt-2">
+            <div className="mt-2 rounded-md border border-risk/40 bg-risk/5 p-2">
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-risk">Emergency stop</p>
+              <p className="mb-2 text-[11px] text-muted-foreground">
+                Halts motion/heaters and may require a firmware restart before printing again.
+              </p>
               <Button size="sm" variant="danger" disabled={!!busy} onClick={() => run("emergency_stop")}>
                 {spin("emergency_stop") ?? <OctagonAlert className="h-4 w-4" />} Emergency stop
               </Button>

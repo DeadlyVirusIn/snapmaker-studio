@@ -53,7 +53,7 @@ export function confirmCopy(action: ControlAction, filename?: string): { title: 
     case "emergency_stop":
       return {
         title: "EMERGENCY STOP",
-        body: "Cuts all heaters and halts motion immediately. The printer then needs a firmware restart before it can print again.",
+        body: "Emergency stop halts motion/heaters and may require a firmware restart before printing again.",
         danger: true,
       };
     default:

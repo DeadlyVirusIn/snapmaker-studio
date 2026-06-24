@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Rocket, Download, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Rocket, Download, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/store/toast";
 import { detectOrca, openInOrca } from "@/api";
@@ -58,6 +59,18 @@ export function OrcaHandoff({ outputPath }: { outputPath: string }) {
         </Button>
       )}
       <p className="text-xs text-muted-foreground">{ORCA_HANDOFF_LINE}</p>
+      <div className="mt-1 rounded-md border border-border bg-muted/20 p-2 text-xs text-muted-foreground">
+        <p>
+          <span className="font-medium text-foreground">Next:</span> slice in Snapmaker Orca, export the{" "}
+          <span title="The .gcode file is the printer-ready file Snapmaker Orca creates after slicing."
+            className="cursor-help underline decoration-dotted">.gcode</span>{" "}
+          file, then return to{" "}
+          <Link to="/printers" className="inline-flex items-center gap-0.5 text-primary hover:underline">
+            Printer Hub <ArrowRight className="h-3 w-3" />
+          </Link>{" "}
+          and upload it. (Studio doesn't slice — Snapmaker Orca does.)
+        </p>
+      </div>
     </div>
   );
 }

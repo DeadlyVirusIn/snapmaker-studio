@@ -119,16 +119,16 @@ only from the official release and verified by SHA256.
 
 ## Visual walkthrough
 
-Captured from the live beta.11 UI on a sample file. Full set in
-[SCREENSHOTS_BETA11.md](SCREENSHOTS_BETA11.md).
+Real captures from the live beta.15/beta.16 UI. Full set + manual-capture notes in
+[SCREENSHOTS_BETA16.md](SCREENSHOTS_BETA16.md).
 
-![Dashboard](screenshots/beta11/dashboard-beta11.png)
+![Dashboard](screenshots/beta16/dashboard.png)
 
-![Find Models](screenshots/beta11/find-models-beta11.png)
+![Studio Model Browser](screenshots/beta16/model_browser.png)
 
-![Open in Snapmaker Orca](screenshots/beta11/orca-handoff-beta11.png)
+![Source Check](screenshots/beta16/source_check.png)
 
-![Print Quality Doctor](screenshots/beta11/print-quality-beta11.png)
+![Print Quality Doctor](screenshots/beta16/print_quality.png)
 
 ## 5–7 minute demo flow
 
@@ -141,6 +141,6 @@ Captured from the live beta.11 UI on a sample file. Full set in
 7. Close on the point: Studio helps you decide what to fix before wasting
    filament.
 
-See also: [DEMO_SCRIPT_BETA9.md](DEMO_SCRIPT_BETA9.md),
+See also: [JUDGE_DEMO.md](JUDGE_DEMO.md),
 [WHAT_TO_TEST_FIRST.md](WHAT_TO_TEST_FIRST.md),
 [windows-install.md](windows-install.md).

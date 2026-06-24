@@ -13,6 +13,7 @@ import { SectionTitle } from "@/components/ui/layout";
 import { Workflow } from "@/components/Workflow";
 import { HeroMark } from "@/components/HeroMark";
 import { DoctorsGrid } from "@/components/DoctorsGrid";
+import { FirstPrintCard } from "@/components/FirstPrintCard";
 import { IntelligenceReport } from "@/components/IntelligenceReport";
 import { library, printerStatus, demoReport } from "@/api";
 import { useState } from "react";
@@ -154,6 +155,9 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Beginner anchor: the whole first-print path in one card. */}
+      <FirstPrintCard />
 
       {/* The Doctors — Studio's first-class, user-facing capabilities. */}
       <DoctorsGrid />

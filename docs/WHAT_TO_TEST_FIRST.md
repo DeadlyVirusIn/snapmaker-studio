@@ -74,5 +74,5 @@ Expected outcome: a narrowed-down list of likely causes and a clear next change 
 try — instead of guessing and wasting more filament.
 
 See also: [JUDGE_OVERVIEW.md](JUDGE_OVERVIEW.md),
-[DEMO_SCRIPT_BETA9.md](DEMO_SCRIPT_BETA9.md),
+[JUDGE_DEMO.md](JUDGE_DEMO.md),
 [windows-install.md](windows-install.md).

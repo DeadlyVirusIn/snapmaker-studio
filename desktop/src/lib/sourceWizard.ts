@@ -42,7 +42,7 @@ export function wizardSteps(r: SourceCompatibilityReport): WizardStep[] {
     { phase: "detect", title: "What Studio detected", items: [r.source_app ? `${r.ecosystem_label} (${r.source_app})` : r.ecosystem_label] },
   ];
   if (r.can_read.length) steps.push({ phase: "read", title: "What Studio can read", items: r.can_read });
-  if (r.cannot_convert.length) steps.push({ phase: "limits", title: "What Studio cannot convert yet", items: r.cannot_convert });
+  if (r.cannot_convert.length) steps.push({ phase: "limits", title: "What needs Snapmaker Orca", items: r.cannot_convert });
   steps.push({ phase: "recommend", title: "Recommended next step", items: [r.recommended_next_step] });
   return steps;
 }
