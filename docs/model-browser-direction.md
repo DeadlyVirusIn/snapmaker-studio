@@ -80,3 +80,35 @@ downloaded file" → Project Doctor. Download interception is deferred to v2 —
 not reliable cross-platform via WebView2/Tauri today. Third-party login redirects
 (e.g. signing in with Google) navigate off-allowlist and are blocked in-app; sign
 in on the site's own domain, or use those sites signed-out for browsing.
+
+## Engineering note (beta.13): why a separate window, not a same-page embed (INTERNAL)
+
+> Internal engineering detail. **Do not put this in public release notes, README
+> hero copy, judge overview, or user-facing docs** — to beginners/judges it reads as
+> "broken." Public docs say only: "Studio Model Browser opens approved sites in a
+> locked Studio-owned browser window."
+
+The original aim was a browser embedded directly in the main Studio page (a child
+webview region under the toolbar). On the current stack (Tauri 2.11.3 / wry 0.55.1 /
+WebView2 149, Windows) that path is not viable:
+
+- `window.add_child(WebviewBuilder::External(url)...)` — and, in fact, calling
+  `WebviewWindowBuilder::build()` for **any** External-URL webview **from inside a
+  `#[command]`** — deadlocks. The webview is created (visible at `about:blank`) but
+  its navigation never fires and the command never returns; a second invocation
+  wedges behind the first.
+- Diagnosed with runtime stderr instrumentation plus the WebView2 DevTools Protocol
+  (the child target was visible at `about:blank`; `Page.navigate` over CDP loaded the
+  site instantly, proving the webview itself works — only the build-time External
+  navigation is the problem).
+
+Stable fix shipped in beta.13: pre-build the locked `model-browser` window **once at
+startup** (in `setup`, on the main thread, hidden, `about:blank`), where `build()`
+returns normally. Commands then only `navigate()` + `show()` + raise the live window
+(navigating an existing webview works reliably). "Close" hides it (kept for reuse);
+the OS close button hides it too. `on_navigation` still locks every navigation to the
+approved-domain allowlist; the window holds no capabilities (no IPC to the remote
+page). Verified live: Printables and MakerWorld both load.
+
+Do **not** reattempt the same-window `add_child` embed on this stack without first
+re-verifying the deadlock against a newer Tauri/wry/WebView2 combination.

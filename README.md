@@ -57,11 +57,11 @@ on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/release
 
 ## Try beta.13 — Studio Model Browser
 
-The Model Browser opens approved model sites in a locked, Studio-owned browser window
-(no Chrome/Edge), with trusted Studio controls to open the downloaded file and run
-Project Doctor. Same-window embedded browsing is blocked on the current
-Tauri/Wry/WebView2 stack because child-webview `add_child` deadlocks; the stable
-beta.13 path uses a Studio-owned browser window.
+Studio Model Browser lets you browse approved 3D model sites in a locked Snapmaker
+Studio browser window (no Chrome/Edge). Download STL/3MF files from the source site,
+then open them in Studio and run Project Doctor. No API keys are required for
+beginners. Studio does not scrape, mirror, bypass login/paywalls, or fake automatic
+imports.
 
 - Release: [v0.4.0-beta.13](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.13)
 - Installer: `Snapmaker.Studio_0.4.0-beta.13_x64-setup.exe`

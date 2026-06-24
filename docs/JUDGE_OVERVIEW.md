@@ -49,7 +49,7 @@ print before opening the slicer.
 - Known-good comparison opens with plain "compare a failed print with one that
   worked" framing.
 - Tighter security: the desktop app now ships a Content-Security-Policy
-  (verified: the webview still reaches the local engine and Tauri IPC).
+  (verified: the app still reaches its local engine and controls).
 - One-click "Open in Snapmaker Orca" — once a validated U1 copy is prepared,
   hand it straight to an installed Snapmaker Orca to slice (one-way handoff;
   Studio never slices or controls Orca). Falls back to "Install Snapmaker Orca"

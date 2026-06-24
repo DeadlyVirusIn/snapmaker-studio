@@ -3,19 +3,10 @@
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-**The Model Browser opens approved model sites in a locked, Studio-owned browser
-window — no Chrome/Edge — with trusted Studio controls to open the downloaded file
-and run Project Doctor.**
-
-## Honest note: why a Studio-owned window (not a same-page embed)
-The original goal was a browser embedded directly in the main Studio page. On the
-current Tauri/Wry/WebView2 stack that same-window path is **not viable**: creating a
-child webview with `window.add_child(...)` — and, in fact, building any webview from a
-command — **deadlocks**. The webview is created but its navigation never fires and the
-command never returns (diagnosed with runtime instrumentation plus the DevTools
-Protocol). The stable beta.13 path therefore uses a **Studio-owned, allowlist-locked
-browser window**, created once at startup and navigated on demand. It is **not** a
-same-window embedded viewport, and this release does not claim to be one.
+**Studio Model Browser lets you browse approved 3D model sites in a locked Snapmaker
+Studio browser window. Download STL/3MF files from the source site, then open them in
+Studio and run Project Doctor. No API keys are required for beginners. Studio does not
+scrape, mirror, bypass login/paywalls, or fake automatic imports.**
 
 ## The headline: a Studio Model Browser with a trusted control center
 Beginners stay in Studio's own UI. Click an approved site on **Find Models** and it
@@ -44,8 +35,8 @@ Snapmaker Studio — Model Browser window (no Chrome/Edge). You download the STL
 from the site, then open it in Studio.
 
 ## Why it's safe (security model unchanged)
-- The remote approved-site page stays in an **isolated Tauri window with no IPC
-  and no app capabilities** — it cannot call any Studio command.
+- The remote approved-site page stays in an **isolated, locked Studio-owned window
+  with no IPC and no app capabilities** — it cannot call any Studio command.
 - All controls live in **trusted Studio UI**; the Rust commands
   (`open_model_browser`, `close_model_browser`, `is_model_browser_open`,
   `focus_model_browser`) act on the window **by label**, never by talking to the
