@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   GitCompareArrows, FilePlus, ShieldCheck, AlertTriangle, CheckCircle2,
-  Loader2, ArrowRight, Layers, Lock, ImageOff,
+  Loader2, ArrowRight, Layers, Lock,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/ui/layout";
 import { open3mfDialog, plateInspect, plateDryRun, plateExport } from "@/api";
 import {
   COPY, canDryRun, canExport, plateByUiNumber, fromOptions, toOptions, exportView,
-  colorName, plateSummary, changeSummary, staysSame,
+  colorName, plateSummary, changeSummary, staysSame, buildPlatePreview,
   type Selection, type PlateInspect, type PlateDryRun, type PlateExport,
 } from "@/lib/plateRemapWizard";
 
@@ -65,6 +65,7 @@ export default function PlateRemap() {
   const summary = plateSummary(plate);
   const change = changeSummary(inspectData, sel);
   const stays = staysSame(inspectData, plate, sel, dryRun);
+  const preview = buildPlatePreview(inspectData, plate, sel, dryRun);
 
   // staged status checklist (the real async steps)
   const steps = [
@@ -120,35 +121,50 @@ export default function PlateRemap() {
           {plate && (
             <>
               {/* beginner summary of the selected plate */}
-              {summary && (
+              {summary && preview && (
                 <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
                   <p className="font-medium">{summary.sentence}</p>
-                  {/* visual fallback: colour/part summary. TODO(beta.4+): render an
-                      actual plate/model preview from the 3MF geometry when a
-                      renderer is available; until then show this colour summary. */}
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Colors on this plate:</span>
-                    {(plate.filaments_used ?? []).map((f) => {
-                      const changing = sel.fromFilament === f.id;
-                      return (
-                        <span key={f.id}
-                          className="flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs"
-                          style={changing
-                            ? { borderColor: `hsl(var(${BLUE}))`, color: `hsl(var(${BLUE}))` }
-                            : { borderColor: "hsl(var(--stage-validate) / 0.5)", color: "hsl(var(--stage-validate))" }}>
-                          <Swatch color={f.color} /> {colorName(f.color) ?? `slot ${f.id}`}
-                          <span className="opacity-70">· {changing ? "changing" : "protected"}</span>
-                        </span>
-                      );
-                    })}
-                    {(plate.filaments_used ?? []).length === 0 && <span className="text-xs text-muted-foreground">—</span>}
+                  {/* 2D plate map: one chip per object, filled by its base-filament
+                      colour; the changing object shows from→to; painted/gold accents
+                      are flagged protected (Lock). A full 3D render is future work. */}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {preview.objects.map((o) => (
+                      <div key={o.id}
+                        className="flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs"
+                        style={o.changing ? { borderColor: `hsl(var(${BLUE}))` } : undefined}>
+                        <span className="inline-block h-4 w-4 rounded-sm border border-border" style={{ background: o.colorHex ?? "transparent" }} />
+                        <span className="max-w-[9rem] truncate" title={o.name}>{o.name}</span>
+                        {o.changing && o.toHex && (
+                          <>
+                            <ArrowRight className="h-3 w-3 opacity-60" />
+                            <span className="inline-block h-4 w-4 rounded-sm border border-border" style={{ background: o.toHex }} />
+                          </>
+                        )}
+                        {o.protectedAccent && <Lock className="h-3 w-3 opacity-70" />}
+                      </div>
+                    ))}
+                    {preview.objects.length === 0 && <span className="text-xs text-muted-foreground">—</span>}
                   </div>
-                  {sel.fromFilament == null && (
-                    <p className="mt-1 text-[11px] text-muted-foreground">Pick the colour to change below — every other colour on this plate stays protected.</p>
+                  {preview.legend && (
+                    <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+                      <span className="text-muted-foreground">Changing</span>
+                      <Swatch color={preview.legend.fromHex} /> {preview.legend.fromLabel}
+                      <ArrowRight className="h-3 w-3" />
+                      <Swatch color={preview.legend.toHex} /> {preview.legend.toLabel}
+                      <span className="text-muted-foreground">· {preview.changingCount} object{preview.changingCount === 1 ? "" : "s"}</span>
+                    </p>
                   )}
-                  <p className="mt-2 flex items-start gap-1.5 text-[11px] text-muted-foreground">
-                    <ImageOff className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {COPY.previewUnavailable}
+                  <p className="mt-1 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                    <Lock className="mt-0.5 h-3 w-3 shrink-0" />
+                    Protected: painted details and gold/accent colours stay. Other plates untouched: {preview.untouchedPlates.length ? preview.untouchedPlates.join(", ") : "—"}.
                   </p>
+                  {preview.swappableCount === 0 && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">{COPY.noSwappableColors}</p>
+                  )}
+                  {sel.fromFilament == null && preview.swappableCount > 0 && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">Pick the colour to change below — every other colour and plate stays protected.</p>
+                  )}
+                  <p className="mt-1 text-[11px] text-muted-foreground">{COPY.previewUnavailable}</p>
                 </div>
               )}
 

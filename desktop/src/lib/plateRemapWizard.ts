@@ -250,3 +250,78 @@ export function staysSame(
     paintedColorsUnlabeled: hasPainted && protectedColorLabels.length === 0,
   };
 }
+
+// ---- Visual preview model (pure; from inspect + dry-run; no backend/writer change) ----
+// A 2D plate map: each object as a colour-filled chip, the changing object shown
+// from→to, painted/gold accents flagged protected. A full 3D render is future work
+// (geometry isn't extracted); this answers "what changes, what stays" visually.
+
+export interface PreviewObject {
+  id: number;
+  name: string;
+  colorHex: string | null;
+  colorLabel: string;        // plain-English colour or "slot N"
+  painted: boolean;
+  paintedCount: number;
+  protectedAccent: boolean;  // painted or gold — must stay
+  changing: boolean;         // base filament == the source being swapped
+  toHex: string | null;      // target colour, when this object changes
+  toLabel: string | null;
+}
+
+export interface PlatePreview {
+  objects: PreviewObject[];
+  legend: { fromHex: string | null; fromLabel: string; toHex: string | null; toLabel: string } | null;
+  untouchedPlates: number[];
+  paintedAccentsPresent: boolean;
+  swappableCount: number;     // 0 → painted-per-face plate (no base-slot swap)
+  changingCount: number;
+}
+
+/** Build the 2D preview model for the selected plate. Safe with partial selection. */
+export function buildPlatePreview(
+  inspect: PlateInspect | null, plate: PlateInfo | null,
+  sel: Selection, dryRun: PlateDryRun | null,
+): PlatePreview | null {
+  if (!plate) return null;
+  const toHex = sel.toFilament != null ? paletteColor(inspect, sel.toFilament) : null;
+  const toLabel = sel.toFilament != null ? slotLabel(sel.toFilament, toHex) : null;
+
+  const objects: PreviewObject[] = plate.objects.map((o) => {
+    const colorHex = paletteColor(inspect, o.base_filament ?? null)
+      ?? (plate.filaments_used.find((f) => f.id === o.base_filament)?.color ?? null);
+    const paintedCount = o.painted_facets ?? 0;
+    const painted = paintedCount > 0;
+    const changing = sel.fromFilament != null && o.base_filament === sel.fromFilament;
+    return {
+      id: o.object_id,
+      name: o.name || `Object ${o.object_id}`,
+      colorHex,
+      colorLabel: colorName(colorHex) ?? (o.base_filament != null ? `slot ${o.base_filament}` : "no slot"),
+      painted,
+      paintedCount,
+      protectedAccent: painted || isGoldish(colorHex),
+      changing,
+      toHex: changing ? toHex : null,
+      toLabel: changing ? toLabel : null,
+    };
+  });
+
+  const fromHex = sel.fromFilament != null ? paletteColor(inspect, sel.fromFilament) : null;
+  const legend = sel.fromFilament != null && sel.toFilament != null
+    ? { fromHex, fromLabel: slotLabel(sel.fromFilament, fromHex), toHex, toLabel: toLabel ?? "" }
+    : null;
+
+  const untouchedPlates = dryRun?.untouched_plates && dryRun.untouched_plates.length
+    ? dryRun.untouched_plates
+    : (inspect?.plates ?? []).map((p) => p.ui_number).filter((n): n is number => n != null && n !== plate.ui_number);
+
+  return {
+    objects,
+    legend,
+    untouchedPlates,
+    paintedAccentsPresent: !!plate.painted_accents_present || objects.some((o) => o.painted),
+    swappableCount: plate.filaments_used.length,
+    changingCount: objects.filter((o) => o.changing).length,
+  };
+}
