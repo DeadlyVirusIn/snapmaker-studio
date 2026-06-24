@@ -27,16 +27,9 @@ export async function isModelBrowserOpen(): Promise<boolean> {
   return invoke<boolean>("is_model_browser_open");
 }
 
-// Embedded Model Browser: a child webview placed INSIDE the main window at a rect
-// the React UI reserves. The remote page gets no IPC. The site is shown in-app.
-export async function openEmbeddedBrowser(url: string, x: number, y: number, width: number, height: number): Promise<void> {
-  await invoke("open_embedded_browser", { url, x, y, width, height });
-}
-export async function setEmbeddedBounds(x: number, y: number, width: number, height: number): Promise<void> {
-  await invoke("set_embedded_bounds", { x, y, width, height });
-}
-export async function closeEmbeddedBrowser(): Promise<void> {
-  await invoke("close_embedded_browser");
+// Bring the locked Model Browser window to the front. No-op if it isn't open.
+export async function focusModelBrowser(): Promise<void> {
+  await invoke("focus_model_browser");
 }
 
 // Snapmaker Orca handoff. detectOrca() returns the install path (or null); the UI

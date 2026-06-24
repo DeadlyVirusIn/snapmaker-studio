@@ -18,9 +18,8 @@ use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
-use tauri::webview::WebviewBuilder;
 use tauri::{
-    LogicalPosition, LogicalSize, Manager, RunEvent, State, Url, WebviewUrl, WebviewWindowBuilder,
+    Manager, RunEvent, State, Url, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent,
 };
 
 // Model Browser allowlist — the ONLY domains the in-app browser may navigate to.
@@ -51,24 +50,69 @@ fn model_host_allowed(url: &Url) -> bool {
 /// The frontend builds the (encoded) URL; Rust is the security boundary: it
 /// refuses anything not https + on the approved-domain allowlist, and blocks any
 /// later navigation that leaves the allowlist.
+const MODEL_BROWSER_LABEL: &str = "model-browser";
+
+/// Create the locked Model Browser window, hidden, at about:blank.
+///
+/// IMPORTANT: this MUST be built at startup (in `setup`, on the main thread), NOT
+/// from a #[command]. On this Tauri 2.11 / wry 0.55 / WebView2 stack, calling
+/// `WebviewWindowBuilder::build()` from a command's worker thread deadlocks — the
+/// window is created but `build()` never returns and the page never navigates. Built
+/// here at startup, `build()` returns normally; commands then just `navigate()` the
+/// live window, which works reliably. The window is reused for the app's lifetime
+/// (closing it only hides it), so commands never need to build it again.
+///
+/// Security: the window gets NO capabilities (capabilities.json lists only "main"),
+/// so the remote page has zero Studio IPC. `on_navigation` locks every navigation to
+/// the approved-domain allowlist; only about:blank (the initial blank doc) is allowed
+/// off-list.
+fn build_model_browser_window(app: &tauri::AppHandle) -> Result<WebviewWindow, String> {
+    if let Some(w) = app.get_webview_window(MODEL_BROWSER_LABEL) {
+        return Ok(w);
+    }
+    let blank = Url::parse("about:blank").map_err(|e| e.to_string())?;
+    let w = WebviewWindowBuilder::new(app, MODEL_BROWSER_LABEL, WebviewUrl::External(blank))
+        .title("Snapmaker Studio — Model Browser")
+        .inner_size(1100.0, 850.0)
+        .min_inner_size(900.0, 600.0)
+        .center()
+        .visible(false)
+        .on_navigation(|u| u.scheme() == "about" || model_host_allowed(u))
+        .build()
+        .map_err(|e| e.to_string())?;
+    // The OS close button should HIDE the locked window (keep it for reuse), not
+    // destroy it — destroying it would force a from-command rebuild, which deadlocks.
+    let wc = w.clone();
+    w.on_window_event(move |e| {
+        if let WindowEvent::CloseRequested { api, .. } = e {
+            api.prevent_close();
+            let _ = wc.hide();
+        }
+    });
+    Ok(w)
+}
+
 #[tauri::command]
 fn open_model_browser(app: tauri::AppHandle, url: String) -> Result<(), String> {
     let parsed = Url::parse(&url).map_err(|_| "invalid url".to_string())?;
     if parsed.scheme() != "https" || !model_host_allowed(&parsed) {
         return Err("url is not on the approved model-site allowlist".into());
     }
-    let label = "model-browser";
-    if let Some(w) = app.get_webview_window(label) {
-        w.navigate(parsed).map_err(|e| e.to_string())?;
-        let _ = w.set_focus();
-        return Ok(());
-    }
-    WebviewWindowBuilder::new(&app, label, WebviewUrl::External(parsed))
-        .title("Snapmaker Studio — Model Browser (approved sites only)")
-        .inner_size(1180.0, 820.0)
-        .on_navigation(|u| model_host_allowed(u))
-        .build()
-        .map_err(|e| e.to_string())?;
+    eprintln!("[model-browser] open host={} -> approved window", parsed.host_str().unwrap_or("?"));
+    // The window is pre-built at startup; navigate the live webview (the path that
+    // works on this stack) and bring it forward.
+    let w = app
+        .get_webview_window(MODEL_BROWSER_LABEL)
+        .ok_or_else(|| "model-browser window unavailable".to_string())?;
+    w.navigate(parsed).map_err(|e| e.to_string())?;
+    let _ = w.show();
+    let _ = w.unminimize();
+    // Reliable raise on Windows: a brief always-on-top toggle forces the window to
+    // the foreground even when set_focus alone would be ignored.
+    let _ = w.set_always_on_top(true);
+    let _ = w.set_focus();
+    let _ = w.set_always_on_top(false);
+    eprintln!("[model-browser] navigated + shown");
     Ok(())
 }
 
@@ -132,94 +176,39 @@ fn open_in_orca(path: String) -> Result<(), String> {
     Ok(())
 }
 
-/// Close the in-app Model Browser window if it is open. Studio-side control only;
-/// the remote page never gets any command channel.
+/// "Close" the locked Model Browser: hide it and blank the page (stop the site).
+/// The window itself is kept hidden for reuse — destroying it would force a
+/// from-command rebuild, which deadlocks on this stack.
 #[tauri::command]
 fn close_model_browser(app: tauri::AppHandle) -> Result<(), String> {
-    if let Some(w) = app.get_webview_window("model-browser") {
-        w.close().map_err(|e| e.to_string())?;
+    if let Some(w) = app.get_webview_window(MODEL_BROWSER_LABEL) {
+        let _ = w.hide();
+        if let Ok(blank) = Url::parse("about:blank") {
+            let _ = w.navigate(blank);
+        }
     }
     Ok(())
 }
 
-/// Whether the in-app Model Browser window is currently open (so the trusted
-/// Studio control panel can reflect its state).
+/// Whether the Model Browser window is currently shown (so the trusted Studio
+/// control panel can reflect its state). Hidden == "closed" to the user.
 #[tauri::command]
 fn is_model_browser_open(app: tauri::AppHandle) -> bool {
-    app.get_webview_window("model-browser").is_some()
+    app.get_webview_window(MODEL_BROWSER_LABEL)
+        .and_then(|w| w.is_visible().ok())
+        .unwrap_or(false)
 }
 
-// ---- Embedded Model Browser (a child webview INSIDE the main window) ----------
-//
-// The approved site renders in a child webview labelled "model-embed", positioned
-// over a placeholder region the React UI reserves below its toolbar. The child
-// webview is on NO capability, so the remote page gets zero Studio IPC. Navigation
-// is allowlist-locked. Studio's controls stay in the trusted main webview.
-const EMBED_LABEL: &str = "model-embed";
-
+/// Bring the Model Browser window to the front (Studio-side control only; the
+/// remote page never gets a command channel). No-op if it has never been opened.
 #[tauri::command]
-fn open_embedded_browser(
-    app: tauri::AppHandle,
-    url: String,
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
-) -> Result<(), String> {
-    let parsed = Url::parse(&url).map_err(|_| "invalid url".to_string())?;
-    if parsed.scheme() != "https" || !model_host_allowed(&parsed) {
-        return Err("url is not on the approved model-site allowlist".into());
-    }
-    // Already embedded: just navigate + reposition.
-    if let Some(wv) = app.get_webview(EMBED_LABEL) {
-        wv.navigate(parsed).map_err(|e| e.to_string())?;
-        let _ = wv.set_position(LogicalPosition::new(x, y));
-        let _ = wv.set_size(LogicalSize::new(width.max(1.0), height.max(1.0)));
-        return Ok(());
-    }
-    let window = app
-        .get_window("main")
-        .ok_or_else(|| "no main window".to_string())?;
-    let builder = WebviewBuilder::new(EMBED_LABEL, WebviewUrl::External(parsed))
-        .on_navigation(|u| model_host_allowed(u));
-    window
-        .add_child(
-            builder,
-            LogicalPosition::new(x, y),
-            LogicalSize::new(width.max(1.0), height.max(1.0)),
-        )
-        .map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-fn set_embedded_bounds(
-    app: tauri::AppHandle,
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
-) -> Result<(), String> {
-    if let Some(wv) = app.get_webview(EMBED_LABEL) {
-        wv.set_position(LogicalPosition::new(x, y))
-            .map_err(|e| e.to_string())?;
-        wv.set_size(LogicalSize::new(width.max(1.0), height.max(1.0)))
-            .map_err(|e| e.to_string())?;
+fn focus_model_browser(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(w) = app.get_webview_window(MODEL_BROWSER_LABEL) {
+        let _ = w.show();
+        let _ = w.unminimize();
+        w.set_focus().map_err(|e| e.to_string())?;
     }
     Ok(())
-}
-
-#[tauri::command]
-fn close_embedded_browser(app: tauri::AppHandle) -> Result<(), String> {
-    if let Some(wv) = app.get_webview(EMBED_LABEL) {
-        wv.close().map_err(|e| e.to_string())?;
-    }
-    Ok(())
-}
-
-#[tauri::command]
-fn is_embedded_browser_open(app: tauri::AppHandle) -> bool {
-    app.get_webview(EMBED_LABEL).is_some()
 }
 
 #[derive(Default, Clone, Serialize, Deserialize)]
@@ -338,10 +327,7 @@ fn main() {
             open_model_browser,
             close_model_browser,
             is_model_browser_open,
-            open_embedded_browser,
-            set_embedded_bounds,
-            close_embedded_browser,
-            is_embedded_browser_open,
+            focus_model_browser,
             detect_orca,
             open_in_orca
         ])
@@ -349,6 +335,12 @@ fn main() {
             let (info, child) = spawn_sidecar();
             *app.state::<ApiState>().0.lock().unwrap() = info;
             *app.state::<SidecarProc>().0.lock().unwrap() = Some(child);
+            // Pre-build the locked Model Browser window here on the main thread
+            // (hidden). It MUST be created at startup — building it from a command
+            // deadlocks on this Tauri/wry/WebView2 stack. Commands only navigate it.
+            if let Err(e) = build_model_browser_window(&app.handle()) {
+                eprintln!("[model-browser] startup build failed: {e}");
+            }
             Ok(())
         })
         .build(tauri::generate_context!())

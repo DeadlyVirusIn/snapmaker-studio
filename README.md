@@ -55,10 +55,16 @@ Open the downloaded `…_x64-setup.exe`, install, and launch **Snapmaker Studio*
 No account, no cloud, nothing leaves your computer. Older builds and checksums are
 on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
-## Try beta.12 — beta.11 completion
+## Try beta.13 — Studio Model Browser
 
-- Release: [v0.4.0-beta.12](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.12)
-- Installer: `Snapmaker.Studio_0.4.0-beta.12_x64-setup.exe`
+The Model Browser opens approved model sites in a locked, Studio-owned browser window
+(no Chrome/Edge), with trusted Studio controls to open the downloaded file and run
+Project Doctor. Same-window embedded browsing is blocked on the current
+Tauri/Wry/WebView2 stack because child-webview `add_child` deadlocks; the stable
+beta.13 path uses a Studio-owned browser window.
+
+- Release: [v0.4.0-beta.13](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.13)
+- Installer: `Snapmaker.Studio_0.4.0-beta.13_x64-setup.exe`
 - SHA256: `593bd0dc88473dac7df53ccee32949b2dafab6640074ff3b4607b21763c93b32`
 - Unsigned beta: the installer is not code-signed yet, so Windows SmartScreen may show “Unknown publisher.” That is expected for this beta. Download only from the release link above and verify the SHA256 before installing.
 
@@ -68,7 +74,7 @@ Install:
 2. Verify the checksum. It must match the SHA256 published on the release:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.12_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.13_x64-setup.exe
 ```
 
 3. Run it. On the SmartScreen prompt choose **More info → Run anyway** only after verifying the hash.
@@ -85,8 +91,8 @@ The desktop app — local-first, dark-first. The whole workflow in one place:
 | Dashboard | Open in Snapmaker Orca |
 |---|---|
 | ![Dashboard](docs/screenshots/beta11/dashboard-beta11.png) | ![Open in Snapmaker Orca](docs/screenshots/beta11/orca-handoff-beta11.png) |
-| **Find Models** | **Print Quality Doctor** |
-| ![Find Models](docs/screenshots/beta11/find-models-beta11.png) | ![Print Quality Doctor](docs/screenshots/beta11/print-quality-beta11.png) |
+| **Studio Model Browser (Printables)** | **Find Models control center** |
+| ![Studio Model Browser](docs/screenshots/beta13/model_browser_printables.png) | ![Find Models control center](docs/screenshots/beta13/find_models_control_center.png) |
 
 More beta.11 screenshots: [docs/SCREENSHOTS_BETA11.md](docs/SCREENSHOTS_BETA11.md).
 

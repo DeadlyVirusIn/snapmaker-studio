@@ -11,9 +11,10 @@ describe("Model Browser control panel", () => {
     expect(showPanel(s)).toBe(true);
     expect(panelLabel(s)).toBe("Model Browser is open — browsing Printables");
   });
-  it("flow copy stays inside Studio (no Chrome/Edge, no API keys, no auto-import)", () => {
+  it("flow copy uses the Studio Model Browser (no Chrome/Edge, no API keys, no auto-import)", () => {
     const all = (MODEL_BROWSER_COPY.flow + " " + MODEL_BROWSER_COPY.trust).toLowerCase();
-    expect(all).toContain("browse inside studio");
+    expect(all).toContain("studio model browser");
+    expect(all).toContain("project doctor");
     expect(all).not.toMatch(/api key.*required|import to studio|downloads? for you|auto-?import|chrome|edge/);
   });
 });

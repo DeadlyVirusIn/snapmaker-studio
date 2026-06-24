@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
@@ -8,11 +8,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/layout";
 import {
-  modelSearch, openEmbeddedBrowser, setEmbeddedBounds, closeEmbeddedBrowser,
+  openModelBrowser, closeModelBrowser, isModelBrowserOpen, focusModelBrowser, modelSearch,
 } from "@/api";
 import { useMode } from "@/store/mode";
 import { useOpenFile } from "@/hooks/useOpenFile";
-import { MODEL_BROWSER_COPY } from "@/lib/modelBrowser";
+import { MODEL_BROWSER_COPY, panelLabel, showPanel, closedPanel, type BrowserPanelState } from "@/lib/modelBrowser";
 import {
   filterResults, linkOutUrl, importReasonLabel, DISCLAIMER, BROWSE_PROVIDERS,
   SANCTIONED_SOURCES, type SearchFilters, type SearchResponse, type ModelSource,
@@ -20,9 +20,11 @@ import {
 
 const FORMATS = ["STL", "3MF"];
 
-// Model Browser: novices browse approved 3D-model sites INSIDE Studio — the site
-// renders in an embedded child webview placed below the trusted Studio toolbar.
-// No API keys, no scraping, no import claims; the remote page gets no IPC.
+// Find Models is the trusted control center. Approved model sites open in a
+// SEPARATE Studio-owned window ("Snapmaker Studio — Model Browser") that is
+// allowlist-locked and gets NO Tauri IPC. (A single-window embed is not viable
+// on this Tauri/wry stack — add_child deadlocks — so the site lives in its own
+// locked Studio window and every control stays here in trusted Studio UI.)
 export default function FindModels() {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<SearchFilters>({});
@@ -30,71 +32,44 @@ export default function FindModels() {
   const advanced = useMode((s) => s.mode) === "advanced";
   const openFile = useOpenFile();
 
-  // The site currently embedded in-app (null = chooser view).
-  const [site, setSite] = useState<{ id: string; label: string } | null>(null);
-  const [stalled, setStalled] = useState(false);
-  const viewportRef = useRef<HTMLDivElement | null>(null);
+  // Live state of the locked Model Browser window + which site we last opened.
+  const [panel, setPanel] = useState<BrowserPanelState>(closedPanel);
+  const [siteId, setSiteId] = useState<string | null>(null);
 
   const providerLabel = (id: string) => BROWSE_PROVIDERS.find((p) => p.id === id)?.label ?? id;
 
-  // Reserved rect for the native webview, in window-logical (= CSS viewport) px.
-  const rect = useCallback(() => {
-    const el = viewportRef.current;
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    return { x: r.left, y: r.top, width: r.width, height: r.height };
-  }, []);
-
-  // Open (or switch) the embedded approved-site webview under the toolbar.
+  // Open (or re-point) the locked Model Browser window at an approved site.
   async function browse(id: string) {
     const url = linkOutUrl(id, query);
-    setSite({ id, label: providerLabel(id) });
-    // Wait a frame so the placeholder is laid out, then position the webview.
-    requestAnimationFrame(async () => {
-      const r = rect();
-      if (!r) return;
+    try {
+      await openModelBrowser(url);
+      setSiteId(id);
+      setPanel({ open: true, site: providerLabel(id) });
+    } catch {
+      // Not in the desktop app (e.g. dev in a plain browser) — fall back to a tab.
+      window.open(url, "_blank", "noreferrer");
+    }
+  }
+
+  async function bringToFront() { try { await focusModelBrowser(); } catch { /* not desktop */ } }
+  async function closeBrowser() {
+    try { await closeModelBrowser(); } catch { /* not desktop */ }
+    setPanel(closedPanel);
+    setSiteId(null);
+  }
+
+  // Reflect the real window state: the user can close the Model Browser window
+  // directly, so poll and keep the trusted panel in sync.
+  useEffect(() => {
+    const tick = async () => {
       try {
-        await openEmbeddedBrowser(url, r.x, r.y, r.width, r.height);
-      } catch {
-        // Not in the desktop app (e.g. dev in a plain browser) — fall back to a tab.
-        setSite(null);
-        window.open(url, "_blank", "noreferrer");
-      }
-    });
-  }
-
-  function closeBrowser() {
-    closeEmbeddedBrowser().catch(() => { /* not in desktop */ });
-    setSite(null);
-  }
-
-  // Keep the native webview aligned to the placeholder on resize/scroll, and
-  // always tear it down when leaving Find Models (it's a native overlay, not DOM).
-  useEffect(() => {
-    if (!site) return;
-    const sync = () => { const r = rect(); if (r) setEmbeddedBounds(r.x, r.y, r.width, r.height).catch(() => {}); };
-    window.addEventListener("resize", sync);
-    window.addEventListener("scroll", sync, true);
-    const id = window.setInterval(sync, 500); // catch sidebar/layout shifts
-    return () => {
-      window.removeEventListener("resize", sync);
-      window.removeEventListener("scroll", sync, true);
-      window.clearInterval(id);
+        const open = await isModelBrowserOpen();
+        setPanel((p) => (p.open === open ? p : open ? p : closedPanel));
+      } catch { /* not desktop */ }
     };
-  }, [site, rect]);
-
-  useEffect(() => () => { closeEmbeddedBrowser().catch(() => {}); }, []);
-
-  // Never strand the user on a blank panel: after a grace period, surface
-  // retry / open-external / pick-another alongside the viewport.
-  useEffect(() => {
-    setStalled(false);
-    if (!site) return;
-    const t = window.setTimeout(() => setStalled(true), 12000);
-    return () => window.clearTimeout(t);
-  }, [site]);
-
-  const openExternal = (id: string) => window.open(linkOutUrl(id, query), "_blank", "noreferrer");
+    const t = window.setInterval(tick, 1500);
+    return () => window.clearInterval(t);
+  }, []);
 
   const searchM = useMutation({
     mutationFn: () => modelSearch(query, { sources: filters.sources }),
@@ -109,67 +84,12 @@ export default function FindModels() {
   const shown = resp ? filterResults(resp.results, filters) : [];
   const chip = (on: boolean) => `rounded-md border px-2.5 py-1 text-xs ${on ? "border-foreground text-foreground" : "border-border text-muted-foreground"}`;
 
-  // ---- Embedded browser workspace: toolbar + big website viewport -------------
-  if (site) {
-    return (
-      <div className="flex h-[calc(100vh-9rem)] flex-col gap-3">
-        <Card className="shrink-0"><CardContent className="space-y-2 p-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="flex items-center gap-1.5 text-sm font-semibold">
-              <Compass className="h-4 w-4 text-primary" /> Browsing {site.label} inside Studio
-            </span>
-            <div className="ml-auto flex flex-wrap items-center gap-1.5">
-              <Button size="sm" onClick={openFile}><FolderOpen className="h-4 w-4" /> Open downloaded file</Button>
-              <Button size="sm" variant="secondary" asChild><Link to="/doctor/project"><Stethoscope className="h-4 w-4" /> Run Project Doctor</Link></Button>
-              <Button size="sm" variant="secondary" onClick={closeBrowser}><X className="h-4 w-4" /> Close browser</Button>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] text-muted-foreground">Approved sites:</span>
-            {BROWSE_PROVIDERS.map((p) => (
-              <button key={p.id} onClick={() => browse(p.id)}
-                className={`flex items-center gap-1 rounded border px-2 py-0.5 text-xs ${site.id === p.id ? "border-foreground text-foreground" : "border-border text-muted-foreground"}`}>
-                {site.id === p.id ? <RotateCw className="h-3 w-3" /> : <ExternalLink className="h-3 w-3" />} {p.label}
-              </button>
-            ))}
-          </div>
-          <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
-            <Lock className="mt-0.5 h-3 w-3 shrink-0" /> {MODEL_BROWSER_COPY.trust} Download from the site, then Open downloaded file → Project Doctor.
-          </p>
-        </CardContent></Card>
-
-        {/* The native approved-site webview is positioned over this region. This
-            content shows only until/unless the webview paints over it. */}
-        <div ref={viewportRef} className="relative flex-1 overflow-hidden rounded-lg border border-border bg-muted/20">
-          {!stalled ? (
-            <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading {site.label} inside Studio…
-            </div>
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-              <p className="text-sm font-medium">This site did not load inside Studio.</p>
-              <p className="max-w-md text-xs text-muted-foreground">
-                {site.label} may block loading inside an embedded browser. Open it externally
-                or try another approved site — then download the STL/3MF and open it here.
-              </p>
-              <div className="flex flex-wrap justify-center gap-2">
-                <Button size="sm" onClick={() => browse(site.id)}><RotateCw className="h-4 w-4" /> Retry</Button>
-                <Button size="sm" variant="secondary" onClick={() => openExternal(site.id)}><ExternalLink className="h-4 w-4" /> Open in external browser</Button>
-                <Button size="sm" variant="secondary" onClick={openFile}><FolderOpen className="h-4 w-4" /> Open downloaded file</Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ---- Chooser view ----------------------------------------------------------
   return (
     <div className="space-y-6">
       <PageHeader icon={Compass} title="Find Models"
-        subtitle="Browse approved model sites inside Studio. Download from the site, then open the STL or 3MF here and run Project Doctor." />
+        subtitle="Browse approved model sites in a locked Studio Model Browser. Download from the site, then open the STL or 3MF here and run Project Doctor." />
 
+      {/* 1) Search term */}
       <Card><CardContent className="space-y-2 p-5">
         <p className="text-sm font-medium">What are you looking for?</p>
         <div className="flex gap-2">
@@ -182,16 +102,17 @@ export default function FindModels() {
             </Button>
           )}
         </div>
-        <p className="text-xs text-muted-foreground">Type a term, then pick a site below to browse it inside Studio.</p>
+        <p className="text-xs text-muted-foreground">Type a term (optional), then pick a site below to browse it in the Studio Model Browser.</p>
       </CardContent></Card>
 
+      {/* 2) Approved site buttons */}
       <Card><CardContent className="space-y-2 p-5">
-        <p className="text-sm font-semibold">Browse trusted model sites — inside Studio</p>
+        <p className="text-sm font-semibold">Browse trusted model sites — in Studio</p>
         <p className="text-xs text-muted-foreground">{MODEL_BROWSER_COPY.flow}</p>
         <div className="flex flex-wrap gap-2 pt-1">
           {BROWSE_PROVIDERS.map((p) => (
-            <Button key={p.id} size="sm" onClick={() => browse(p.id)}>
-              <Compass className="h-4 w-4" /> {p.label}
+            <Button key={p.id} size="sm" variant={siteId === p.id ? "primary" : "secondary"} onClick={() => browse(p.id)}>
+              {siteId === p.id ? <RotateCw className="h-4 w-4" /> : <Compass className="h-4 w-4" />} {p.label}
             </Button>
           ))}
         </div>
@@ -200,12 +121,35 @@ export default function FindModels() {
         </p>
       </CardContent></Card>
 
+      {/* 3) Control center — visible only while the locked window is open */}
+      {showPanel(panel) && (
+        <Card><CardContent className="space-y-2 p-5">
+          <p className="flex items-center gap-1.5 text-sm font-semibold">
+            <Compass className="h-4 w-4 text-primary" /> {panelLabel(panel)}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            The site is open in a separate, locked Snapmaker Studio window. Download the STL/3MF there,
+            then come back and open it here for Project Doctor.
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button size="sm" onClick={bringToFront}><ExternalLink className="h-4 w-4" /> Bring browser to front</Button>
+            {siteId && (
+              <Button size="sm" variant="secondary" onClick={() => browse(siteId)}>
+                <RotateCw className="h-4 w-4" /> Reopen {providerLabel(siteId)}
+              </Button>
+            )}
+            <Button size="sm" variant="secondary" onClick={closeBrowser}><X className="h-4 w-4" /> Close Model Browser</Button>
+          </div>
+        </CardContent></Card>
+      )}
+
+      {/* 4) Downloaded file → Project Doctor (single, no duplicate) */}
       <Card><CardContent className="space-y-2 p-5">
         <p className="text-sm font-semibold">Got a downloaded file?</p>
         <p className="text-xs text-muted-foreground">Open the STL or 3MF you downloaded and Studio checks it for your U1.</p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Button size="sm" onClick={openFile}><FolderOpen className="h-4 w-4" /> Open downloaded file</Button>
-          <Button size="sm" variant="secondary" asChild><Link to="/doctor/project"><Stethoscope className="h-4 w-4" /> Check in Project Doctor</Link></Button>
+          <Button size="sm" variant="secondary" asChild><Link to="/doctor/project"><Stethoscope className="h-4 w-4" /> Run Project Doctor</Link></Button>
         </div>
       </CardContent></Card>
 
@@ -267,10 +211,10 @@ export default function FindModels() {
       )}
 
       <div className="rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">
-        <p>Studio opens these sites in an approved-sites-only embedded browser — it doesn't
-           fetch, scrape, mirror, or re-host their models, and doesn't bypass any login or
-           paywall. Navigation off the approved sites is blocked. Downloads and one-click
-           import are not available; download from the site, then open the file in Studio. {DISCLAIMER}</p>
+        <p>Studio opens these sites in a Studio-owned, approved-sites-only Model Browser window — it
+           doesn't fetch, scrape, mirror, or re-host their models, and doesn't bypass any login or
+           paywall. Navigation off the approved sites is blocked. Downloads and one-click import are
+           not available; download from the site, then open the file in Studio. {DISCLAIMER}</p>
       </div>
     </div>
   );

@@ -3,12 +3,12 @@
 // control lives here in trusted Studio UI. No scraping, no auto-import, no API keys.
 
 export const MODEL_BROWSER_COPY = {
-  flow: "Browse inside Studio. Download from the site. Open the STL/3MF here. Run Project Doctor.",
+  flow: "Browse in the Studio Model Browser. Download the STL/3MF from the site. Then open it here and run Project Doctor.",
   openTitle: "Model Browser is open",
-  closedHint: "Pick a site above to browse it inside Studio.",
+  closedHint: "Pick a site above to open it in the Studio Model Browser.",
   trust:
-    "Approved sites only, in a locked window. Studio never scrapes, imports, or " +
-    "bypasses a site's login or terms — and no API keys are needed.",
+    "Approved sites only, in a locked Studio-owned window. Studio never scrapes, " +
+    "imports, or bypasses a site's login or terms — and no API keys are needed.",
 } as const;
 
 export interface BrowserPanelState {
