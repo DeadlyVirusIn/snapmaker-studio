@@ -13,5 +13,24 @@ venv/
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# Tooling / local state (never commit to the public repo)
 .claude-octopus/
 backend/validation/
+validation/report.md
+.docker/mcp/
+.docker/**/mcp-toolkit.db
+.docker/**/.mcp-toolkit-migration.lock
+
+# Accidental Windows system/cache trees created by tooling/browsers
+%SystemDrive%/
+**/ProgramData/Microsoft/Windows/Caches/
+cversions*.db
+*.ver0x*.db
+*.sqlite
+*.sqlite3
+
+# Local temp/cache
+*.log
+*.tmp
+.cache/

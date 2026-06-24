@@ -93,7 +93,7 @@ phased plan in [`ROADMAP.md`](ROADMAP.md) and the audit in
 ## Proof links (current)
 - Repo: github.com/DeadlyVirusIn/snapmaker-studio
 - Vision: `docs/PRODUCT_VISION.md` . Roadmap: `docs/ROADMAP.md`
-- Reliability: `../PROOF.md` (112 files, 100%)
+- Reliability: `../PROOF.md` (112-file validation corpus, 112/112 passed the U1-clean gate — not a print-success guarantee)
 - Release process: `RELEASE.md`
 
 ## Asks / notes for submission
