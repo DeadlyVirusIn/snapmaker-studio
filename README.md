@@ -20,7 +20,8 @@ walks it through the whole pre-print workflow:
 1. **Understand** — colors, size, volume, complexity, source ecosystem, and a **Design Health** read on the actual mesh, in plain language.
 2. **Validate** — will it print? **Watertight check, hole detection, geometry integrity, overhang/supports prediction, stability/tip-risk, and bed fit** — each with what was found, why it matters, and what to do.
 3. **Prepare** — make a clean, print-ready copy. Your originals are never changed.
-4. **Monitor** — watch your printer's live status while it prints (read-only).
+4. **Monitor & control** — watch your printer's live status, and with an explicit
+   confirmation pause/resume/cancel/start a print or upload sliced gcode.
 
 It's not a converter — it's the layer that surfaces the likely print risks, and
 why, *before* you waste filament, so you can decide what to fix. (Converting to a
@@ -33,9 +34,11 @@ open source.
 multicolor or support-heavy prints — who want to diagnose, prepare, troubleshoot,
 and estimate a print *before* opening the slicer.
 
-**What it's not:** not a slicer, not a printer controller, and not a guarantee of
-print success. Studio gives advisory readiness checks and guidance; Orca slices,
-Fluidd monitors, and the U1 prints.
+**What it's not:** not a slicer and not a guarantee of print success. Studio gives
+advisory readiness checks and guidance; Orca slices and the U1 prints. Studio can
+monitor your U1 and, with an explicit confirmation each time, control a print
+(pause/resume/cancel/start/emergency-stop) — it never auto-starts and does not
+control Orca.
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > Validated on an internal real-world Bambu/Orca corpus — **112 files → 100%
@@ -55,17 +58,18 @@ Open the downloaded `…_x64-setup.exe`, install, and launch **Snapmaker Studio*
 No account, no cloud, nothing leaves your computer. Older builds and checksums are
 on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
-## Try beta.13 — Studio Model Browser
+## Try beta.14 — Printer Hub: monitor, control, send
 
-Studio Model Browser lets you browse approved 3D model sites in a locked Snapmaker
-Studio browser window (no Chrome/Edge). Download STL/3MF files from the source site,
-then open them in Studio and run Project Doctor. No API keys are required for
-beginners. Studio does not scrape, mirror, bypass login/paywalls, or fake automatic
-imports.
+Watch your Snapmaker U1 live (state, progress, bed + 4 toolhead temps, history,
+health), then control a print safely: pause, resume, cancel, upload sliced gcode, and
+start — start, cancel, and emergency-stop each ask you to confirm first. Studio never
+auto-starts a print, stays local (no cloud/account), uploads sliced gcode only, and
+does not slice or control Snapmaker Orca. Plus the Studio Model Browser and Project
+Doctor for a full local workflow.
 
-- Release: [v0.4.0-beta.13](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.13)
-- Installer: `Snapmaker.Studio_0.4.0-beta.13_x64-setup.exe`
-- SHA256: `5bdb4c0aed9b1df78c3c7276f783cec665a2744bf89fa5cb62e1e2ed40d33717`
+- Release: [v0.4.0-beta.14](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.14)
+- Installer: `Snapmaker.Studio_0.4.0-beta.14_x64-setup.exe`
+- SHA256: `44735090d6aea3c7596427b5f37bb9bb346327e91482990405bbbfe4a662119d`
 - Unsigned beta: the installer is not code-signed yet, so Windows SmartScreen may show “Unknown publisher.” That is expected for this beta. Download only from the release link above and verify the SHA256 before installing.
 
 Install:
@@ -74,7 +78,7 @@ Install:
 2. Verify the checksum. It must match the SHA256 published on the release:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.13_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.14_x64-setup.exe
 ```
 
 3. Run it. On the SmartScreen prompt choose **More info → Run anyway** only after verifying the hash.
@@ -120,10 +124,12 @@ printer target; the workflow is built to grow across ecosystems.
   now backed by the Design Health geometry checks above.
 - **Prepare** — make a clean, validated print-ready copy in one click. Originals are
   never overwritten; every change is recorded.
-- **Printer Hub (read-only)** — discover a networked Snapmaker U1 over its open,
-  LAN-trusted interface and watch live status: print state, progress, bed and
-  toolhead temperatures. **Monitoring only** — no upload, no print start, no printer
-  changes.
+- **Printer Hub** — discover a networked Snapmaker U1 over its open, LAN-trusted
+  interface and watch live status: print state, progress, bed and toolhead
+  temperatures, history, health. **Safe control:** pause, resume, cancel, upload
+  sliced gcode, and start — start/cancel/emergency-stop each require an explicit
+  confirmation. Studio never auto-starts a print and uploads sliced gcode only (it
+  does not slice).
 - **Design Library** — everything you open is checked, scored, and kept with its full
   history, so you always know what's ready.
 - **Engine + CLI** — the same workflow as a pure-Python engine and `u1convert` CLI for
