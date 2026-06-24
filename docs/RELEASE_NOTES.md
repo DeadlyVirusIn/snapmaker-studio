@@ -1,57 +1,43 @@
-# Snapmaker Studio v0.4.0-beta.16 — first-print clarity
+# Snapmaker Studio v0.4.0-beta.16.1 — Printer Hub safety patch
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-**A beginner-first polish release: a guided "start your first print" path, a clear
-slice→send handoff, safer printer controls, and plain-language wording — on top of
-everything shipped in beta.13–15. Local-first, advisory, no guarantees.**
+A small safety patch on top of beta.16. No feature changes.
 
-## What's new (novice first-print polish)
+## Fixes
 
-- **Dashboard "Start your first print" card** — the whole path in one place: find a
-  model → Source Check → Project Doctor → prepare a safe copy → Open in Snapmaker Orca →
-  export gcode → upload in Printer Hub. One "Start guided flow" button, plus a link to
-  each step. Cuts through the full Doctors sidebar for first-timers.
-- **Slice → export → send hint** — after **Open in Snapmaker Orca**, Studio shows the
-  next step: *slice in Orca, export the .gcode, then return to Printer Hub and upload it.*
-  A "what is gcode?" tooltip explains it. Studio does not slice — Orca does.
-- **Safer emergency stop** — in Printer Hub the emergency stop now sits in its own clearly
-  marked danger box (not next to the everyday controls), with a stronger confirm: *halts
-  motion/heaters and may require a firmware restart before printing again.* Still confirmed.
-- **Plain-language verdicts** — Project Doctor results now pair the verdict with an action:
-  "Looks ready to prepare", "Needs a fix first", "Can prepare a U1 copy", "Review before
-  printing". Advisory — no "will print" guarantees.
-- **Source Check framing** — "what needs Snapmaker Orca" instead of "cannot convert", so a
-  detected PrusaSlicer/Cura file reads as a next step, not a failure.
+- **Emergency Stop now works on the Snapmaker U1.** On a real U1, the printer's
+  Moonraker build returns **404** for `POST /printer/emergency_stop`, so the beta.16
+  Emergency Stop action errored and did nothing. Studio now sends the canonical Klipper
+  **`M112`** via `/printer/gcode/script` (confirmed available on the real U1). Emergency
+  stop still requires explicit in-app confirmation.
 
-## Carried forward (all live)
+## Real-U1 hardware verification (2026-06-24, firmware 1.4.1.6)
 
-Studio Model Browser, Printer Hub (monitor + confirmed control + send sliced gcode),
-Source Check, Print Quality evidence, Plate Color Remap 2D preview, Project/Compatibility/
-Scale/First-Layer/Multi-Material Doctors, Batch, Library, one-click Open in Snapmaker Orca.
+- **Monitoring — hardware-verified:** live state, bed + 4 toolhead temps, bed volume,
+  firmware, and job history read correctly from a real U1.
+- **Upload / send — hardware-verified:** a test gcode uploaded via the same path the app
+  uses (`print_started:false` — no print started).
+- **Start / pause / cancel — hardware-tested** on a supervised, no-motion/no-heat
+  (dwell-only) test gcode: all worked.
+- **Resume** produced a U1 firmware "System Anomaly" because a no-motion/unhomed test is
+  not a valid resume context — final verification needs a normal supervised print.
+- **Emergency stop was not fired on hardware** intentionally (the fix is verified by the
+  available `gcode/script` path); firing it forces a klipper shutdown + restart.
 
-## Judge / proof package
-
-Real screenshots and a 5/15-minute demo path: [JUDGE_DEMO.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.16/docs/JUDGE_DEMO.md),
-[SCREENSHOTS_BETA16.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.16/docs/SCREENSHOTS_BETA16.md).
-Printer Hub control/send is contract-tested (mocked Moonraker); real-U1 verification is a
-manual checklist ([PRINTER_HUB_VERIFICATION.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.16/docs/PRINTER_HUB_VERIFICATION.md)) — there is no U1 in CI.
-
-## Security / trust
-
-Local-first; no cloud, no account. Printer control is user-confirmed (no auto-start).
-The installer is **not code-signed** (deferred until adoption / Innovation Fund) — verify
-the SHA256 below.
+Studio does not slice and never takes autonomous control. Printer Hub provides local,
+user-confirmed printer actions; Studio never auto-starts a print.
 
 ## Download (unsigned beta)
 
 ```
-File:    Snapmaker.Studio_0.4.0-beta.16_x64-setup.exe
-Size:    16117828 bytes
-SHA256:  bfdcf855e69361a1aa4d15e5725a3709f1a1909ae074f26a299d5c06609f0788
+File:    Snapmaker.Studio_0.4.0-beta.16.1_x64-setup.exe
+Size:    16119421 bytes
+SHA256:  1cef1ce0288cdffbb6382eb74cbaa51569b4e7fe3fc9a1c2d3c034101889f0c4
 ```
 
-SmartScreen may show "Unknown publisher." Verify the SHA256 before installing.
+Unsigned — SmartScreen may show "Unknown publisher." Verify the SHA256 before installing.
 
-Full guidance: [docs/windows-install.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.16/docs/windows-install.md).
+Full guidance: [docs/windows-install.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.16.1/docs/windows-install.md).
+Verification details: [docs/PRINTER_HUB_VERIFICATION.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.16.1/docs/PRINTER_HUB_VERIFICATION.md).
