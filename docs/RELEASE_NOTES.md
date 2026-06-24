@@ -1,60 +1,69 @@
-# Snapmaker Studio v0.4.0-beta.11
+# Snapmaker Studio v0.4.0-beta.12 — beta.11 completion release
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-**One-click "Open in Snapmaker Orca" — hand a prepared U1 copy straight to the slicer.**
+**Completes the beta.11 scope: Plate Color Remap clarity, more Print Quality
+paths, a clearer known-good comparison, a tighter security policy — on top of the
+one-click "Open in Snapmaker Orca" handoff from beta.11.**
 
 ## The Intelligence Layer for Open 3D Printing
 Snapmaker Orca slices. Fluidd monitors. **Studio helps decide what to fix before you print.**
-Before a layer is sliced, Studio reads your model and your Snapmaker U1 (read-only)
-and surfaces likely print risks, what it costs, and what to sell it for — one
-screen, plain language. Advisory only; not a guarantee of print success.
+Advisory only; not a guarantee of print success. Studio does not slice and does
+not control Orca.
 
-## New in beta.11
-- **One-click "Open in Snapmaker Orca."** Once Studio has prepared a validated U1
-  copy, hand it straight to Snapmaker Orca to slice. Studio detects an installed
-  Snapmaker Orca at its real install location and launches it with the prepared
-  file — a one-way handoff. **Studio checks the model first. Snapmaker Orca slices
-  it next.** Studio does not slice and does not control Orca.
-- **Graceful fallbacks.** If Snapmaker Orca isn't installed, the card shows
-  **Install Snapmaker Orca** (official releases) and **Copy path** instead. Clear
-  error states for "not installed," "prepared file missing," and "couldn't launch."
-- **The install path is never shown in the UI**, and the handoff only appears once
-  a prepared/safe-copy file actually exists.
-- **Snapmaker Orca vocabulary alignment.** Product-specific copy (Compatibility
-  Doctor, the handoff card) now consistently says "Snapmaker Orca," matching the
-  verified Snapmaker U1 profile (name, 270 mm Z, 4 toolheads).
+## New in this completion release
+- **Plate Color Remap — no more dead ends.** When a plate's colours are painted
+  per-face (no swappable filament slot), Studio now explains that in plain
+  language instead of a blank "no base colors detected." The colour + plate
+  preview (source → target swatches, protected colours, gold accents, untouched
+  plates, what changes vs stays) is shown up front. Original file never modified.
+- **Print Quality Doctor — two new paths.** Added **"Won't stick / lets go of the
+  bed"** (bed adhesion) and **"Supports fail or won't separate"** (support
+  failure), each with likely causes, first checks, the Snapmaker Orca settings to
+  look at, and what to avoid. 12 symptom paths in total.
+- **Known-good comparison — clearer.** The "fails even with supports" flow now
+  opens with plain framing: compare a failed print with one that worked; name the
+  problem file, what printed before, and the filament that worked vs failed —
+  Studio points at what likely changed and what to try next. Advisory, never a
+  guarantee.
+- **Tighter security policy.** The desktop app now ships a Content-Security-Policy
+  (was none): the main window is restricted to its own assets, the local loopback
+  engine, and Tauri IPC. The approved-site Model Browser is a separate locked
+  window governed by the site's own policy and still gets no app IPC.
+- **One-click "Open in Snapmaker Orca"** (from beta.11) — prepare a validated U1
+  copy and hand it straight to an installed Snapmaker Orca; falls back to Install
+  Snapmaker Orca + Copy path. One-way handoff.
 
-## Carried forward from beta.10
-- Approved-site **Model Browser v1** — browse trusted sites in a locked in-app
-  window; manual download/open only; no scraping, no auto-import, no API keys.
-- **"Fails even with supports"** troubleshooting + known-good print comparison in
-  the Print Quality Doctor.
-- **Scale Options Ladder**, **Compatibility Doctor**, **Project Doctor**, and
-  **Plate Color Remap** (verified safe copy; original never modified).
-- Local-API and reliability hardening.
+## Carried forward
+Approved-site Model Browser v1 (manual download/open; no scraping, no auto-import,
+no API keys), Scale Options Ladder, Compatibility Doctor, Project Doctor, local-API
+and reliability hardening.
 
-## Important beta notes
-- This is an **unsigned Windows beta**. Windows SmartScreen may show
-  **"Unknown publisher."** Verify the installer SHA256 before installing.
-- The Model Browser is **approved-site browsing only** — manual download/open;
-  no API keys, no auto-import, no download interception; never scrapes.
-- Doctors provide **advisory checks and guidance**, not print guarantees, and do
-  not auto-edit slicer settings, printer profiles, or g-code.
-- "Open in Snapmaker Orca" is a one-way file handoff you initiate; Studio never
-  passes slicing commands or controls Orca.
-- **CSP hardening and code signing remain planned** before a wider public launch.
+## Known limitations (honest)
+- **In-window Model Browser controls** (Back to Studio / Run Project Doctor *inside*
+  the site window) are intentionally not added: giving the third-party page those
+  controls would require granting the remote page app IPC (forbidden by our
+  security model), and hosting the site inside a local toolbar shell is blocked by
+  the sites' own `X-Frame-Options`. The safe control surface is the Studio **Find
+  Models** page (Open downloaded file → Run Project Doctor), which is unchanged.
+- **Full 3D plate render** for Plate Color Remap remains deferred; the colour/plate
+  swatch preview is the current visual.
+- **File ecosystem:** STL and 3MF reads are core and covered by the test suite;
+  PrusaSlicer projects are detected/read; full cross-slicer *conversion* is
+  deliberately not attempted (export-stability risk without proven need).
+- This is an **unsigned Windows beta** — Windows SmartScreen may show "Unknown
+  publisher." Verify the SHA256 before installing. Code signing remains planned.
 
 ## Download (unsigned beta)
 Only download from the official GitHub release, and verify the checksum.
 
 ```
-File:    Snapmaker.Studio_0.4.0-beta.11_x64-setup.exe
-Size:    16,092,069 bytes
-SHA256:  9818f1a8ea5507257a58831c419303d32014bd34efb0f81c2bcde27cd5d78a56
+File:    Snapmaker.Studio_0.4.0-beta.12_x64-setup.exe
+Size:    16,090,535 bytes
+SHA256:  593bd0dc88473dac7df53ccee32949b2dafab6640074ff3b4607b21763c93b32
 ```
 
-Full guidance: [docs/windows-install.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.11/docs/windows-install.md).
+Full guidance: [docs/windows-install.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.12/docs/windows-install.md).
 
 _Beta — local-first; nothing leaves your computer._

@@ -54,9 +54,15 @@ function FailsWithSupports() {
 
       {open && (
         <div className="space-y-3">
+          <p className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+            <b className="text-foreground">Compare a failed print with one that worked.</b> Tell Studio
+            the problem file, whether it printed before, and the filament that worked vs the one failing
+            now — Studio points at what likely changed and what to try next, in plain language. Advisory
+            only; never a guarantee.
+          </p>
           <div className="flex flex-wrap items-center gap-2">
             <Button size="sm" variant="secondary" onClick={async () => { const p = await openModelDialog(); if (p) { setPath(p); setRes(null); } }}>
-              <FilePlus className="h-4 w-4" /> {path ? "Choose another model" : "Open the project (optional)"}
+              <FilePlus className="h-4 w-4" /> {path ? "Choose another model" : "Open the problem file (optional)"}
             </Button>
             {path && <span className="truncate text-xs text-muted-foreground" title={path}>{path.split(/[\\/]/).pop()}</span>}
           </div>

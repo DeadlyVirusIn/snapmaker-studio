@@ -1,4 +1,4 @@
-# What to Test First (beta.11)
+# What to Test First (beta.12 — beta.11 completion)
 
 Three short beginner paths through Snapmaker Studio. Everything runs locally;
 nothing is uploaded. Originals are never modified, and findings are advisory

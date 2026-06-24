@@ -55,11 +55,11 @@ Open the downloaded `…_x64-setup.exe`, install, and launch **Snapmaker Studio*
 No account, no cloud, nothing leaves your computer. Older builds and checksums are
 on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
-## Try beta.11
+## Try beta.12 — beta.11 completion
 
-- Release: [v0.4.0-beta.11](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.11)
-- Installer: `Snapmaker.Studio_0.4.0-beta.11_x64-setup.exe`
-- SHA256: `9818f1a8ea5507257a58831c419303d32014bd34efb0f81c2bcde27cd5d78a56`
+- Release: [v0.4.0-beta.12](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.12)
+- Installer: `Snapmaker.Studio_0.4.0-beta.12_x64-setup.exe`
+- SHA256: `593bd0dc88473dac7df53ccee32949b2dafab6640074ff3b4607b21763c93b32`
 - Unsigned beta: the installer is not code-signed yet, so Windows SmartScreen may show “Unknown publisher.” That is expected for this beta. Download only from the release link above and verify the SHA256 before installing.
 
 Install:
@@ -68,7 +68,7 @@ Install:
 2. Verify the checksum. It must match the SHA256 published on the release:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.11_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.12_x64-setup.exe
 ```
 
 3. Run it. On the SmartScreen prompt choose **More info → Run anyway** only after verifying the hash.

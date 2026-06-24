@@ -1,4 +1,4 @@
-# Snapmaker Studio — Judge Overview (beta.11)
+# Snapmaker Studio — Judge Overview (beta.12 — beta.11 completion)
 
 > Independent open-source project — not affiliated with or endorsed by Snapmaker.
 > "Snapmaker" is a trademark of its respective owner.
@@ -41,8 +41,15 @@ Snapmaker U1 owners, especially beginners working with multicolor or
 support-heavy prints, who want to diagnose, prepare, troubleshoot, and estimate a
 print before opening the slicer.
 
-## beta.11 capabilities
+## beta.12 capabilities (completes beta.11)
 
+- Plate Color Remap explains painted-per-face plates clearly (no dead "no base
+  colors" state); shows the colour/plate preview of what changes vs stays.
+- Print Quality Doctor adds bed-adhesion and support-failure paths (12 total).
+- Known-good comparison opens with plain "compare a failed print with one that
+  worked" framing.
+- Tighter security: the desktop app now ships a Content-Security-Policy
+  (verified: the webview still reaches the local engine and Tauri IPC).
 - One-click "Open in Snapmaker Orca" — once a validated U1 copy is prepared,
   hand it straight to an installed Snapmaker Orca to slice (one-way handoff;
   Studio never slices or controls Orca). Falls back to "Install Snapmaker Orca"
