@@ -30,9 +30,14 @@ redact any IP/hostname/path. Why each is manual:
 | Source Check **report** (e.g. a PrusaSlicer file) | needs a file chosen via the native dialog |
 | Project Doctor **result** | needs a model opened via the native dialog |
 | Open in Snapmaker Orca **handoff** | needs Orca installed (see ORCA_2_3_4_VALIDATION.md) |
-| Printer Hub **connected to U1** (live telemetry) | needs the real U1; **redact the printer IP** before sharing |
-| Control **confirmation dialog** (start/cancel) | only renders with a connected printer + an active control |
-| Emergency Stop **confirmation dialog** (not fired) | renders the confirm copy; do **not** confirm/fire it |
+| Printer Hub **connected to U1** (live telemetry) | needs the real U1 — and the connected view shows your **real print history (private model/file names)** plus the printer IP. An automated capture was attempted and **discarded for privacy** (reliable redaction of arbitrary history names isn't safe to automate). Capture manually and redact your IP + history filenames. |
+| Control **confirmation dialog** (start/cancel) | only renders with a connected printer + an active control; background shows print history → redact |
+| Emergency Stop **confirmation dialog** (not fired) | renders the confirm copy; do **not** confirm/fire it; redact the history visible behind the dialog |
+
+Note: the connected Printer Hub and its dialogs were intentionally **not committed** as
+screenshots — they exposed the operator's real U1 print history (private names). They are
+hardware-verified in [`PRINTER_HUB_VERIFICATION.md`](PRINTER_HUB_VERIFICATION.md); capture
+them manually with your own history redacted before sharing.
 
 Steps for each are in [`JUDGE_DEMO.md`](JUDGE_DEMO.md). A 60–90s shot list / voiceover is
 in [`DEMO_VIDEO_SCRIPT.md`](DEMO_VIDEO_SCRIPT.md).
