@@ -316,9 +316,15 @@ def start(host: str, filename: str, port: int = DEFAULT_PORT, timeout: float = 5
 
 def emergency_stop(host: str, port: int = DEFAULT_PORT, timeout: float = 5.0) -> dict:
     """Emergency stop — cut heaters + halt motion immediately (UI must confirm on a
-    dedicated screen). POST /printer/emergency_stop. Klipper then needs FIRMWARE_RESTART."""
+    dedicated screen). Klipper then needs FIRMWARE_RESTART to recover.
+
+    Uses the canonical Klipper ``M112`` via ``/printer/gcode/script`` rather than
+    Moonraker's ``POST /printer/emergency_stop`` — hardware testing on a real Snapmaker
+    U1 (firmware 1.4.1.6) showed the U1's Moonraker build returns 404 for
+    ``/printer/emergency_stop``, while ``/printer/gcode/script`` is available. M112 is
+    the underlying emergency-shutdown gcode and works across Klipper builds."""
     return {"ok": True, "action": "emergency_stop",
-            "result": _post(host, port, "/printer/emergency_stop", timeout).get("result")}
+            "result": _post(host, port, "/printer/gcode/script?script=M112", timeout).get("result")}
 
 
 def job_queue(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:

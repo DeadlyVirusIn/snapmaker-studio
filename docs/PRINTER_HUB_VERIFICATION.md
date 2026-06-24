@@ -60,7 +60,22 @@ Control (have filament loaded, bed clear, supervise the machine):
 | 2026-06-24 | 1.4.1.6 (extended) | 4 toolheads + bed volume | **PASS** | mcu e0–e3; 271×335×275 mm |
 | 2026-06-24 | 1.4.1.6 (extended) | History / totals | **PASS** | 16 jobs |
 | 2026-06-24 | 1.4.1.6 (extended) | Upload sliced gcode (send path) | **PASS** | operator-approved; tiny no-motion gcode uploaded (`print_started:false`), confirmed, deleted |
-| 2026-06-24 | 1.4.1.6 (extended) | Start / pause / resume / cancel / emergency-stop | **NOT RUN** | operator authorized upload-only; printer idle, no print started |
+| 2026-06-24 | 1.4.1.6 (extended) | **Start** | **PASS** | operator-approved; state → printing (dwell-only no-motion gcode) |
+| 2026-06-24 | 1.4.1.6 (extended) | **Pause** | **PASS** | state → paused |
+| 2026-06-24 | 1.4.1.6 (extended) | **Cancel** | **PASS** | state → cancelled, returned to idle |
+| 2026-06-24 | 1.4.1.6 (extended) | **Resume** | **FOUND ISSUE** | endpoint correct, but the U1 raised "System Anomaly 0003 0522" — its firmware resume macro needs a real homed/printing context; not reproducible with a no-motion test print. Recovers (clear popup); verify on a real print |
+| 2026-06-24 | 1.4.1.6 (extended) | **Emergency stop** | **BUG FOUND + FIXED** | `POST /printer/emergency_stop` returns **404** on this U1's Moonraker. Fixed in code to use canonical `M112` via `/printer/gcode/script` (confirmed available, HTTP 200). Not fired on hardware (avoids a shutdown/restart cycle) |
+
+### Findings from the real-U1 pass (2026-06-24)
+- **E-stop endpoint bug (P0 safety):** the U1's Moonraker build does not expose
+  `POST /printer/emergency_stop` (404). Fixed: emergency stop now sends `M112` via
+  `/printer/gcode/script` (the canonical Klipper emergency shutdown; endpoint confirmed
+  200 on the real U1). Ships in the next build.
+- **Resume on the U1** triggers a firmware "System Anomaly" if there is no valid print
+  context (no-motion/unhomed test). The app calls the correct endpoint; full resume
+  verification needs a real, homed, printing job.
+- **mDNS** `U1.local` did not resolve on this network; connect by IP works (the app
+  supports manual IP entry).
 
 Note: some users run community **extended firmware** (e.g. paxx12). Firmware-capability
 detection reads the Klipper object list, so extra macros/objects degrade gracefully;

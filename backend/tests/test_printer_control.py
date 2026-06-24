@@ -52,10 +52,12 @@ def test_start_passes_filename_in_query(capture_post):
     assert "/printer/print/start?filename=cube.gcode" == capture_post[-1]["path"]
 
 
-def test_emergency_stop_hits_estop_endpoint(capture_post):
+def test_emergency_stop_uses_m112_gcode(capture_post):
+    # Real U1 Moonraker returns 404 for /printer/emergency_stop; use canonical M112.
     out = service.printer_emergency_stop("U1.local")
     assert out["action"] == "emergency_stop"
-    assert capture_post[-1]["path"] == "/printer/emergency_stop"
+    assert "M112" in capture_post[-1]["path"]
+    assert "/printer/gcode/script" in capture_post[-1]["path"]
 
 
 def test_upload_rejects_non_gcode(tmp_path):
