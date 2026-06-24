@@ -65,7 +65,7 @@ beta.13 path uses a Studio-owned browser window.
 
 - Release: [v0.4.0-beta.13](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.13)
 - Installer: `Snapmaker.Studio_0.4.0-beta.13_x64-setup.exe`
-- SHA256: `593bd0dc88473dac7df53ccee32949b2dafab6640074ff3b4607b21763c93b32`
+- SHA256: `5bdb4c0aed9b1df78c3c7276f783cec665a2744bf89fa5cb62e1e2ed40d33717`
 - Unsigned beta: the installer is not code-signed yet, so Windows SmartScreen may show “Unknown publisher.” That is expected for this beta. Download only from the release link above and verify the SHA256 before installing.
 
 Install:

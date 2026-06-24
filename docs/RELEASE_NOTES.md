@@ -35,7 +35,13 @@ third-party page — with everything you need:
 
 The full beginner flow with no external browser: browse the approved site in
 Studio → download from the site → **Open downloaded file** → Project Doctor →
-prepare a validated U1 copy → **Open in Snapmaker Orca**.
+prepare a validated U1 copy → **Open in Snapmaker Orca**. Studio checks and prepares
+the file first; **Snapmaker Orca slices next** (Studio never slices and never controls
+Orca).
+
+**Verified live in this build:** Printables and MakerWorld both load in the locked
+Snapmaker Studio — Model Browser window (no Chrome/Edge). You download the STL/3MF
+from the site, then open it in Studio.
 
 ## Why it's safe (security model unchanged)
 - The remote approved-site page stays in an **isolated Tauri window with no IPC
@@ -67,8 +73,8 @@ Only download from the official GitHub release, and verify the checksum.
 
 ```
 File:    Snapmaker.Studio_0.4.0-beta.13_x64-setup.exe
-Size:    16,087,966 bytes
-SHA256:  884005e020ff74d7ba3d32e9574180ac80db0ec030f3f5ca7cb4d4b1267bad4f
+Size:    16,103,866 bytes
+SHA256:  5bdb4c0aed9b1df78c3c7276f783cec665a2744bf89fa5cb62e1e2ed40d33717
 ```
 
 Full guidance: [docs/windows-install.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.13/docs/windows-install.md).
