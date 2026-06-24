@@ -12,12 +12,43 @@ product or the branding. Brand: [`brand/`](brand/README.md).
 
 ---
 
-## Near-term versions
+## Shipped (as of v0.4.0-beta.15)
 
-Concrete next releases. Now that Snapmaker has open-sourced the U1 firmware
-(standard Klipper/Moonraker/Fluidd, local Moonraker on `:7125`, LAN-trusted),
-a **local-first Printer Hub** is feasible. Full feasibility audit:
-[`design/PRINTER_HUB.md`](design/PRINTER_HUB.md). _(No printer code is shipped yet.)_
+LIVE in the published beta — routes, endpoints, and tests exist (mocked where no
+hardware is in CI). Status is one of **SHIPPED**, **partially shipped**, or **PLANNED**.
+
+- **Printer Hub — monitoring + control + send — SHIPPED.** Discover the U1
+  (`U1.local:7125`), live status, temps, 4 toolheads, history, health, firmware
+  (read-only); plus user-confirmed control: pause / resume / cancel / start, upload
+  sliced gcode, emergency stop. Studio never auto-starts. Real-U1 hardware verification
+  is a manual checklist ([`PRINTER_HUB_VERIFICATION.md`](PRINTER_HUB_VERIFICATION.md)) —
+  there is no U1 in CI.
+- **Close-the-loop send — SHIPPED (no slicing).** Upload already-sliced gcode and start
+  a print from Studio. Studio does **not** slice; you slice in Snapmaker Orca and send
+  the exported gcode.
+- **Plate Color Remap — 2D visual preview SHIPPED; 3D render PLANNED.** The wizard shows
+  a 2D plate map (object colour chips, from→to, protected painted/gold accents, untouched
+  plates). A full rendered 3D plate preview is still future.
+- **Print Quality Doctor — evidence integration SHIPPED.** Symptom advice grounded in the
+  user's own file via the other doctors (overhang/supports, tip/stability, first-layer
+  area, bed fit, materials, colours). Advisory, no guarantees.
+- **Source Check — file/source detection SHIPPED.** Detects STL / generic 3MF /
+  Bambu-family (Orca/Bambu, +U1 flag) / PrusaSlicer / Cura; reports what Studio can read,
+  what it cannot convert yet, and the safe next step. Repair/preset **migration**
+  (actually preparing a non-U1 source) is PLANNED.
+- **Studio Model Browser — SHIPPED.** Approved 3D-model sites in a locked, Studio-owned
+  browser window; manual download → Open in Studio ([`model-browser-direction.md`](model-browser-direction.md)).
+- **Open in Snapmaker Orca — SHIPPED.** One-way handoff of a validated U1 copy to an
+  installed Snapmaker Orca. Studio does not slice or control Orca.
+- **Doctors + workflow — SHIPPED:** Project, Compatibility, Scale, First Layer,
+  Multi-Material, Cost/Pricing/Profit; Batch Prepare; Project Library; Compare/diff.
+
+## Near-term (next)
+
+The U1 firmware is open (stock Klipper/Moonraker/Fluidd, local Moonraker on `:7125`,
+LAN-trusted), so the Printer Hub above is built on solid ground. Next focus is **proof +
+beginner polish** (real screenshots, hardware verification, onboarding), then deeper
+conversion — not new headline features.
 
 ### Distribution & trust
 - The current Windows beta installer is **unsigned**, so SmartScreen shows
@@ -30,38 +61,17 @@ a **local-first Printer Hub** is feasible. Full feasibility audit:
 - Optionally evaluate **Microsoft Store** distribution later as an additional
   trusted channel.
 
-### Diagnostic Doctors (RC+1 / RC+2)
-- **Compatibility Doctor** (read-only) and **Scale Doctor** (analysis-only preview)
-  are implemented and awaiting a prerelease — not in beta.3.
-- **Print Quality Doctor** (planned) — after a bad print/preview, a beginner picks
-  a symptom (stringing, warping, ringing, layer shift, under-extrusion, poor first
-  layer, bridging, etc.) and gets likely causes + safe first checks, advisory only
-  (never auto-edits settings). MVP in RC+1; evidence integration (Printer/Project
-  Doctor) in RC+2. Plan: [`design/PRINT_QUALITY_DOCTOR.md`](design/PRINT_QUALITY_DOCTOR.md).
-
-### Plate Color Remap — rendered preview (planned)
-- The remap wizard ships a colour/part summary fallback (changing slot highlighted,
-  protected slots shown separately). A true **rendered 3D plate preview** from the
-  3MF geometry is still **deferred** — planned for a later release.
-
-### v0.5 — Printer Hub Phase A (read-only monitoring)
-- Discover the U1 on the LAN (mDNS `U1.local` / port `7125`)
-- Connect via Moonraker (server-side, no auth needed on-LAN)
-- Live printer status
-- Toolhead / material telemetry (4 toolheads)
-- Job status
-- **Read-only monitoring first** — no control, no slicing
-
-### v0.6 — Printer Hub Phase B (control)
-- Upload already-sliced gcode
-- Start / pause / cancel
-- Print job queue
-
-### Future — closing the loop
-- Slice-and-send workflow
-- Snapmaker Orca handoff **or** embedded-slicer investigation
-- (Studio produces a U1 *project*; printing needs sliced gcode — this is the gap
-  to close. **Print sending is not shipped today.**)
+### Planned / future
+- **Repair / preset migration wizard** — Source Check already *detects* non-U1 sources
+  (PrusaSlicer/Cura/generic); the next step is safely *preparing* a clean U1 copy from
+  them, with clear "what carried over / what didn't" reporting.
+- **Rendered 3D plate preview** — a full geometry render of the plate (the 2D colour-map
+  preview ships today; 3D is the future upgrade).
+- **Deeper Print Quality intelligence** — extend the evidence base with more signals and
+  known-good deltas.
+- **Corpus validator wired into CI**; broader ecosystem adapters.
+- **Embedded slicing is out of scope** — slicing stays in Snapmaker Orca; Studio prepares
+  and (for already-sliced gcode) sends.
 
 ---
 
