@@ -22,9 +22,11 @@ a **local-first Printer Hub** is feasible. Full feasibility audit:
 ### Distribution & trust
 - The current Windows beta installer is **unsigned**, so SmartScreen shows
   "Unknown publisher" (see [`windows-install.md`](windows-install.md)).
-- **Acquire and use a code-signing certificate before any wider public launch.**
-  Signing improves trust, though newly signed files may still need time to build
-  SmartScreen reputation.
+- **Paid code signing is deferred** — planned after Snapmaker Studio shows adoption
+  or wins Innovation Fund support. It is **not a release blocker**. Until then we use
+  free trust mitigations only: release from the official GitHub repo, publish the
+  installer **SHA256**, and provide a PowerShell verification command. No signing is
+  claimed while the installer is unsigned.
 - Optionally evaluate **Microsoft Store** distribution later as an additional
   trusted channel.
 
