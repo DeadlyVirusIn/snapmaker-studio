@@ -14,7 +14,7 @@ _Project Doctor. Printer Doctor. Cost Doctor — Studio checks every model, surf
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.** "Snapmaker" is a trademark of its respective owner.
 
 Snapmaker Studio is a friendly, local-first desktop app (plus a scriptable engine
-and CLI) that **reads the real geometry** of a 3D design from **any** common source and
+and CLI) that **reads the real geometry** of 3D designs from common STL/3MF sources and
 walks it through the whole pre-print workflow:
 
 1. **Understand** — colors, size, volume, complexity, source ecosystem, and a **Design Health** read on the actual mesh, in plain language.
@@ -151,8 +151,8 @@ printer target; the workflow is built to grow across ecosystems.
 - **Preservation-first.** Geometry, painting, and color are kept faithfully. Studio
   never silently drops colors or detail — and when it can't guarantee a faithful
   result, it stops and tells you why.
-- **Open printer opportunity.** The U1 runs open, LAN-trusted firmware, which is what
-  makes read-only monitoring (and a future, opt-in control layer) possible.
+- **Open printer opportunity.** The U1 runs open, LAN-trusted firmware, which lets Studio
+  provide local Printer Hub monitoring and user-confirmed control/send without cloud accounts.
 
 ## Compatibility
 
