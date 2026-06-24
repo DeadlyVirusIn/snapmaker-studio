@@ -18,7 +18,7 @@ repos), so the Printer Hub talks to a standard, documented API.
 | Firmware version | Real U1 (`/printer/info.software_version`) | ✅ **HARDWARE-VERIFIED** (1.4.1.6, extended firmware) |
 | History / totals | Real U1 (`/server/history/totals`) | ✅ **HARDWARE-VERIFIED** (16 jobs) |
 | Control: pause/resume/cancel/start endpoints | `test_printer_control.py` (mocked Moonraker) | **Contract-verified; hardware test pending safety approval** |
-| Upload sliced gcode (multipart) | `test_printer_control.py` | **Contract-verified; hardware test pending** |
+| Upload sliced gcode (multipart) | **Real U1, 2026-06-24** | ✅ **HARDWARE-VERIFIED** (file created on printer, `print_started: false` — no actuation; then deleted) |
 | Emergency stop endpoint | `test_printer_control.py` | **Contract-verified; intentionally NOT fired on hardware** |
 | UI safety gating (offline blocks; start/cancel/e-stop confirm) | `printerControl.test.ts` (8 tests) | ✅ **Verified (pure logic)** |
 
@@ -59,7 +59,8 @@ Control (have filament loaded, bed clear, supervise the machine):
 | 2026-06-24 | 1.4.1.6 (extended) | Bed + toolhead temps | **PASS** | bed 24°, extruder 24° |
 | 2026-06-24 | 1.4.1.6 (extended) | 4 toolheads + bed volume | **PASS** | mcu e0–e3; 271×335×275 mm |
 | 2026-06-24 | 1.4.1.6 (extended) | History / totals | **PASS** | 16 jobs |
-| 2026-06-24 | 1.4.1.6 (extended) | Control (start/pause/cancel/upload/e-stop) | **NOT RUN** | pending explicit safety approval; printer was idle |
+| 2026-06-24 | 1.4.1.6 (extended) | Upload sliced gcode (send path) | **PASS** | operator-approved; tiny no-motion gcode uploaded (`print_started:false`), confirmed, deleted |
+| 2026-06-24 | 1.4.1.6 (extended) | Start / pause / resume / cancel / emergency-stop | **NOT RUN** | operator authorized upload-only; printer idle, no print started |
 
 Note: some users run community **extended firmware** (e.g. paxx12). Firmware-capability
 detection reads the Klipper object list, so extra macros/objects degrade gracefully;
