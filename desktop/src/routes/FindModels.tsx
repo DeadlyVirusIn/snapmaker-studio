@@ -32,6 +32,7 @@ export default function FindModels() {
 
   // The site currently embedded in-app (null = chooser view).
   const [site, setSite] = useState<{ id: string; label: string } | null>(null);
+  const [stalled, setStalled] = useState(false);
   const viewportRef = useRef<HTMLDivElement | null>(null);
 
   const providerLabel = (id: string) => BROWSE_PROVIDERS.find((p) => p.id === id)?.label ?? id;
@@ -84,6 +85,17 @@ export default function FindModels() {
 
   useEffect(() => () => { closeEmbeddedBrowser().catch(() => {}); }, []);
 
+  // Never strand the user on a blank panel: after a grace period, surface
+  // retry / open-external / pick-another alongside the viewport.
+  useEffect(() => {
+    setStalled(false);
+    if (!site) return;
+    const t = window.setTimeout(() => setStalled(true), 12000);
+    return () => window.clearTimeout(t);
+  }, [site]);
+
+  const openExternal = (id: string) => window.open(linkOutUrl(id, query), "_blank", "noreferrer");
+
   const searchM = useMutation({
     mutationFn: () => modelSearch(query, { sources: filters.sources }),
     onSuccess: (d) => setResp(d),
@@ -126,11 +138,27 @@ export default function FindModels() {
           </p>
         </CardContent></Card>
 
-        {/* The native approved-site webview is positioned over this region. */}
+        {/* The native approved-site webview is positioned over this region. This
+            content shows only until/unless the webview paints over it. */}
         <div ref={viewportRef} className="relative flex-1 overflow-hidden rounded-lg border border-border bg-muted/20">
-          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading {site.label} inside Studio…
-          </div>
+          {!stalled ? (
+            <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading {site.label} inside Studio…
+            </div>
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+              <p className="text-sm font-medium">This site did not load inside Studio.</p>
+              <p className="max-w-md text-xs text-muted-foreground">
+                {site.label} may block loading inside an embedded browser. Open it externally
+                or try another approved site — then download the STL/3MF and open it here.
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button size="sm" onClick={() => browse(site.id)}><RotateCw className="h-4 w-4" /> Retry</Button>
+                <Button size="sm" variant="secondary" onClick={() => openExternal(site.id)}><ExternalLink className="h-4 w-4" /> Open in external browser</Button>
+                <Button size="sm" variant="secondary" onClick={openFile}><FolderOpen className="h-4 w-4" /> Open downloaded file</Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
