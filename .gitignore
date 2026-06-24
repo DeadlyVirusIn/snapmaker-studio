@@ -13,3 +13,5 @@ venv/
 # OS / editor
 .DS_Store
 Thumbs.db
+.claude-octopus/
+backend/validation/
