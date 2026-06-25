@@ -1,34 +1,33 @@
-# Snapmaker Studio v0.4.0-beta.18.3 — Readiness Truth Fix
+# Snapmaker Studio v0.4.0-beta.18.4 — Layout & Orca-Accurate Scale Fit
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-Trust fixes found by real installed-app testing on a 13-colour / 5-plate project.
+Two real-usage trust fixes on top of beta.18.3.
 
 ## Fixes
 
-- **Project Doctor no longer calls a file "U1-ready / 100" when print-setup risks remain.**
-  More colours than the U1's 4 toolheads, or likely-needed supports, now demote the
-  headline to "Review before printing" with capped stars and clear at-risk reasons
-  (remap to 4 colours, enable supports, arrange plates in Orca).
-- **Cost / Pricing / Profit Doctors show the real calculator** (cost, suggested price,
-  profit, the grams × price ÷ weight formula) when a model is loaded — no more
-  "how to run" placeholder.
-- **Compatibility Doctor separates profile from layout.** Success now reads
-  "U1 profile copy created" with an explicit caveat that layout isn't verified —
-  open in Snapmaker Orca and use **Arrange all plates** before slicing.
-- **Scale Doctor 3MF rows are preview-only** — they no longer fake a "copied" action.
-  STL keeps a real "Prepare scaled copy". 3MF users get an "Open in Snapmaker Orca to
-  resize" path.
+- **Real 3MF layout detection.** Studio now reads each placed object's transformed bounding
+  box and reports layout readiness — `fail` when an object sits outside the plate or the
+  arrangement is wider than the 270 mm bed, `warn` for multi-plate projects it can't fully
+  verify, `unknown` when there's no placement data. Project Doctor folds this in, so a
+  profile-compatible file is not called ready while layout is unverified or off-plate. Next
+  action: open in Snapmaker Orca and **Arrange all plates** before slicing.
+- **Orca-accurate Scale Doctor fit.** The size ladder no longer labels a scale "Safe /
+  Recommended" from dimensions alone. Snapmaker Orca scales about an object's fixed centre
+  and rejects a scale when the placed bbox crosses the plate boundary or height limit, so
+  Studio now checks placement too. When it can't verify placement (multi-plate, off-plate),
+  the ladder is shown as **size-only** — "Largest fit by size only … verify in Orca" — with
+  no false "Recommended". STL keeps a real prepare action; 3MF stays preview-only.
 
 Originals are never modified. Studio does not slice. No print-success guarantees.
 
 ## Download (unsigned beta)
 
 ```
-File:    Snapmaker.Studio_0.4.0-beta.18.3_x64-setup.exe
-Size:    16128701 bytes
-SHA256:  20eca24b7e6c5280680be09899f1cb8caf65a4559b2d8f67cd0a528cf56d0cef
+File:    Snapmaker.Studio_0.4.0-beta.18.4_x64-setup.exe
+Size:    16131795 bytes
+SHA256:  48bcfe686ae2f1b28fad7265ba3f4cad43a653f1abdface82d9e4170670b8672
 ```
 
-Unsigned — SmartScreen may show "Unknown publisher." Verify the SHA256 before installing.
+Unsigned — verify the SHA256 before installing.
