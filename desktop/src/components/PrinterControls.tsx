@@ -110,7 +110,7 @@ export function PrinterControls({
 
             <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
               <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-              Only start a print if the U1 is clear, loaded, and ready. Studio sends the command but does not check the bed for you.
+              Only start if the bed is clear and loaded — Studio doesn't inspect it for you.
             </p>
 
             <div className="mt-2 rounded-md border border-risk/40 bg-risk/5 p-2">

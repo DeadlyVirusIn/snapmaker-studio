@@ -92,7 +92,7 @@ export default function Batch() {
       <PageHeader
         icon={Layers}
         title="Batch prepare"
-        subtitle="Make a whole folder of designs U1-ready in one pass. Originals are never overwritten."
+        subtitle="Prepare a folder of designs in one pass."
         actions={
           <>
             <Button variant="secondary" size="sm" onClick={addFiles} disabled={running}>
@@ -223,7 +223,7 @@ export default function Batch() {
             <EmptyState
               icon={Layers}
               title="Prepare a whole batch at once"
-              description="Queue any number of .stl / .3mf files and Studio makes a clean, validated U1 project for each — your originals stay untouched."
+              description="Add .stl/.3mf files — Studio makes a clean, validated U1 project for each."
               action={<Button size="sm" onClick={addFiles}><FilePlus className="h-4 w-4" /> Add files</Button>}
             />
           </CardContent>

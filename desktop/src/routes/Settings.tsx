@@ -26,7 +26,7 @@ export default function Settings() {
   const { pricePerKg, currency, setPrice, setCurrency } = useFilament();
   return (
     <div className="max-w-2xl space-y-6">
-      <PageHeader icon={SettingsIcon} title="Settings" subtitle="Tune Studio to your printer, your workflow, and your environment." />
+      <PageHeader icon={SettingsIcon} title="Settings" subtitle="Personalize Studio for your setup." />
 
       <Card>
         <CardContent className="divide-y divide-border p-5">
@@ -39,7 +39,7 @@ export default function Settings() {
               className="h-9 w-40 rounded-md border border-border bg-card px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             />
           </Row>
-          <Row label="Printer access" hint="Studio only reads status — it never uploads, starts prints, or changes settings.">
+          <Row label="Printer access" hint="Read-only — Studio monitors status only.">
             <span className="inline-flex items-center gap-1 text-sm text-ready"><ShieldCheck className="h-4 w-4" /> Read-only</span>
           </Row>
         </CardContent>

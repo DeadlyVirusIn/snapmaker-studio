@@ -38,7 +38,7 @@ export default function SourceCompatibility() {
   return (
     <div className="mx-auto max-w-2xl space-y-5">
       <PageHeader icon={FileSearch} title="Source Check"
-        subtitle="Open any STL or 3MF and Studio tells you which slicer/app it came from, what it can read, and the safe next step for your U1. Read-only — nothing is changed." />
+        subtitle="See which slicer made this file, and the safe next step for your U1." />
 
       <Card><CardContent className="space-y-2 p-5">
         <Button size="sm" onClick={pick} disabled={m.isPending}>
@@ -80,7 +80,7 @@ export default function SourceCompatibility() {
             <Button size="sm" variant="secondary" asChild><Link to="/doctor/project"><Stethoscope className="h-4 w-4" /> Project Doctor</Link></Button>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Advisory only. Studio reads your file and never changes it; for a U1 project it prepares a clean copy and you slice in Snapmaker Orca. Studio does not slice or control Orca.
+            Read-only. Studio prepares a clean U1 copy; you slice in Snapmaker Orca.
           </p>
         </CardContent></Card>
       )}

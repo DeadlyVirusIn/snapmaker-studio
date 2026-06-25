@@ -47,7 +47,7 @@ export default function WhyStudio() {
   return (
     <div className="space-y-6">
       <PageHeader icon={GitCompareArrows} title="Why Studio?"
-        subtitle="Studio doesn't replace your slicer — it answers the questions the slicer and the printer host can't, before you waste filament. Outcomes, not features." />
+        subtitle="Studio answers the questions the slicer can't, before you waste filament." />
       <Card>
         <CardContent className="p-0">
           <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr] border-b border-border text-xs font-semibold">

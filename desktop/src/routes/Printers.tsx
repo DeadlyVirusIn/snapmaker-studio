@@ -100,7 +100,7 @@ export default function Printers() {
         <CardContent className="space-y-3 p-5">
           <p className="text-sm font-medium">Connect to your U1</p>
           <p className="text-xs text-muted-foreground">
-            Not sure of the address? Tap <b>Auto-detect my U1</b> and Studio finds it for you. Or type its name (<code className="rounded bg-muted px-1">U1.local</code>) or IP address. Studio only reads status — it never changes your printer.
+            Type <code className="rounded bg-muted px-1">U1.local</code> or its IP, or tap <b>Auto-detect my U1</b>. Studio monitors only — it never controls your printer.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex h-9 min-w-[200px] flex-1 items-center gap-2 rounded-md border border-border bg-card px-3">
