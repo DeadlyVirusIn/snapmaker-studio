@@ -60,6 +60,8 @@ solid/sparse/wall_filament=0, raft_first_layer_expansion=-1). Synthetic, no priv
 no copyrighted model — only the bundled cube geometry. Triggers 5 invalid + 1 "not U1"
 finding so the repair flow can be shown.
 
-Still pending: the Business **assumptions panel** (spool inputs + formula line) sits in an
-inner-scroll container below the fold; and a clean **Print Quality evidence** capture (the
-auto-clicker matched the header "Open"). Both capturable with more harness wiring.
+**Business assumptions panel** (`business_calculator.png`) and **Print Quality file evidence**
+(`print_quality_evidence.png`) are now captured: the Business panel shows the spool inputs,
+the grams × price ÷ weight formula, cost breakdown, pricing tiers, profit and the
+"rough estimate · not financial advice" line; Print Quality shows "What Studio found in this
+file" with the cube's real ~17% overhang evidence (symptom: Poor bridging / overhangs).
