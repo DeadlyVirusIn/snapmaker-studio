@@ -18,12 +18,23 @@ describe("bizFactors — user assumptions map to backend factor keys", () => {
     expect(f.machine_price).toBe(BIZ_DEFAULTS.machinePrice);
   });
 
-  it("only emits the 10 backend-supported keys (no fabricated factors)", () => {
+  it("emits only backend-supported keys (no fabricated factors)", () => {
     const keys = Object.keys(bizFactors(BIZ_DEFAULTS, 20)).sort();
     expect(keys).toEqual([
       "electricity_per_kwh", "failure_rate_pct", "labor_hours", "labor_rate",
       "machine_life_hours", "machine_price", "marketplace_fee_pct", "markup_pct",
-      "power_w", "price_per_kg",
+      "packaging", "power_w", "price_per_kg", "shipping_charged", "shipping_cost",
     ]);
+  });
+
+  it("derives price/kg from spool price and spool weight", () => {
+    // $24 spool, 1000 g -> 24/kg; same $24 on a 750 g spool -> 32/kg.
+    expect(bizFactors({ ...BIZ_DEFAULTS, spoolWeightG: 1000 }, 24).price_per_kg).toBe(24);
+    expect(bizFactors({ ...BIZ_DEFAULTS, spoolWeightG: 750 }, 24).price_per_kg).toBe(32);
+  });
+
+  it("only sends grams_override when the user entered a weight", () => {
+    expect("grams_override" in bizFactors(BIZ_DEFAULTS, 20)).toBe(false);
+    expect(bizFactors({ ...BIZ_DEFAULTS, gramsOverride: 82 }, 20).grams_override).toBe(82);
   });
 });

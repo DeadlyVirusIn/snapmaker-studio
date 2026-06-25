@@ -43,6 +43,9 @@ def price(
     failure_rate_pct: float = DEFAULT_FAILURE_RATE_PCT,
     markup_pct: float = DEFAULT_MARKUP_PCT,
     marketplace_fee_pct: float = DEFAULT_MARKETPLACE_FEE_PCT,
+    packaging: float = 0.0,
+    shipping_cost: float = 0.0,
+    shipping_charged: float = 0.0,
     basis: str = "design estimate",
 ) -> dict:
     """Full cost breakdown + suggested selling price for one print.
@@ -63,9 +66,10 @@ def price(
     electricity = (power_w * hours / 1000.0) * electricity_per_kwh
     depreciation = (machine_price / machine_life_hours) * hours if machine_life_hours else 0.0
     labor = labor_hours * labor_rate
+    pack = max(0.0, float(packaging))
     failure_buffer = (failure_rate_pct / 100.0) * (material + electricity)
 
-    true_cost = material + electricity + depreciation + labor + failure_buffer
+    true_cost = material + electricity + depreciation + labor + pack + failure_buffer
     pre_fee_price = true_cost * (1.0 + markup_pct / 100.0)
 
     # Gross up so the seller still nets the markup after the platform takes its cut.
@@ -73,7 +77,10 @@ def price(
     suggested_price = pre_fee_price / (1.0 - fee_frac) if fee_frac else pre_fee_price
     marketplace_fee = suggested_price * fee_frac
 
-    profit = suggested_price - true_cost - marketplace_fee
+    # Shipping the seller pays vs charges the buyer — the net adds to (or drags) profit.
+    shipping_net = float(shipping_charged) - float(shipping_cost)
+
+    profit = suggested_price - true_cost - marketplace_fee + shipping_net
     margin_pct = (profit / suggested_price * 100.0) if suggested_price > 0 else 0.0
 
     return {
@@ -88,8 +95,10 @@ def price(
             "electricity": round(electricity, 2),
             "depreciation": round(depreciation, 2),
             "labor": round(labor, 2),
+            "packaging": round(pack, 2),
             "failure_buffer": round(failure_buffer, 2),
             "marketplace_fee": round(marketplace_fee, 2),
+            "shipping_net": round(shipping_net, 2),
         },
         "true_cost": round(true_cost, 2),
         "markup_pct": round(float(markup_pct), 1),

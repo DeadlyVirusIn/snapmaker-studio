@@ -356,10 +356,26 @@ def cost_to_price(path: str, host: str | None = None, filename: str | None = Non
         from snapstudio_core.mesh_diagnostics import analyze
         mdg = analyze(path)
         grams = mdg.get("material_estimate_g") if mdg.get("available") else None
+        if grams is not None:
+            basis = "geometry estimate (volume × density)"
+    # Explicit user overrides typed in the assumptions panel win over auto values.
+    g_over = factors.get("grams_override")
+    if g_over is not None:
+        try:
+            grams = float(g_over); basis = "your entered weight"
+        except (TypeError, ValueError):
+            pass
+    h_over = factors.get("print_hours")
+    if h_over is not None:
+        try:
+            print_hours = float(h_over)
+        except (TypeError, ValueError):
+            pass
     # Only forward known pricing factors; ignore unrelated keys defensively.
     allowed = {"price_per_kg", "power_w", "electricity_per_kwh", "machine_price",
                "machine_life_hours", "labor_hours", "labor_rate",
-               "failure_rate_pct", "markup_pct", "marketplace_fee_pct"}
+               "failure_rate_pct", "markup_pct", "marketplace_fee_pct",
+               "packaging", "shipping_cost", "shipping_charged"}
     kw = {k: float(v) for k, v in factors.items() if k in allowed and v is not None}
     return pricing.price(grams, print_hours, currency=currency, basis=basis, **kw)
 

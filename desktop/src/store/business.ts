@@ -5,6 +5,8 @@ import { create } from "zustand";
 // pricing engine already accepts; filament price + currency live in the filament store.
 // Defaults are beginner-friendly *assumptions*, not measured values.
 export interface BizAssumptions {
+  spoolWeightG: number;       // spool weight (g); material = grams * price / spoolWeight
+  gramsOverride: number;      // 0 = use Studio's grams; >0 = your entered weight
   electricityPerKwh: number;  // electricity_per_kwh
   powerW: number;             // power_w (printer draw)
   machinePrice: number;       // machine_price (for depreciation)
@@ -12,13 +14,18 @@ export interface BizAssumptions {
   laborHours: number;         // labor_hours per print
   laborRate: number;          // labor_rate ($/hr; 0 = off)
   failureRatePct: number;     // failure_rate_pct (waste/failed-print buffer)
+  packaging: number;          // packaging cost per item
   marketplaceFeePct: number;  // marketplace_fee_pct
+  shippingCost: number;       // shipping the seller pays
+  shippingCharged: number;    // shipping charged to the buyer
   markupPct: number;          // markup_pct (margin)
 }
 
 const DEFAULTS: BizAssumptions = {
+  spoolWeightG: 1000, gramsOverride: 0,
   electricityPerKwh: 0.20, powerW: 120, machinePrice: 600, machineLifeHours: 5000,
-  laborHours: 0.25, laborRate: 0, failureRatePct: 5, marketplaceFeePct: 0, markupPct: 80,
+  laborHours: 0.25, laborRate: 0, failureRatePct: 5, packaging: 0,
+  marketplaceFeePct: 0, shippingCost: 0, shippingCharged: 0, markupPct: 80,
 };
 
 const KEY = "businessAssumptions";
@@ -50,14 +57,18 @@ export const useBusiness = create<BizState>((set, get) => ({
 }));
 
 function stripFns(s: BizAssumptions): BizAssumptions {
-  const { electricityPerKwh, powerW, machinePrice, machineLifeHours, laborHours, laborRate, failureRatePct, marketplaceFeePct, markupPct } = s;
-  return { electricityPerKwh, powerW, machinePrice, machineLifeHours, laborHours, laborRate, failureRatePct, marketplaceFeePct, markupPct };
+  const { spoolWeightG, gramsOverride, electricityPerKwh, powerW, machinePrice, machineLifeHours,
+    laborHours, laborRate, failureRatePct, packaging, marketplaceFeePct, shippingCost, shippingCharged, markupPct } = s;
+  return { spoolWeightG, gramsOverride, electricityPerKwh, powerW, machinePrice, machineLifeHours,
+    laborHours, laborRate, failureRatePct, packaging, marketplaceFeePct, shippingCost, shippingCharged, markupPct };
 }
 
 // Map to the snake_case factor keys the backend pricing engine reads.
-export function bizFactors(a: BizAssumptions, pricePerKg: number) {
-  return {
-    price_per_kg: pricePerKg,
+// `spoolPrice` is what the user pays for one spool; effective price/kg = price / (spoolWeight/1000).
+export function bizFactors(a: BizAssumptions, spoolPrice: number) {
+  const w = a.spoolWeightG > 0 ? a.spoolWeightG : 1000;
+  const out: Record<string, number> = {
+    price_per_kg: spoolPrice * 1000 / w,
     power_w: a.powerW,
     electricity_per_kwh: a.electricityPerKwh,
     machine_price: a.machinePrice,
@@ -65,9 +76,14 @@ export function bizFactors(a: BizAssumptions, pricePerKg: number) {
     labor_hours: a.laborHours,
     labor_rate: a.laborRate,
     failure_rate_pct: a.failureRatePct,
+    packaging: a.packaging,
     markup_pct: a.markupPct,
     marketplace_fee_pct: a.marketplaceFeePct,
+    shipping_cost: a.shippingCost,
+    shipping_charged: a.shippingCharged,
   };
+  if (a.gramsOverride > 0) out.grams_override = a.gramsOverride;
+  return out;
 }
 
 export const BIZ_DEFAULTS = DEFAULTS;
