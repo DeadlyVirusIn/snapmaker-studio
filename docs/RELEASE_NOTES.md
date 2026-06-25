@@ -1,57 +1,63 @@
-# Snapmaker Studio v0.4.0-beta.17.1 — Business Inputs + Trust Completion
+# Snapmaker Studio v0.4.0-beta.17.2 — Real Business Math + Orca Verification
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-Follow-up to beta.17: the business tools now ask for *your* numbers instead of leaning on
-defaults, the First Layer Doctor reads your actual file, and the Scale Doctor states its
-3MF limit up front. Estimates are rough and depend on your inputs — not financial advice,
-not a print-success guarantee.
+The cost calculator now does real, transparent math from *your* numbers, and the files
+Studio generates were opened in a real Snapmaker Orca. Estimates are rough and depend on
+your inputs — not financial advice, not a print-success guarantee.
 
-## What's new
+## Real business math
 
-- **Business Doctors ask for real inputs.** Cost / Pricing / Profit now have an editable
-  **Material & business assumptions** panel — filament price, electricity rate, printer
-  price + life (for wear), labour time + rate, waste/failure %, marketplace fee, and
-  markup. Edit any value and the numbers update. It shows the formula
-  (material + electricity + machine wear + labour + failure buffer → cost; then fee +
-  markup → suggested price) and is saved **locally only** (no cloud, no account).
-  - Print time comes from the slicer when you send a file to the printer; otherwise
-    time-based costs show as 0 and say so.
-  - Spool weight, material type, packaging, and shipping aren't in the estimate yet —
-    stated plainly in the panel. **Rough estimate, not financial advice.**
+Material cost is now exactly what you'd expect:
 
-- **First Layer Doctor reads your file.** Open a model and Studio shows **"What Studio
-  found in this file"** — bed-contact / footprint / stability findings from the real
-  geometry — with general symptom advice as a fallback. If there's no strong file signal,
-  it says so honestly.
+```
+material cost = grams used × spool price ÷ spool weight
+e.g.  82 g × $24 ÷ 1000 g = $1.97
+```
 
-- **Scale Doctor is clear about 3MF.** A notice appears next to the controls when you open
-  a 3MF: *scaled export is available for STL in this beta; for 3MF, preview here and
-  resize in Snapmaker Orca.* The "Prepare scaled copy" buttons appear for STL only — no
-  misleading action on unsupported formats. (STL scaled export from beta.17 is unchanged.)
+The **Material & business assumptions** panel asks for the inputs that matter and shows
+them working:
+
+- **Grams used** — auto-filled from your file (or the slicer when you send it to the
+  printer); type a value to override when Studio doesn't know it.
+- **Spool price + spool weight** (default 1000 g) → cost per gram.
+- Electricity /kWh + printer watts, printer price + life (machine wear), labour time +
+  rate, waste/failure %, **packaging**, marketplace fee %, **shipping cost + charged**,
+  and markup. A live line shows the material formula; saved locally; reset to defaults.
+- Full formula: material + electricity + machine wear + labour + packaging + failure
+  buffer → cost; + marketplace fee + markup → price; shipping (charged − cost) adjusts
+  profit. **Rough estimate — not financial advice.**
+
+What's labelled honestly: print time comes from the slicer when known (else time-based
+costs show as 0); material-type density isn't applied yet.
+
+## Snapmaker Orca verification
+
+Files Studio generates were opened in the **installed Snapmaker Orca** (not just code
+review): the **scaled STL export** (a 20 mm cube → 30 mm at 150%) and a **Compatibility
+"Prepare U1 copy"** 3MF both launched and opened without a crash or parse error.
+
+## 3MF scaling
+
+Still STL-only for scaled export, stated next to the controls. Verified uniform 3MF
+scaling (multi-part / colour / paint preservation, checked in Orca) remains on the roadmap
+— we don't ship unverified scaling.
 
 ## Carried forward
 
-beta.17's Scale Doctor STL export and Compatibility Doctor "Prepare U1 copy", plus all
-beta.16.x: hardware-verified Printer Hub, Print Quality file evidence, Source Check, Plate
-Remap, Model Browser. Local-first. Studio does not slice; never takes autonomous control;
-originals are never modified.
-
-## Limitations (honest)
-
-- Business estimates depend on your inputs and rough assumptions — not financial advice.
-- 3MF scaled export, multi-part scaling, and spool/material/packaging/shipping cost inputs
-  are roadmap items.
-- Windows installer is **unsigned** — verify the SHA256.
+Editable assumptions + First Layer file evidence (beta.17.1), Scale STL export +
+Compatibility prepare (beta.17), hardware-verified Printer Hub, Print Quality evidence,
+Source Check, Plate Remap, Model Browser. Local-first. Studio does not slice; never takes
+autonomous control; originals are never modified.
 
 ## Download (unsigned beta)
 
 ```
-File:    Snapmaker.Studio_0.4.0-beta.17.1_x64-setup.exe
-Size:    16124721 bytes
-SHA256:  26bfbc1f0a1b046e6de17277179f7315047adc5fcdb60c6632d6c824a4e92df9
+File:    Snapmaker.Studio_0.4.0-beta.17.2_x64-setup.exe
+Size:    16121235 bytes
+SHA256:  077de9444c1ef5a56d6b4f5f44a9986b094e150b26823716f5df463c8e8b845f
 ```
 
 Unsigned — SmartScreen may show "Unknown publisher." Verify the SHA256 before installing.
-Full guidance: [docs/windows-install.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.17.1/docs/windows-install.md).
+Full guidance: [docs/windows-install.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.17.2/docs/windows-install.md).
