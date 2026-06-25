@@ -245,6 +245,21 @@ def _make_handler(token: str):
                     self._send(200, result)
                 except Exception:  # adapter must not crash the server
                     self._send(500, {"error": "internal error"})
+            elif self.path == "/prepare_scaled":
+                path = data.get("path")
+                scale = data.get("scale_percent")
+                if not path or scale is None:
+                    self._send(400, {"error": "missing 'path' or 'scale_percent'"})
+                    return
+                try:
+                    result = service.prepare_scaled(path, float(scale), data.get("out_dir"))
+                    if not result.get("blocked"):
+                        service.record_conversion(path, result)  # best-effort index
+                    self._send(200, result)
+                except ValueError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
             elif self.path == "/diff":
                 a, b = data.get("a"), data.get("b")
                 if not a or not b:

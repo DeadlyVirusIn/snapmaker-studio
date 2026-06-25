@@ -131,6 +131,12 @@ def convert(path: str, out_dir: str | None = None) -> dict:
     return convert_to_u1(path, out_dir).to_dict()
 
 
+def prepare_scaled(path: str, scale_percent: float, out_dir: str | None = None) -> dict:
+    """Create a new uniformly-scaled U1 copy (STL input). Original never modified."""
+    from snapstudio_core.convert import prepare_scaled_copy
+    return prepare_scaled_copy(path, scale_percent, out_dir).to_dict()
+
+
 def diff(a: str, b: str) -> dict:
     """Compare two projects (read-only): what changed between A and B."""
     return diff_projects(ThreeMF.open(a), ThreeMF.open(b)).to_dict()

@@ -22,12 +22,18 @@ SETTINGS = "Metadata/project_settings.config"
 
 @dataclass
 class ConversionResult:
-    source_type: str          # "stl" | "3mf"
+    source_type: str          # "stl" | "3mf" | "stl-scaled" | "blocked"
     output_path: str
     output_name: str
     validated_ok: bool
     errors: list
     schema_version: str = "convert/1"
+    # Scaled-copy fields (None for a plain convert)
+    scale_percent: float | None = None
+    original_mm: list | None = None   # [x, y, z] before scaling
+    scaled_mm: list | None = None     # [x, y, z] after scaling
+    fits_u1: bool | None = None
+    blocked: bool = False
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -96,3 +102,64 @@ def convert_to_u1(path: str, out_dir: str | None = None) -> ConversionResult:
     tm.save(out)
     res = do_validate(ThreeMF.open(out), against=src_fp)
     return _finish("3mf", out, res)
+
+
+def _scaled_output(src: Path, out_dir: Path | None, pct: float) -> Path:
+    target_dir = out_dir if out_dir else src.parent
+    tag = f"{int(round(pct))}"
+    out = target_dir / f"{src.stem}_scaled_{tag}_U1.3mf"
+    n = 2
+    while out.resolve() == src.resolve() or out.exists():
+        out = target_dir / f"{src.stem}_scaled_{tag}_U1_{n}.3mf"
+        n += 1
+    return out
+
+
+def prepare_scaled_copy(path: str, scale_percent: float,
+                        out_dir: str | None = None) -> ConversionResult:
+    """Create a NEW uniformly-scaled U1 3MF copy. The original is never modified.
+
+    beta.17: STL input is fully supported (vertex scale, geometry verified by bbox).
+    3MF input is intentionally blocked with a clear message — uniform multi-part /
+    painted-project scaling is not yet verified against Snapmaker Orca, and we do not
+    ship unverified scaling. Preview (read-only) still works for any input.
+    """
+    src = Path(path)
+    pct = float(scale_percent)
+    if not (10.0 <= pct <= 1000.0):
+        raise ValueError("scale_percent must be between 10 and 1000")
+    s = pct / 100.0
+
+    if src.suffix.lower() != ".stl":
+        return ConversionResult(
+            "blocked", "", "", False,
+            ["Scaled copy currently supports STL files. For a 3MF project, preview the "
+             "scale here, then resize in Snapmaker Orca — verified 3MF scaled export is "
+             "coming. Your file was not changed."],
+            scale_percent=pct, blocked=True)
+
+    from .stl_wrap import wrap_stl
+    from .geometry import load_mesh
+    from .scale_doctor import _fits, U1_BED
+
+    mesh = load_mesh(str(src))
+    if mesh is None or not mesh.verts:
+        raise ValueError("could not read STL geometry")
+    xs = [v[0] for v in mesh.verts]; ys = [v[1] for v in mesh.verts]; zs = [v[2] for v in mesh.verts]
+    orig = [max(xs) - min(xs), max(ys) - min(ys), max(zs) - min(zs)]
+    scaled = [d * s for d in orig]
+
+    out_parent = Path(out_dir) if out_dir else None
+    if out_parent:
+        out_parent.mkdir(parents=True, exist_ok=True)
+    out = _scaled_output(src, out_parent, pct)
+
+    tm = wrap_stl(str(src), scale=s)
+    tm.save(out)
+    res = do_validate(ThreeMF.open(out), against=None)
+    result = _finish("stl-scaled", out, res)
+    result.scale_percent = pct
+    result.original_mm = [round(d, 2) for d in orig]
+    result.scaled_mm = [round(d, 2) for d in scaled]
+    result.fits_u1 = bool(_fits({"x": scaled[0], "y": scaled[1], "z": scaled[2]}, U1_BED))
+    return result

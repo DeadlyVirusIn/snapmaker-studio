@@ -161,8 +161,13 @@ def _base_settings(colors, profile_name: str = "snapmaker_u1") -> dict:
 
 
 def wrap_stl_bytes(data: bytes, name: str = "model", colors=DEFAULT_COLORS,
-                   profile_name: str = "snapmaker_u1") -> ThreeMF:
+                   profile_name: str = "snapmaker_u1", scale: float = 1.0) -> ThreeMF:
     verts, tris = parse_stl(data)
+    if scale != 1.0:
+        # Uniform scale: multiply every vertex coordinate. Geometry (and so the output
+        # bounding box) scales by exactly `scale`; bed_center_transform re-centers the
+        # scaled mesh on the bed. Triangle topology is unchanged.
+        verts = [(x * scale, y * scale, z * scale) for (x, y, z) in verts]
     transform = bed_center_transform(verts)
     eff_colours = effective_colours(colors)
     u_obj1, u_obj2, u_comp, u_build, u_item = (str(uuid.uuid4()) for _ in range(5))
@@ -182,9 +187,11 @@ def wrap_stl_bytes(data: bytes, name: str = "model", colors=DEFAULT_COLORS,
     return ThreeMF(parts, order)
 
 
-def wrap_stl(stl_path, colors=DEFAULT_COLORS, profile_name: str = "snapmaker_u1") -> ThreeMF:
+def wrap_stl(stl_path, colors=DEFAULT_COLORS, profile_name: str = "snapmaker_u1",
+             scale: float = 1.0) -> ThreeMF:
     p = Path(stl_path)
-    return wrap_stl_bytes(p.read_bytes(), name=p.stem, colors=colors, profile_name=profile_name)
+    return wrap_stl_bytes(p.read_bytes(), name=p.stem, colors=colors,
+                          profile_name=profile_name, scale=scale)
 
 
 # ---- geometry-only / foreign-slicer 3MF (no project_settings.config) ----

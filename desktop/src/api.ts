@@ -898,6 +898,23 @@ export function scaleOptions(path: string, marginMm = 5, printer = "snapmaker_u1
   return platePost("/scale_options", { path, printer, margin_mm: marginMm });
 }
 
+// ---- Scale Doctor: prepare a scaled copy (writes a new file; original untouched) ----
+export interface ScaledCopyResult {
+  source_type?: string;
+  output_path?: string;
+  output_name?: string;
+  validated_ok?: boolean;
+  errors?: string[];
+  scale_percent?: number;
+  original_mm?: number[];   // [x, y, z]
+  scaled_mm?: number[];     // [x, y, z]
+  fits_u1?: boolean | null;
+  blocked?: boolean;
+}
+export function prepareScaled(path: string, scalePercent: number): Promise<ScaledCopyResult> {
+  return platePost("/prepare_scaled", { path, scale_percent: scalePercent });
+}
+
 // ---- Print Failure Troubleshooter (known-good aware) ----
 export interface PrintFailureFinding {
   id: string;

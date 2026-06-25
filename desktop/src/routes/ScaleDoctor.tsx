@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
-import { Maximize2, FilePlus, Loader2, AlertTriangle, CheckCircle2, Info } from "lucide-react";
+import { Maximize2, FilePlus, Loader2, AlertTriangle, CheckCircle2, Info, Copy, Stethoscope } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/layout";
-import { openModelDialog, scalePreview, scaleOptions, type ScaleResult, type ScaleOptionsResult } from "@/api";
+import { OrcaHandoff } from "@/components/OrcaHandoff";
+import { openModelDialog, scalePreview, scaleOptions, prepareScaled, type ScaleResult, type ScaleOptionsResult, type ScaledCopyResult } from "@/api";
 import { SCALE_LADDER_COPY, recommendBlurb, isRecommended, isCaution, riskLabel, fmtDims, partLabel } from "@/lib/scaleOptions";
 
 function recTone(rec?: string): { token: string; label: string } {
@@ -34,10 +36,20 @@ export default function ScaleDoctor() {
     onSuccess: (d) => setOpts(d),
   });
 
+  const [scaled, setScaled] = useState<ScaledCopyResult | null>(null);
+  const ex = useMutation({
+    mutationFn: (scalePct: number) => prepareScaled(path!, scalePct),
+    onSuccess: (d) => setScaled(d),
+  });
+
   async function pick() {
     const p = await openModelDialog();
     if (!p) return;
-    setPath(p); setRes(null); setOpts(null);
+    setPath(p); setRes(null); setOpts(null); setScaled(null);
+  }
+
+  async function copyPath(p: string) {
+    try { await navigator.clipboard.writeText(p); } catch { /* clipboard unavailable */ }
   }
 
   async function copyScale(p: number) {
@@ -49,11 +61,11 @@ export default function ScaleDoctor() {
   return (
     <div className="space-y-6">
       <PageHeader icon={Maximize2} title="Scale Doctor"
-        subtitle="Preview a uniform resize: size, U1 fit, and material/cost — read-only, no export." />
+        subtitle="Preview a uniform resize, then create a new scaled copy when you're ready. Your original is never changed." />
 
       <div className="flex items-start gap-2 rounded-md border border-border p-3 text-sm">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-        <span className="text-muted-foreground">Uniform scaling only. Studio previews the change — it does not resize or export your file.</span>
+        <span className="text-muted-foreground">Uniform scaling only. Preview first, then <b>Prepare scaled copy</b> writes a new file — STL input is supported now; for 3MF, preview here and resize in Snapmaker Orca.</span>
       </div>
 
       <Card><CardContent className="flex flex-wrap items-center gap-3 p-5">
@@ -106,8 +118,64 @@ export default function ScaleDoctor() {
             </ul>
           )}
           <p className="text-xs text-muted-foreground">{res.explanation}</p>
+          <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+            <Button size="sm" onClick={() => ex.mutate(res.scale_percent ?? pct)} disabled={ex.isPending}>
+              {ex.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus className="h-4 w-4" />}
+              Prepare scaled copy
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Create a new scaled copy at {res.scale_percent ?? pct}%. Your original file will not be changed.
+            </span>
+          </div>
         </CardContent></Card>
       )}
+
+      {/* Scaled-copy result (writes a real file) */}
+      {scaled && (
+        <Card><CardContent className="space-y-3 p-5">
+          {scaled.blocked ? (
+            <div className="flex items-start gap-2 text-sm">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <span className="text-muted-foreground">{scaled.errors?.[0]}</span>
+            </div>
+          ) : (
+            <>
+              <p className="flex items-center gap-2 text-sm font-semibold text-stage-validate">
+                <CheckCircle2 className="h-4 w-4" /> Scaled copy created at {scaled.scale_percent}%
+              </p>
+              <div className="grid gap-3 text-sm sm:grid-cols-2">
+                <div><p className="text-xs text-muted-foreground">Original size</p>
+                  <p>{scaled.original_mm?.map((d) => d.toFixed(1)).join(" × ")} mm</p></div>
+                <div><p className="text-xs text-muted-foreground">Scaled size</p>
+                  <p>{scaled.scaled_mm?.map((d) => d.toFixed(1)).join(" × ")} mm</p></div>
+                <div><p className="text-xs text-muted-foreground">Fits U1 build volume</p>
+                  <p>{scaled.fits_u1 ? "Yes" : "No — exceeds the bed"}</p></div>
+                <div><p className="text-xs text-muted-foreground">Validation</p>
+                  <p>{scaled.validated_ok ? "Passed U1-clean checks" : "See notes below"}</p></div>
+              </div>
+              <p className="truncate text-xs text-muted-foreground" title={scaled.output_path}>
+                Saved as <b>{scaled.output_name}</b> (new file — original untouched).
+              </p>
+              {scaled.errors && scaled.errors.length > 0 && (
+                <ul className="space-y-1 text-xs text-muted-foreground">
+                  {scaled.errors.map((e, i) => <li key={i}>• {e}</li>)}
+                </ul>
+              )}
+              <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+                {scaled.output_path && <OrcaHandoff outputPath={scaled.output_path} />}
+                <Button size="sm" variant="secondary" onClick={() => copyPath(scaled.output_path!)}>
+                  <Copy className="h-4 w-4" /> Copy path
+                </Button>
+                <Button size="sm" variant="secondary" asChild>
+                  <Link to="/doctor/project"><Stethoscope className="h-4 w-4" /> Run Project Doctor again</Link>
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">This is a readiness estimate, not a print-success guarantee.</p>
+            </>
+          )}
+        </CardContent></Card>
+      )}
+      {ex.isError && <p className="text-sm text-risk">Couldn't create the scaled copy: {(ex.error as Error).message}</p>}
 
       {/* Size Options Ladder */}
       {path && (
@@ -159,6 +227,10 @@ export default function ScaleDoctor() {
                               {o.scale_percent}% {copied === o.scale_percent && <span className="text-stage-validate">copied</span>}
                             </button>
                             {rec && <span className="ml-1 rounded bg-stage-validate/15 px-1 text-[10px] text-stage-validate">recommended</span>}
+                            <button className="mt-1 block text-[11px] text-primary underline-offset-2 hover:underline disabled:opacity-50"
+                              onClick={() => ex.mutate(o.scale_percent)} disabled={ex.isPending}>
+                              Prepare scaled copy
+                            </button>
                           </td>
                           {o.dimensions_by_part.map((d, i) => (
                             <td key={i} className="py-1.5 pr-3 align-top">{fmtDims(d.dimensions)}</td>

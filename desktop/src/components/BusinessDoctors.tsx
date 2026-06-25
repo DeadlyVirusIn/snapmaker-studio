@@ -37,7 +37,7 @@ export function BusinessDoctors({ filePath, host }: { filePath: string; host?: s
       <CardContent className="space-y-3 p-5">
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold">Cost, Pricing &amp; Profit</span>
-          <span className="text-[11px] text-muted-foreground">Powered by Studio Intelligence · estimates</span>
+          <span className="text-[11px] text-muted-foreground" title="These cards use a default material price; your Settings filament price is applied on the main Cost estimate and in Batch.">estimates · default material price</span>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">

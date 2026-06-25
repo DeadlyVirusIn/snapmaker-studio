@@ -7,23 +7,35 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/layout";
-import { open3mfDialog, compatibilityCheck, type CompatibilityResult } from "@/api";
+import { open3mfDialog, compatibilityCheck, convert, type CompatibilityResult } from "@/api";
+import { OrcaHandoff } from "@/components/OrcaHandoff";
+import { Copy, Stethoscope } from "lucide-react";
 import { COMPAT_COPY, sortFindings, severityLabel, severityToken, countFindings } from "@/lib/compatibility";
 
 export default function Compatibility() {
   const [path, setPath] = useState<string | null>(null);
   const [result, setResult] = useState<CompatibilityResult | null>(null);
+  const [prep, setPrep] = useState<Awaited<ReturnType<typeof convert>> | null>(null);
 
   const checkM = useMutation({
     mutationFn: (p: string) => compatibilityCheck(p),
     onSuccess: (d) => setResult(d),
   });
 
+  const prepM = useMutation({
+    mutationFn: () => convert(path!),
+    onSuccess: (d) => setPrep(d),
+  });
+
   async function pick() {
     const p = await open3mfDialog();
     if (!p) return;
-    setPath(p); setResult(null);
+    setPath(p); setResult(null); setPrep(null);
     checkM.mutate(p);
+  }
+
+  async function copyPath(p: string) {
+    try { await navigator.clipboard.writeText(p); } catch { /* clipboard unavailable */ }
   }
 
   const counts = result ? countFindings(result.findings) : null;
@@ -79,6 +91,47 @@ export default function Compatibility() {
                 </li>
               ))}
             </ul>
+          )}
+
+          {counts && counts.total > 0 && (
+            <div className="space-y-2 rounded-md border border-primary/30 bg-primary/5 p-3">
+              <p className="text-sm">
+                This model may be fine, but the project settings are for another printer. Studio can
+                prepare a clean Snapmaker U1 copy so Orca opens it with U1-safe settings.
+              </p>
+              <Button size="sm" onClick={() => prepM.mutate()} disabled={prepM.isPending || !path}>
+                {prepM.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus className="h-4 w-4" />}
+                Prepare U1 copy
+              </Button>
+              <p className="text-[11px] text-muted-foreground">Creates a new file. Your original is never modified.</p>
+            </div>
+          )}
+          {prepM.isError && <p className="text-sm text-risk">Couldn't prepare a copy: {(prepM.error as Error).message}</p>}
+
+          {prep && (
+            <div className="space-y-3 rounded-md border border-border p-3">
+              <p className="flex items-center gap-2 text-sm font-semibold text-stage-validate">
+                <CheckCircle2 className="h-4 w-4" /> U1 copy created
+              </p>
+              <p className="truncate text-xs text-muted-foreground" title={prep.output_path}>
+                Saved as <b>{prep.output_name}</b> · {prep.validated_ok ? "passed U1-clean checks" : "see notes"} (new file — original untouched).
+              </p>
+              {prep.errors && prep.errors.length > 0 && (
+                <ul className="space-y-1 text-xs text-muted-foreground">
+                  {prep.errors.map((e: string, i: number) => <li key={i}>• {e}</li>)}
+                </ul>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                {prep.output_path && <OrcaHandoff outputPath={prep.output_path} />}
+                <Button size="sm" variant="secondary" onClick={() => copyPath(prep.output_path)}>
+                  <Copy className="h-4 w-4" /> Copy path
+                </Button>
+                <Button size="sm" variant="secondary" asChild>
+                  <Link to="/doctor/project"><Stethoscope className="h-4 w-4" /> Run Project Doctor</Link>
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Advisory — not a print-success guarantee. Studio does not slice; Orca does.</p>
+            </div>
           )}
 
           <p className="flex items-start gap-1.5 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
