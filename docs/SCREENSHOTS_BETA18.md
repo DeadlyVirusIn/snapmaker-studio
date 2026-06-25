@@ -46,3 +46,20 @@ support only. Files are the repo's bundled samples (`examples/sample_cube.stl`,
 | `scale_success.png` | STL → Preview → Prepare scaled copy flow |
 | `compatibility_loaded.png` | U1 3MF → real read-only check ("no known compatibility issues") |
 | `source_loaded.png` | Source Check with a file loaded |
+
+## File-loaded set v2 (real backend + synthetic fixture)
+
+| File | Proves |
+|------|--------|
+| `business_calculator.png` | Workspace with `sample_cube.stl` loaded — real geometry + cost ("~$0.2 in filament, 9.9 g at $20/kg" = grams × price/kg), Design Health |
+| `compatibility_issues.png` / `compatibility_success.png` | Synthetic foreign 3MF (`examples/sample_cube_foreign.3mf`) → grouped invalid-setting issues + "Prepare U1 copy" CTA + trimmed read-only banner |
+
+**Foreign fixture:** `examples/sample_cube_foreign.3mf` — the clean U1 sample with a
+Bambu-style `printer_settings_id` and out-of-range values (tree_support_wall_count=3,
+solid/sparse/wall_filament=0, raft_first_layer_expansion=-1). Synthetic, no private data,
+no copyrighted model — only the bundled cube geometry. Triggers 5 invalid + 1 "not U1"
+finding so the repair flow can be shown.
+
+Still pending: the Business **assumptions panel** (spool inputs + formula line) sits in an
+inner-scroll container below the fold; and a clean **Print Quality evidence** capture (the
+auto-clicker matched the header "Open"). Both capturable with more harness wiring.
