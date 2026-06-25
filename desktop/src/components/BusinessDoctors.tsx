@@ -1,17 +1,37 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Coins, Tag, TrendingUp, ChevronDown } from "lucide-react";
+import { Coins, Tag, TrendingUp, ChevronDown, RotateCcw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { costToPrice, pricingDoctor, profitDoctor } from "@/api";
+import { useFilament } from "@/store/filament";
+import { useBusiness, bizFactors } from "@/store/business";
+
+function NumField({ label, value, onChange, step = 1 }:
+  { label: string; value: number; onChange: (v: number) => void; step?: number }) {
+  return (
+    <label className="flex flex-col gap-0.5">
+      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
+      <input type="number" min={0} step={step} value={value}
+        onChange={(e) => onChange(Number(e.target.value) || 0)}
+        className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary" />
+    </label>
+  );
+}
 
 // The Business Intelligence Layer made visible: Cost / Pricing / Profit Doctors
 // as three first-class cards. Beginner-friendly headline numbers up top; the
 // breakdown, tiers, and projections live behind a "Show details" disclosure.
+// Cost factors come from the user's editable assumptions (local-only).
 export function BusinessDoctors({ filePath, host }: { filePath: string; host?: string | null }) {
   const [open, setOpen] = useState(false);
-  const cost = useQuery({ queryKey: ["bd-cost", filePath, host], queryFn: () => costToPrice(filePath, { host }), retry: false, staleTime: 30000 });
-  const pricing = useQuery({ queryKey: ["bd-pricing", filePath, host], queryFn: () => pricingDoctor(filePath, host), retry: false, staleTime: 30000 });
-  const profit = useQuery({ queryKey: ["bd-profit", filePath, host], queryFn: () => profitDoctor(filePath, host), retry: false, staleTime: 30000 });
+  const { pricePerKg, currency } = useFilament();
+  const biz = useBusiness();
+  const factors = bizFactors(biz, pricePerKg);
+  // key on the factor values so editing an assumption refetches.
+  const fkey = JSON.stringify(factors) + currency;
+  const cost = useQuery({ queryKey: ["bd-cost", filePath, host, fkey], queryFn: () => costToPrice(filePath, { host, currency, factors }), retry: false, staleTime: 30000 });
+  const pricing = useQuery({ queryKey: ["bd-pricing", filePath, host, fkey], queryFn: () => pricingDoctor(filePath, host, { currency, factors }), retry: false, staleTime: 30000 });
+  const profit = useQuery({ queryKey: ["bd-profit", filePath, host, fkey], queryFn: () => profitDoctor(filePath, host, { currency, factors }), retry: false, staleTime: 30000 });
 
   const c = cost.data, p = pricing.data, pr = profit.data;
   if (!c?.available && !p?.available) return null;
@@ -37,7 +57,7 @@ export function BusinessDoctors({ filePath, host }: { filePath: string; host?: s
       <CardContent className="space-y-3 p-5">
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold">Cost, Pricing &amp; Profit</span>
-          <span className="text-[11px] text-muted-foreground" title="These cards use a default material price; your Settings filament price is applied on the main Cost estimate and in Batch.">estimates · default material price</span>
+          <span className="text-[11px] text-muted-foreground">rough estimates · your assumptions · not financial advice</span>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -60,6 +80,36 @@ export function BusinessDoctors({ filePath, host }: { filePath: string; host?: s
 
         {open && (
           <div className="space-y-3 border-t border-border pt-3 text-xs">
+            <div className="space-y-2 rounded-md border border-border p-3">
+              <div className="flex items-center justify-between">
+                <p className="font-semibold">Material &amp; business assumptions</p>
+                <button onClick={() => biz.reset()} className="flex items-center gap-1 text-[11px] text-primary hover:underline">
+                  <RotateCcw className="h-3 w-3" /> Reset
+                </button>
+              </div>
+              <p className="text-muted-foreground">Saved locally on your machine. Defaults are assumptions — edit them and the numbers above update.</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                <NumField label={`Filament ${currency}/kg`} value={pricePerKg} onChange={(v) => useFilament.getState().setPrice(v)} />
+                <NumField label="Electricity /kWh" value={biz.electricityPerKwh} onChange={(v) => biz.set({ electricityPerKwh: v })} step={0.01} />
+                <NumField label="Printer watts" value={biz.powerW} onChange={(v) => biz.set({ powerW: v })} />
+                <NumField label="Printer price" value={biz.machinePrice} onChange={(v) => biz.set({ machinePrice: v })} />
+                <NumField label="Printer life (hrs)" value={biz.machineLifeHours} onChange={(v) => biz.set({ machineLifeHours: v })} />
+                <NumField label="Labor (hrs/print)" value={biz.laborHours} onChange={(v) => biz.set({ laborHours: v })} step={0.05} />
+                <NumField label={`Labor ${currency}/hr`} value={biz.laborRate} onChange={(v) => biz.set({ laborRate: v })} />
+                <NumField label="Waste / failure %" value={biz.failureRatePct} onChange={(v) => biz.set({ failureRatePct: v })} />
+                <NumField label="Marketplace fee %" value={biz.marketplaceFeePct} onChange={(v) => biz.set({ marketplaceFeePct: v })} />
+                <NumField label="Markup / margin %" value={biz.markupPct} onChange={(v) => biz.set({ markupPct: v })} />
+              </div>
+              <p className="text-muted-foreground">
+                Formula: material + electricity + machine wear + labour + failure buffer → cost; then
+                marketplace fee + markup → suggested price.
+              </p>
+              <p className="text-muted-foreground opacity-80">
+                Not yet in the estimate: spool weight, material type, packaging, and shipping — coming
+                soon. Print time comes from the slicer when you send a file to the printer; otherwise
+                time-based costs show as 0.
+              </p>
+            </div>
             {c?.available && c.breakdown && (
               <div>
                 <p className="mb-1 font-semibold">Cost breakdown {c.basis ? `(${c.basis})` : ""}</p>

@@ -57,6 +57,7 @@ export default function ScaleDoctor() {
   }
 
   const tone = recTone(res?.recommendation);
+  const isStl = !!path && path.toLowerCase().endsWith(".stl");
 
   return (
     <div className="space-y-6">
@@ -83,6 +84,17 @@ export default function ScaleDoctor() {
           </Button>
         </div>
       </CardContent></Card>
+
+      {path && !isStl && (
+        <div className="flex items-start gap-2 rounded-md border border-doctor-cost/40 bg-doctor-cost/5 p-3 text-sm">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "hsl(var(--doctor-cost))" }} />
+          <span className="text-muted-foreground">
+            <b>Scaled export is available for STL in this beta.</b> For this 3MF, preview the scale
+            here, then resize in Snapmaker Orca — verified 3MF scaling (multi-part / colour
+            preservation) is coming.
+          </span>
+        </div>
+      )}
 
       {m.isError && <p className="text-sm text-risk">Couldn't read that file: {(m.error as Error).message}</p>}
       {res && !res.available && <p className="text-sm text-risk">{res.reason}</p>}
@@ -118,15 +130,17 @@ export default function ScaleDoctor() {
             </ul>
           )}
           <p className="text-xs text-muted-foreground">{res.explanation}</p>
-          <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
-            <Button size="sm" onClick={() => ex.mutate(res.scale_percent ?? pct)} disabled={ex.isPending}>
-              {ex.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus className="h-4 w-4" />}
-              Prepare scaled copy
-            </Button>
-            <span className="text-xs text-muted-foreground">
-              Create a new scaled copy at {res.scale_percent ?? pct}%. Your original file will not be changed.
-            </span>
-          </div>
+          {isStl && (
+            <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+              <Button size="sm" onClick={() => ex.mutate(res.scale_percent ?? pct)} disabled={ex.isPending}>
+                {ex.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus className="h-4 w-4" />}
+                Prepare scaled copy
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Create a new scaled copy at {res.scale_percent ?? pct}%. Your original file will not be changed.
+              </span>
+            </div>
+          )}
         </CardContent></Card>
       )}
 
@@ -227,10 +241,12 @@ export default function ScaleDoctor() {
                               {o.scale_percent}% {copied === o.scale_percent && <span className="text-stage-validate">copied</span>}
                             </button>
                             {rec && <span className="ml-1 rounded bg-stage-validate/15 px-1 text-[10px] text-stage-validate">recommended</span>}
-                            <button className="mt-1 block text-[11px] text-primary underline-offset-2 hover:underline disabled:opacity-50"
-                              onClick={() => ex.mutate(o.scale_percent)} disabled={ex.isPending}>
-                              Prepare scaled copy
-                            </button>
+                            {isStl && (
+                              <button className="mt-1 block text-[11px] text-primary underline-offset-2 hover:underline disabled:opacity-50"
+                                onClick={() => ex.mutate(o.scale_percent)} disabled={ex.isPending}>
+                                Prepare scaled copy
+                              </button>
+                            )}
                           </td>
                           {o.dimensions_by_part.map((d, i) => (
                             <td key={i} className="py-1.5 pr-3 align-top">{fmtDims(d.dimensions)}</td>

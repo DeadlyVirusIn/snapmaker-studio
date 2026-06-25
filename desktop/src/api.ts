@@ -330,10 +330,11 @@ export interface CostToPrice {
 export async function costToPrice(
   path: string,
   opts: { pricePerKg?: number; currency?: string; markupPct?: number;
-          host?: string | null; filename?: string | null } = {},
+          host?: string | null; filename?: string | null;
+          factors?: Record<string, number> } = {},
 ): Promise<CostToPrice> {
   const { port, token } = await apiInfo();
-  const body: Record<string, unknown> = { path, currency: opts.currency ?? "$" };
+  const body: Record<string, unknown> = { path, currency: opts.currency ?? "$", ...(opts.factors ?? {}) };
   if (opts.pricePerKg != null) body.price_per_kg = opts.pricePerKg;
   if (opts.markupPct != null) body.markup_pct = opts.markupPct;
   if (opts.host) body.host = opts.host;
@@ -433,11 +434,15 @@ export interface PricingDoctor {
   available: boolean; currency?: string; true_cost?: number;
   tiers?: PricingTier[]; verdict?: string; reason?: string;
 }
-export async function pricingDoctor(path: string, host?: string | null): Promise<PricingDoctor> {
+export async function pricingDoctor(path: string, host?: string | null,
+  opts: { currency?: string; factors?: Record<string, number> } = {}): Promise<PricingDoctor> {
   const { port, token } = await apiInfo();
+  const body: Record<string, unknown> = { path, ...(opts.factors ?? {}) };
+  if (host) body.host = host;
+  if (opts.currency) body.currency = opts.currency;
   const r = await fetch(`http://127.0.0.1:${port}/pricing_doctor`, {
     method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
-    body: JSON.stringify(host ? { path, host } : { path }),
+    body: JSON.stringify(body),
   });
   if (!r.ok) throw new Error(`pricing_doctor failed (${r.status})`);
   return r.json();
@@ -450,11 +455,15 @@ export interface ProfitDoctor {
   prints_per_month?: number; break_even_prints?: number | null;
   batch?: { count: number; profit: number }; verdict?: string; reason?: string;
 }
-export async function profitDoctor(path: string, host?: string | null): Promise<ProfitDoctor> {
+export async function profitDoctor(path: string, host?: string | null,
+  opts: { currency?: string; factors?: Record<string, number> } = {}): Promise<ProfitDoctor> {
   const { port, token } = await apiInfo();
+  const body: Record<string, unknown> = { path, ...(opts.factors ?? {}) };
+  if (host) body.host = host;
+  if (opts.currency) body.currency = opts.currency;
   const r = await fetch(`http://127.0.0.1:${port}/profit_doctor`, {
     method: "POST", headers: { "Content-Type": "application/json", "X-Auth-Token": token },
-    body: JSON.stringify(host ? { path, host } : { path }),
+    body: JSON.stringify(body),
   });
   if (!r.ok) throw new Error(`profit_doctor failed (${r.status})`);
   return r.json();

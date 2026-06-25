@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
-import { Layers, Loader2, Lightbulb, ListChecks, Cpu, SlidersHorizontal, Ban, Info } from "lucide-react";
+import { Layers, Loader2, Lightbulb, ListChecks, Cpu, SlidersHorizontal, Ban, Info, FilePlus, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/layout";
-import { firstLayerCheck, type FirstLayerResult } from "@/api";
+import { firstLayerCheck, firstLayer, openModelDialog, type FirstLayerResult, type FirstLayerReport } from "@/api";
 import { FIRST_LAYER_SYMPTOMS, FIRST_LAYER_INTRO, isAdvanced } from "@/lib/firstLayer";
+
+function lvlColor(l?: string) { return l === "risk" ? "text-risk" : l === "warn" ? "text-doctor-cost" : "text-stage-validate"; }
 
 function Section({ icon: Icon, title, items, markAdvanced = false }:
   { icon: typeof Lightbulb; title: string; items: string[]; markAdvanced?: boolean }) {
@@ -40,7 +42,16 @@ export default function FirstLayer() {
     onSuccess: (d) => setRes(d.result),
   });
 
+  const [filePath, setFilePath] = useState<string | null>(null);
+  const [rep, setRep] = useState<FirstLayerReport | null>(null);
+  const fm = useMutation({ mutationFn: (p: string) => firstLayer(p), onSuccess: (d) => setRep(d) });
+
   function pick(id: string) { setSel(id); setRes(null); m.mutate(id); }
+  async function pickFile() {
+    const p = await openModelDialog();
+    if (!p) return;
+    setFilePath(p); setRep(null); fm.mutate(p);
+  }
 
   return (
     <div className="space-y-6">
@@ -52,8 +63,46 @@ export default function FirstLayer() {
         <span className="text-muted-foreground">{FIRST_LAYER_INTRO}</span>
       </div>
 
+      <Card><CardContent className="space-y-3 p-5">
+        <div className="flex flex-wrap items-center gap-3">
+          <button onClick={pickFile} className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:text-foreground">
+            <FilePlus className="h-4 w-4" /> {filePath ? "Choose another model" : "Open a model for file-specific checks"}
+          </button>
+          {filePath && <span className="truncate text-xs text-muted-foreground" title={filePath}>{filePath.split(/[\\/]/).pop()}</span>}
+          {fm.isPending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+        </div>
+        {fm.isError && <p className="text-sm text-risk">Couldn't read that file: {(fm.error as Error).message}</p>}
+        {rep && (
+          rep.available ? (
+            <div className="space-y-2 rounded-md border border-border p-3">
+              <p className="text-sm font-semibold">What Studio found in this file</p>
+              {rep.overall_text && (
+                <p className={`flex items-center gap-1.5 text-sm font-medium ${lvlColor(rep.overall_level)}`}>
+                  {rep.overall_level === "ok" ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                  {rep.overall_text}
+                </p>
+              )}
+              <ul className="space-y-1 text-sm">
+                {rep.findings?.map((f, i) => (
+                  <li key={i} className="flex items-start gap-1.5">
+                    <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${f.level === "risk" ? "bg-risk" : f.level === "warn" ? "bg-doctor-cost" : "bg-stage-validate"}`} />
+                    <span className="text-muted-foreground">{f.text}</span>
+                  </li>
+                ))}
+              </ul>
+              {rep.signals_used && rep.signals_used.length > 0 &&
+                <p className="text-[11px] text-muted-foreground">Based on: {rep.signals_used.join(", ")}. Advisory — not a print-success guarantee.</p>}
+            </div>
+          ) : (
+            <p className="rounded-md border border-border p-3 text-sm text-muted-foreground">
+              {rep.reason || "Studio didn't find a strong file-specific first-layer signal for this model. Start with the general checks below."}
+            </p>
+          )
+        )}
+      </CardContent></Card>
+
       <Card><CardContent className="p-5">
-        <p className="mb-2 text-sm font-semibold">What does your first layer look like?</p>
+        <p className="mb-2 text-sm font-semibold">{filePath ? "Or pick what your first layer looks like" : "What does your first layer look like?"}</p>
         <div className="flex flex-wrap gap-1.5">
           {FIRST_LAYER_SYMPTOMS.map((s) => (
             <button key={s.id} onClick={() => pick(s.id)}
