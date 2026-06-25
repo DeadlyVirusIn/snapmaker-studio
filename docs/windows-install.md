@@ -5,7 +5,7 @@ unsigned** (no code-signing certificate yet), so Windows SmartScreen will likely
 show a warning such as:
 
 > **Windows protected your PC**
-> App: `Snapmaker.Studio_0.4.0-beta.16.2_x64-setup.exe`
+> App: `Snapmaker.Studio_0.4.0-beta.17_x64-setup.exe`
 > Publisher: Unknown publisher
 
 This warning is expected for an unsigned beta from a new publisher. It does not
@@ -24,15 +24,15 @@ Do not run installers for this app obtained from anywhere else.
 Before installing, confirm the file's SHA256 checksum matches the value below.
 
 ```
-File:    Snapmaker.Studio_0.4.0-beta.16.2_x64-setup.exe
-Size:    16118302 bytes
-SHA256:  76106b28e8824875cbbb0ba5969522cecd39bb733bddfc1fbcf8689e00d4853f
+File:    Snapmaker.Studio_0.4.0-beta.17_x64-setup.exe
+Size:    16122368 bytes
+SHA256:  4e29c863a64bbd594b6c62600395cf499e944ebcd14bbf606041fe82e21081c5
 ```
 
 Check it in PowerShell:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 ".\Snapmaker.Studio_0.4.0-beta.16.2_x64-setup.exe"
+Get-FileHash -Algorithm SHA256 ".\Snapmaker.Studio_0.4.0-beta.17_x64-setup.exe"
 ```
 
 If the printed hash does not match, **do not run the installer** — delete it and
@@ -47,7 +47,7 @@ from somewhere other than the official release — do not continue.
 
 ## Install steps
 
-1. Download `Snapmaker.Studio_0.4.0-beta.16.2_x64-setup.exe` from the official
+1. Download `Snapmaker.Studio_0.4.0-beta.17_x64-setup.exe` from the official
    release page above.
 2. Verify the SHA256 (see above). If it doesn't match, stop and re-download.
 3. Run the installer. On the SmartScreen prompt, choose **More info → Run anyway**

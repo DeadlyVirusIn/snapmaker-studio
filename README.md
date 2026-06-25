@@ -57,24 +57,26 @@ Open the downloaded `…_x64-setup.exe`, install, and launch **Snapmaker Studio*
 No account, no cloud, nothing leaves your computer. Older builds and checksums are
 on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
-## Try beta.16.2 — control timeout patch
+## Try beta.17 — actionable Doctors
 
-beta.16.2 is the **Printer Hub control-timeout patch**: the control request timeout is
-raised to 60 seconds so real-U1 actions that legitimately take longer (the U1 parks and
-restores the toolhead on pause/resume, which can exceed 20 seconds) no longer report a
-false timeout error even though the action succeeded. The Printer Hub integration is
-**hardware-verified on a real U1** (monitoring, upload/send, and the full start / pause /
-resume / cancel loop) — see [docs/PRINTER_HUB_VERIFICATION.md](docs/PRINTER_HUB_VERIFICATION.md).
+beta.17 turns two Doctors from advice into action — they now create a real file you can
+open in Snapmaker Orca, and your original is never changed:
 
-Carried forward from beta.15: the visual 2D **Plate Color Remap preview** (see exactly
-what colour changes and what stays protected), **evidence-backed Print Quality** advice
-grounded in your own model, and **Source Check** (reads any STL/3MF and tells you the
-source slicer, what Studio can read, what it can't convert yet, and the safe next step).
-All local, advisory — no cloud, no account, no guarantees.
+- **Scale Doctor — Prepare scaled copy.** Pick a recommended (or custom) scale and Studio
+  writes a new scaled copy, e.g. `model_scaled_128_U1.3mf`, with the scaled dimensions,
+  U1 fit, validation, and Open-in-Orca / Copy path / Run Project Doctor. STL input is
+  supported now; for 3MF, preview here and resize in Orca (verified 3MF export is coming).
+- **Compatibility Doctor — Prepare U1 copy.** When a project carries another printer's
+  settings, one click makes a clean Snapmaker U1 copy so Orca opens it with U1-safe
+  settings — no more dead end at "here's what's wrong."
 
-- Release: [v0.4.0-beta.16.2](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.16.2)
-- Installer: `Snapmaker.Studio_0.4.0-beta.16.2_x64-setup.exe`
-- SHA256: `76106b28e8824875cbbb0ba5969522cecd39bb733bddfc1fbcf8689e00d4853f`
+Carried forward: hardware-verified **Printer Hub**, **Print Quality** evidence grounded in
+your own file, **Plate Color Remap**, **Source Check**, Model Browser. All local, advisory
+— no cloud, no account, no guarantees. Studio does not slice; Orca does.
+
+- Release: [v0.4.0-beta.17](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.17)
+- Installer: `Snapmaker.Studio_0.4.0-beta.17_x64-setup.exe`
+- SHA256: `4e29c863a64bbd594b6c62600395cf499e944ebcd14bbf606041fe82e21081c5`
 - Unsigned beta: the installer is not code-signed yet, so Windows SmartScreen may show “Unknown publisher.” That is expected for this beta. Download only from the release link above and verify the SHA256 before installing.
 
 Install:
@@ -83,7 +85,7 @@ Install:
 2. Verify the checksum. It must match the SHA256 published on the release:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.16.2_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.17_x64-setup.exe
 ```
 
 3. Run it. On the SmartScreen prompt choose **More info → Run anyway** only after verifying the hash.

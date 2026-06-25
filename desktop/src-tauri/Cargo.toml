@@ -1,6 +1,6 @@
 [package]
 name = "snapmaker-studio-desktop"
-version = "0.4.0-beta.16.2"
+version = "0.4.0-beta.17"
 description = "Snapmaker Studio desktop shell"
 edition = "2021"
 

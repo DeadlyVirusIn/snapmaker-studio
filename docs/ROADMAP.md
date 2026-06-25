@@ -12,6 +12,19 @@ product or the branding. Brand: [`brand/`](brand/README.md).
 
 ---
 
+## Shipped (as of v0.4.0-beta.17)
+
+- **Scale Doctor — prepare scaled copy (STL) — SHIPPED (beta.17).** Creates a real
+  scaled U1 3MF from an STL (geometry truly scaled; original never modified). 3MF scaled
+  export is next (blocked with a clear message for now).
+- **Compatibility Doctor — Prepare U1 copy — SHIPPED (beta.17).** Wires the existing
+  repair/convert path to a one-click clean-U1-copy action (no more dead end).
+
+### Next
+- Verified 3MF scaled export (multi-part / multi-plate uniform scaling, Orca-checked).
+- Per-card Business pricing (Cost/Pricing/Profit honoring the Settings filament price).
+- File-aware First Layer Doctor (use the bed/stability-aware path after a file pick).
+
 ## Shipped (as of v0.4.0-beta.15)
 
 LIVE in the published beta — routes, endpoints, and tests exist (mocked where no
