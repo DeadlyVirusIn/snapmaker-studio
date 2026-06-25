@@ -7,6 +7,8 @@ import { create } from "zustand";
 export interface BizAssumptions {
   spoolWeightG: number;       // spool weight (g); material = grams * price / spoolWeight
   gramsOverride: number;      // 0 = use Studio's grams; >0 = your entered weight
+  printHours: number;         // 0 = use slicer time if known; >0 = your entered hours
+  material: string;           // PLA/PETG/ABS/ASA/TPU — density used when grams unknown
   electricityPerKwh: number;  // electricity_per_kwh
   powerW: number;             // power_w (printer draw)
   machinePrice: number;       // machine_price (for depreciation)
@@ -22,10 +24,16 @@ export interface BizAssumptions {
 }
 
 const DEFAULTS: BizAssumptions = {
-  spoolWeightG: 1000, gramsOverride: 0,
+  spoolWeightG: 1000, gramsOverride: 0, printHours: 0, material: "PLA",
   electricityPerKwh: 0.20, powerW: 120, machinePrice: 600, machineLifeHours: 5000,
   laborHours: 0.25, laborRate: 0, failureRatePct: 5, packaging: 0,
   marketplaceFeePct: 0, shippingCost: 0, shippingCharged: 0, markupPct: 80,
+};
+
+// Documented filament densities (g/cm³). Used only when grams are estimated from volume
+// and not known from the slicer or entered by the user.
+export const MATERIAL_DENSITY: Record<string, number> = {
+  PLA: 1.24, PETG: 1.27, ABS: 1.04, ASA: 1.07, TPU: 1.21,
 };
 
 const KEY = "businessAssumptions";
@@ -57,9 +65,9 @@ export const useBusiness = create<BizState>((set, get) => ({
 }));
 
 function stripFns(s: BizAssumptions): BizAssumptions {
-  const { spoolWeightG, gramsOverride, electricityPerKwh, powerW, machinePrice, machineLifeHours,
+  const { spoolWeightG, gramsOverride, printHours, material, electricityPerKwh, powerW, machinePrice, machineLifeHours,
     laborHours, laborRate, failureRatePct, packaging, marketplaceFeePct, shippingCost, shippingCharged, markupPct } = s;
-  return { spoolWeightG, gramsOverride, electricityPerKwh, powerW, machinePrice, machineLifeHours,
+  return { spoolWeightG, gramsOverride, printHours, material, electricityPerKwh, powerW, machinePrice, machineLifeHours,
     laborHours, laborRate, failureRatePct, packaging, marketplaceFeePct, shippingCost, shippingCharged, markupPct };
 }
 
@@ -83,6 +91,9 @@ export function bizFactors(a: BizAssumptions, spoolPrice: number) {
     shipping_charged: a.shippingCharged,
   };
   if (a.gramsOverride > 0) out.grams_override = a.gramsOverride;
+  if (a.printHours > 0) out.print_hours = a.printHours;
+  // density only matters when grams are estimated from volume (no override / no slicer).
+  if (a.gramsOverride <= 0) out.material_density = MATERIAL_DENSITY[a.material] ?? MATERIAL_DENSITY.PLA;
   return out;
 }
 

@@ -358,6 +358,15 @@ def cost_to_price(path: str, host: str | None = None, filename: str | None = Non
         grams = mdg.get("material_estimate_g") if mdg.get("available") else None
         if grams is not None:
             basis = "geometry estimate (volume × density)"
+            # When grams are estimated from volume, scale by the chosen material's density.
+            # The geometry estimate assumes PLA (1.24 g/cm³); the ratio re-bases it.
+            dens = factors.get("material_density")
+            try:
+                if dens is not None and float(dens) > 0:
+                    grams = grams * (float(dens) / 1.24)
+                    basis = "geometry estimate (volume × material density)"
+            except (TypeError, ValueError):
+                pass
     # Explicit user overrides typed in the assumptions panel win over auto values.
     g_over = factors.get("grams_override")
     if g_over is not None:

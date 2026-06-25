@@ -23,8 +23,17 @@ describe("bizFactors — user assumptions map to backend factor keys", () => {
     expect(keys).toEqual([
       "electricity_per_kwh", "failure_rate_pct", "labor_hours", "labor_rate",
       "machine_life_hours", "machine_price", "marketplace_fee_pct", "markup_pct",
-      "packaging", "power_w", "price_per_kg", "shipping_charged", "shipping_cost",
+      "material_density", "packaging", "power_w", "price_per_kg",
+      "shipping_charged", "shipping_cost",
     ]);
+  });
+
+  it("sends print_hours only when entered, and material density when grams unknown", () => {
+    expect("print_hours" in bizFactors(BIZ_DEFAULTS, 20)).toBe(false);
+    expect(bizFactors({ ...BIZ_DEFAULTS, printHours: 3 }, 20).print_hours).toBe(3);
+    expect(bizFactors({ ...BIZ_DEFAULTS, material: "PETG" }, 20).material_density).toBe(1.27);
+    // override present -> density not sent (grams are known).
+    expect("material_density" in bizFactors({ ...BIZ_DEFAULTS, gramsOverride: 82 }, 20)).toBe(false);
   });
 
   it("derives price/kg from spool price and spool weight", () => {

@@ -467,7 +467,8 @@ def _make_handler(token: str):
                                    "machine_price", "machine_life_hours", "labor_hours",
                                    "labor_rate", "failure_rate_pct", "markup_pct",
                                    "marketplace_fee_pct", "grams_override", "print_hours",
-                                   "packaging", "shipping_cost", "shipping_charged")
+                                   "packaging", "shipping_cost", "shipping_charged",
+                                   "material_density")
                     factors = {k: rv.optional_float(data, k, 0.0) for k in factor_keys if data.get(k) is not None}
                     self._send(200, service.batch_pricing(
                         paths, str(data.get("currency", "$")), **factors))
@@ -570,7 +571,8 @@ def _make_handler(token: str):
                                    "machine_price", "machine_life_hours", "labor_hours",
                                    "labor_rate", "failure_rate_pct", "markup_pct",
                                    "marketplace_fee_pct", "grams_override", "print_hours",
-                                   "packaging", "shipping_cost", "shipping_charged")
+                                   "packaging", "shipping_cost", "shipping_charged",
+                                   "material_density")
                     factors = {k: rv.optional_float(data, k, 0.0) for k in factor_keys if data.get(k) is not None}
                     self._send(200, service.intelligence_report(
                         path, data.get("host"), data.get("filename"),
@@ -590,7 +592,8 @@ def _make_handler(token: str):
                                    "machine_price", "machine_life_hours", "labor_hours",
                                    "labor_rate", "failure_rate_pct", "markup_pct",
                                    "marketplace_fee_pct", "grams_override", "print_hours",
-                                   "packaging", "shipping_cost", "shipping_charged")
+                                   "packaging", "shipping_cost", "shipping_charged",
+                                   "material_density")
                     factors = {k: rv.optional_float(data, k, 0.0) for k in factor_keys if data.get(k) is not None}
                     common = dict(host=data.get("host"), filename=data.get("filename"),
                                   port=rv.require_port(data),
@@ -617,7 +620,8 @@ def _make_handler(token: str):
                                    "machine_price", "machine_life_hours", "labor_hours",
                                    "labor_rate", "failure_rate_pct", "markup_pct",
                                    "marketplace_fee_pct", "grams_override", "print_hours",
-                                   "packaging", "shipping_cost", "shipping_charged")
+                                   "packaging", "shipping_cost", "shipping_charged",
+                                   "material_density")
                     factors = {k: rv.optional_float(data, k, 0.0) for k in factor_keys if data.get(k) is not None}
                     self._send(200, service.cost_to_price(
                         path, data.get("host"), data.get("filename"),

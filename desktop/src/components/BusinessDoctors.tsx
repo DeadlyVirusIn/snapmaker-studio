@@ -4,7 +4,7 @@ import { Coins, Tag, TrendingUp, ChevronDown, RotateCcw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { costToPrice, pricingDoctor, profitDoctor } from "@/api";
 import { useFilament } from "@/store/filament";
-import { useBusiness, bizFactors } from "@/store/business";
+import { useBusiness, bizFactors, MATERIAL_DENSITY } from "@/store/business";
 
 function NumField({ label, value, onChange, step = 1 }:
   { label: string; value: number; onChange: (v: number) => void; step?: number }) {
@@ -92,6 +92,14 @@ export function BusinessDoctors({ filePath, host }: { filePath: string; host?: s
                 <NumField label={`Spool price ${currency}`} value={pricePerKg} onChange={(v) => useFilament.getState().setPrice(v)} />
                 <NumField label="Spool weight (g)" value={biz.spoolWeightG} onChange={(v) => biz.set({ spoolWeightG: v })} />
                 <NumField label={`Grams used (0 = ${c?.grams ?? "auto"})`} value={biz.gramsOverride} onChange={(v) => biz.set({ gramsOverride: v })} />
+                <NumField label={`Print hours (0 = ${c?.time_known ? c.print_hours : "unknown"})`} value={biz.printHours} onChange={(v) => biz.set({ printHours: v })} step={0.1} />
+                <label className="flex flex-col gap-0.5">
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Material</span>
+                  <select value={biz.material} onChange={(e) => biz.set({ material: e.target.value })}
+                    className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary">
+                    {Object.keys(MATERIAL_DENSITY).map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </label>
                 <NumField label="Electricity /kWh" value={biz.electricityPerKwh} onChange={(v) => biz.set({ electricityPerKwh: v })} step={0.01} />
                 <NumField label="Printer watts" value={biz.powerW} onChange={(v) => biz.set({ powerW: v })} />
                 <NumField label="Printer price" value={biz.machinePrice} onChange={(v) => biz.set({ machinePrice: v })} />
@@ -116,10 +124,14 @@ export function BusinessDoctors({ filePath, host }: { filePath: string; host?: s
                 Formula: material + electricity + machine wear + labour + packaging + failure buffer →
                 cost; then marketplace fee + markup → price; shipping (charged − cost) adjusts profit.
               </p>
+              {c?.available && !c.time_known && biz.printHours <= 0 && (
+                <p className="text-doctor-cost">Print time unknown — enter print hours from Orca or your estimate above to include electricity, machine wear &amp; labour.</p>
+              )}
               <p className="text-muted-foreground opacity-80">
-                Material type (density) isn't applied yet. Print time comes from the slicer when you
-                send a file to the printer; otherwise time-based costs show as 0. Rough estimate — not
-                financial advice.
+                Grams come from the slicer when you send a file to the printer, else estimated from
+                volume × your material's density ({biz.material} {MATERIAL_DENSITY[biz.material]} g/cm³),
+                else your entered weight. Source is shown in the material line above. Rough estimate —
+                not financial advice.
               </p>
             </div>
             {c?.available && c.breakdown && (
