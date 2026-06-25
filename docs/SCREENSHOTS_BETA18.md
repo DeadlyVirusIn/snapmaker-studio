@@ -31,3 +31,18 @@ page copy and layout.
 Frontend-only render (footer shows "Reconnecting…" — no backend by design). Not a product
 mode; not shipped in the app. File-loaded Doctor/Business-result states still need a real
 file or fixture and are captured manually from the installed app.
+
+## File-loaded states (real backend, bundled samples)
+
+Captured via the harness with the real backend running and a dev-only fallback so headless
+Edge can point at it: `?api=PORT:TOKEN` (apiInfo) and `?file=<path>` (dialog). Both are
+gated on `import.meta.env.DEV` — **stripped from production builds**, screenshot/test
+support only. Files are the repo's bundled samples (`examples/sample_cube.stl`,
+`sample_cube_U1.3mf`) — no private data.
+
+| File | Proves |
+|------|--------|
+| `scale_loaded.png` | 3MF loaded → real recommended-scale ladder (fit/risk), 3MF "preview-only, resize in Orca" constraint inline |
+| `scale_success.png` | STL → Preview → Prepare scaled copy flow |
+| `compatibility_loaded.png` | U1 3MF → real read-only check ("no known compatibility issues") |
+| `source_loaded.png` | Source Check with a file loaded |

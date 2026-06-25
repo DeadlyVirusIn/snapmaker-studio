@@ -7,8 +7,20 @@ type ApiInfo = { port: number; token: string };
 let cached: ApiInfo | null = null;
 
 async function apiInfo(): Promise<ApiInfo> {
-  if (!cached) cached = await invoke<ApiInfo>("get_api_info");
+  if (cached) return cached;
+  // Dev/screenshot-harness only: let headless Edge point at a running backend via
+  // ?api=PORT:TOKEN. Stripped from production builds (import.meta.env.DEV === false).
+  if ((import.meta as any).env?.DEV) {
+    const q = new URLSearchParams(location.search).get("api");
+    if (q) { const [p, t] = q.split(":"); cached = { port: Number(p), token: t || "" }; return cached; }
+  }
+  cached = await invoke<ApiInfo>("get_api_info");
   return cached;
+}
+// Dev/screenshot-harness only: a sample file path from ?file= instead of the native picker.
+function devFilePath(): string | null {
+  if ((import.meta as any).env?.DEV) return new URLSearchParams(location.search).get("file");
+  return null;
 }
 
 // Open the locked in-app Model Browser at an approved-site URL. Rust validates
@@ -986,11 +998,13 @@ export function compatibilityCheck(path: string): Promise<CompatibilityResult> {
 
 // 3MF-only picker for the plate remap wizard (projects only — not bare STLs).
 export async function open3mfDialog(): Promise<string | null> {
+  const dev = devFilePath(); if (dev) return dev;
   const picked = await open({ multiple: false, filters: [{ name: "3MF project", extensions: ["3mf"] }] });
   return typeof picked === "string" ? picked : null;
 }
 
 export async function openModelDialog(): Promise<string | null> {
+  const dev = devFilePath(); if (dev) return dev;
   const picked = await open({
     multiple: false,
     filters: [{ name: "3D models / projects", extensions: ["stl", "3mf"] }],
@@ -1000,6 +1014,7 @@ export async function openModelDialog(): Promise<string | null> {
 
 // Multi-select variant for batch conversion.
 export async function openModelsDialog(): Promise<string[]> {
+  const dev = devFilePath(); if (dev) return [dev];
   const picked = await open({
     multiple: true,
     filters: [{ name: "3D models / projects", extensions: ["stl", "3mf"] }],
