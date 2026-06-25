@@ -181,11 +181,7 @@ export default function PrintQuality() {
       {res && (
         <Card><CardContent className="space-y-4 p-5">
           <p className="text-sm font-semibold">{res.title}</p>
-          <Section icon={Lightbulb} title="Likely causes" items={res.likely_causes} />
-          <Section icon={ListChecks} title="Safe first checks (in order)" items={res.first_checks} />
-          <Section icon={SlidersHorizontal} title="Where to look in Snapmaker Orca" items={res.orca_paths} />
-          <Section icon={Wrench} title="Hardware / material checks" items={res.hardware_checks} />
-          <Section icon={Ban} title="What not to change blindly" items={res.avoid} />
+          {/* File-specific evidence first (what Studio found in this file), then general advice. */}
           {res.evidence && res.evidence.length > 0 && (
             <div className="rounded-md border border-border bg-muted/20 p-3">
               <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -203,8 +199,13 @@ export default function PrintQuality() {
             </div>
           )}
           {res.evidence_available === false && filePath && (
-            <p className="text-[11px] text-muted-foreground">No strong file-specific signals for this symptom — the checks above still apply.</p>
+            <p className="text-[11px] text-muted-foreground">No strong file-specific signals for this symptom — the general checks below still apply.</p>
           )}
+          <Section icon={Lightbulb} title="Likely causes" items={res.likely_causes} />
+          <Section icon={ListChecks} title="Safe first checks (in order)" items={res.first_checks} />
+          <Section icon={SlidersHorizontal} title="Where to look in Snapmaker Orca" items={res.orca_paths} />
+          <Section icon={Wrench} title="Hardware / material checks" items={res.hardware_checks} />
+          <Section icon={Ban} title="What not to change blindly" items={res.avoid} />
           <p className="flex items-start gap-1.5 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {res.disclaimer}
           </p>
