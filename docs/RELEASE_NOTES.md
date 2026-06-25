@@ -1,4 +1,4 @@
-# Snapmaker Studio v0.4.0-beta.18 — Cleaner Novice UX
+# Snapmaker Studio v0.4.0-beta.18.1 — Cleaner Novice UX
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
@@ -38,10 +38,10 @@ modified; estimates are not guarantees.
 ## Download (unsigned beta)
 
 ```
-File:    Snapmaker.Studio_0.4.0-beta.18_x64-setup.exe
-Size:    16125106 bytes
-SHA256:  98f1b0a197e441c6fe0f2ee5e4eed2b4bcf34092d91a6f7dbbfa6b9c06b92aee
+File:    Snapmaker.Studio_0.4.0-beta.18.1_x64-setup.exe
+Size:    16125666 bytes
+SHA256:  a6f76dc8c09b0bf2ff5bd311d4398a9e99e7344ff5e387c84907089b7f614169
 ```
 
 Unsigned — SmartScreen may show "Unknown publisher." Verify the SHA256 before installing.
-Full guidance: [docs/windows-install.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.18/docs/windows-install.md).
+Full guidance: [docs/windows-install.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.18.1/docs/windows-install.md).
