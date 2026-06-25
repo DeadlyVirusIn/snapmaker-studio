@@ -6,7 +6,10 @@ import { PageHeader } from "@/components/ui/layout";
 import { doctorById } from "@/lib/doctors";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { useSession } from "@/store/session";
+import { BusinessDoctors } from "@/components/BusinessDoctors";
 import NotFound from "@/routes/NotFound";
+
+const BIZ_DOCTORS = new Set(["cost", "pricing", "profit"]);
 
 // Safe landing for the model-based Doctors. The Doctors run on an open model in
 // the workspace; this page explains what the Doctor does and routes the user to
@@ -21,6 +24,27 @@ export default function DoctorLanding() {
 
   if (!doc) return <NotFound />;
   const Icon = doc.icon;
+
+  // Cost / Pricing / Profit run on the open model — show the real calculator here,
+  // not a "how to run" placeholder, when a file is loaded.
+  if (file && BIZ_DOCTORS.has(doc.id)) {
+    return (
+      <div className="space-y-6">
+        <PageHeader icon={Icon} title={doc.name} subtitle={doc.answers} />
+        <Card><CardContent className="space-y-1 p-5">
+          <p className="text-sm font-semibold">{file.name}</p>
+          <p className="text-xs text-muted-foreground">
+            Cost, pricing and profit for the open model — your local assumptions, not financial advice.
+          </p>
+        </CardContent></Card>
+        <BusinessDoctors filePath={file.path} />
+        <p className="text-xs text-muted-foreground">
+          Want the full design checks too?{" "}
+          <Link to="/workspace" className="text-primary hover:underline">Open the workspace</Link>.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

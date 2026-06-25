@@ -111,10 +111,15 @@ export default function Compatibility() {
           {prep && (
             <div className="space-y-3 rounded-md border border-border p-3">
               <p className="flex items-center gap-2 text-sm font-semibold text-stage-validate">
-                <CheckCircle2 className="h-4 w-4" /> U1 copy created
+                <CheckCircle2 className="h-4 w-4" /> U1 profile copy created
               </p>
               <p className="truncate text-xs text-muted-foreground" title={prep.output_path}>
-                Saved as <b>{prep.output_name}</b> · {prep.validated_ok ? "passed U1-clean checks" : "see notes"} (new file — original untouched).
+                Saved as <b>{prep.output_name}</b> · {prep.validated_ok ? "profile & settings fixed" : "see notes"} (new file — original untouched).
+              </p>
+              <p className="flex items-start gap-1.5 rounded-md border border-doctor-cost/40 bg-doctor-cost/5 p-2 text-[11px] text-muted-foreground">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-doctor-cost" />
+                Layout isn't verified — Studio fixed settings/profile, not object placement. Open in
+                Snapmaker Orca and use <b>Arrange all plates</b> before slicing; objects may sit outside a plate.
               </p>
               {prep.errors && prep.errors.length > 0 && (
                 <ul className="space-y-1 text-xs text-muted-foreground">

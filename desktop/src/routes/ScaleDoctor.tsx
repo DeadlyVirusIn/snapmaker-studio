@@ -24,7 +24,6 @@ export default function ScaleDoctor() {
   const [pct, setPct] = useState(100);
   const [res, setRes] = useState<ScaleResult | null>(null);
   const [opts, setOpts] = useState<ScaleOptionsResult | null>(null);
-  const [copied, setCopied] = useState<number | null>(null);
 
   const m = useMutation({
     mutationFn: () => scalePreview(path!, pct),
@@ -50,10 +49,6 @@ export default function ScaleDoctor() {
 
   async function copyPath(p: string) {
     try { await navigator.clipboard.writeText(p); } catch { /* clipboard unavailable */ }
-  }
-
-  async function copyScale(p: number) {
-    try { await navigator.clipboard.writeText(String(p)); setCopied(p); setTimeout(() => setCopied(null), 1500); } catch { /* clipboard unavailable */ }
   }
 
   const tone = recTone(res?.recommendation);
@@ -224,7 +219,8 @@ export default function ScaleDoctor() {
                       ))}
                       <th className="py-1 pr-3">Fit</th>
                       <th className="py-1 pr-3">Recommendation</th>
-                      <th className="py-1">Risk</th>
+                      <th className="py-1 pr-3">Risk</th>
+                      <th className="py-1">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -236,17 +232,8 @@ export default function ScaleDoctor() {
                           className={rec ? "bg-stage-validate/10 font-medium" : ""}
                           style={rec ? { boxShadow: "inset 2px 0 0 0 hsl(var(--stage-validate))" } : undefined}>
                           <td className="py-1.5 pr-3 align-top">
-                            <button className="inline-flex items-center gap-1 underline-offset-2 hover:underline"
-                              onClick={() => copyScale(o.scale_percent)} title="Copy scale %">
-                              {o.scale_percent}% {copied === o.scale_percent && <span className="text-stage-validate">copied</span>}
-                            </button>
+                            <span className="tabular-nums">{o.scale_percent}%</span>
                             {rec && <span className="ml-1 rounded bg-stage-validate/15 px-1 text-[10px] text-stage-validate">recommended</span>}
-                            {isStl && (
-                              <button className="mt-1 block text-[11px] text-primary underline-offset-2 hover:underline disabled:opacity-50"
-                                onClick={() => ex.mutate(o.scale_percent)} disabled={ex.isPending}>
-                                Prepare scaled copy
-                              </button>
-                            )}
                           </td>
                           {o.dimensions_by_part.map((d, i) => (
                             <td key={i} className="py-1.5 pr-3 align-top">{fmtDims(d.dimensions)}</td>
@@ -257,13 +244,40 @@ export default function ScaleDoctor() {
                           <td className="py-1.5 pr-3 align-top">
                             {caution && <AlertTriangle className="mr-1 inline h-3 w-3 text-risk" />}{o.recommendation}
                           </td>
-                          <td className="py-1.5 align-top">{riskLabel(o.risk_level)}</td>
+                          <td className="py-1.5 pr-3 align-top">{riskLabel(o.risk_level)}</td>
+                          <td className="py-1.5 align-top">
+                            {isStl ? (
+                              <Button size="sm" variant={rec ? "primary" : "secondary"}
+                                onClick={() => ex.mutate(o.scale_percent)} disabled={ex.isPending}>
+                                {ex.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FilePlus className="h-3.5 w-3.5" />}
+                                Prepare {o.scale_percent}% copy
+                              </Button>
+                            ) : (
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-muted-foreground">Preview only</span>
+                                <button disabled className="cursor-not-allowed rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground opacity-60">
+                                  3MF export not ready
+                                </button>
+                              </div>
+                            )}
+                          </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
+              {!isStl && (
+                <div className="space-y-2 rounded-md border border-doctor-cost/40 bg-doctor-cost/5 p-3 text-xs">
+                  <p className="text-muted-foreground">
+                    Studio can preview 3MF scale and U1 fit. Creating a scaled 3MF is disabled until
+                    colour, plate, and multi-part preservation are verified — so the rows above are
+                    preview-only.
+                  </p>
+                  <p className="font-medium text-foreground">To resize this 3MF, open it in Snapmaker Orca and scale there:</p>
+                  {path && <OrcaHandoff outputPath={path} />}
+                </div>
+              )}
               <ul className="space-y-1 text-xs text-muted-foreground">
                 {opts.options.map((o) => (
                   <li key={o.label}><b>{o.label}:</b> {o.explanation}</li>

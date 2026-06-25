@@ -20,6 +20,7 @@ SCHEMA_VERSION = "report/1"
 SETTINGS = "Metadata/project_settings.config"
 # Approx U1 build volume (mm) from the U1 printable_area; used for a bed-fit check.
 U1_BUILD = (270.0, 270.0, 270.0)
+U1_TOOLHEADS = 4  # the U1 has 4 toolheads; more colours need swaps/remap in Orca
 
 
 def _check(name, ok, detail):
@@ -50,7 +51,13 @@ def readiness_report(path: str) -> dict:
             f'{dims["x"]} × {dims["y"]} × {dims["z"]} mm '
             + ("fits 270 × 270 × 270" if fits else "is larger than the U1 bed — scale or split")))
     if colors:
-        checks.append(_check("Colours supported", True, f"{colors} colour(s) — U1 handles this on 4 toolheads"))
+        colors_ok = colors <= U1_TOOLHEADS
+        checks.append(_check(
+            "Colours vs toolheads", colors_ok,
+            f"{colors} colour(s) on {U1_TOOLHEADS} toolheads — prints directly"
+            if colors_ok
+            else f"{colors} colour(s) but the U1 has {U1_TOOLHEADS} toolheads — plan colour swaps "
+                 f"or remap to {U1_TOOLHEADS} colours in Snapmaker Orca before slicing"))
 
     # --- preservation ---------------------------------------------------------
     preserved.append("3D geometry (mesh) — kept exactly")
@@ -109,13 +116,34 @@ def readiness_report(path: str) -> dict:
     except Exception:
         pass
 
-    ready = verdict == READY or all(c["status"] == "pass" for c in checks)
+    # Print-setup risks that block a clean "U1-ready" even when the U1 profile is compatible.
+    if colors and colors > U1_TOOLHEADS:
+        at_risk.append(
+            f"{colors} colours but the U1 has {U1_TOOLHEADS} toolheads — plan colour swaps "
+            f"or remap to {U1_TOOLHEADS} colours in Snapmaker Orca before slicing")
+    if any("steep overhangs" in w or "supports" in w for w in warnings):
+        at_risk.append("Supports likely needed — enable/check them in Snapmaker Orca before slicing")
+    if (info.get("objects") or 0) > 1 or (info.get("plates") or 0) > 1:
+        at_risk.append("Object/plate layout isn't verified by Studio — open in Snapmaker Orca and "
+                       "use Arrange all plates before slicing")
+
+    # Honest readiness: a failed check OR any at-risk item means it is NOT ready as-is.
+    # (Do not let a compatible profile verdict override real print-setup risks.)
+    ready = all(c["status"] == "pass" for c in checks) and not at_risk
+    base = diag.get("score")
+    score = base
+    if not ready and isinstance(base, (int, float)):
+        score = min(int(base), 70)   # not a perfect score while setup review remains
+    # Profile may be compatible, but if setup review remains do not surface a green "ready".
+    out_verdict = "HIGH_RISK" if (not ready and verdict == READY) else verdict
     return {
         "schema_version": SCHEMA_VERSION,
         "name": Path(path).name,
-        "verdict": verdict,
-        "readiness_score": diag.get("score"),
+        "verdict": out_verdict,
+        "profile_verdict": verdict,        # the underlying U1-profile compatibility verdict
+        "readiness_score": score,
         "ready": bool(ready),
+        "print_setup_ready": bool(ready),
         "checks": checks,
         "preserved": preserved,
         "changes": changes,
