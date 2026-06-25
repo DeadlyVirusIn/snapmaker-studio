@@ -1,36 +1,34 @@
-# Snapmaker Studio v0.4.0-beta.18.2 — UX polish
+# Snapmaker Studio v0.4.0-beta.18.3 — Readiness Truth Fix
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-Small polish on top of beta.18.1's page cleanup.
+Trust fixes found by real installed-app testing on a 13-colour / 5-plate project.
 
-## Change
+## Fixes
 
-- **Printer Hub** subtitle shortened to one calm line — "Monitor your U1 and send files —
-  every action is confirmed." (the last over-long subtitle from the page-copy pass).
+- **Project Doctor no longer calls a file "U1-ready / 100" when print-setup risks remain.**
+  More colours than the U1's 4 toolheads, or likely-needed supports, now demote the
+  headline to "Review before printing" with capped stars and clear at-risk reasons
+  (remap to 4 colours, enable supports, arrange plates in Orca).
+- **Cost / Pricing / Profit Doctors show the real calculator** (cost, suggested price,
+  profit, the grams × price ÷ weight formula) when a model is loaded — no more
+  "how to run" placeholder.
+- **Compatibility Doctor separates profile from layout.** Success now reads
+  "U1 profile copy created" with an explicit caveat that layout isn't verified —
+  open in Snapmaker Orca and use **Arrange all plates** before slicing.
+- **Scale Doctor 3MF rows are preview-only** — they no longer fake a "copied" action.
+  STL keeps a real "Prepare scaled copy". 3MF users get an "Open in Snapmaker Orca to
+  resize" path.
 
-Everything else from beta.18 / beta.18.1 carries forward: shorter beginner-first copy,
-repeated read-only/advisory disclaimers trimmed to one line per page, the simplified Cost
-calculator (spool price up front, advanced costs collapsed), print-hours + material-type
-density, Scale STL export, Compatibility "Prepare U1 copy", hardware-verified Printer Hub.
-Local-first. Studio does not slice; never takes autonomous control; originals are never
-modified; estimates are not guarantees.
-
-## Screenshots
-
-A fresh multi-page screenshot set is **pending manual capture** — see
-[SCREENSHOTS_BETA18.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.18.2/docs/SCREENSHOTS_BETA18.md)
-for the exact list and sanitization rules. (Automated headless capture isn't reliable in
-the build environment; we don't ship faked screenshots.)
+Originals are never modified. Studio does not slice. No print-success guarantees.
 
 ## Download (unsigned beta)
 
 ```
-File:    Snapmaker.Studio_0.4.0-beta.18.2_x64-setup.exe
-Size:    16123618 bytes
-SHA256:  8e507249619337d9e9e32899672e7b9765bef179ebb74aeb032b17686ec70a20
+File:    Snapmaker.Studio_0.4.0-beta.18.3_x64-setup.exe
+Size:    16128701 bytes
+SHA256:  20eca24b7e6c5280680be09899f1cb8caf65a4559b2d8f67cd0a528cf56d0cef
 ```
 
 Unsigned — SmartScreen may show "Unknown publisher." Verify the SHA256 before installing.
-Full guidance: [docs/windows-install.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.18.2/docs/windows-install.md).
