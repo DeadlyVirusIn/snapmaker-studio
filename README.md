@@ -57,7 +57,7 @@ Open the downloaded `…_x64-setup.exe`, install, and launch **Snapmaker Studio*
 No account, no cloud, nothing leaves your computer. Older builds and checksums are
 on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
-## Try beta.18.1 — cleaner novice UX
+## Try beta.18.2 — cleaner novice UX
 
 beta.18 is a polish pass: less crowded pages, shorter beginner copy. Find Models leads with
 "Browse approved model sites inside Studio" (policy details collapse into a note); the cost
@@ -87,9 +87,9 @@ Carried forward: hardware-verified **Printer Hub**, **Print Quality** evidence g
 your own file, **Plate Color Remap**, **Source Check**, Model Browser. All local, advisory
 — no cloud, no account, no guarantees. Studio does not slice; Orca does.
 
-- Release: [v0.4.0-beta.18.1](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.18.1)
-- Installer: `Snapmaker.Studio_0.4.0-beta.18.1_x64-setup.exe`
-- SHA256: `a6f76dc8c09b0bf2ff5bd311d4398a9e99e7344ff5e387c84907089b7f614169`
+- Release: [v0.4.0-beta.18.2](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.18.2)
+- Installer: `Snapmaker.Studio_0.4.0-beta.18.2_x64-setup.exe`
+- SHA256: `8e507249619337d9e9e32899672e7b9765bef179ebb74aeb032b17686ec70a20`
 - Unsigned beta: the installer is not code-signed yet, so Windows SmartScreen may show “Unknown publisher.” That is expected for this beta. Download only from the release link above and verify the SHA256 before installing.
 
 Install:
@@ -98,7 +98,7 @@ Install:
 2. Verify the checksum. It must match the SHA256 published on the release:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.18.1_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.18.2_x64-setup.exe
 ```
 
 3. Run it. On the SmartScreen prompt choose **More info → Run anyway** only after verifying the hash.
