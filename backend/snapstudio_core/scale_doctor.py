@@ -188,6 +188,38 @@ def scale_options(path: str, printer: str = "snapmaker_u1", margin_mm: float = 5
                            "y": round(g["max"][1] - g["min"][1], 2),
                            "z": round(g["max"][2] - g["min"][2], 2)}})
 
+    # --- Placement-aware (Orca-like) limit -------------------------------------
+    # Snapmaker Orca scales about each object's fixed centre and rejects a scale when the
+    # placed bbox crosses the plate boundary or the height limit (PartPlate boundary/height
+    # check). An off-centre object therefore hits the edge BEFORE its size maxes out — so a
+    # size-only "fits" is not enough. Keep the centre fixed and find the largest scale that
+    # keeps the placed bbox inside the plate window (accepting 0-origin or centred coords).
+    multi = len(current_parts) > 1
+
+    def _in_place_limit_pct(g):
+        facs = []
+        for a, plate in ((0, bv["x"]), (1, bv["y"])):
+            lo, hi = g["min"][a], g["max"][a]
+            half = (hi - lo) / 2.0
+            if half <= 0:
+                continue
+            c = (lo + hi) / 2.0
+            win = next(((wlo, whi) for wlo, whi in ((0.0, plate), (-plate / 2.0, plate / 2.0))
+                        if lo >= wlo - 1 and hi <= whi + 1), None)
+            if win is None:
+                return 0.0  # already outside both plate windows at 100% — off-plate now
+            wlo, whi = win
+            gap = min(c - wlo, whi - c) - margin   # tighter side, centre fixed, minus margin
+            facs.append(gap / half)
+        dz = g["max"][2] - g["min"][2]
+        if dz > 0:
+            facs.append(bv["z"] / dz)
+        return min(facs) * 100.0 if facs else None
+
+    _limits = [_in_place_limit_pct(g) for g in groups.values()]
+    placement_verifiable = (not multi) and bool(_limits) and all(l is not None for l in _limits)
+    placement_max_pct = min(l for l in _limits if l is not None) if any(l is not None for l in _limits) else None
+
     def fit(d, ux, uy, uz):
         facs = ([ux / d["x"]] if d["x"] > 0 else []) + \
                ([uy / d["y"]] if d["y"] > 0 else []) + \
@@ -252,16 +284,39 @@ def scale_options(path: str, printer: str = "snapmaker_u1", margin_mm: float = 5
          "explanation": "The mathematical maximum that touches the build-volume edge. Not a safe choice."},
     ]
 
-    multi = len(current_parts) > 1
+    # Orca-accurate honesty: only call the size ladder "recommended/safe" if the placed bbox
+    # actually stays inside the plate at that scale (placement verified). Otherwise it is a
+    # SIZE-ONLY estimate — Orca can still reject it because placement on the plate matters.
+    verified = bool(placement_verifiable and placement_max_pct is not None
+                    and safe_pct <= placement_max_pct + 0.5)
+    fit_basis = "placement-verified" if verified else "size-only"
+    if not verified:
+        relabel = {"Recommended starting point": "Largest fit by size only — verify in Orca",
+                   "Usable, but leaves little room": "Size-only fit — verify in Orca"}
+        for o in options:
+            o["recommendation"] = relabel.get(o["recommendation"], o["recommendation"])
+            o["placement_verified"] = False
+            if o.get("risk_level") == "low":
+                o["risk_level"] = "medium"   # not "safe" without placement proof
+
     warnings = [
         "This is a readiness estimate, not a guarantee of print success.",
         "Brim or raft needs extra space beyond these sizes.",
     ]
+    if not verified:
+        warnings.append("Sizes below are a theoretical fit BY SIZE only. Snapmaker Orca can still "
+                        "reject a scale because where the object sits on the plate also matters. "
+                        "After scaling, open in Orca and use Arrange all plates to confirm it fits.")
     if multi:
         warnings.append("Use the same scale on all related parts — do not scale plates "
                         "differently if they need to fit together.")
+
+    headline = (f"Largest verified scale that stays on the plate: {safe_pct:.0f}%."
+                if verified else
+                f"Largest size-only fit is {safe_pct:.0f}% — verify placement in Snapmaker Orca "
+                "(Arrange all plates) after scaling.")
     next_steps = [
-        f"Studio recommends starting with {safe_pct:.0f}%.",
+        headline,
         "Apply the same scale to all related parts in your slicer.",
         "Confirm placement and slicing in Snapmaker Orca before printing.",
     ]
@@ -277,6 +332,9 @@ def scale_options(path: str, printer: str = "snapmaker_u1", margin_mm: float = 5
         "limiting_part": lim_safe["name"],
         "limiting_axis": limiting_axis,
         "recommended_scale_percent": safe_pct,
+        "placement_verified": verified,
+        "placement_max_percent": round(placement_max_pct, 1) if placement_max_pct is not None else None,
+        "fit_basis": fit_basis,
         "options": options,
         "warnings": warnings,
         "next_steps": next_steps,

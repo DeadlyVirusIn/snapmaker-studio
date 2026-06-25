@@ -39,10 +39,18 @@ describe("scale options ladder helpers", () => {
     expect(R.options![0].dimensions_by_part).toHaveLength(2);
     expect(fmtDims(R.options![0].dimensions_by_part[0].dimensions)).toContain("257.2");
   });
-  it("recommended option is detected (for highlighting)", () => {
-    expect(isRecommended(R.options![0], R)).toBe(true);
-    expect(isRecommended(R.options![2], R)).toBe(false);
-    expect(recommendBlurb(R)).toBe("Studio recommends starting with 128%.");
+  it("size-only ladder is NOT marked recommended; blurb tells user to verify in Orca", () => {
+    // No placement_verified -> Orca may reject on placement, so never 'recommended'.
+    expect(isRecommended(R.options![0], R)).toBe(false);
+    const b = recommendBlurb(R);
+    expect(b).toContain("size only");
+    expect(b).toContain("Orca");
+  });
+  it("placement-verified ladder marks the recommended row", () => {
+    const V = { ...R, placement_verified: true } as typeof R;
+    expect(isRecommended(V.options![0], V)).toBe(true);
+    expect(isRecommended(V.options![2], V)).toBe(false);
+    expect(recommendBlurb(V)).toContain("verified");
   });
   it("theoretical + absolute are caution / not recommended", () => {
     expect(isCaution(R.options![2])).toBe(true);

@@ -13,11 +13,19 @@ export const SCALE_LADDER_COPY = {
 
 export function recommendBlurb(r: ScaleOptionsResult): string {
   const pct = r.recommended_scale_percent;
-  return pct != null ? `Studio recommends starting with ${pct}%.` : "";
+  if (pct == null) return "";
+  if ((r as { placement_verified?: boolean }).placement_verified) {
+    return `Largest verified scale that stays on the plate: ${pct}%.`;
+  }
+  return `Largest fit by size only: ${pct}%. Snapmaker Orca can still reject a scale because `
+    + `where the object sits on the plate also matters — verify in Orca and Arrange all plates after scaling.`;
 }
 
+// The green "recommended" badge only appears when placement is actually verified —
+// a size-only fit is never marked recommended (Orca may reject it on placement).
 export function isRecommended(o: ScaleOption, r: ScaleOptionsResult): boolean {
-  return r.recommended_scale_percent != null && o.scale_percent === r.recommended_scale_percent;
+  return !!(r as { placement_verified?: boolean }).placement_verified
+    && r.recommended_scale_percent != null && o.scale_percent === r.recommended_scale_percent;
 }
 
 export function isCaution(o: ScaleOption): boolean {

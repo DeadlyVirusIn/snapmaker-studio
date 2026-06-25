@@ -911,6 +911,9 @@ export interface ScaleOptionsResult {
   limiting_part?: string;
   limiting_axis?: string;
   recommended_scale_percent?: number;
+  placement_verified?: boolean;
+  placement_max_percent?: number | null;
+  fit_basis?: string;
   options?: ScaleOption[];
   warnings?: string[];
   next_steps?: string[];
