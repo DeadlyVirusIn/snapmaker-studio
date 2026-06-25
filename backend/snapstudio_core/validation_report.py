@@ -123,9 +123,20 @@ def readiness_report(path: str) -> dict:
             f"or remap to {U1_TOOLHEADS} colours in Snapmaker Orca before slicing")
     if any("steep overhangs" in w or "supports" in w for w in warnings):
         at_risk.append("Supports likely needed — enable/check them in Snapmaker Orca before slicing")
-    if (info.get("objects") or 0) > 1 or (info.get("plates") or 0) > 1:
-        at_risk.append("Object/plate layout isn't verified by Studio — open in Snapmaker Orca and "
-                       "use Arrange all plates before slicing")
+    # Real layout / plate-fit detection (3MF only — STL is wrapped into a fresh centred project).
+    layout = None
+    if not is_stl:
+        try:
+            from .layout import assess_layout
+            layout = assess_layout(path)
+            if layout["status"] != "pass":
+                checks.append(_check(
+                    "Layout / plate fit",
+                    False,
+                    layout["messages"][0] if layout["messages"] else "Layout needs review in Snapmaker Orca"))
+                at_risk.extend(layout["messages"])
+        except Exception:
+            layout = None
 
     # Honest readiness: a failed check OR any at-risk item means it is NOT ready as-is.
     # (Do not let a compatible profile verdict override real print-setup risks.)
@@ -149,4 +160,6 @@ def readiness_report(path: str) -> dict:
         "changes": changes,
         "at_risk": at_risk,
         "warnings": warnings,
+        "layout_status": layout["status"] if layout else None,
+        "layout_messages": layout["messages"] if layout else [],
     }
