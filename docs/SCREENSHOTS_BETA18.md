@@ -1,28 +1,33 @@
-# Screenshots — beta.18 (manual capture checklist)
+# Screenshots — beta.18 (real captures)
 
 > Independent open-source project — not affiliated with or endorsed by Snapmaker.
 
-The beta.18 line cleaned up page copy (shorter subtitles, repeated disclaimers moved into
-collapses). A fresh screenshot set should be captured **manually from the installed app** —
-automated headless capture is not reliable in the build/CI environment, and we do not ship
-faked screenshots.
+Captured deterministically with a **screenshot harness**: the React frontend served by
+Vite, rendered in **headless Edge** (`--headless=new --screenshot`) at 1366×900. No Tauri
+native file picker, no backend connection — so **no private data** can appear (printer
+shows the default `U1.local` placeholder, disconnected). These prove the cleaned beta.18
+page copy and layout.
 
-## Capture these (sanitized)
+| Page | File | Proves |
+|------|------|--------|
+| Dashboard | `dashboard.png` | Launchpad: workflow + "Start your first print" card |
+| Find Models | `find_models.png` | One-line "Browse approved model sites inside Studio" (policy collapsed) |
+| Source Check | `source_check.png` | Short subtitle, one "Choose a file" action |
+| Scale Doctor | `scale_doctor.png` | Concise subtitle + STL/3MF inline note, one CTA |
+| First Layer | `first_layer.png` | File-aware entry + symptom picker |
+| Print Quality | `print_quality.png` | Symptom picker; file-evidence section |
+| Plate Color Remap | `plate_remap.png` | Plate/colour picker |
+| Printer Hub | `printer_hub.png` | "Monitor your U1 and send files — every action is confirmed"; controls-off when disconnected |
+| Library | `library.png` | "All your models, checked and scored" |
+| Batch | `batch.png` | "Add .stl/.3mf files — Studio makes a clean U1 project for each" |
+| Settings | `settings.png` | Trimmed read-only hint |
+| Help | `help.png` | Concise doc index |
 
-Dashboard · Find Models · Source Check · Project Doctor · Compatibility Doctor ·
-Scale Doctor · First Layer Doctor · Plate Color Remap · Print Quality Doctor ·
-Business / Cost calculator (open the assumptions panel) · Pricing / Profit result ·
-Printer Hub (disconnected is fine) · Library · Batch · Settings · Help.
+## Harness (screenshot/test support only)
 
-## For each, confirm
+`cd desktop && npm run dev` (Vite), then per route:
+`msedge --headless=new --window-size=1366,900 --virtual-time-budget=6000 --screenshot=<f>.png http://localhost:1420<route>`
 
-- One clear page purpose, one obvious next action.
-- No wall of text; no repeated read-only/advisory disclaimers on the surface.
-- Warnings are specific and actionable; technical/legal detail is collapsed.
-- Polished spacing/alignment.
-
-## Redact before sharing
-
-No private IPs, hostnames, local paths, print history, or private/copyrighted model names.
-For Printer Hub, use the disconnected state or blur the IP. For Business/Doctor file states,
-open a sample model (e.g. the repo's `examples/sample_cube.stl`), not a personal file.
+Frontend-only render (footer shows "Reconnecting…" — no backend by design). Not a product
+mode; not shipped in the app. File-loaded Doctor/Business-result states still need a real
+file or fixture and are captured manually from the installed app.
