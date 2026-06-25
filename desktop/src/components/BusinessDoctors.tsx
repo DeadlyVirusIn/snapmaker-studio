@@ -87,12 +87,11 @@ export function BusinessDoctors({ filePath, host }: { filePath: string; host?: s
                   <RotateCcw className="h-3 w-3" /> Reset
                 </button>
               </div>
-              <p className="text-muted-foreground">Saved locally on your machine. Defaults are assumptions — edit them and the numbers above update.</p>
+              <p className="text-muted-foreground">Saved locally. Enter your spool price to see cost and a suggested price.</p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 <NumField label={`Spool price ${currency}`} value={pricePerKg} onChange={(v) => useFilament.getState().setPrice(v)} />
                 <NumField label="Spool weight (g)" value={biz.spoolWeightG} onChange={(v) => biz.set({ spoolWeightG: v })} />
                 <NumField label={`Grams used (0 = ${c?.grams ?? "auto"})`} value={biz.gramsOverride} onChange={(v) => biz.set({ gramsOverride: v })} />
-                <NumField label={`Print hours (0 = ${c?.time_known ? c.print_hours : "unknown"})`} value={biz.printHours} onChange={(v) => biz.set({ printHours: v })} step={0.1} />
                 <label className="flex flex-col gap-0.5">
                   <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Material</span>
                   <select value={biz.material} onChange={(e) => biz.set({ material: e.target.value })}
@@ -100,17 +99,6 @@ export function BusinessDoctors({ filePath, host }: { filePath: string; host?: s
                     {Object.keys(MATERIAL_DENSITY).map((m) => <option key={m} value={m}>{m}</option>)}
                   </select>
                 </label>
-                <NumField label="Electricity /kWh" value={biz.electricityPerKwh} onChange={(v) => biz.set({ electricityPerKwh: v })} step={0.01} />
-                <NumField label="Printer watts" value={biz.powerW} onChange={(v) => biz.set({ powerW: v })} />
-                <NumField label="Printer price" value={biz.machinePrice} onChange={(v) => biz.set({ machinePrice: v })} />
-                <NumField label="Printer life (hrs)" value={biz.machineLifeHours} onChange={(v) => biz.set({ machineLifeHours: v })} />
-                <NumField label="Labor (hrs/print)" value={biz.laborHours} onChange={(v) => biz.set({ laborHours: v })} step={0.05} />
-                <NumField label={`Labor ${currency}/hr`} value={biz.laborRate} onChange={(v) => biz.set({ laborRate: v })} />
-                <NumField label="Packaging" value={biz.packaging} onChange={(v) => biz.set({ packaging: v })} step={0.25} />
-                <NumField label="Waste / failure %" value={biz.failureRatePct} onChange={(v) => biz.set({ failureRatePct: v })} />
-                <NumField label="Marketplace fee %" value={biz.marketplaceFeePct} onChange={(v) => biz.set({ marketplaceFeePct: v })} />
-                <NumField label="Shipping cost" value={biz.shippingCost} onChange={(v) => biz.set({ shippingCost: v })} step={0.5} />
-                <NumField label="Shipping charged" value={biz.shippingCharged} onChange={(v) => biz.set({ shippingCharged: v })} step={0.5} />
                 <NumField label="Markup / margin %" value={biz.markupPct} onChange={(v) => biz.set({ markupPct: v })} />
               </div>
               {c?.available && c.grams != null && (
@@ -120,19 +108,27 @@ export function BusinessDoctors({ filePath, host }: { filePath: string; host?: s
                   {" "}({c.basis}).
                 </p>
               )}
-              <p className="text-muted-foreground">
-                Formula: material + electricity + machine wear + labour + packaging + failure buffer →
-                cost; then marketplace fee + markup → price; shipping (charged − cost) adjusts profit.
-              </p>
+              <details>
+                <summary className="cursor-pointer text-primary">Advanced costs (electricity, machine, labour, fees, shipping)</summary>
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <NumField label={`Print hours (0 = ${c?.time_known ? c.print_hours : "unknown"})`} value={biz.printHours} onChange={(v) => biz.set({ printHours: v })} step={0.1} />
+                  <NumField label="Electricity /kWh" value={biz.electricityPerKwh} onChange={(v) => biz.set({ electricityPerKwh: v })} step={0.01} />
+                  <NumField label="Printer watts" value={biz.powerW} onChange={(v) => biz.set({ powerW: v })} />
+                  <NumField label="Printer price" value={biz.machinePrice} onChange={(v) => biz.set({ machinePrice: v })} />
+                  <NumField label="Printer life (hrs)" value={biz.machineLifeHours} onChange={(v) => biz.set({ machineLifeHours: v })} />
+                  <NumField label="Labor (hrs/print)" value={biz.laborHours} onChange={(v) => biz.set({ laborHours: v })} step={0.05} />
+                  <NumField label={`Labor ${currency}/hr`} value={biz.laborRate} onChange={(v) => biz.set({ laborRate: v })} />
+                  <NumField label="Packaging" value={biz.packaging} onChange={(v) => biz.set({ packaging: v })} step={0.25} />
+                  <NumField label="Waste / failure %" value={biz.failureRatePct} onChange={(v) => biz.set({ failureRatePct: v })} />
+                  <NumField label="Marketplace fee %" value={biz.marketplaceFeePct} onChange={(v) => biz.set({ marketplaceFeePct: v })} />
+                  <NumField label="Shipping cost" value={biz.shippingCost} onChange={(v) => biz.set({ shippingCost: v })} step={0.5} />
+                  <NumField label="Shipping charged" value={biz.shippingCharged} onChange={(v) => biz.set({ shippingCharged: v })} step={0.5} />
+                </div>
+              </details>
               {c?.available && !c.time_known && biz.printHours <= 0 && (
                 <p className="text-doctor-cost">Print time unknown — enter print hours from Orca or your estimate above to include electricity, machine wear &amp; labour.</p>
               )}
-              <p className="text-muted-foreground opacity-80">
-                Grams come from the slicer when you send a file to the printer, else estimated from
-                volume × your material's density ({biz.material} {MATERIAL_DENSITY[biz.material]} g/cm³),
-                else your entered weight. Source is shown in the material line above. Rough estimate —
-                not financial advice.
-              </p>
+              <p className="text-muted-foreground opacity-80">Rough estimate — not financial advice.</p>
             </div>
             {c?.available && c.breakdown && (
               <div>

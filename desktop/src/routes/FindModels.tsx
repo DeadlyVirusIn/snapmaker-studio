@@ -87,7 +87,7 @@ export default function FindModels() {
   return (
     <div className="space-y-6">
       <PageHeader icon={Compass} title="Find Models"
-        subtitle="Browse approved model sites in a locked Studio Model Browser. Download from the site, then open the STL or 3MF here and run Project Doctor." />
+        subtitle="Browse approved model sites inside Studio." />
 
       {/* 1) Search term */}
       <Card><CardContent className="space-y-2 p-5">
@@ -210,12 +210,14 @@ export default function FindModels() {
         </>
       )}
 
-      <div className="rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">
-        <p>Studio opens these sites in a Studio-owned, approved-sites-only Model Browser window — it
-           doesn't fetch, scrape, mirror, or re-host their models, and doesn't bypass any login or
-           paywall. Navigation off the approved sites is blocked. Downloads and one-click import are
-           not available; download from the site, then open the file in Studio. {DISCLAIMER}</p>
-      </div>
+      <details className="text-xs text-muted-foreground">
+        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">How Studio handles sites</summary>
+        <p className="mt-2 rounded-md bg-muted/40 p-3">
+          Studio does not scrape, auto-import, or bypass site logins. Sites open in a Studio-owned,
+          approved-sites-only window; navigation off the approved sites is blocked. Download from the
+          site, then open the file in Studio. {DISCLAIMER}
+        </p>
+      </details>
     </div>
   );
 }
