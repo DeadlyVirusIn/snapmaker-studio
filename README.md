@@ -57,9 +57,15 @@ Open the downloaded `…_x64-setup.exe`, install, and launch **Snapmaker Studio*
 No account, no cloud, nothing leaves your computer. Older builds and checksums are
 on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
-## Try beta.17 — actionable Doctors
+## Try beta.17.1 — business inputs + trust completion
 
-beta.17 turns two Doctors from advice into action — they now create a real file you can
+beta.17.1 makes the business tools ask for *your* numbers — an editable **Material &
+business assumptions** panel (filament price, electricity, machine, labour, fees, markup;
+saved locally) — gives the **First Layer Doctor** real per-file evidence, and states the
+Scale Doctor's STL-only export limit up front. Estimates are rough and depend on your
+inputs — not financial advice.
+
+beta.17 turned two Doctors from advice into action — they create a real file you can
 open in Snapmaker Orca, and your original is never changed:
 
 - **Scale Doctor — Prepare scaled copy.** Pick a recommended (or custom) scale and Studio
@@ -74,9 +80,9 @@ Carried forward: hardware-verified **Printer Hub**, **Print Quality** evidence g
 your own file, **Plate Color Remap**, **Source Check**, Model Browser. All local, advisory
 — no cloud, no account, no guarantees. Studio does not slice; Orca does.
 
-- Release: [v0.4.0-beta.17](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.17)
-- Installer: `Snapmaker.Studio_0.4.0-beta.17_x64-setup.exe`
-- SHA256: `4e29c863a64bbd594b6c62600395cf499e944ebcd14bbf606041fe82e21081c5`
+- Release: [v0.4.0-beta.17.1](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.17.1)
+- Installer: `Snapmaker.Studio_0.4.0-beta.17.1_x64-setup.exe`
+- SHA256: `26bfbc1f0a1b046e6de17277179f7315047adc5fcdb60c6632d6c824a4e92df9`
 - Unsigned beta: the installer is not code-signed yet, so Windows SmartScreen may show “Unknown publisher.” That is expected for this beta. Download only from the release link above and verify the SHA256 before installing.
 
 Install:
@@ -85,7 +91,7 @@ Install:
 2. Verify the checksum. It must match the SHA256 published on the release:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.17_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.17.1_x64-setup.exe
 ```
 
 3. Run it. On the SmartScreen prompt choose **More info → Run anyway** only after verifying the hash.

@@ -20,10 +20,15 @@ product or the branding. Brand: [`brand/`](brand/README.md).
 - **Compatibility Doctor — Prepare U1 copy — SHIPPED (beta.17).** Wires the existing
   repair/convert path to a one-click clean-U1-copy action (no more dead end).
 
+- **Business Doctors — editable assumptions — SHIPPED (beta.17.1).** Cost/Pricing/Profit
+  take a user-editable Material & business assumptions panel (filament price, electricity,
+  machine, labour, fees, markup; saved locally) — rough estimates, not financial advice.
+- **First Layer Doctor — file-aware — SHIPPED (beta.17.1).** File pick shows real per-file
+  evidence (contact/footprint/stability); symptom advice is the fallback.
+
 ### Next
 - Verified 3MF scaled export (multi-part / multi-plate uniform scaling, Orca-checked).
-- Per-card Business pricing (Cost/Pricing/Profit honoring the Settings filament price).
-- File-aware First Layer Doctor (use the bed/stability-aware path after a file pick).
+- More business inputs (spool weight, material type, packaging, shipping, manual print hours).
 
 ## Shipped (as of v0.4.0-beta.15)
 
