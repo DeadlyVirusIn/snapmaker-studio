@@ -129,6 +129,13 @@ export default function DesignInsights() {
   });
   const issues = [...(d?.validation_issues ?? []), ...(d?.compatibility_issues ?? [])];
 
+  // Honest headline: a green "ready" verdict must not survive real print-setup risks
+  // (e.g. more colours than toolheads). Demote the badge + stars to match the warnings below.
+  const setupRisk = !!(mm?.available && mm.multi_material && mm.overall_level && mm.overall_level !== "ok")
+    || !!(bed?.available && bed.overall_level && bed.overall_level !== "ok");
+  const headlineStatus = setupRisk && d && status?.tone === "ready" ? verdictStatus("HIGH_RISK") : status;
+  const headlineScore = setupRisk ? Math.min(d?.score ?? 0, 70) : d?.score;
+
   // ---- Done: it's ready ------------------------------------------------------
   if (convert.status === "done" && convert.data) {
     return (
@@ -192,15 +199,15 @@ export default function DesignInsights() {
       </div>
 
       {/* At-a-glance summary + primary action, visible without scrolling */}
-      {doctor.status === "done" && d && status && (
+      {doctor.status === "done" && d && headlineStatus && (
         <Card className="surface-raised">
           <CardContent className="flex flex-wrap items-center gap-4 p-4">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <Stars score={d.score} />
+                <Stars score={headlineScore} />
                 <span className={cn("text-sm font-semibold",
-                  status.tone === "ready" ? "text-ready" : status.tone === "risk" ? "text-risk" : "text-repairable")}>
-                  {status.label}
+                  headlineStatus.tone === "ready" ? "text-ready" : headlineStatus.tone === "risk" ? "text-risk" : "text-repairable")}>
+                  {headlineStatus.label}
                 </span>
               </div>
               <p className="mt-0.5 text-xs text-muted-foreground">We make a print-ready copy — your original is never changed.</p>
