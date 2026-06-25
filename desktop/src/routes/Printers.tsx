@@ -88,7 +88,7 @@ export default function Printers() {
       <PageHeader
         icon={Printer}
         title="Printer Hub"
-        subtitle="See your Snapmaker U1’s live status — temperatures, progress, and what it’s printing — right next to your designs."
+        subtitle="Monitor your U1 and send files — every action is confirmed."
         badge={
           <span className="inline-flex items-center gap-1 rounded-full border border-ready/40 bg-ready/10 px-2 py-0.5 text-xs font-medium text-ready">
             <ShieldCheck className="h-3.5 w-3.5" /> Monitoring only
