@@ -1,33 +1,35 @@
-# Snapmaker Studio v0.4.0-beta.18.4 — Layout & Orca-Accurate Scale Fit
+# Snapmaker Studio v0.4.0-beta.19 — Product Truth Audit Fixes
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-Two real-usage trust fixes on top of beta.18.3.
+Systemic readiness-truth fixes from an independent multi-model audit (Codex + Claude;
+Antigravity returned empty both runs — documented, not relied on).
 
 ## Fixes
 
-- **Real 3MF layout detection.** Studio now reads each placed object's transformed bounding
-  box and reports layout readiness — `fail` when an object sits outside the plate or the
-  arrangement is wider than the 270 mm bed, `warn` for multi-plate projects it can't fully
-  verify, `unknown` when there's no placement data. Project Doctor folds this in, so a
-  profile-compatible file is not called ready while layout is unverified or off-plate. Next
-  action: open in Snapmaker Orca and **Arrange all plates** before slicing.
-- **Orca-accurate Scale Doctor fit.** The size ladder no longer labels a scale "Safe /
-  Recommended" from dimensions alone. Snapmaker Orca scales about an object's fixed centre
-  and rejects a scale when the placed bbox crosses the plate boundary or height limit, so
-  Studio now checks placement too. When it can't verify placement (multi-plate, off-plate),
-  the ladder is shown as **size-only** — "Largest fit by size only … verify in Orca" — with
-  no false "Recommended". STL keeps a real prepare action; 3MF stays preview-only.
+- **Profile compatibility is no longer shown as full print readiness.** A new shared
+  readiness source means a file is only called "ready" when every readiness category passes
+  (layout, colours vs toolheads, supports, profile). Otherwise it reads "Review before
+  printing" with the specific reasons and next actions.
+- **Workspace, Batch, Projects, Source Wizard, Plate Remap, Intelligence Report, Business
+  Doctors and Printer Hub** now use honest status language. "U1-ready / ready to slice /
+  U1-clean / Safe copy" no longer appear from a profile verdict or structure validation alone
+  — a converted copy reads "U1 profile copy saved · open in Orca and review before slicing".
+- **Printer Hub** wording now matches its confirmed-control behaviour ("Monitor + confirmed
+  controls"). **Business Doctors** show an honest unavailable state instead of a blank.
+  Intelligence Report's dimension-only fit is labelled "Size fit (dimensions only)"; the demo
+  report carries a prominent "Sample data — not a real analysis" banner.
 
-Originals are never modified. Studio does not slice. No print-success guarantees.
+Originals are never modified. Studio does not slice. No print-success guarantees. Layout/scale
+placement remains an advisory heuristic (verify in Orca), not a full port of Orca's PartPlate.
 
 ## Download (unsigned beta)
 
 ```
-File:    Snapmaker.Studio_0.4.0-beta.18.4_x64-setup.exe
-Size:    16131795 bytes
-SHA256:  48bcfe686ae2f1b28fad7265ba3f4cad43a653f1abdface82d9e4170670b8672
+File:    Snapmaker.Studio_0.4.0-beta.19_x64-setup.exe
+Size:     bytes
+SHA256:  
 ```
 
 Unsigned — verify the SHA256 before installing.
