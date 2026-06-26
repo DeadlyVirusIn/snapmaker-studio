@@ -30,7 +30,8 @@ export default function DoctorLanding() {
   if (file && BIZ_DOCTORS.has(doc.id)) {
     return (
       <div className="space-y-6">
-        <PageHeader icon={Icon} title={doc.name} subtitle={doc.answers} />
+        <PageHeader icon={Icon} title="Cost & Pricing Doctor"
+          subtitle="Cost, suggested price, and profit for the open model — one calculator." />
         <Card><CardContent className="space-y-1 p-5">
           <p className="text-sm font-semibold">{file.name}</p>
           <p className="text-xs text-muted-foreground">

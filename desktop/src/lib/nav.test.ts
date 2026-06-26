@@ -5,10 +5,25 @@ import { DOCTORS } from "./doctors";
 const primaryLabels = PRIMARY_NAV.map((n) => n.label);
 const primaryRoutes = PRIMARY_NAV.map((n) => n.to);
 
+// Cost / Pricing / Profit are one combined "Cost & Pricing Doctor" page, so they
+// share a single sidebar entry instead of three duplicates.
+const BIZ_IDS = new Set(["cost", "pricing", "profit"]);
+
 describe("1. sidebar exposes core Doctors directly", () => {
-  it("every Doctor is reachable from the primary sidebar", () => {
+  it("every non-business Doctor is reachable from the primary sidebar", () => {
     for (const d of DOCTORS) {
+      if (BIZ_IDS.has(d.id)) continue; // consolidated into one item below
       expect(primaryRoutes).toContain(d.route);
+    }
+  });
+  it("Cost/Pricing/Profit are one combined sidebar item, not three", () => {
+    const bizItems = PRIMARY_NAV.filter((n) => n.doctorId && BIZ_IDS.has(n.doctorId));
+    expect(bizItems).toHaveLength(1);
+    expect(bizItems[0].label).toBe("Cost & Pricing Doctor");
+  });
+  it("old Cost/Pricing/Profit routes still resolve (aliases, no crash)", () => {
+    for (const id of BIZ_IDS) {
+      expect(isKnownRoute(`/doctor/${id}`)).toBe(true);
     }
   });
   it("core P0 doctors are present by name", () => {

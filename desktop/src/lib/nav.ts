@@ -9,7 +9,7 @@
 //  - every nav destination resolves to a real route (no blank pages).
 import {
   LayoutDashboard, FolderKanban, Wand2, Palette, GitCompareArrows,
-  Settings, BookOpen, FileCheck2, HeartPulse, Layers, Coins, Tag, TrendingUp,
+  Settings, BookOpen, FileCheck2, HeartPulse, Layers, Coins,
   ShieldCheck, Compass, Maximize2, Stethoscope, Rocket, FileSearch, type LucideIcon,
 } from "lucide-react";
 import { DOCTORS } from "@/lib/doctors";
@@ -42,9 +42,11 @@ export const PRIMARY_NAV: NavItem[] = [
   { to: doctorRoute("first-layer"), label: "First Layer Doctor", icon: Layers, doctorId: "first-layer" },
   { to: doctorRoute("multi-material"), label: "Multi-Material Doctor", icon: Palette, doctorId: "multi-material" },
   { to: "/plate-remap", label: "Plate Color Remap", icon: GitCompareArrows },
-  { to: doctorRoute("cost"), label: "Cost Doctor", icon: Coins, doctorId: "cost" },
-  { to: doctorRoute("pricing"), label: "Pricing Doctor", icon: Tag, doctorId: "pricing" },
-  { to: doctorRoute("profit"), label: "Profit Doctor", icon: TrendingUp, doctorId: "profit" },
+  // Cost / Pricing / Profit are one combined page — a single sidebar item avoids
+  // three duplicate entries that all open the same calculator. The old
+  // /doctor/pricing and /doctor/profit routes still resolve (see DOCTORS) so any
+  // existing links keep working.
+  { to: doctorRoute("cost"), label: "Cost & Pricing Doctor", icon: Coins, doctorId: "cost" },
   { to: "/batch", label: "Batch Prepare", icon: Wand2 },
 ];
 

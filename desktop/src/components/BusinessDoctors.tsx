@@ -1,19 +1,27 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Coins, Tag, TrendingUp, ChevronDown, RotateCcw } from "lucide-react";
+import { Coins, Tag, TrendingUp, ChevronDown, RotateCcw, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { costToPrice, pricingDoctor, profitDoctor } from "@/api";
 import { useFilament } from "@/store/filament";
 import { useBusiness, bizFactors, MATERIAL_DENSITY } from "@/store/business";
+import {
+  draftFrom, splitDraft, validateBusinessDraft, isBusinessDirty, hasErrors, type BizDraft,
+} from "@/lib/businessForm";
 
-function NumField({ label, value, onChange, step = 1 }:
-  { label: string; value: number; onChange: (v: number) => void; step?: number }) {
+function NumField({ label, value, onChange, step = 1, helper, error, blankWhenZero }:
+  { label: string; value: number; onChange: (v: number) => void; step?: number;
+    helper?: string; error?: string; blankWhenZero?: boolean }) {
+  const display = blankWhenZero && (!value || Number.isNaN(value)) ? "" : value;
   return (
     <label className="flex flex-col gap-0.5">
       <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
-      <input type="number" min={0} step={step} value={value}
-        onChange={(e) => onChange(Number(e.target.value) || 0)}
-        className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary" />
+      <input type="number" min={0} step={step} value={display}
+        onChange={(e) => onChange(e.target.value === "" ? 0 : Number(e.target.value) || 0)}
+        className={`w-full rounded-md border bg-background px-2 py-1 text-xs outline-none focus:border-primary ${error ? "border-doctor-cost" : "border-border"}`} />
+      {error
+        ? <span className="text-[10px] text-doctor-cost">{error}</span>
+        : helper ? <span className="text-[10px] text-muted-foreground">{helper}</span> : null}
     </label>
   );
 }
@@ -21,13 +29,37 @@ function NumField({ label, value, onChange, step = 1 }:
 // The Business Intelligence Layer made visible: Cost / Pricing / Profit Doctors
 // as three first-class cards. Beginner-friendly headline numbers up top; the
 // breakdown, tiers, and projections live behind a "Show details" disclosure.
-// Cost factors come from the user's editable assumptions (local-only).
+//
+// Editing model: the assumptions form edits a *draft*. The three cards keep
+// showing the last *applied* calculation (queries key on the applied store, not
+// the draft) so typing "10" never recalculates mid-keystroke. Results update only
+// when the user clicks Recalculate.
 export function BusinessDoctors({ filePath, host }: { filePath: string; host?: string | null }) {
   const [open, setOpen] = useState(false);
   const { pricePerKg, currency } = useFilament();
   const biz = useBusiness();
+
+  // Applied = what's currently in the stores. Draft = what the user is editing.
+  const applied = draftFrom(biz, pricePerKg);
+  const [draft, setDraft] = useState<BizDraft>(applied);
+  const errors = validateBusinessDraft(draft);
+  const dirty = isBusinessDirty(draft, applied);
+  const setField = <K extends keyof BizDraft>(k: K, v: BizDraft[K]) =>
+    setDraft((d) => ({ ...d, [k]: v }));
+
+  function recalculate() {
+    if (hasErrors(validateBusinessDraft(draft))) return; // inline errors shown; don't apply
+    const { spoolPrice, assumptions } = splitDraft(draft);
+    biz.set(assumptions);
+    useFilament.getState().setPrice(spoolPrice);
+  }
+  function resetAll() {
+    biz.reset();
+    setDraft(draftFrom(useBusiness.getState(), useFilament.getState().pricePerKg));
+  }
+
+  // Queries key on the APPLIED factors, so editing the draft does not refetch.
   const factors = bizFactors(biz, pricePerKg);
-  // key on the factor values so editing an assumption refetches.
   const fkey = JSON.stringify(factors) + currency;
   const cost = useQuery({ queryKey: ["bd-cost", filePath, host, fkey], queryFn: () => costToPrice(filePath, { host, currency, factors }), retry: false, staleTime: 30000 });
   const pricing = useQuery({ queryKey: ["bd-pricing", filePath, host, fkey], queryFn: () => pricingDoctor(filePath, host, { currency, factors }), retry: false, staleTime: 30000 });
@@ -95,25 +127,40 @@ export function BusinessDoctors({ filePath, host }: { filePath: string; host?: s
         {open && (
           <div className="space-y-3 border-t border-border pt-3 text-xs">
             <div className="space-y-2 rounded-md border border-border p-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-semibold">Material &amp; business assumptions</p>
-                <button onClick={() => biz.reset()} className="flex items-center gap-1 text-[11px] text-primary hover:underline">
-                  <RotateCcw className="h-3 w-3" /> Reset
-                </button>
+                <div className="flex items-center gap-2">
+                  {dirty && <span className="text-[11px] text-doctor-cost">Changes not applied yet</span>}
+                  <button onClick={recalculate} disabled={!dirty || hasErrors(errors)}
+                    className="flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground disabled:opacity-50">
+                    <RefreshCw className="h-3 w-3" /> Recalculate
+                  </button>
+                  <button onClick={resetAll} className="flex items-center gap-1 text-[11px] text-primary hover:underline">
+                    <RotateCcw className="h-3 w-3" /> Reset
+                  </button>
+                </div>
               </div>
-              <p className="text-muted-foreground">Saved locally. Enter your spool price to see cost and a suggested price.</p>
+              <p className="text-muted-foreground">Saved locally. Enter your spool price, then click Recalculate to update the cards.</p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                <NumField label={`Spool price ${currency}`} value={pricePerKg} onChange={(v) => useFilament.getState().setPrice(v)} />
-                <NumField label="Spool weight (g)" value={biz.spoolWeightG} onChange={(v) => biz.set({ spoolWeightG: v })} />
-                <NumField label={`Grams used (0 = ${c?.grams ?? "auto"})`} value={biz.gramsOverride} onChange={(v) => biz.set({ gramsOverride: v })} />
+                <NumField label={`Spool price ${currency}`} value={draft.spoolPrice}
+                  onChange={(v) => setField("spoolPrice", v)} step={0.5}
+                  helper="Price you paid for the filament spool" error={errors.spoolPrice} />
+                <NumField label="Spool weight (g)" value={draft.spoolWeightG}
+                  onChange={(v) => setField("spoolWeightG", v)}
+                  helper="Usually 1000 g for a 1 kg spool" error={errors.spoolWeightG} />
+                <NumField label="Grams used" value={draft.gramsOverride}
+                  onChange={(v) => setField("gramsOverride", v)} blankWhenZero
+                  helper={`Leave blank to use Studio estimate: ${c?.grams ?? "—"} g`} error={errors.gramsOverride} />
                 <label className="flex flex-col gap-0.5">
                   <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Material</span>
-                  <select value={biz.material} onChange={(e) => biz.set({ material: e.target.value })}
+                  <select value={draft.material} onChange={(e) => setField("material", e.target.value)}
                     className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary">
                     {Object.keys(MATERIAL_DENSITY).map((m) => <option key={m} value={m}>{m}</option>)}
                   </select>
                 </label>
-                <NumField label="Markup / margin %" value={biz.markupPct} onChange={(v) => biz.set({ markupPct: v })} />
+                <NumField label="Markup / margin" value={draft.markupPct}
+                  onChange={(v) => setField("markupPct", v)}
+                  helper="Used to estimate a suggested selling price" error={errors.markupPct} />
               </div>
               {c?.available && c.grams != null && (
                 <p className="text-muted-foreground">
@@ -125,18 +172,19 @@ export function BusinessDoctors({ filePath, host }: { filePath: string; host?: s
               <details>
                 <summary className="cursor-pointer text-primary">Advanced costs (electricity, machine, labour, fees, shipping)</summary>
                 <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  <NumField label={`Print hours (0 = ${c?.time_known ? c.print_hours : "unknown"})`} value={biz.printHours} onChange={(v) => biz.set({ printHours: v })} step={0.1} />
-                  <NumField label="Electricity /kWh" value={biz.electricityPerKwh} onChange={(v) => biz.set({ electricityPerKwh: v })} step={0.01} />
-                  <NumField label="Printer watts" value={biz.powerW} onChange={(v) => biz.set({ powerW: v })} />
-                  <NumField label="Printer price" value={biz.machinePrice} onChange={(v) => biz.set({ machinePrice: v })} />
-                  <NumField label="Printer life (hrs)" value={biz.machineLifeHours} onChange={(v) => biz.set({ machineLifeHours: v })} />
-                  <NumField label="Labor (hrs/print)" value={biz.laborHours} onChange={(v) => biz.set({ laborHours: v })} step={0.05} />
-                  <NumField label={`Labor ${currency}/hr`} value={biz.laborRate} onChange={(v) => biz.set({ laborRate: v })} />
-                  <NumField label="Packaging" value={biz.packaging} onChange={(v) => biz.set({ packaging: v })} step={0.25} />
-                  <NumField label="Waste / failure %" value={biz.failureRatePct} onChange={(v) => biz.set({ failureRatePct: v })} />
-                  <NumField label="Marketplace fee %" value={biz.marketplaceFeePct} onChange={(v) => biz.set({ marketplaceFeePct: v })} />
-                  <NumField label="Shipping cost" value={biz.shippingCost} onChange={(v) => biz.set({ shippingCost: v })} step={0.5} />
-                  <NumField label="Shipping charged" value={biz.shippingCharged} onChange={(v) => biz.set({ shippingCharged: v })} step={0.5} />
+                  <NumField label="Print hours" value={draft.printHours} onChange={(v) => setField("printHours", v)} step={0.1}
+                    blankWhenZero helper={`Leave blank to use slicer time${c?.time_known ? ` (${c.print_hours} h)` : ""}`} />
+                  <NumField label="Electricity /kWh" value={draft.electricityPerKwh} onChange={(v) => setField("electricityPerKwh", v)} step={0.01} />
+                  <NumField label="Printer watts" value={draft.powerW} onChange={(v) => setField("powerW", v)} />
+                  <NumField label="Printer price" value={draft.machinePrice} onChange={(v) => setField("machinePrice", v)} />
+                  <NumField label="Printer life (hrs)" value={draft.machineLifeHours} onChange={(v) => setField("machineLifeHours", v)} />
+                  <NumField label="Labor (hrs/print)" value={draft.laborHours} onChange={(v) => setField("laborHours", v)} step={0.05} />
+                  <NumField label={`Labor ${currency}/hr`} value={draft.laborRate} onChange={(v) => setField("laborRate", v)} />
+                  <NumField label="Packaging" value={draft.packaging} onChange={(v) => setField("packaging", v)} step={0.25} />
+                  <NumField label="Waste / failure %" value={draft.failureRatePct} onChange={(v) => setField("failureRatePct", v)} />
+                  <NumField label="Marketplace fee %" value={draft.marketplaceFeePct} onChange={(v) => setField("marketplaceFeePct", v)} />
+                  <NumField label="Shipping cost" value={draft.shippingCost} onChange={(v) => setField("shippingCost", v)} step={0.5} />
+                  <NumField label="Shipping charged" value={draft.shippingCharged} onChange={(v) => setField("shippingCharged", v)} step={0.5} />
                 </div>
               </details>
               {c?.available && !c.time_known && biz.printHours <= 0 && (
