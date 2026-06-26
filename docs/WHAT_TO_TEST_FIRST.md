@@ -48,14 +48,14 @@ Steps:
 2. Review the detected materials, colors, and plate counts.
 3. Open Plate Color Remap.
 4. Apply the suggested remap and review the before/after.
-5. Prepare a clean copy (your original stays untouched).
+5. Prepare a U1 profile copy (your original stays untouched).
 6. Click **Open in Snapmaker Orca** to hand the prepared copy to the slicer (or
    **Copy path** and open it yourself). If Orca isn't installed, use **Install
    Snapmaker Orca**.
 
-Expected outcome: a tidied color/plate mapping and a clean, print-ready copy, with
-the original file unchanged — handed off to Snapmaker Orca to slice. Studio never
-slices or controls Orca.
+Expected outcome: a tidied color/plate mapping and a prepared U1 profile copy —
+review in Orca before slicing — with the original file unchanged, handed off to
+Snapmaker Orca to slice. Studio never slices or controls Orca.
 
 ## Path 3 — Failed print user
 

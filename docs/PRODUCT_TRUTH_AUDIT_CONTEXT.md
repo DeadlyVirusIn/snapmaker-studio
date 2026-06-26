@@ -1,11 +1,12 @@
-# Product Truth Audit Context — beta.19
+# Product Truth Audit Context — beta.20
 
 Purpose: Snapmaker Studio is a local pre-print intelligence layer for the Snapmaker U1. It
 reads a 3D model, runs read-only "Doctors" that explain print risks in plain language, and
-prepares a clean print-ready copy. Studio does NOT slice (Orca does); originals are never
-modified; nothing is a print-success guarantee.
+prepares a separate copy for handoff to Orca (originals are never modified). "Prepared" means
+a copy is written — it is NOT a claim the model is clean, layout-safe, or will print. Studio
+does NOT slice (Orca does); nothing here is a print-success guarantee.
 
-Latest release: v0.4.0-beta.19 (commit 492414d).
+Latest release: v0.4.0-beta.20 (commit d2599af).
 
 ## Routes (from App.tsx)
 / Dashboard · /workspace Workspace · /start BeginnerWorkflow · /source SourceCompatibility ·
@@ -32,3 +33,4 @@ U1-ready · ready to slice · clean · safe · fixed · validated · passed.
 - dimension/size fit ≠ Orca placement fit.
 - layout/scale placement is an advisory heuristic, NOT a port of Orca PartPlate — verify in Orca.
 - Studio does not slice; originals are never modified.
+- no print-success guarantees — "prepared"/"profile compatible" never means "will print".

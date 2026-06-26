@@ -24,9 +24,9 @@ the user, in plain language, what is likely to go wrong first.
 
 Studio reads the actual mesh and project metadata, then runs a set of read-only
 "Doctors" that each report what was found, why it matters, and what to try. It can
-also prepare a clean, print-ready copy without ever changing the original. The
-output is a readiness estimate and concrete guidance — not a slice, and not a
-promise.
+also prepare a U1 profile copy — review in Orca before slicing — without ever
+changing the original. The output is a readiness estimate and concrete guidance —
+not a slice, and not a promise.
 
 ## Why now
 

@@ -6,8 +6,8 @@
 > Independent open-source project — not affiliated with or endorsed by Snapmaker.
 
 ## Project title
-**Snapmaker Studio — the open, local-first workflow platform that gets 3D
-designs print-ready for the Snapmaker U1.**
+**Snapmaker Studio — the open, local-first workflow platform that prepares 3D
+designs for the Snapmaker U1 (review in Orca before slicing).**
 
 ## Category
 Open-source software / ecosystem & developer tools / user onboarding &
@@ -15,8 +15,8 @@ compatibility.
 
 ## Short description (~40 words)
 Snapmaker Studio is a free, local-first desktop app that helps makers understand
-a design, check whether it will print, and turn Bambu/Orca and STL files into a
-clean, warning-free Snapmaker U1 project in one click (PrusaSlicer detection today;
+a design, catch risks before slicing, and turn Bambu/Orca and STL files into a
+prepared Snapmaker U1 profile copy in one click (review in Orca before slicing) (PrusaSlicer detection today;
 full conversion next) — removing the biggest barrier for makers adding a U1.
 
 ## Long description
@@ -63,7 +63,7 @@ manage -> optimize, across the whole ecosystem.
 ## Milestones (fundable)
 | # | Milestone | Outcome | Evidence |
 |---|---|---|---|
-| M1 | Reliable U1 conversion (DONE) | Bambu/Orca/Prusa/geometry/STL -> clean U1 | 112-file corpus, 100%; zero-warning Orca load |
+| M1 | Reliable U1 conversion (DONE) | Bambu/Orca/Prusa/geometry/STL -> U1 profile copy | 112-file corpus, 100% validation gate; review in Orca |
 | M2 | Public beta installer | Signed, branded one-click Windows app | Signed `0.3.0` installer; icon/branding shipped |
 | M3 | Project library + batch | Manage + convert a whole backlog | library UI + batch report |
 | M4 | Ecosystem breadth | PrusaSlicer/Cura/Creality adapters | corpus expanded across families |
@@ -93,7 +93,7 @@ phased plan in [`ROADMAP.md`](ROADMAP.md) and the audit in
 ## Proof links (current)
 - Repo: github.com/DeadlyVirusIn/snapmaker-studio
 - Vision: `docs/PRODUCT_VISION.md` . Roadmap: `docs/ROADMAP.md`
-- Reliability: `../PROOF.md` (112-file validation corpus, 112/112 passed the U1-clean gate — not a print-success guarantee)
+- Reliability: `../PROOF.md` (112-file validation corpus, 112/112 passed the internal validation gate — not a print-success guarantee)
 - Release process: `RELEASE.md`
 
 ## Asks / notes for submission

@@ -1,6 +1,13 @@
-# Printer Hub — verification status (v0.4.0-beta.16.1)
+# Printer Hub — verification status (Historical verification record from beta.16.1)
 
 > Independent open-source project — not affiliated with or endorsed by Snapmaker.
+
+> **Historical verification record from v0.4.0-beta.16.1**, captured 2026-06-24 on a real U1
+> (firmware 1.4.1.6). This has **not** been re-verified on the current beta.20 build — treat
+> it as a past hardware record, not current beta.20 proof. Current app wording says
+> **monitor + confirmed controls**: actions require user confirmation (start / cancel /
+> emergency-stop each need explicit confirmation), and Studio never auto-starts a print.
+> Current build status: [SUBMISSION_STATUS.md](SUBMISSION_STATUS.md).
 
 Honest statement of what is verified vs unverified. The U1 runs stock Moonraker/Klipper
 on the LAN (confirmed by Snapmaker's own `u1-moonraker` / `u1-klipper` / `u1-fluidd`

@@ -15,7 +15,7 @@ by itself mean the file is unsafe — but you should still take normal precautio
 
 Only download the installer from the official GitHub release page:
 
-- https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.10
+- https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.20
 
 Do not run installers for this app obtained from anywhere else.
 
@@ -25,8 +25,8 @@ Before installing, confirm the file's SHA256 checksum matches the value below.
 
 ```
 File:    Snapmaker.Studio_0.4.0-beta.20_x64-setup.exe
-Size:    16123618 bytes
-SHA256:  
+Size:    16129758 bytes
+SHA256:  d53b41d0ed947af3ed611b41fbfe45eac26010d1bf376b9832ea333d2f5dcfcf
 ```
 
 Check it in PowerShell:

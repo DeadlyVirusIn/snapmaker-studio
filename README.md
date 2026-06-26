@@ -19,13 +19,13 @@ walks it through the whole pre-print workflow:
 
 1. **Understand** — colors, size, volume, complexity, source ecosystem, and a **Design Health** read on the actual mesh, in plain language.
 2. **Validate** — will it print? **Watertight check, hole detection, geometry integrity, overhang/supports prediction, stability/tip-risk, and bed fit** — each with what was found, why it matters, and what to do.
-3. **Prepare** — make a clean, print-ready copy. Your originals are never changed.
+3. **Prepare** — make a prepared U1 profile copy — review in Orca before slicing. Your originals are never changed.
 4. **Monitor & control** — watch your printer's live status, and with an explicit
    confirmation pause/resume/cancel/start a print or upload sliced gcode.
 
 It's not a converter — it's the layer that surfaces the likely print risks, and
-why, *before* you waste filament, so you can decide what to fix. (Converting to a
-clean U1 project is just one step.) It's advisory: it doesn't guarantee a print.
+why, *before* you waste filament, so you can decide what to fix. (Preparing a U1
+profile copy is just one step.) It's advisory: it doesn't guarantee a print.
 
 Runs entirely on your machine. No cloud, no account, no upload — local-first and
 open source.
@@ -41,7 +41,7 @@ monitor your U1 and, with an explicit confirmation each time, control a print
 control Orca.
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
-> Internal validation corpus: **112/112 outputs passed the U1-clean validation gate —
+> Internal validation corpus: **112/112 outputs passed the internal validation gate —
 > not a print-success guarantee** (see [PROOF.md](PROOF.md)). More context:
 > [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) ·
 > [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md) ·
@@ -57,7 +57,15 @@ Open the downloaded `…_x64-setup.exe`, install, and launch **Snapmaker Studio*
 No account, no cloud, nothing leaves your computer. Older builds and checksums are
 on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
-## Try beta.18.2 — cleaner novice UX
+## What's new in beta.20 — page-by-page product-truth audit
+
+beta.20 sweeps every route so readiness wording is honest: "U1-ready / ready to slice / clean /
+safe / fixed / validated / passed" no longer appear from a profile verdict or structure
+validation alone. A converted copy reads "U1 profile copy saved · open in Orca and review
+before slicing". Studio does not slice; originals are never modified; no print-success
+guarantees. See [RELEASE_NOTES.md](docs/RELEASE_NOTES.md).
+
+### Earlier betas
 
 beta.18 is a polish pass: less crowded pages, shorter beginner copy. Find Models leads with
 "Browse approved model sites inside Studio" (policy details collapse into a note); the cost
@@ -125,8 +133,8 @@ Proof captures + manual shot list: [docs/SCREENSHOTS_BETA16.md](docs/SCREENSHOTS
 Designs from popular slicers and model sites don't always open cleanly on a given
 printer — and novices often can't tell *why*, or whether a file will even print.
 Snapmaker Studio closes that gap: open any design and get a plain-language read on
-what's in it, a readiness check, and a clean print-ready copy — without losing
-detail, painted regions, or multi-color assignments. The Snapmaker U1 is the first
+what's in it, a readiness check, and a prepared U1 profile copy (review in Orca
+before slicing) — without losing detail, painted regions, or multi-color assignments. The Snapmaker U1 is the first
 printer target; the workflow is built to grow across ecosystems.
 
 ## What's inside
@@ -142,8 +150,8 @@ printer target; the workflow is built to grow across ecosystems.
 - **Validation Center** — a readiness check that answers the questions a novice
   actually has: *will it print, what's preserved, what changes, and what's at risk?* —
   now backed by the Design Health geometry checks above.
-- **Prepare** — make a clean, validated print-ready copy in one click. Originals are
-  never overwritten; every change is recorded.
+- **Prepare** — make a U1 profile copy in one click — review in Orca before slicing.
+  Originals are never overwritten; every change is recorded.
 - **Printer Hub** — discover a networked Snapmaker U1 over its open, LAN-trusted
   interface and watch live status: print state, progress, bed and toolhead
   temperatures, history, health. **Safe control:** pause, resume, cancel, upload
@@ -173,8 +181,8 @@ printer target; the workflow is built to grow across ecosystems.
 
 | Input | Status | Result |
 |---|---|---|
-| Bambu / Orca `.3mf` project | ✅ supported | print-ready Snapmaker U1 `.3mf` |
-| `.stl` model | ✅ supported | print-ready Snapmaker U1 `.3mf` |
+| Bambu / Orca `.3mf` project | ✅ supported | prepared Snapmaker U1 `.3mf` (review in Orca) |
+| `.stl` model | ✅ supported | prepared Snapmaker U1 `.3mf` (review in Orca) |
 | PrusaSlicer `.3mf` | 🚧 detected | read & understood; full conversion planned |
 | `.obj` / `.glb` | 🚧 planned | — |
 
@@ -196,7 +204,7 @@ Then, using the bundled example:
 # Understand any file first — read-only, never modifies it
 u1convert doctor examples/sample_cube_U1.3mf
 
-# Get a plain STL print-ready for the U1
+# Prepare a U1 profile copy from a plain STL (review in Orca before slicing)
 u1convert repair examples/sample_cube.stl -o my_part_U1.3mf
 ```
 
@@ -206,7 +214,7 @@ Open the result in **Snapmaker Orca** to slice and print. More samples live in
 Everyday commands:
 
 ```bash
-u1convert repair model.3mf --mode u1 -o model_U1.3mf   # make a 3MF print-ready
+u1convert repair model.3mf --mode u1 -o model_U1.3mf   # prepare a U1 profile copy
 u1convert validate model_U1.3mf                        # check integrity
 ```
 
@@ -224,7 +232,7 @@ $ u1convert doctor model.3mf
   Notes        :
     - incompatible slicer value: wall_filament=0
 
-Recommended action: Run `u1convert repair <file> --mode u1` to get this print-ready.
+Recommended action: Run `u1convert repair <file> --mode u1` to prepare a U1 profile copy.
 Read-only check - no files were modified.
 ```
 

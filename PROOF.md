@@ -7,20 +7,21 @@ filenames. Every file is run end to end: **diagnose → get it ready → validat
 
 ## Headline
 
-- **Internal validation corpus: 112/112 outputs passed the U1-clean validation gate.**
+- **Internal validation corpus: 112/112 outputs passed the internal validation gate.**
   This measures Studio's read → prepare → validate pipeline, **not** a guarantee of print
   success on hardware.
 - Files are anonymized below as `sample-NNN`; source family, size, before/after verdict,
   and validation result are kept.
-- Originals are never modified; a clean print-ready copy is produced.
+- Originals are never modified; a prepared U1 profile copy is produced — review in Orca before slicing.
 
 ## Methodology
 
 - Each file is classified by source family, then run through the engine:
-  read-only **diagnose** (verdict + score), **get it ready** (convert/repair),
-  and structural + U1-cleanliness **validation** of the output.
-- "Clean" = output verdict READY **and** validation passes (no residual foreign
-  Bambu/BBL/H2D identity, consistent per-color arrays, geometry preserved).
+  read-only **diagnose** (verdict + score), **prepare** (convert/repair),
+  and structural + U1-profile **validation** of the output.
+- "Validated" = output verdict READY **and** validation passes (no residual foreign
+  Bambu/BBL/H2D identity, consistent per-color arrays, geometry preserved). This is a
+  pipeline check, not a print-success guarantee — review in Orca before slicing.
 - Reproduce locally:
 
 ```bash
@@ -34,7 +35,7 @@ The machine-generated results (filenames anonymized):
 # Snapmaker U1 Conversion — Real-World Validation
 
 **Corpus:** 112 files  
-**Clean (READY + validated):** 112  
+**Validated (READY + checks pass):** 112  
 **Failures:** 0  
 **Validation-gate pass rate: 112/112 (not a print-success guarantee).**
 

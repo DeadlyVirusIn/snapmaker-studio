@@ -17,7 +17,7 @@ preparing, and sending — without them needing to understand a slicer first.
 | 1 | Find a model | **Find Models** → click an approved site | Site opens in the locked Studio Model Browser window (no Chrome/Edge) | `screenshots/beta16/model_browser.png` |
 | 2 | Understand the file | **Source Check** → choose the downloaded STL/3MF | Detected source slicer + "can read / can't convert yet / next step" | `screenshots/beta16/source_check.png` |
 | 3 | Diagnose | **Project Doctor** (or open the file → Workspace) | Readiness verdict (READY/REPAIRABLE/…) + geometry findings, plain language | `screenshots/beta16/project_doctor.png` |
-| 4 | Fix / prepare | **Prepare** a clean U1 copy | A verified copy is created; original never modified | `screenshots/beta16/prepare.png` |
+| 4 | Fix / prepare | **Prepare** a U1 profile copy (review in Orca before slicing) | A copy is created; original never modified | `screenshots/beta16/prepare.png` |
 | 5 | Open in Orca | **Open in Snapmaker Orca** | Installed Orca launches with the prepared file (one-way handoff) | `screenshots/beta16/orca_handoff.png` |
 | 6 | Send to printer | **Printer Hub** → Upload sliced gcode → confirm Start | Gcode uploads; Start asks for confirmation, shows filename | `screenshots/beta16/printer_control.png` |
 | 7 | Monitor | **Printer Hub** | Live state, progress, bed + 4 toolhead temps | `screenshots/beta16/printer_monitor.png` |

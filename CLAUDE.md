@@ -6,8 +6,9 @@ Independent open-source project — not affiliated with or endorsed by Snapmaker
 ## What it is
 
 Reads a 3D model's real geometry, runs read-only "Doctors" that explain likely print risks
-in plain language, prepares a clean print-ready copy without modifying the original, hands
-that copy to Snapmaker Orca to slice, and monitors / sends to the U1 via Printer Hub.
+in plain language, prepares a U1 profile copy (review in Orca before slicing) without
+modifying the original, hands that copy to Snapmaker Orca to slice, and monitors / sends
+to the U1 via Printer Hub.
 
 ## Hard rules (do not break these in code, copy, or docs)
 
