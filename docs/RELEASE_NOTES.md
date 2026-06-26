@@ -1,34 +1,32 @@
-# Snapmaker Studio v0.4.0-beta.19 — Product Truth Audit Fixes
+# Snapmaker Studio v0.4.0-beta.20 — Page-by-Page Product Truth Audit
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-Systemic readiness-truth fixes from an independent product-truth review.
+A full page-by-page audit (independent reviewers: Codex + Claude — Antigravity/Gemini failed
+in this run and were not counted) found that beta.19 fixed the surfaces it touched but left
+the same overclaim wording on sibling elements of those pages. beta.20 sweeps every route.
 
 ## Fixes
 
-- **Profile compatibility is no longer shown as full print readiness.** A new shared
-  readiness source means a file is only called "ready" when every readiness category passes
-  (layout, colours vs toolheads, supports, profile). Otherwise it reads "Review before
-  printing" with the specific reasons and next actions.
-- **Workspace, Batch, Projects, Source Wizard, Plate Remap, Intelligence Report, Business
-  Doctors and Printer Hub** now use honest status language. "U1-ready / ready to slice /
-  U1-clean / Safe copy" no longer appear from a profile verdict or structure validation alone
-  — a converted copy reads "U1 profile copy saved · open in Orca and review before slicing".
-- **Printer Hub** wording now matches its confirmed-control behaviour ("Monitor + confirmed
-  controls"). **Business Doctors** show an honest unavailable state instead of a blank.
-  Intelligence Report's dimension-only fit is labelled "Size fit (dimensions only)"; the demo
-  report carries a prominent "Sample data — not a real analysis" banner.
+- **Readiness wording is honest on every page now.** "U1-ready / ready to slice / clean /
+  safe / fixed / validated / passed" no longer appear from a profile verdict or structure
+  validation alone — only the full readiness report can show ready language. A converted
+  copy consistently reads "U1 profile copy saved · open in Orca and review before slicing".
+- Swept: Workspace (Simple + Advanced), Compatibility, Scale Doctor, Batch, Projects,
+  Dashboard, Source Wizard, Intelligence Report, Design Health, and the Cost/Pricing/Profit
+  Doctors. The "Likely ready" prediction badge is now "Few risks"; size-fit scale labels read
+  "Recommended / fits by size — verify placement in Orca", not "safe".
 
 Originals are never modified. Studio does not slice. No print-success guarantees. Layout/scale
-placement remains an advisory heuristic (verify in Orca), not a full port of Orca's PartPlate.
+placement is an advisory heuristic (verify in Orca), not a port of Orca's PartPlate.
 
 ## Download (unsigned beta)
 
 ```
-File:    Snapmaker.Studio_0.4.0-beta.19_x64-setup.exe
-Size:    16134573 bytes
-SHA256:  9b19df978da5fc00e52b9b491079ee3434a3dadd498e3c471ae625d2227a68d7
+File:    Snapmaker.Studio_0.4.0-beta.20_x64-setup.exe
+Size:    16129758 bytes
+SHA256:  d53b41d0ed947af3ed611b41fbfe45eac26010d1bf376b9832ea333d2f5dcfcf
 ```
 
 Unsigned — verify the SHA256 before installing.
