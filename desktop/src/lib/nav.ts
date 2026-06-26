@@ -9,8 +9,8 @@
 //  - every nav destination resolves to a real route (no blank pages).
 import {
   LayoutDashboard, FolderKanban, Wand2, Palette, GitCompareArrows,
-  Settings, BookOpen, FileCheck2, HeartPulse, Layers, Coins,
-  ShieldCheck, Compass, Maximize2, Stethoscope, Rocket, FileSearch, type LucideIcon,
+  Settings, BookOpen, FileCheck2, HeartPulse, Coins,
+  ShieldCheck, Compass, Maximize2, Stethoscope, Rocket, type LucideIcon,
 } from "lucide-react";
 import { DOCTORS } from "@/lib/doctors";
 
@@ -31,22 +31,23 @@ const doctorRoute = (id: string) => DOCTORS.find((d) => d.id === id)!.route;
 export const PRIMARY_NAV: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/start", label: "Get Started", icon: Rocket },
-  { to: "/projects", label: "Projects", icon: FolderKanban },
-  { to: "/find-models", label: "Find Models", icon: Compass },
-  { to: "/source", label: "Source Check", icon: FileSearch },
   { to: doctorRoute("project"), label: "Project Doctor", icon: FileCheck2, doctorId: "project" },
-  { to: "/compatibility", label: "Compatibility Doctor", icon: ShieldCheck },
+  { to: "/projects", label: "Projects", icon: FolderKanban },
+  // Compatibility merges the old Source Check + Compatibility Doctor (two tabs).
+  // /source still resolves on its own for deep links.
+  { to: "/compatibility", label: "Compatibility", icon: ShieldCheck },
   { to: "/scale", label: "Scale Doctor", icon: Maximize2 },
-  { to: "/print-quality", label: "Print Quality Doctor", icon: Stethoscope },
-  { to: doctorRoute("printer"), label: "Printer Doctor", icon: HeartPulse, doctorId: "printer" },
-  { to: doctorRoute("first-layer"), label: "First Layer Doctor", icon: Layers, doctorId: "first-layer" },
-  { to: doctorRoute("multi-material"), label: "Multi-Material Doctor", icon: Palette, doctorId: "multi-material" },
-  { to: "/plate-remap", label: "Plate Color Remap", icon: GitCompareArrows },
-  // Cost / Pricing / Profit are one combined page — a single sidebar item avoids
-  // three duplicate entries that all open the same calculator. The old
-  // /doctor/pricing and /doctor/profit routes still resolve (see DOCTORS) so any
-  // existing links keep working.
+  // Print Quality merges the old First Layer + Print Quality Doctors (two tabs).
+  // /first-layer still resolves on its own for deep links.
+  { to: "/print-quality", label: "Print Quality", icon: Stethoscope },
+  // Colors & Materials merges Plate Color Remap + the Multi-Material Doctor (two
+  // tabs). /plate-remap and /doctor/multi-material still resolve for deep links.
+  { to: "/colors", label: "Colors & Materials", icon: Palette },
+  // Cost / Pricing / Profit are one combined page; /doctor/pricing and
+  // /doctor/profit still resolve (see DOCTORS) so existing links keep working.
   { to: doctorRoute("cost"), label: "Cost & Pricing Doctor", icon: Coins, doctorId: "cost" },
+  { to: doctorRoute("printer"), label: "Printer Hub", icon: HeartPulse, doctorId: "printer" },
+  { to: "/find-models", label: "Find Models", icon: Compass },
   { to: "/batch", label: "Batch Prepare", icon: Wand2 },
 ];
 
@@ -54,7 +55,7 @@ export const PRIMARY_NAV: NavItem[] = [
 // tools". Advanced mode keeps the full PRIMARY_NAV. Derived from PRIMARY_NAV so
 // there's still one source of truth (and routes stay validated).
 const BEGINNER_ROUTES: string[] = [
-  "/", "/start", doctorRoute("project"), "/find-models", "/projects",
+  "/", "/start", doctorRoute("project"), "/projects", "/compatibility",
 ];
 export const BEGINNER_NAV: NavItem[] =
   BEGINNER_ROUTES.map((r) => PRIMARY_NAV.find((n) => n.to === r)!);
@@ -73,7 +74,7 @@ export const SECONDARY_NAV: NavItem[] = [
 // (/doctor/:id) and validated against DOCTORS below.
 export const STATIC_ROUTES = new Set<string>([
   "/", "/projects", "/batch", "/workspace", "/printers", "/settings",
-  "/why", "/plate-remap", "/compatibility", "/scale", "/print-quality", "/first-layer", "/find-models", "/start", "/help", "/source",
+  "/why", "/plate-remap", "/compatibility", "/colors", "/scale", "/print-quality", "/first-layer", "/find-models", "/start", "/help", "/source",
 ]);
 
 /** True when a nav `to` resolves to a real route — guards against blank pages. */

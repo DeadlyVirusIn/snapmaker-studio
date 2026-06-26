@@ -5,29 +5,35 @@ import { DOCTORS } from "./doctors";
 const primaryLabels = PRIMARY_NAV.map((n) => n.label);
 const primaryRoutes = PRIMARY_NAV.map((n) => n.to);
 
-// Cost / Pricing / Profit are one combined "Cost & Pricing Doctor" page, so they
-// share a single sidebar entry instead of three duplicates.
-const BIZ_IDS = new Set(["cost", "pricing", "profit"]);
+// Doctors folded out of the primary sidebar into a combined page:
+//  - cost/pricing/profit -> one "Cost & Pricing Doctor"
+//  - first-layer -> a "Print Quality" tab; multi-material -> a "Colors & Materials" tab
+const MERGED_IDS = new Set(["cost", "pricing", "profit", "first-layer", "multi-material"]);
 
 describe("1. sidebar exposes core Doctors directly", () => {
-  it("every non-business Doctor is reachable from the primary sidebar", () => {
+  it("every non-merged Doctor is reachable from the primary sidebar", () => {
     for (const d of DOCTORS) {
-      if (BIZ_IDS.has(d.id)) continue; // consolidated into one item below
+      if (MERGED_IDS.has(d.id)) continue; // folded into a combined page below
       expect(primaryRoutes).toContain(d.route);
     }
   });
   it("Cost/Pricing/Profit are one combined sidebar item, not three", () => {
-    const bizItems = PRIMARY_NAV.filter((n) => n.doctorId && BIZ_IDS.has(n.doctorId));
+    const bizItems = PRIMARY_NAV.filter((n) => n.doctorId && ["cost", "pricing", "profit"].includes(n.doctorId));
     expect(bizItems).toHaveLength(1);
     expect(bizItems[0].label).toBe("Cost & Pricing Doctor");
   });
-  it("old Cost/Pricing/Profit routes still resolve (aliases, no crash)", () => {
-    for (const id of BIZ_IDS) {
-      expect(isKnownRoute(`/doctor/${id}`)).toBe(true);
+  it("each merged combined page appears exactly once in the primary sidebar", () => {
+    for (const route of ["/compatibility", "/print-quality", "/colors", "/doctor/cost"]) {
+      expect(primaryRoutes.filter((r) => r === route)).toHaveLength(1);
     }
   });
-  it("core P0 doctors are present by name", () => {
-    for (const name of ["Project Doctor", "Printer Doctor", "First Layer Doctor", "Multi-Material Doctor"]) {
+  it("old/merged routes still resolve (aliases, no crash)", () => {
+    for (const route of ["/doctor/pricing", "/doctor/profit", "/first-layer", "/doctor/multi-material", "/source", "/plate-remap"]) {
+      expect(isKnownRoute(route)).toBe(true);
+    }
+  });
+  it("core primary items are present by name", () => {
+    for (const name of ["Project Doctor", "Printer Hub", "Compatibility", "Print Quality", "Colors & Materials", "Cost & Pricing Doctor"]) {
       expect(primaryLabels).toContain(name);
     }
   });
@@ -40,13 +46,11 @@ describe("2. Why Studio? is not in primary workflow nav", () => {
   });
 });
 
-describe("3. Plate Color Remap grouped near Multi-Material Doctor", () => {
-  it("sits immediately next to the Multi-Material Doctor", () => {
-    const mm = primaryLabels.indexOf("Multi-Material Doctor");
-    const remap = primaryLabels.indexOf("Plate Color Remap");
-    expect(mm).toBeGreaterThanOrEqual(0);
-    expect(remap).toBeGreaterThanOrEqual(0);
-    expect(Math.abs(remap - mm)).toBe(1);
+describe("3. merged tools are not duplicated as separate primary items", () => {
+  it("First Layer / Multi-Material / Source Check / Plate Color Remap are not separate primary entries", () => {
+    for (const gone of ["First Layer Doctor", "Multi-Material Doctor", "Source Check", "Plate Color Remap"]) {
+      expect(primaryLabels).not.toContain(gone);
+    }
   });
 });
 

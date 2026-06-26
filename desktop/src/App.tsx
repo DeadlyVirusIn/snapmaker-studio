@@ -11,12 +11,13 @@ import Settings from "@/routes/Settings";
 import WhyStudio from "@/routes/WhyStudio";
 import PlateRemap from "@/routes/PlateRemap";
 import DoctorLanding from "@/routes/DoctorLanding";
-import Compatibility from "@/routes/Compatibility";
 import FindModels from "@/routes/FindModels";
 import SourceCompatibility from "@/routes/SourceCompatibility";
 import ScaleDoctor from "@/routes/ScaleDoctor";
-import PrintQuality from "@/routes/PrintQuality";
 import FirstLayer from "@/routes/FirstLayer";
+import CompatibilityHub from "@/routes/CompatibilityHub";
+import PrintQualityHub from "@/routes/PrintQualityHub";
+import ColorsMaterials from "@/routes/ColorsMaterials";
 import BeginnerWorkflow from "@/routes/BeginnerWorkflow";
 import Help from "@/routes/Help";
 import NotFound from "@/routes/NotFound";
@@ -46,11 +47,12 @@ export default function App() {
             <Route path="/why" element={<WhyStudio />} />
             <Route path="/help" element={<Help />} />
             <Route path="/plate-remap" element={<PlateRemap />} />
-            <Route path="/compatibility" element={<Compatibility />} />
+            <Route path="/compatibility" element={<CompatibilityHub />} />
             <Route path="/find-models" element={<FindModels />} />
             <Route path="/source" element={<SourceCompatibility />} />
             <Route path="/scale" element={<ScaleDoctor />} />
-            <Route path="/print-quality" element={<PrintQuality />} />
+            <Route path="/print-quality" element={<PrintQualityHub />} />
+            <Route path="/colors" element={<ColorsMaterials />} />
             <Route path="/first-layer" element={<FirstLayer />} />
             <Route path="/start" element={<BeginnerWorkflow />} />
             <Route path="/doctor/:id" element={<DoctorLanding />} />
