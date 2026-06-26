@@ -132,7 +132,8 @@ export default function DesignInsights() {
   // Honest headline: a green "ready" verdict must not survive real print-setup risks
   // (e.g. more colours than toolheads). Demote the badge + stars to match the warnings below.
   const setupRisk = !!(mm?.available && mm.multi_material && mm.overall_level && mm.overall_level !== "ok")
-    || !!(bed?.available && bed.overall_level && bed.overall_level !== "ok");
+    || !!(bed?.available && bed.overall_level && bed.overall_level !== "ok")
+    || !!(rep && !rep.ready);
   const headlineStatus = setupRisk && d && status?.tone === "ready" ? verdictStatus("HIGH_RISK") : status;
   const headlineScore = setupRisk ? Math.min(d?.score ?? 0, 70) : d?.score;
 
@@ -157,7 +158,7 @@ export default function DesignInsights() {
             </div>
             <div className="w-full rounded-lg border border-border bg-muted/30 p-3 text-left text-sm">
               <p className="font-medium">{convert.data.output_name}</p>
-              <p className="break-all text-xs text-muted-foreground">{convert.data.output_path}</p>
+              <p className="text-xs text-muted-foreground">New file saved next to your original — use “Copy path” below.</p>
             </div>
             <div className="text-left text-sm text-muted-foreground">
               <p className="mb-1 font-medium text-foreground">What now?</p>

@@ -64,15 +64,15 @@ def test_report_layout_blocks_ready(tmp_path):
     assert any(c["name"] == "Layout / plate fit" for c in rep["checks"])
 
 
-def test_plate_window_single_convention():
-    """P0 fix: ONE convention per file from collective bounds — no dual-window false pass."""
-    from snapstudio_core.layout import plate_window, U1_PLATE_MM
+def test_plate_window_per_axis_convention():
+    """P0/P2 fix: ONE convention PER AXIS — no dual-window false pass, and a negative Y must
+    not flip the X window."""
+    from snapstudio_core.layout import plate_window, U1_PLATE_MM, U1_HEIGHT_MM
+    assert U1_HEIGHT_MM == 270.0
     corner = [{"bounds": {"min": (10.0, 10.0, 0.0), "max": (60.0, 60.0, 20.0)}}]
-    assert plate_window(corner) == (0.0, U1_PLATE_MM)            # all-positive -> corner
-    centred = [{"bounds": {"min": (-50.0, -10.0, 0.0), "max": (10.0, 60.0, 20.0)}}]
-    lo, hi = plate_window(centred)
-    assert lo < 0 and hi == U1_PLATE_MM / 2.0                    # negative min -> centred
-    # genuinely off-plate object (260 > 135 in a centred file) is outside the chosen window.
-    huge = centred + [{"bounds": {"min": (200.0, 0.0, 0.0), "max": (260.0, 20.0, 20.0)}}]
-    _, whi = plate_window(huge)
-    assert huge[1]["bounds"]["max"][0] > whi + 1
+    assert plate_window(corner) == ((0.0, U1_PLATE_MM), (0.0, U1_PLATE_MM))     # all-positive
+    # negative only on Y: X stays corner (0..270), Y flips centred — axes independent.
+    mixed = [{"bounds": {"min": (10.0, -50.0, 0.0), "max": (60.0, 10.0, 20.0)}}]
+    (xlo, xhi), (ylo, yhi) = plate_window(mixed)
+    assert (xlo, xhi) == (0.0, U1_PLATE_MM)
+    assert ylo < 0 and yhi == U1_PLATE_MM / 2.0

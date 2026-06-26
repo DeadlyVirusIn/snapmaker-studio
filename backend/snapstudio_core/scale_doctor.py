@@ -79,6 +79,8 @@ def preview(path: str, scale_percent: float) -> dict:
     fits = _fits(scaled, U1_BED)
 
     risks = [
+        "Fit by SIZE only — Snapmaker Orca can still reject a scale because where the object "
+        "sits on the plate also matters. Confirm placement in Orca (Arrange all plates) after scaling.",
         "Holes, threads, snap-fits, joints and tolerances may not scale correctly — "
         "check fit-critical features after scaling.",
         "Thin-wall safety check is not available here — verify wall thickness after scaling (approximate).",
@@ -94,7 +96,7 @@ def preview(path: str, scale_percent: float) -> dict:
     elif abs(s - 1.0) > 1e-9:
         recommendation = "caution"
     else:
-        recommendation = "likely safe"
+        recommendation = "fits by size — verify placement in Orca"
 
     explanation = (
         f"At {scale_percent:.0f}% the model is about "

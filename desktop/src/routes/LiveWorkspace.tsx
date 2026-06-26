@@ -98,8 +98,10 @@ export default function LiveWorkspace() {
                 </ul>
               </div>
             ) : (
-              <p className="flex items-center gap-2 border-t border-border pt-3 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-ready" /> No compatibility issues found.
+              <p className="flex items-start gap-2 border-t border-border pt-3 text-sm text-muted-foreground">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-ready" />
+                No blocking profile/settings issues — review Design Health, colours and layout below
+                (and the readiness verdict) before slicing.
               </p>
             )}
           </CardContent>

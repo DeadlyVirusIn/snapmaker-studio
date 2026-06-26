@@ -16,21 +16,25 @@ from .intelligence import project_info
 
 # Snapmaker U1 printable area (mm). Square bed; the same value guards X and Y.
 U1_PLATE_MM = 270.0
+U1_HEIGHT_MM = 270.0   # Z build height limit
 
 
 def plate_window(items: list) -> tuple:
-    """Pick ONE plate coordinate window for a file, from all objects' collective bounds.
+    """Pick the plate coordinate window PER AXIS, from all objects' collective bounds.
 
     3MF origin conventions differ — corner-origin (0..270) or centred (-135..135). We must
     NOT accept "either" per object: an object off-plate in the corner system would falsely
-    pass via the centred window (and vice-versa). Decide once for the whole file: if any
-    object's min X/Y is meaningfully negative, the file is centred; otherwise corner-origin.
-    Returns (low, high) for both axes (square bed).
+    pass via the centred window. Decide once per axis: if that axis's collective minimum is
+    meaningfully negative the file is centred on that axis; otherwise corner-origin. Deciding
+    per axis (not by collapsing X and Y into one min) avoids a negative Y flipping the X test.
+    Returns ((x_low, x_high), (y_low, y_high)).
     """
-    min_xy = min(min(it["bounds"]["min"][0], it["bounds"]["min"][1]) for it in items)
-    if min_xy < -1.0:                      # centred convention
-        return (-U1_PLATE_MM / 2.0, U1_PLATE_MM / 2.0)
-    return (0.0, U1_PLATE_MM)              # corner-origin convention
+    half = U1_PLATE_MM / 2.0
+    min_x = min(it["bounds"]["min"][0] for it in items)
+    min_y = min(it["bounds"]["min"][1] for it in items)
+    wx = (-half, half) if min_x < -1.0 else (0.0, U1_PLATE_MM)
+    wy = (-half, half) if min_y < -1.0 else (0.0, U1_PLATE_MM)
+    return wx, wy
 
 
 def assess_layout(path: str) -> dict:
@@ -64,6 +68,7 @@ def assess_layout(path: str) -> dict:
     oversized = [
         it for it in items
         if it["dimensions"]["x"] > U1_PLATE_MM or it["dimensions"]["y"] > U1_PLATE_MM
+        or it["dimensions"]["z"] > U1_HEIGHT_MM
     ]
 
     if plates > 1:
@@ -76,12 +81,12 @@ def assess_layout(path: str) -> dict:
             "before slicing; objects may sit outside a plate."
         )
     else:
-        wlo, whi = plate_window(items)
+        (xlo, xhi), (ylo, yhi) = plate_window(items)
         m = 1.0  # mm tolerance
         off = [
             it for it in items
-            if it["bounds"]["min"][0] < wlo - m or it["bounds"]["max"][0] > whi + m
-            or it["bounds"]["min"][1] < wlo - m or it["bounds"]["max"][1] > whi + m
+            if it["bounds"]["min"][0] < xlo - m or it["bounds"]["max"][0] > xhi + m
+            or it["bounds"]["min"][1] < ylo - m or it["bounds"]["max"][1] > yhi + m
         ]
         if off:
             status = "fail"
