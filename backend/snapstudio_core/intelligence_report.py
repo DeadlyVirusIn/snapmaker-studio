@@ -173,7 +173,7 @@ def build(predict=None, bed_fit=None, mm=None, first_layer=None, health=None,
     if biggest_risk:
         next_action = recommendations[0] if recommendations else f"Address: {biggest_risk['text']}"
     else:
-        next_action = "Looks U1-ready — review the recommendations, then prepare a clean copy before slicing."
+        next_action = "Review the recommendations, then prepare a U1 profile copy and check it in Snapmaker Orca before slicing."
 
     # --- supporting evidence (each Doctor's one-line status) ---
     supporting = []
@@ -182,7 +182,7 @@ def build(predict=None, bed_fit=None, mm=None, first_layer=None, health=None,
         if ok:
             supporting.append({"doctor": name, "status": status, "detail": detail})
 
-    _lvl_status = {"ok": "Validated", "warn": "Check", "risk": "Action needed"}
+    _lvl_status = {"ok": "OK", "warn": "Check", "risk": "Action needed"}
     add("Project Doctor", avail["bed_fit"], _lvl_status.get((bed_fit or {}).get("overall_level"), "—"),
         (bed_fit or {}).get("overall_text", ""))
     add("Multi-Material Doctor", avail["mm"], _lvl_status.get((mm or {}).get("overall_level"), "—"),

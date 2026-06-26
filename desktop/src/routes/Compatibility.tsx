@@ -97,7 +97,7 @@ export default function Compatibility() {
             <div className="space-y-2 rounded-md border border-primary/30 bg-primary/5 p-3">
               <p className="text-sm">
                 This model may be fine, but the project settings are for another printer. Studio can
-                prepare a clean Snapmaker U1 copy so Orca opens it with U1-safe settings.
+                prepare a U1 profile copy so Orca opens it with U1-compatible settings.
               </p>
               <Button size="sm" onClick={() => prepM.mutate()} disabled={prepM.isPending || !path}>
                 {prepM.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus className="h-4 w-4" />}
@@ -114,7 +114,7 @@ export default function Compatibility() {
                 <CheckCircle2 className="h-4 w-4" /> U1 profile copy created
               </p>
               <p className="truncate text-xs text-muted-foreground" title={prep.output_path}>
-                Saved as <b>{prep.output_name}</b> · {prep.validated_ok ? "profile & settings fixed" : "see notes"} (new file — original untouched).
+                Saved as <b>{prep.output_name}</b> · {prep.validated_ok ? "profile & settings updated" : "see notes"} (new file — original untouched).
               </p>
               <p className="flex items-start gap-1.5 rounded-md border border-doctor-cost/40 bg-doctor-cost/5 p-2 text-[11px] text-muted-foreground">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-doctor-cost" />

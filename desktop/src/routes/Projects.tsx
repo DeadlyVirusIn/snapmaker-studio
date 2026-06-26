@@ -100,7 +100,7 @@ function LibraryCard({ p, onOpen, onDelete, simple }: {
               className="inline-flex items-center gap-1 rounded text-xs text-ready hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
               title={p.output_path}
             >
-              <CheckCircle2 className="h-3.5 w-3.5" /> U1 file ready <Copy className="h-3 w-3 opacity-70" />
+              <CheckCircle2 className="h-3.5 w-3.5" /> U1 profile copy <Copy className="h-3 w-3 opacity-70" />
             </button>
           ) : (
             <span className="text-xs text-muted-foreground">Last: {p.last_action ? eventLabel(p.last_action) : "—"}</span>

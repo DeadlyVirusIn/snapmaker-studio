@@ -41,8 +41,8 @@ function buildRows(mesh: MeshReport, dims?: { x: number; y: number; z: number } 
     if (!integ.winding_consistent) intIssues.push(simple ? "inside/outside surfaces confused" : "inconsistent face normals");
     if (integ.degenerate_faces) intIssues.push(simple ? "zero-size triangles" : `${integ.degenerate_faces} zero-area face(s)`);
     rows.push(intIssues.length === 0
-      ? { key: "integrity", label: simple ? "Mesh quality" : "Geometry integrity", icon: Boxes, level: "ok", status: "Clean",
-          detail: simple ? "Clean model — the slicer will read it correctly." : "Manifold surface with consistent normals — slicers will read it correctly." }
+      ? { key: "integrity", label: simple ? "Mesh quality" : "Geometry integrity", icon: Boxes, level: "ok", status: "OK",
+          detail: simple ? "No mesh issues — the slicer will read it correctly." : "Manifold surface with consistent normals — slicers will read it correctly." }
       : { key: "integrity", label: simple ? "Mesh quality" : "Geometry integrity", icon: Boxes, level: integ.non_manifold_edges ? "risk" : "warn", status: "Issues",
           detail: `${intIssues.join(", ")}. The slicer may misread these; a repair pass cleans them up.` });
   }

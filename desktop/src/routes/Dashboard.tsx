@@ -168,7 +168,7 @@ export default function Dashboard() {
           <CardContent className="p-5">
             <h3 className="text-sm font-semibold">Why Snapmaker Studio?</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Before you slice in Snapmaker Orca, Studio checks that a model will actually print on your U1 — then keeps an eye on it while it does.
+              Before you slice in Snapmaker Orca, Studio flags a model's print risks for your U1 — then keeps an eye on it while it does.
             </p>
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
               <div className="flex gap-3">
@@ -182,7 +182,7 @@ export default function Dashboard() {
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Wand2 className="h-[18px] w-[18px]" /></span>
                 <div className="min-w-0">
                   <p className="text-sm font-medium">Fix &amp; prepare U1 copy</p>
-                  <p className="text-xs text-muted-foreground">Auto-repairs and converts any STL or 3MF into a clean U1 project. Your original is never changed.</p>
+                  <p className="text-xs text-muted-foreground">Prepares any STL or 3MF into a U1 profile copy. Your original is never changed.</p>
                 </div>
               </div>
               <div className="flex gap-3">

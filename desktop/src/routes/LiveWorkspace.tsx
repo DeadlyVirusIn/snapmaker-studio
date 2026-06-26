@@ -298,7 +298,7 @@ export default function LiveWorkspace() {
                     )}
                     <div className={cn("flex items-center gap-1.5 text-xs", convert.data?.validated_ok ? "text-ready" : "text-repairable")}>
                       {convert.data?.validated_ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
-                      Validation: {convert.data?.validated_ok ? "structure validated" : "issues remain"}
+                      Validation: {convert.data?.validated_ok ? "structure checked" : "issues remain"}
                     </div>
                   </div>
                 )}

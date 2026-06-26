@@ -12,7 +12,7 @@ import { SCALE_LADDER_COPY, recommendBlurb, isRecommended, isCaution, riskLabel,
 function recTone(rec?: string): { token: string; label: string } {
   if (rec === "not recommended") return { token: "--stage-input", label: "Not recommended" };
   if (rec === "caution") return { token: "--doctor-cost", label: "Caution" };
-  return { token: "--stage-validate", label: "Likely safe" };
+  return { token: "--stage-validate", label: "Recommended" };
 }
 
 function dims(d?: { x: number; y: number; z: number }) {
@@ -161,7 +161,7 @@ export default function ScaleDoctor() {
                   <p>{scaled.fits_u1 ? "Yes — verify placement in Orca" : "No — exceeds the bed"}</p></div>
                 <div><p className="text-xs text-muted-foreground">Validation</p>
                   <p>{scaled.validated_ok && !(scaled.errors && scaled.errors.length > 0)
-                    ? "Readiness checks passed" : "See notes below"}</p></div>
+                    ? "Structure/profile validated" : "See notes below"}</p></div>
               </div>
               <p className="truncate text-xs text-muted-foreground" title={scaled.output_path}>
                 Saved as <b>{scaled.output_name}</b> (new file — original untouched).

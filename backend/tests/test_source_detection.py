@@ -36,7 +36,7 @@ def test_bambu_u1_project(tmp_path):
     assert r["is_u1"] is True
     assert r["readable_settings"]["filament_types"] == ["PETG", "PLA"]
     assert r["cannot_convert"] == []   # already a U1 project
-    assert "U1 project" in r["recommended_next_step"]
+    assert "U1-family" in r["recommended_next_step"]
 
 
 def test_bambu_non_u1_flags_risk(tmp_path):

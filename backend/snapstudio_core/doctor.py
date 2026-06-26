@@ -111,7 +111,7 @@ def diagnose(tm: ThreeMF) -> Diagnosis:
         action = "Ready for Snapmaker U1 - open it in Snapmaker Orca and slice."
     else:
         verdict = REPAIRABLE
-        action = "Run `u1convert repair <file> --mode u1` to make this U1-ready."
+        action = "Prepare a U1 profile copy, then review it in Snapmaker Orca before slicing."
 
     return Diagnosis(
         verdict=verdict, score=score, family=src.family, printer_model=src.printer_model,

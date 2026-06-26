@@ -3,8 +3,7 @@
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-Systemic readiness-truth fixes from an independent multi-model audit (Codex + Claude;
-Antigravity returned empty both runs — documented, not relied on).
+Systemic readiness-truth fixes from an independent product-truth review.
 
 ## Fixes
 

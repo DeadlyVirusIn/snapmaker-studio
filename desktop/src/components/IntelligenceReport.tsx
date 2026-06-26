@@ -17,9 +17,9 @@ function scoreColor(s?: number | null): string {
 // Advisory readiness shown as a word, never a bare "100%" that reads as a guarantee.
 function readinessLabel(s?: number | null): string {
   if (s == null) return "—";
-  if (s >= 75) return "Likely ready";
-  if (s >= 50) return "Uncertain";
-  return "Needs work";
+  if (s >= 75) return "Few risks";
+  if (s >= 50) return "Some risks";
+  return "Several risks";
 }
 
 export function IntelligenceReport({ filePath, host, data }: { filePath?: string; host?: string | null; data?: Report }) {

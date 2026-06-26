@@ -8,7 +8,7 @@ import { Search, Stethoscope, Wand2, ShieldCheck, Printer, ChevronRight } from "
 const STAGES = [
   { icon: Search, label: "Discover", token: "--stage-input", hint: "Any file, any ecosystem — STL or 3MF, kept local" },
   { icon: Stethoscope, label: "Diagnose", token: "--stage-diagnose", hint: "The Doctors check fit, colours & first layer — before Orca" },
-  { icon: Wand2, label: "Fix", token: "--stage-transform", hint: "Repair & standardize into a clean U1 project" },
+  { icon: Wand2, label: "Fix", token: "--stage-transform", hint: "Repair & standardize into a U1 profile copy" },
   { icon: ShieldCheck, label: "Validate", token: "--stage-validate", hint: "Watertight, supported, stable & in-bounds" },
   { icon: Printer, label: "Print", token: "--stage-output", hint: "Send and monitor live on your U1" },
 ];

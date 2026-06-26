@@ -9,7 +9,7 @@ export const COMPAT_COPY = {
   cleanTitle: "No known compatibility issues",
   intro: "Open a 3MF project and Studio reads its settings to spot issues before you slice.",
   // Explicitly NOT an auto-fix claim:
-  readOnlyNote: "Read-only check. Create a clean U1 copy when issues are repairable.",
+  readOnlyNote: "Read-only check. Create a U1 profile copy when issues are repairable.",
   beginnerForeign: "This file likely carries settings from another printer.",
   beginnerImport: "Import the model into a clean Snapmaker U1 project instead of opening the foreign 3MF as the active project.",
   beginnerRelE: "Your profile uses relative extrusion but may not reset the extruder each layer.",

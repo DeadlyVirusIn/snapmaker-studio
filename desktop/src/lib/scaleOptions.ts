@@ -33,7 +33,7 @@ export function isCaution(o: ScaleOption): boolean {
 }
 
 export function riskLabel(risk: ScaleOption["risk_level"]): string {
-  return risk === "low" ? "Safe" : risk === "medium" ? "Tight" : "Risky";
+  return risk === "low" ? "Recommended" : risk === "medium" ? "Tight" : "Risky";
 }
 
 export function fmtDims(d: { x: number; y: number; z: number }): string {

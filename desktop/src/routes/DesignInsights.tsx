@@ -196,7 +196,7 @@ export default function DesignInsights() {
             {doctor.status === "loading"
               ? "Looking at your design…"
               : doctor.status === "done"
-                ? "Checked — here's what we found. Press Get it ready when you're set."
+                ? "Checked — here's what we found. Press Prepare U1 copy when you're set."
                 : "Let's see what's in your design."}
           </p>
         </div>
@@ -214,11 +214,11 @@ export default function DesignInsights() {
                   {headlineStatus.label}
                 </span>
               </div>
-              <p className="mt-0.5 text-xs text-muted-foreground">We make a print-ready copy — your original is never changed.</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">We make a U1 profile copy — your original is never changed.</p>
             </div>
             <Button onClick={runConvert} disabled={convert.status === "loading"} className="shrink-0">
               {convert.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-              {convert.status === "loading" ? "Getting it ready…" : "Get it ready"}
+              {convert.status === "loading" ? "Preparing…" : "Prepare U1 copy"}
             </Button>
           </CardContent>
         </Card>
@@ -254,7 +254,7 @@ export default function DesignInsights() {
                     predict.band === "likely" ? "bg-ready/10 text-ready"
                       : predict.band === "uncertain" ? "bg-repairable/10 text-repairable" : "bg-risk/10 text-risk"}`}>
                     {predict.band !== "likely" && <span className="tabular-nums">{predict.likelihood}%</span>}
-                    <span className="capitalize">{predict.band === "likely" ? "Likely ready" : predict.band}</span>
+                    <span className="capitalize">{predict.band === "likely" ? "Few risks" : predict.band}</span>
                   </span>
                 </div>
                 {predict.verdict && <p className="text-sm text-muted-foreground">{predict.verdict}</p>}
@@ -533,7 +533,7 @@ export default function DesignInsights() {
 
               <Button className="w-full" onClick={runConvert} disabled={convert.status === "loading"}>
                 {convert.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                {convert.status === "loading" ? "Getting it ready…" : "Get it ready"}
+                {convert.status === "loading" ? "Preparing…" : "Prepare U1 copy"}
               </Button>
               <p className="text-center text-xs text-muted-foreground">We never change your original file.</p>
 

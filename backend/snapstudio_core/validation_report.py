@@ -87,7 +87,7 @@ def readiness_report(path: str) -> dict:
         if cfg.get("print_sequence") not in (None, "by layer"):
             at_risk.append('Print order changes from "by object" to "by layer" (avoids a collision warning; re-enable in Orca if you need by-object)')
         if not changes and verdict == READY:
-            changes.append("Already U1-clean — no changes needed")
+            changes.append("Already U1-compatible — no settings changes needed")
 
     # --- design (mesh) checks — best-effort, read-only; never break the report ----
     design_findings = []

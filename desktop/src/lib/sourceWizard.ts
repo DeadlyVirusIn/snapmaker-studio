@@ -23,7 +23,7 @@ export function nextAction(r: SourceCompatibilityReport): NextAction {
 export function nextActionLabel(a: NextAction): string {
   switch (a) {
     case "open_orca": return "Open in Snapmaker Orca";
-    case "prepare": return "Prepare a clean U1 copy";
+    case "prepare": return "Prepare a U1 profile copy";
     case "inspect": return "Open & inspect";
   }
 }

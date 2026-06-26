@@ -223,7 +223,7 @@ export default function Batch() {
             <EmptyState
               icon={Layers}
               title="Prepare a whole batch at once"
-              description="Add .stl/.3mf files — Studio makes a clean, validated U1 project for each."
+              description="Add .stl/.3mf files — Studio prepares a U1 profile copy for each — review in Orca."
               action={<Button size="sm" onClick={addFiles}><FilePlus className="h-4 w-4" /> Add files</Button>}
             />
           </CardContent>

@@ -80,7 +80,7 @@ export default function SourceCompatibility() {
             <Button size="sm" variant="secondary" asChild><Link to="/doctor/project"><Stethoscope className="h-4 w-4" /> Project Doctor</Link></Button>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Read-only. Studio prepares a clean U1 copy; you slice in Snapmaker Orca.
+            Read-only. Studio prepares a U1 profile copy; you slice in Snapmaker Orca.
           </p>
         </CardContent></Card>
       )}

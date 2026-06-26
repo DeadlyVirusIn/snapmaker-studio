@@ -3,14 +3,14 @@ import { verdictStatus } from "./simple";
 
 describe("verdictStatus — beginner action labels (advisory, no guarantees)", () => {
   it("maps each verdict to its action phrase", () => {
-    expect(verdictStatus("READY").label).toBe("Looks ready to prepare");
+    expect(verdictStatus("READY").label).toBe("U1 compatible");
     expect(verdictStatus("REPAIRABLE").label).toBe("Needs a fix first");
     expect(verdictStatus("CONVERTIBLE").label).toBe("Can prepare a U1 copy");
     expect(verdictStatus("HIGH_RISK").label).toBe("Review before printing");
   });
 
   it("is case-insensitive and tolerates junk", () => {
-    expect(verdictStatus("ready").label).toBe("Looks ready to prepare");
+    expect(verdictStatus("ready").label).toBe("U1 compatible");
     expect(verdictStatus(null).label).toBe("Checking…");
     expect(verdictStatus("weird").label).toBe("Checking…");
   });

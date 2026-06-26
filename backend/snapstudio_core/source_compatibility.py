@@ -100,11 +100,11 @@ def detect_detailed(path: str) -> dict:
         report["can_read"] = ["printer model", "filament colours + types", "per-plate / per-object colour assignment"]
         if info.is_u1:
             report["cannot_convert"] = []
-            report["recommended_next_step"] = "This is already a Snapmaker U1 project — run Project Doctor, then Open in Snapmaker Orca to slice."
+            report["recommended_next_step"] = "This is a U1-family project — run Project Doctor, then Open in Snapmaker Orca to slice."
         else:
             report["cannot_convert"] = ["the source printer's profile (it targets another printer, not the U1)"]
             report["risks"] = [f"This file targets {info.printer_model or 'another printer'}, not the Snapmaker U1 — its profile settings may not suit the U1."]
-            report["recommended_next_step"] = "Let Studio prepare a clean U1-ready copy (Prepare), then Open in Snapmaker Orca to slice."
+            report["recommended_next_step"] = "Let Studio prepare a U1 profile copy (Prepare), then Open in Snapmaker Orca to slice."
 
     elif eco == "prusa":
         try:

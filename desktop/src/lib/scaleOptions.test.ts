@@ -59,7 +59,7 @@ describe("scale options ladder helpers", () => {
     expect(R.options![3].label.toLowerCase()).toContain("not recommended");
   });
   it("risk labels map", () => {
-    expect(riskLabel("low")).toBe("Safe");
+    expect(riskLabel("low")).toBe("Recommended");
     expect(riskLabel("medium")).toBe("Tight");
     expect(riskLabel("high")).toBe("Risky");
   });
