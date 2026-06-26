@@ -28,8 +28,8 @@ placement remains an advisory heuristic (verify in Orca), not a full port of Orc
 
 ```
 File:    Snapmaker.Studio_0.4.0-beta.19_x64-setup.exe
-Size:     bytes
-SHA256:  
+Size:    16134573 bytes
+SHA256:  9b19df978da5fc00e52b9b491079ee3434a3dadd498e3c471ae625d2227a68d7
 ```
 
 Unsigned — verify the SHA256 before installing.
