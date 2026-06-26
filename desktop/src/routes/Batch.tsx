@@ -194,7 +194,7 @@ export default function Batch() {
                     <span className="min-w-0 flex-1 truncate" title={it.path}>{baseName(it.path)}</span>
                     {it.status === "done" && it.output_name && (
                       <span className={cn("shrink-0 text-xs", it.validated_ok ? "text-ready" : "text-repairable")}>
-                        {it.validated_ok ? "U1-ready" : "saved"}
+                        {it.validated_ok ? "Profile copy" : "saved"}
                       </span>
                     )}
                     {it.status === "error" && (

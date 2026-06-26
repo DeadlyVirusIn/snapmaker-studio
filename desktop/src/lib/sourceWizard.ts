@@ -5,7 +5,8 @@ import type { SourceCompatibilityReport } from "@/api";
 
 export type NextAction = "open_orca" | "prepare" | "inspect";
 
-/** Overall readiness for the U1, in plain terms. */
+/** Source/profile compatibility for the U1 (NOT full print readiness — that comes from the
+ *  Project Doctor readiness report). "ready" here means "U1-family source detected". */
 export function readiness(r: SourceCompatibilityReport): "ready" | "prepare" | "unknown" {
   if (r.ecosystem === "unknown") return "unknown";
   if (r.ecosystem === "bambu-family" && r.is_u1) return "ready";
@@ -30,7 +31,7 @@ export function nextActionLabel(a: NextAction): string {
 /** One-line beginner summary of what was detected. */
 export function summaryLine(r: SourceCompatibilityReport): string {
   if (r.ecosystem === "unknown") return "Studio couldn't read this as a 3D model.";
-  if (readiness(r) === "ready") return `Detected: ${r.ecosystem_label} — already a Snapmaker U1 project.`;
+  if (readiness(r) === "ready") return `Detected: ${r.ecosystem_label} — U1-family project. Run Project Doctor to check print readiness.`;
   return `Detected: ${r.ecosystem_label} — Studio can read the model, but it's not a U1 project yet.`;
 }
 

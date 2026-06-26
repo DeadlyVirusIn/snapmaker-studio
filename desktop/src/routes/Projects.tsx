@@ -18,14 +18,14 @@ import { useToast } from "@/store/toast";
 import { cn } from "@/lib/utils";
 
 function eventLabel(action: string): string {
-  if (action === "convert") return "Made U1-ready";
+  if (action === "convert") return "Prepared U1 copy";
   if (action === "doctor") return "Checked";
   return action;
 }
 
 const FILTERS: { label: string; match: (v: string | null) => boolean }[] = [
   { label: "All", match: () => true },
-  { label: "Looks U1-ready", match: (v) => v === "READY" },
+  { label: "Profile compatible", match: (v) => v === "READY" },
   { label: "Needs prep", match: (v) => v !== "READY" },
 ];
 
@@ -169,7 +169,7 @@ export default function Projects() {
               <span>{total} design{total === 1 ? "" : "s"}</span>
               <span>·</span>
               <CheckCircle2 className="h-3.5 w-3.5 text-ready" />
-              <span>{readyCount} U1-ready</span>
+              <span>{readyCount} profile compatible</span>
               {total - readyCount > 0 && <span>· {total - readyCount} need prep</span>}
             </span>
           ) : (

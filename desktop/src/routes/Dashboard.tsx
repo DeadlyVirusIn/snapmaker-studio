@@ -112,7 +112,7 @@ export default function Dashboard() {
           <h2 className="text-2xl font-semibold tracking-tight">
             The <span className="brand-gradient">Intelligence Layer</span> for Open 3D Printing
           </h2>
-          <p className="text-muted-foreground">One place. Any file. Any printer. Perfect prints — your Project, Printer &amp; Cost Doctors check every model before your U1 ever sees it. Local-first &amp; open source.</p>
+          <p className="text-muted-foreground">One place. Any file. Any printer. Catch print risks before slicing — your Project, Printer &amp; Cost Doctors check every model before your U1 ever sees it. Local-first &amp; open source.</p>
           <button onClick={() => setDemoOn(true)}
                   className="mt-3 inline-flex h-9 items-center gap-2 rounded-md border border-primary/40 bg-primary/5 px-4 text-sm font-medium text-primary transition-colors hover:bg-primary/10">
             <Sparkles className="h-4 w-4" /> {demo.isFetching ? "Loading demo…" : "See a 10-second demo"}
@@ -181,7 +181,7 @@ export default function Dashboard() {
               <div className="flex gap-3">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Wand2 className="h-[18px] w-[18px]" /></span>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium">Fix &amp; make U1-ready</p>
+                  <p className="text-sm font-medium">Fix &amp; prepare U1 copy</p>
                   <p className="text-xs text-muted-foreground">Auto-repairs and converts any STL or 3MF into a clean U1 project. Your original is never changed.</p>
                 </div>
               </div>
@@ -292,7 +292,7 @@ export default function Dashboard() {
                     <p><span className="text-2xl font-semibold text-foreground">{projects.length}</span> project{projects.length === 1 ? "" : "s"}</p>
                     {projects.length > 0 ? (
                       <p className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-ready" />{ready} U1-ready · {needsWork} need prep
+                        <CheckCircle2 className="h-3.5 w-3.5 text-ready" />{ready} profile-compatible · {needsWork} need prep
                       </p>
                     ) : (
                       <p>Nothing indexed yet.</p>

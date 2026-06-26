@@ -34,7 +34,21 @@ export function BusinessDoctors({ filePath, host }: { filePath: string; host?: s
   const profit = useQuery({ queryKey: ["bd-profit", filePath, host, fkey], queryFn: () => profitDoctor(filePath, host, { currency, factors }), retry: false, staleTime: 30000 });
 
   const c = cost.data, p = pricing.data, pr = profit.data;
-  if (!c?.available && !p?.available) return null;
+  const loading = cost.isLoading || pricing.isLoading;
+  if (!c?.available && !p?.available) {
+    // Honest unavailable state — never a silent blank/absent calculator.
+    return (
+      <Card><CardContent className="space-y-1 p-5">
+        <span className="text-sm font-semibold">Cost, Pricing &amp; Profit</span>
+        <p className="text-xs text-muted-foreground">
+          {loading
+            ? "Estimating cost…"
+            : "Cost estimate unavailable for this file — Studio couldn't read grams/volume. "
+              + "Enter grams manually in the assumptions, or open a model with readable geometry."}
+        </p>
+      </CardContent></Card>
+    );
+  }
   const cur = c?.currency ?? p?.currency ?? "$";
   const mk = p?.tiers?.find((t) => t.label === "Marketplace");
 

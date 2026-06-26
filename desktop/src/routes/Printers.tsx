@@ -21,7 +21,7 @@ function fmtDur(s: number | null | undefined): string {
 const FAILED = new Set(["error", "cancelled", "klippy_shutdown", "klippy_disconnect", "interrupted"]);
 
 // Read-only U1 Printer Hub: discover + live status over the U1's open Moonraker.
-// No upload, no print control — monitoring only.
+// Monitor + send files + controls — all dangerous actions confirmed.
 export default function Printers() {
   const savedHost = usePrinter((s) => s.host);
   const setSavedHost = usePrinter((s) => s.setHost);
@@ -91,7 +91,7 @@ export default function Printers() {
         subtitle="Monitor your U1 and send files — every action is confirmed."
         badge={
           <span className="inline-flex items-center gap-1 rounded-full border border-ready/40 bg-ready/10 px-2 py-0.5 text-xs font-medium text-ready">
-            <ShieldCheck className="h-3.5 w-3.5" /> Monitoring only
+            <ShieldCheck className="h-3.5 w-3.5" /> Monitor + confirmed controls
           </span>
         }
       />

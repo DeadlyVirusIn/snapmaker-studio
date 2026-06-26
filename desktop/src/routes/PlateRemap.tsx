@@ -260,7 +260,7 @@ export default function PlateRemap() {
               )}
               <Button size="sm" onClick={() => exportM.mutate()} disabled={!canExport(sel, dryRun) || exporting}
                       style={canExport(sel, dryRun) ? { backgroundColor: `hsl(var(${BLUE}))` } : undefined}>
-                {exporting ? <><Loader2 className="h-4 w-4 animate-spin" /> Creating safe copy… (large files ~30s)</> : <>{COPY.exportCta} <ArrowRight className="h-4 w-4" /></>}
+                {exporting ? <><Loader2 className="h-4 w-4 animate-spin" /> Creating remapped copy… (large files ~30s)</> : <>{COPY.exportCta} <ArrowRight className="h-4 w-4" /></>}
               </Button>
             </>
           )}
@@ -297,7 +297,7 @@ export default function PlateRemap() {
             <li className="flex items-start gap-1.5"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ready" /> Mesh data unchanged.</li>
             <li className="flex items-start gap-1.5"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ready" /> Original file unchanged.</li>
           </ul>
-          <p className="pt-1 text-xs"><span className="font-medium">Safe copy saved to:</span> <span className="break-all text-muted-foreground">{view.outputPath}</span></p>
+          <p className="pt-1 text-xs"><span className="font-medium">Remapped copy saved:</span> <span className="text-muted-foreground">{view.outputPath?.split(/[\\/]/)?.pop() ?? "new file"}</span> — open in Orca and review before slicing</p>
           {view.checks.length > 0 && (
             <details className="pt-1 text-[11px] text-muted-foreground">
               <summary className="cursor-pointer">Verification checks ({view.checks.length})</summary>

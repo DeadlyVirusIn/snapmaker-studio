@@ -16,7 +16,8 @@ describe("source migration wizard (pure)", () => {
       recommended_next_step: "This is already a Snapmaker U1 project — run Project Doctor, then Open in Snapmaker Orca to slice." });
     expect(readiness(rep)).toBe("ready");
     expect(nextAction(rep)).toBe("open_orca");
-    expect(summaryLine(rep)).toMatch(/already a Snapmaker U1 project/);
+    expect(summaryLine(rep)).toMatch(/U1-family/);
+    expect(summaryLine(rep)).not.toMatch(/print-ready|ready to slice/i);
   });
 
   it("a PrusaSlicer project → prepare a clean U1 copy", () => {
@@ -49,5 +50,17 @@ describe("source migration wizard (pure)", () => {
       const blob = steps.flatMap((s) => s.items).join(" ").toLowerCase();
       expect(blob).not.toMatch(/fully convert|full conversion|100%|guarantee/);
     }
+  });
+});
+
+describe("sourceWizard wording — source compat is not print readiness (beta.19)", () => {
+  const u1: SourceCompatibilityReport = {
+    ...base, ecosystem: "bambu-family", ecosystem_label: "Bambu/Orca 3MF", is_u1: true,
+  };
+  it("U1-family source is detected, not called print-ready", () => {
+    const line = summaryLine(u1).toLowerCase();
+    expect(line).toContain("u1-family");
+    expect(line).not.toContain("already a snapmaker u1 project");
+    expect(line).not.toMatch(/ready to slice|u1-ready/);
   });
 });

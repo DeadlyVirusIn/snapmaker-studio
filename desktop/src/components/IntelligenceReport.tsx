@@ -54,8 +54,9 @@ export function IntelligenceReport({ filePath, host, data }: { filePath?: string
           <div className="min-w-0">
             <p className="flex items-center gap-2 text-sm font-semibold">
               <Stethoscope className="h-4 w-4 text-primary" /> Studio Intelligence Report
-              {r.is_demo && <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary"><Sparkles className="h-3 w-3" /> Demo</span>}
+              {r.is_demo && <span className="inline-flex items-center gap-1 rounded-full bg-repairable/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-repairable"><Sparkles className="h-3 w-3" /> Sample data</span>}
             </p>
+            {r.is_demo && <p className="text-[11px] font-medium text-repairable">Sample data — not a real analysis of your file. Open a model to run the real Doctors.</p>}
             <p className="text-sm text-muted-foreground">{r.verdict}</p>
             <p className="mt-1 text-[11px] text-muted-foreground opacity-70">Powered by Studio Intelligence · your Doctors, in one answer</p>
           </div>

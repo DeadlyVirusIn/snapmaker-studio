@@ -190,6 +190,13 @@ describe("13. no technical jargon in primary beginner copy", () => {
     const beginner = `${COPY.exportCta} ${COPY.questionFrom} ${COPY.questionTo} ${COPY.safety}`.toLowerCase();
     expect(beginner).not.toContain("object-level extruder assignment");
     expect(beginner).not.toContain("extruder");
-    expect(COPY.exportCta.toLowerCase()).toContain("safe copy");
+    expect(COPY.exportCta.toLowerCase()).toContain("remapped copy");
+  });
+});
+
+describe("plate remap wording — remap is not print safety (beta.19)", () => {
+  it("success/proof wording says remapped copy, never 'safe copy'", () => {
+    expect((COPY.success + COPY.proofTitle).toLowerCase()).not.toContain("safe copy");
+    expect(COPY.proofTitle.toLowerCase()).toContain("remapped copy");
   });
 });

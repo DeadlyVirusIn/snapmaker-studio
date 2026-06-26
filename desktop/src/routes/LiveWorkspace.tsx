@@ -14,7 +14,8 @@ import { usePrinter } from "@/store/printer";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { StrategyPicker } from "@/components/StrategyPicker";
 import { DesignHealth } from "@/components/DesignHealth";
-import { mesh as apiMesh, insights as apiInsights, toolheadFit as apiToolheadFit } from "@/api";
+import { mesh as apiMesh, insights as apiInsights, toolheadFit as apiToolheadFit, report as apiReport } from "@/api";
+import { readinessView } from "@/lib/readiness";
 import { OrcaHandoff } from "@/components/OrcaHandoff";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -39,11 +40,15 @@ export default function LiveWorkspace() {
   const meshQ = useQuery({ queryKey: ["mesh", file?.path], queryFn: () => apiMesh(file!.path), enabled: !!file && doctor.status === "done" });
   const insQ = useQuery({ queryKey: ["insights", file?.path], queryFn: () => apiInsights(file!.path), enabled: !!file && doctor.status === "done" });
   const toolFitQ = useQuery({ queryKey: ["toolhead-fit", file?.path, u1Host], queryFn: () => apiToolheadFit(file!.path, u1Host), enabled: !!file && doctor.status === "done", retry: false, staleTime: 30000 });
+  // Honest readiness report — the single source of truth for the score/headline (the raw
+  // doctor verdict/score only means profile compatibility).
+  const repQ = useQuery({ queryKey: ["report", file?.path], queryFn: () => apiReport(file!.path), enabled: !!file && doctor.status === "done" });
 
   // No file in session (e.g. hard refresh) — send the user back to start.
   if (!file) return <Navigate to="/" replace />;
 
   const d = doctor.data;
+  const rv = readinessView(repQ.data);   // honest readiness (score/headline authority)
   const TypeIcon = file.ext === "stl" ? FileBox : Boxes;
   const converting = convert.status === "loading";
 
@@ -64,23 +69,25 @@ export default function LiveWorkspace() {
             <FolderOpen className="h-4 w-4" /> Open another
           </Button>
           <Button onClick={runConvert} disabled={converting || doctor.status === "loading"}>
-            {converting ? <Spinner /> : <Wand2 className="h-4 w-4" />} Make U1-ready
+            {converting ? <Spinner /> : <Wand2 className="h-4 w-4" />} Prepare U1 copy
           </Button>
         </div>
       </div>
 
       {/* Readiness verdict + score + issues — kept directly under the header CTA so the
-          decision data sits next to the "Make U1-ready" action it informs. */}
+          decision data sits next to the "Prepare U1 copy" action it informs. */}
       {doctor.status === "done" && d && (
         <Card>
           <CardContent className="space-y-4 p-6">
             <div className="flex items-center gap-5">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 border-primary/30 text-2xl font-bold text-primary">
-                {d.score ?? "—"}
+              <div className={cn("flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 text-2xl font-bold",
+                rv.tone === "ready" ? "border-ready/40 text-ready" : "border-repairable/40 text-repairable")}>
+                {rv.scoreCap ?? d.score ?? "—"}
               </div>
               <div className="space-y-1.5">
                 <StatusBadge verdict={d.verdict as Verdict} />
-                <p className="text-sm text-muted-foreground">{d.recommended_action}</p>
+                <p className="text-sm font-medium">{rv.headline}</p>
+                <p className="text-sm text-muted-foreground">{rv.atRisk[0] ?? d.recommended_action}</p>
               </div>
             </div>
             {(d.compatibility_issues?.length || d.validation_issues?.length) ? (
@@ -188,7 +195,7 @@ export default function LiveWorkspace() {
           {convert.status === "loading" && (
             <Card>
               <CardContent className="flex items-center gap-2 p-5 text-sm text-muted-foreground">
-                <Spinner /> Preparing and saving a U1-ready 3MF…
+                <Spinner /> Preparing and saving a U1 profile copy…
               </CardContent>
             </Card>
           )}
@@ -196,13 +203,13 @@ export default function LiveWorkspace() {
             <Card>
               <CardContent className="space-y-2 p-5">
                 <div className="flex items-center gap-2 font-medium text-ready">
-                  <Save className="h-5 w-5" /> Saved U1-ready project
+                  <Save className="h-5 w-5" /> U1 profile copy saved
                 </div>
                 <p className="text-sm">{convert.data.output_name}</p>
                 <p className="break-all text-xs text-muted-foreground">{convert.data.output_path}</p>
                 {convert.data.validated_ok ? (
                   <p className="flex items-center gap-1.5 text-xs text-ready">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Validated — ready to slice in Snapmaker Orca
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Structure validated — open in Orca and review layout, supports & colours before slicing
                   </p>
                 ) : (
                   <p className="flex items-center gap-1.5 text-xs text-repairable">
@@ -234,7 +241,7 @@ export default function LiveWorkspace() {
             <Card>
               <CardContent className="p-5">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                  <GitCompare className="h-4 w-4" /> Compare — original ↔ U1-ready
+                  <GitCompare className="h-4 w-4" /> Compare — original ↔ prepared copy
                 </div>
                 {file.ext === "stl" && (
                   <p className="text-sm text-muted-foreground">
@@ -261,7 +268,7 @@ export default function LiveWorkspace() {
                     </div>
                     <div className="overflow-hidden rounded-md border border-border text-sm">
                       <div className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-border bg-muted/40 px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        <span>Metric</span><span>Original</span><span>U1-ready</span>
+                        <span>Metric</span><span>Original</span><span>Prepared copy</span>
                       </div>
                       {([["Objects", "object_count"], ["Plates", "plate_count"], ["Filaments", "filament_count"], ["Painted faces", "painted_triangles"]] as [string, string][]).map(([label, key]) => {
                         const v = diff.data[key] || [0, 0];
@@ -291,7 +298,7 @@ export default function LiveWorkspace() {
                     )}
                     <div className={cn("flex items-center gap-1.5 text-xs", convert.data?.validated_ok ? "text-ready" : "text-repairable")}>
                       {convert.data?.validated_ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
-                      Validation: {convert.data?.validated_ok ? "passed — U1-clean" : "issues remain"}
+                      Validation: {convert.data?.validated_ok ? "structure validated" : "issues remain"}
                     </div>
                   </div>
                 )}
