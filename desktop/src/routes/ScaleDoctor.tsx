@@ -157,10 +157,11 @@ export default function ScaleDoctor() {
                   <p>{scaled.original_mm?.map((d) => d.toFixed(1)).join(" × ")} mm</p></div>
                 <div><p className="text-xs text-muted-foreground">Scaled size</p>
                   <p>{scaled.scaled_mm?.map((d) => d.toFixed(1)).join(" × ")} mm</p></div>
-                <div><p className="text-xs text-muted-foreground">Fits U1 build volume</p>
-                  <p>{scaled.fits_u1 ? "Yes" : "No — exceeds the bed"}</p></div>
+                <div><p className="text-xs text-muted-foreground">Fits U1 build volume (by size)</p>
+                  <p>{scaled.fits_u1 ? "Yes — verify placement in Orca" : "No — exceeds the bed"}</p></div>
                 <div><p className="text-xs text-muted-foreground">Validation</p>
-                  <p>{scaled.validated_ok ? "Passed U1-clean checks" : "See notes below"}</p></div>
+                  <p>{scaled.validated_ok && !(scaled.errors && scaled.errors.length > 0)
+                    ? "Readiness checks passed" : "See notes below"}</p></div>
               </div>
               <p className="truncate text-xs text-muted-foreground" title={scaled.output_path}>
                 Saved as <b>{scaled.output_name}</b> (new file — original untouched).

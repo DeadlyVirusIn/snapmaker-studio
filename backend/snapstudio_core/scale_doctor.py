@@ -196,6 +196,12 @@ def scale_options(path: str, printer: str = "snapmaker_u1", margin_mm: float = 5
     # keeps the placed bbox inside the plate window (accepting 0-origin or centred coords).
     multi = len(current_parts) > 1
 
+    # Decide the plate coordinate convention ONCE for the whole file (corner 0..plate vs
+    # centred -plate/2..plate/2) from all groups' collective bounds — do NOT accept "either"
+    # per object, or an off-plate object in one convention false-passes via the other.
+    _gmin = min(min(g["min"][0], g["min"][1]) for g in groups.values()) if groups else 0.0
+    _centred = _gmin < -1.0
+
     def _in_place_limit_pct(g):
         facs = []
         for a, plate in ((0, bv["x"]), (1, bv["y"])):
@@ -203,12 +209,10 @@ def scale_options(path: str, printer: str = "snapmaker_u1", margin_mm: float = 5
             half = (hi - lo) / 2.0
             if half <= 0:
                 continue
+            wlo, whi = (-plate / 2.0, plate / 2.0) if _centred else (0.0, plate)
+            if lo < wlo - 1 or hi > whi + 1:
+                return 0.0  # already outside the plate window at 100% — off-plate now
             c = (lo + hi) / 2.0
-            win = next(((wlo, whi) for wlo, whi in ((0.0, plate), (-plate / 2.0, plate / 2.0))
-                        if lo >= wlo - 1 and hi <= whi + 1), None)
-            if win is None:
-                return 0.0  # already outside both plate windows at 100% — off-plate now
-            wlo, whi = win
             gap = min(c - wlo, whi - c) - margin   # tighter side, centre fixed, minus margin
             facs.append(gap / half)
         dz = g["max"][2] - g["min"][2]

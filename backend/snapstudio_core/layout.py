@@ -18,6 +18,21 @@ from .intelligence import project_info
 U1_PLATE_MM = 270.0
 
 
+def plate_window(items: list) -> tuple:
+    """Pick ONE plate coordinate window for a file, from all objects' collective bounds.
+
+    3MF origin conventions differ — corner-origin (0..270) or centred (-135..135). We must
+    NOT accept "either" per object: an object off-plate in the corner system would falsely
+    pass via the centred window (and vice-versa). Decide once for the whole file: if any
+    object's min X/Y is meaningfully negative, the file is centred; otherwise corner-origin.
+    Returns (low, high) for both axes (square bed).
+    """
+    min_xy = min(min(it["bounds"]["min"][0], it["bounds"]["min"][1]) for it in items)
+    if min_xy < -1.0:                      # centred convention
+        return (-U1_PLATE_MM / 2.0, U1_PLATE_MM / 2.0)
+    return (0.0, U1_PLATE_MM)              # corner-origin convention
+
+
 def assess_layout(path: str) -> dict:
     """Return {status, plates, object_count, messages}.
 
@@ -61,37 +76,18 @@ def assess_layout(path: str) -> dict:
             "before slicing; objects may sit outside a plate."
         )
     else:
-        # Absolute position: each object must lie inside the plate window. 3MF origin
-        # conventions vary (corner 0..270 vs centred -135..135), so accept EITHER —
-        # an object outside both windows is genuinely off the plate.
+        wlo, whi = plate_window(items)
         m = 1.0  # mm tolerance
-        half = U1_PLATE_MM / 2.0
-
-        def within(lo: float, hi: float) -> bool:
-            corner = lo >= -m and hi <= U1_PLATE_MM + m
-            centred = lo >= -half - m and hi <= half + m
-            return corner or centred
-
         off = [
             it for it in items
-            if not (within(it["bounds"]["min"][0], it["bounds"]["max"][0])
-                    and within(it["bounds"]["min"][1], it["bounds"]["max"][1]))
+            if it["bounds"]["min"][0] < wlo - m or it["bounds"]["max"][0] > whi + m
+            or it["bounds"]["min"][1] < wlo - m or it["bounds"]["max"][1] > whi + m
         ]
-        xs = [it["bounds"]["min"][0] for it in items] + [it["bounds"]["max"][0] for it in items]
-        ys = [it["bounds"]["min"][1] for it in items] + [it["bounds"]["max"][1] for it in items]
-        span_x, span_y = max(xs) - min(xs), max(ys) - min(ys)
         if off:
             status = "fail"
             messages.append(
                 f"{len(off)} object(s) sit outside the U1 build plate ({int(U1_PLATE_MM)} mm). "
                 "Open in Snapmaker Orca and use Arrange all plates before slicing."
-            )
-        elif span_x > U1_PLATE_MM or span_y > U1_PLATE_MM:
-            status = "fail"
-            messages.append(
-                f"Objects span {round(span_x)} × {round(span_y)} mm — wider than the U1 plate "
-                f"({int(U1_PLATE_MM)} mm). One or more objects sit outside the build plate; "
-                "rearrange or split in Snapmaker Orca."
             )
 
     if oversized:

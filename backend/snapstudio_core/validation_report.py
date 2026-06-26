@@ -129,14 +129,18 @@ def readiness_report(path: str) -> dict:
         try:
             from .layout import assess_layout
             layout = assess_layout(path)
-            if layout["status"] != "pass":
-                checks.append(_check(
-                    "Layout / plate fit",
-                    False,
-                    layout["messages"][0] if layout["messages"] else "Layout needs review in Snapmaker Orca"))
-                at_risk.extend(layout["messages"])
         except Exception:
-            layout = None
+            # A crash in layout analysis must NOT silently let the file pass as ready —
+            # fall back to an explicit "unknown" that blocks readiness.
+            layout = {"status": "unknown", "plates": 0, "object_count": 0,
+                      "messages": ["Layout couldn't be checked — open in Snapmaker Orca and use "
+                                   "Arrange all plates to confirm placement before slicing."]}
+        if layout["status"] != "pass":
+            checks.append(_check(
+                "Layout / plate fit",
+                False,
+                layout["messages"][0] if layout["messages"] else "Layout needs review in Snapmaker Orca"))
+            at_risk.extend(layout["messages"])
 
     # Honest readiness: a failed check OR any at-risk item means it is NOT ready as-is.
     # (Do not let a compatible profile verdict override real print-setup risks.)

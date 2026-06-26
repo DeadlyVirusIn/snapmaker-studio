@@ -142,7 +142,9 @@ def check(path: str) -> dict:
     warns = sum(1 for f in findings if f["severity"] == "warning")
     if not findings:
         summary = "No known U1 compatibility issues detected in this project's settings."
-        recommendation = "Looks compatible with Snapmaker U1 — slice as usual."
+        recommendation = ("No known U1 profile/settings issues. This check covers slicer "
+                          "settings only — also review mesh quality, colours and plate layout "
+                          "(Project Doctor) before slicing.")
     else:
         summary = f"Found {errors} invalid-value issue(s) and {warns} warning(s)."
         recommendation = (

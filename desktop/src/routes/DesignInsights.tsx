@@ -142,14 +142,17 @@ export default function DesignInsights() {
       <div className="mx-auto max-w-xl">
         <Card>
           <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-ready/15 text-ready">
+            <div className={cn("flex h-16 w-16 items-center justify-center rounded-full",
+              setupRisk ? "bg-repairable/15 text-repairable" : "bg-ready/15 text-ready")}>
               <CheckCircle2 className="h-9 w-9" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold">Looks U1-ready</h2>
+              <h2 className="text-xl font-semibold">{setupRisk ? "U1 copy created — review setup before slicing" : "U1 copy created"}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                We made a validated U1 copy of <b>{file.name}</b> and your original is kept
-                safe. This is an advisory check, not a guarantee — slice in Snapmaker Orca to confirm.
+                We made a U1 copy of <b>{file.name}</b> and your original is kept safe.
+                {setupRisk
+                  ? " Print-setup risks remain (see the checks) — open in Snapmaker Orca, arrange plates and review supports/colours before slicing."
+                  : " This is an advisory check, not a guarantee — slice in Snapmaker Orca to confirm."}
               </p>
             </div>
             <div className="w-full rounded-lg border border-border bg-muted/30 p-3 text-left text-sm">
@@ -496,11 +499,11 @@ export default function DesignInsights() {
               <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Step 3 · Prepare</p>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Print-Readiness</span>
-                <Stars score={d.score} />
+                <Stars score={headlineScore} />
               </div>
               <p className={cn("flex items-center gap-2 text-sm",
-                status.tone === "ready" ? "text-ready" : status.tone === "risk" ? "text-risk" : "text-repairable")}>
-                <span>{status.icon}</span> {status.label}
+                headlineStatus?.tone === "ready" ? "text-ready" : headlineStatus?.tone === "risk" ? "text-risk" : "text-repairable")}>
+                <span>{headlineStatus?.icon}</span> {headlineStatus?.label}
               </p>
 
               {issues.length > 0 && (
