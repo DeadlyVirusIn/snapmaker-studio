@@ -57,7 +57,7 @@ Action items (read-only audit, no writer changes without tests):
 ## UX
 
 - Beginner copy: "Studio checks the model first. Snapmaker Orca slices it next."
-- Handoff CTA appears **only when a prepared file/safe copy exists**: "Open in
+- Handoff CTA appears **only when a prepared U1 profile copy exists**: "Open in
   Snapmaker Orca."
 - When Orca isn't installed: "Install Snapmaker Orca" (official releases link).
 - No "Studio slices" claim anywhere.
@@ -112,7 +112,7 @@ Windows machine with Snapmaker Orca installed:
 
 1. Install Snapmaker Orca (official release).
 2. In Studio, open a sample 3MF (`examples/sample_cube_U1.3mf`), run Project Doctor.
-3. "Make U1-ready" to export the safe copy.
+3. "Prepare U1 copy" to export the U1 profile copy.
 4. Open the exported 3MF in Snapmaker Orca; select the **Snapmaker U1** profile.
 5. Confirm it loads without errors, geometry/plates/colours intact, and slices.
 6. Repeat with a Plate Color Remap export and a multicolor file.

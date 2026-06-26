@@ -135,8 +135,8 @@ clean, compatible state in the first place — across ecosystems.**
 - **Orca is a slicer, not a workflow.** No cross-ecosystem diagnosis, no
   preservation-guaranteed conversion, no project library, no corpus-validated
   "this will load clean," no multi-printer management.
-- **Studio makes Orca better.** The output of Studio is a clean project that
-  opens warning-free in (Snapmaker) Orca. We are complementary, not competitive —
+- **Studio makes Orca better.** The output of Studio is a prepared U1 profile copy
+  to open in (Snapmaker) Orca and review before slicing. We are complementary, not competitive —
   the on-ramp to the slicer, not a replacement for it.
 
 In short: Orca slices; Studio makes anything *sliceable here*.
@@ -167,7 +167,7 @@ Snapmaker's) because it **grows the hardware's addressable market without the
 vendor building or maintaining it**:
 
 - **De-risks switching to U1.** A Bambu/Prusa owner's existing library becomes
-  U1-ready in one click — directly lowering the barrier to buying the printer.
+  prepared for the U1 in one click (review in Orca before slicing) — directly lowering the barrier to buying the printer.
 - **Open-source + local-first** aligns with maker trust and avoids the vendor
   having to own a cloud/account product.
 - **Leverage, not headcount.** A small grant funds a platform that the community
@@ -217,8 +217,8 @@ Not a deck promise — shipped and measured:
 - **112 real-world files, 100% clean conversion** (Bambu, Orca, Prusa/geometry,
   STL; single + multi-color; custom presets; large + non-English files), proven
   by an automated validation corpus.
-- **Zero-warning output in Snapmaker Orca** on real user files (e.g. a Bambu H2D
-  project → U1, confirmed warning-free by a user).
+- **Prepared U1 output reviewed in Snapmaker Orca** on real user files (e.g. a Bambu H2D
+  project → U1 profile copy, reviewed by a user).
 - **One-click Windows installer** (~14 MB) with a bundled engine — **no Python,
   no terminal, no cloud, no account**.
 - **Zero orphan processes** across graceful close, crash, and force-kill

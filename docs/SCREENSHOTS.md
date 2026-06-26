@@ -35,20 +35,20 @@ anyone can produce the marketing set consistently.
 - **File:** `doctor.png` (+ dark).
 
 ### 3 — Conversion success
-- **Steps:** click **Make U1-ready** -> wait for completion.
-- **Compose:** green **"Saved U1-ready project"** card, output name
-  `example_SnapmakerU1.3mf`, full path, **"Validated — ready to slice in
-  Snapmaker Orca."**
-- **Message:** "one click, done, verified."
+- **Steps:** click **Prepare U1 copy** -> wait for completion.
+- **Compose:** green **"U1 profile copy saved"** card, output name
+  `example_SnapmakerU1.3mf`, full path, **"Structure validated — review in
+  Snapmaker Orca before slicing."**
+- **Message:** "one click, copy prepared."
 - **File:** `conversion-success.png` (+ dark).
 
 ### 4 — Before / after comparison
 - **Compose:** side-by-side, 50/50:
   - **Before:** Snapmaker Orca loading the original Bambu file showing the
     "Customized Preset" / "newer version" warnings.
-  - **After:** Snapmaker Orca loading `example_SnapmakerU1.3mf` with **no
-    warnings**, on the U1 plate.
-- **Overlay labels:** "Bambu file -> warnings" vs "U1-ready -> zero warnings."
+  - **After:** Snapmaker Orca loading `example_SnapmakerU1.3mf` on the U1 plate
+    for review.
+- **Overlay labels:** "Bambu file -> warnings" vs "prepared U1 copy -> review in Orca."
 - **Message:** the core proof.
 - **File:** `before-after.png` (composite; capture the two Orca states then
   compose in any image editor).

@@ -94,10 +94,10 @@ Run on the **test host** (no Python). Tick each:
 | 3 | Launch app | Window opens, title "Snapmaker Studio", dark UI | ☐ |
 | 4 | Status bar | "Engine ready · v0.3.0-beta.1 · Local-only" | ☐ |
 | 5 | Open `examples/sample_cube.stl` | Doctor → CONVERTIBLE, no crash | ☐ |
-| 6 | Make U1-ready | Saves `sample_cube_SnapmakerU1.3mf`; original intact | ☐ |
+| 6 | Prepare U1 profile copy | Saves `sample_cube_SnapmakerU1.3mf`; original intact | ☐ |
 | 7 | Open a Bambu/Orca `.3mf` | Doctor verdict + Compare shows diff | ☐ |
 | 8 | Projects | Both files indexed; search/filter work | ☐ |
-| 9 | Batch convert 2 files | Progress → "Done 2/2", both U1-ready | ☐ |
+| 9 | Batch convert 2 files | Progress → "Done 2/2", both prepared (U1 profile copy) | ☐ |
 | 10 | Settings | Theme toggle (light/dark) works | ☐ |
 | 11 | Close app | No orphan `snapstudio-api.exe` in Task Manager | ☐ |
 | 12 | Re-open + close 3× | No orphan accumulation; no port conflict | ☐ |
@@ -144,15 +144,15 @@ status badge. SemVer pre-release; next would be `v0.3.0-beta.2` (fixes) or
 >
 > **Highlights**
 > - **Understand** — read-only design intelligence + a U1 readiness verdict and score.
-> - **Prepare** — Bambu/Orca and STL → clean, validated U1 3MF; originals never overwritten.
-> - **Compare** — diff original ↔ U1-ready (geometry, counts, normalized settings).
+> - **Prepare** — Bambu/Orca and STL → prepared U1 profile copy (review in Orca before slicing); originals never overwritten.
+> - **Compare** — diff original ↔ prepared U1 profile copy (geometry, counts, normalized settings).
 > - **Project Library** — every checked/prepared file auto-indexed, searchable.
 > - **Batch prepare** — many files at once with live per-file progress.
 > - **Desktop app** — Tauri + React, dark-first; bundled engine sidecar (no Python).
 > - One-click **Windows installer** (NSIS).
 >
-> **Proven:** real-world corpus of 112 files → 100% Doctor READY; former Bambu
-> project opens in Snapmaker Orca with zero warnings.
+> **Proven:** real-world corpus of 112 files → 100% internal validation gate (not a
+> print-success guarantee); review in Snapmaker Orca before slicing.
 >
 > **Workflow:** Input → Diagnose → Transform → Validate → Output (validation always on).
 >

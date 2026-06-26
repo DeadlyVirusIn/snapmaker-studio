@@ -33,8 +33,9 @@ the output is clean before the user wastes a print. It's local-first (no account
 no cloud), open source, and ships as a one-click Windows installer with a bundled
 engine (no Python required).
 
-It is already real: a real-world corpus of **112 files converts at 100%**, and a
-former-Bambu project now opens in Snapmaker Orca with **zero warnings**. The
+It is already real: a real-world corpus of **112 files passes the internal validation
+gate** (not a print-success guarantee), and a former-Bambu project, prepared as a U1
+profile copy, opens in Snapmaker Orca for review before slicing. The
 architecture is a kernel + plugins, so supporting the next printer or slicer is a
 profile/adapter pack — not a rewrite. The long-term vision is "the operating
 system for multi-material 3D printing": diagnose -> transform -> validate ->
