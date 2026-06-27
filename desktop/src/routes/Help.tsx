@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { BookOpen, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/layout";
-import { DOCTORS } from "@/lib/doctors";
+import { PRIMARY_DOCTORS } from "@/lib/doctors";
 
 // Lightweight help/about hub. Honest pointers only — links to in-app surfaces
 // that actually exist; no fabricated documentation.
@@ -27,7 +27,7 @@ export default function Help() {
       <Card><CardContent className="space-y-2 p-5">
         <p className="text-sm font-semibold">The Doctors</p>
         <ul className="space-y-1 text-sm">
-          {DOCTORS.map((d) => (
+          {PRIMARY_DOCTORS.map((d) => (
             <li key={d.id}>
               <Link to={d.route} className="text-primary hover:underline">{d.name}</Link>
               <span className="text-muted-foreground"> — {d.answers}</span>
@@ -43,7 +43,7 @@ export default function Help() {
         <p className="text-sm font-semibold">Fix &amp; diagnose tools — when to use each</p>
         <ul className="space-y-1.5 text-sm">
           <li>
-            <Link to="/compatibility" className="text-primary hover:underline">Compatibility Doctor</Link>
+            <Link to="/compatibility" className="text-primary hover:underline">Compatibility</Link>
             <span className="text-muted-foreground"> — <b>before slicing</b>: a 3MF won't open cleanly or carries foreign/stale settings. Next: open the 3MF; read-only, no auto-fix.</span>
           </li>
           <li>
@@ -55,8 +55,8 @@ export default function Help() {
             <span className="text-muted-foreground"> — <b>before resizing</b>: preview U1 fit and material/cost of a uniform scale. Analysis-only; no file changes.</span>
           </li>
           <li>
-            <Link to="/plate-remap" className="text-primary hover:underline">Plate Color Remap</Link>
-            <span className="text-muted-foreground"> — change one plate's colour safely; writes a verified copy, original untouched.</span>
+            <Link to="/colors" className="text-primary hover:underline">Colors &amp; Materials</Link>
+            <span className="text-muted-foreground"> — check toolhead/colour mapping, or change one plate's colour safely; writes a verified copy, original untouched.</span>
           </li>
           <li>
             <Link to="/find-models" className="text-primary hover:underline">Find Models</Link>

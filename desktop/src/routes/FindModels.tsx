@@ -198,11 +198,12 @@ export default function FindModels() {
                     <Button size="sm" variant="secondary" asChild>
                       <a href={r.source_url} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /> Open on source site</a>
                     </Button>
-                    <Button size="sm" disabled title={importReasonLabel(r.reason_import_not_allowed)}>
-                      <Lock className="h-4 w-4" /> Import to Studio
-                    </Button>
                   </div>
-                  {!r.import_allowed && <p className="text-[11px] text-muted-foreground">{importReasonLabel(r.reason_import_not_allowed)}</p>}
+                  <p className="text-[11px] text-muted-foreground">
+                    {r.import_allowed
+                      ? "Studio doesn't download models — get it from the source site, then use Open model to check it."
+                      : importReasonLabel(r.reason_import_not_allowed)}
+                  </p>
                 </CardContent></Card>
               ))}
             </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   ShieldCheck, FilePlus, AlertTriangle, CheckCircle2, Loader2, Info, ArrowRight,
@@ -11,9 +11,11 @@ import { open3mfDialog, compatibilityCheck, convert, type CompatibilityResult } 
 import { OrcaHandoff } from "@/components/OrcaHandoff";
 import { Copy, Stethoscope } from "lucide-react";
 import { COMPAT_COPY, sortFindings, severityLabel, severityToken, countFindings } from "@/lib/compatibility";
+import { useModelPath } from "@/hooks/useModelPath";
+import { isExt } from "@/lib/modelPath";
 
 export default function Compatibility() {
-  const [path, setPath] = useState<string | null>(null);
+  const { path, fromSession, override } = useModelPath(isExt("3mf"));
   const [result, setResult] = useState<CompatibilityResult | null>(null);
   const [prep, setPrep] = useState<Awaited<ReturnType<typeof convert>> | null>(null);
 
@@ -27,10 +29,17 @@ export default function Compatibility() {
     onSuccess: (d) => setPrep(d),
   });
 
+  // Reuse a 3MF already open in the session: check it automatically instead of
+  // forcing the user to re-pick the file they just opened.
+  useEffect(() => {
+    if (path && fromSession && !result && !checkM.isPending) checkM.mutate(path);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [path, fromSession]);
+
   async function pick() {
     const p = await open3mfDialog();
     if (!p) return;
-    setPath(p); setResult(null); setPrep(null);
+    override(p); setResult(null); setPrep(null);
     checkM.mutate(p);
   }
 
@@ -52,7 +61,7 @@ export default function Compatibility() {
 
       <Card><CardContent className="flex items-center gap-3 p-5">
         <Button variant="secondary" size="sm" onClick={pick} disabled={checkM.isPending}>
-          <FilePlus className="h-4 w-4" /> {path ? "Choose another 3MF" : "Open a 3MF project"}
+          <FilePlus className="h-4 w-4" /> {path ? (fromSession ? "Using your open 3MF — choose another" : "Choose another 3MF") : "Open a 3MF project"}
         </Button>
         {path && <span className="truncate text-xs text-muted-foreground" title={path}>{path.split(/[\\/]/).pop()}</span>}
         {checkM.isPending && <span className="flex items-center gap-1 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" /> checking…</span>}

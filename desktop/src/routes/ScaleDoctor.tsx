@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/layout";
 import { OrcaHandoff } from "@/components/OrcaHandoff";
 import { openModelDialog, scalePreview, scaleOptions, prepareScaled, type ScaleResult, type ScaleOptionsResult, type ScaledCopyResult } from "@/api";
 import { SCALE_LADDER_COPY, recommendBlurb, isRecommended, isCaution, riskLabel, fmtDims, partLabel } from "@/lib/scaleOptions";
+import { useModelPath } from "@/hooks/useModelPath";
 
 function recTone(rec?: string): { token: string; label: string } {
   if (rec === "not recommended") return { token: "--stage-input", label: "Not recommended" };
@@ -20,7 +21,7 @@ function dims(d?: { x: number; y: number; z: number }) {
 }
 
 export default function ScaleDoctor() {
-  const [path, setPath] = useState<string | null>(null);
+  const { path, fromSession, override } = useModelPath();
   const [pct, setPct] = useState(100);
   const [res, setRes] = useState<ScaleResult | null>(null);
   const [opts, setOpts] = useState<ScaleOptionsResult | null>(null);
@@ -44,7 +45,7 @@ export default function ScaleDoctor() {
   async function pick() {
     const p = await openModelDialog();
     if (!p) return;
-    setPath(p); setRes(null); setOpts(null); setScaled(null);
+    override(p); setRes(null); setOpts(null); setScaled(null);
   }
 
   async function copyPath(p: string) {
@@ -66,7 +67,7 @@ export default function ScaleDoctor() {
 
       <Card><CardContent className="flex flex-wrap items-center gap-3 p-5">
         <Button variant="secondary" size="sm" onClick={pick}>
-          <FilePlus className="h-4 w-4" /> {path ? "Choose another model" : "Open an STL or 3MF"}
+          <FilePlus className="h-4 w-4" /> {path ? (fromSession ? "Using your open model — choose another" : "Choose another model") : "Open an STL or 3MF"}
         </Button>
         {path && <span className="truncate text-xs text-muted-foreground" title={path}>{path.split(/[\\/]/).pop()}</span>}
         <div className="ml-auto flex items-center gap-2">

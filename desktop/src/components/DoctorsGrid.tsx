@@ -1,12 +1,12 @@
 import { Link } from "react-router-dom";
-import { DOCTORS } from "@/lib/doctors";
+import { PRIMARY_DOCTORS } from "@/lib/doctors";
 import { Stethoscope } from "lucide-react";
 
 // The Doctors as first-class citizens: the platform's primary user-facing
 // capabilities, surfaced as a grid so a novice immediately sees what Studio does.
 // "Powered by Studio Intelligence" is the supporting line — the engine behind them.
 export function DoctorsGrid({ showP1 = true }: { showP1?: boolean }) {
-  const doctors = showP1 ? DOCTORS : DOCTORS.filter((d) => d.tier === "P0");
+  const doctors = showP1 ? PRIMARY_DOCTORS : PRIMARY_DOCTORS.filter((d) => d.tier === "P0");
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">

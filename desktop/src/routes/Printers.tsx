@@ -20,7 +20,8 @@ function fmtDur(s: number | null | undefined): string {
 }
 const FAILED = new Set(["error", "cancelled", "klippy_shutdown", "klippy_disconnect", "interrupted"]);
 
-// Read-only U1 Printer Hub: discover + live status over the U1's open Moonraker.
+// U1 Printer Hub: discover + read-only live status over the U1's open Moonraker,
+// plus user-confirmed controls (send/pause/resume/cancel) — never auto-started.
 // Monitor + send files + controls — all dangerous actions confirmed.
 export default function Printers() {
   const savedHost = usePrinter((s) => s.host);
@@ -100,7 +101,7 @@ export default function Printers() {
         <CardContent className="space-y-3 p-5">
           <p className="text-sm font-medium">Connect to your U1</p>
           <p className="text-xs text-muted-foreground">
-            Type <code className="rounded bg-muted px-1">U1.local</code> or its IP, or tap <b>Auto-detect my U1</b>. Studio monitors only — it never controls your printer.
+            Type <code className="rounded bg-muted px-1">U1.local</code> or its IP, or tap <b>Auto-detect my U1</b>. Studio shows live status and runs send, pause, resume and cancel only when you confirm — it never auto-starts a print.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex h-9 min-w-[200px] flex-1 items-center gap-2 rounded-md border border-border bg-card px-3">

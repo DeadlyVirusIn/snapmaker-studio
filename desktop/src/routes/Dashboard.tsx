@@ -189,7 +189,7 @@ export default function Dashboard() {
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Printer className="h-[18px] w-[18px]" /></span>
                 <div className="min-w-0">
                   <p className="text-sm font-medium">Watch it print</p>
-                  <p className="text-xs text-muted-foreground">Live temperatures, progress, cost and failure insights from your U1 — read-only, never controls it.</p>
+                  <p className="text-xs text-muted-foreground">Live temperatures, progress, cost and failure insights from your U1. Monitoring is read-only; send, pause, resume and cancel run only when you confirm.</p>
                 </div>
               </div>
             </div>

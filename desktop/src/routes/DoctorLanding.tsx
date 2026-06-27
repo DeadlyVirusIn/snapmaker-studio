@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowRight, Plus, Stethoscope, GitCompareArrows } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,6 +22,12 @@ export default function DoctorLanding() {
   const openFile = useOpenFile();
   const file = useSession((s) => s.file);
   const doc = doctorById(id);
+
+  // Project Doctor runs in the workspace on the open model. If a model is already
+  // loaded, skip the "open a model" explainer and go straight to the results.
+  useEffect(() => {
+    if (file && doc?.id === "project") nav("/workspace", { replace: true });
+  }, [file, doc?.id, nav]);
 
   if (!doc) return <NotFound />;
   const Icon = doc.icon;
@@ -91,7 +98,7 @@ export default function DoctorLanding() {
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <GitCompareArrows className="h-3.5 w-3.5" />
             Need to fix one plate's colour?{" "}
-            <Link to="/plate-remap" className="text-primary hover:underline">Open Plate Color Remap</Link>
+            <Link to="/colors" className="text-primary hover:underline">Open Colors &amp; Materials</Link>
           </p>
         )}
       </CardContent></Card>

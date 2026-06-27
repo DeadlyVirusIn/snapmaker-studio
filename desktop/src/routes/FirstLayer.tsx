@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { Layers, Loader2, Lightbulb, ListChecks, Cpu, SlidersHorizontal, Ban, Info, FilePlus, CheckCircle2, AlertTriangle } from "lucide-react";
@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/layout";
 import { firstLayerCheck, firstLayer, openModelDialog, type FirstLayerResult, type FirstLayerReport } from "@/api";
 import { FIRST_LAYER_SYMPTOMS, FIRST_LAYER_INTRO, isAdvanced } from "@/lib/firstLayer";
+import { useModelPath } from "@/hooks/useModelPath";
 
 function lvlColor(l?: string) { return l === "risk" ? "text-risk" : l === "warn" ? "text-doctor-cost" : "text-stage-validate"; }
 
@@ -42,15 +43,22 @@ export default function FirstLayer() {
     onSuccess: (d) => setRes(d.result),
   });
 
-  const [filePath, setFilePath] = useState<string | null>(null);
+  const { path: filePath, fromSession, override } = useModelPath();
   const [rep, setRep] = useState<FirstLayerReport | null>(null);
   const fm = useMutation({ mutationFn: (p: string) => firstLayer(p), onSuccess: (d) => setRep(d) });
+
+  // Reuse the model already open in the session: run the file-specific check on it
+  // automatically so the user doesn't have to re-pick a file they already opened.
+  useEffect(() => {
+    if (filePath && fromSession && !rep && !fm.isPending) fm.mutate(filePath);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filePath, fromSession]);
 
   function pick(id: string) { setSel(id); setRes(null); m.mutate(id); }
   async function pickFile() {
     const p = await openModelDialog();
     if (!p) return;
-    setFilePath(p); setRep(null); fm.mutate(p);
+    override(p); setRep(null); fm.mutate(p);
   }
 
   return (
@@ -66,7 +74,7 @@ export default function FirstLayer() {
       <Card><CardContent className="space-y-3 p-5">
         <div className="flex flex-wrap items-center gap-3">
           <button onClick={pickFile} className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:text-foreground">
-            <FilePlus className="h-4 w-4" /> {filePath ? "Choose another model" : "Open a model for file-specific checks"}
+            <FilePlus className="h-4 w-4" /> {filePath ? (fromSession ? "Using your open model — choose another" : "Choose another model") : "Open a model for file-specific checks"}
           </button>
           {filePath && <span className="truncate text-xs text-muted-foreground" title={filePath}>{filePath.split(/[\\/]/).pop()}</span>}
           {fm.isPending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}

@@ -8,6 +8,7 @@ import { qualityCheck, openModelDialog, printFailureTroubleshoot, type QualityRe
 import { QUALITY_SYMPTOMS, QUALITY_INTRO } from "@/lib/printQuality";
 import { FAILURE_STAGES, PRINT_FAILURE_COPY, failureMode, isBlameFree } from "@/lib/printFailure";
 import { Button } from "@/components/ui/button";
+import { useModelPath } from "@/hooks/useModelPath";
 
 function Section({ icon: Icon, title, items }: { icon: typeof Lightbulb; title: string; items: string[] }) {
   if (!items || items.length === 0) return null;
@@ -128,7 +129,7 @@ function FailsWithSupports() {
 export default function PrintQuality() {
   const [sel, setSel] = useState<string | null>(null);
   const [res, setRes] = useState<QualityResult | null>(null);
-  const [filePath, setFilePath] = useState<string | null>(null);
+  const { path: filePath, fromSession, override } = useModelPath();
 
   const m = useMutation({
     mutationFn: ({ s, path }: { s: string; path: string | null }) => qualityCheck(s, path ?? undefined),
@@ -141,7 +142,7 @@ export default function PrintQuality() {
   async function addFile() {
     const p = await openModelDialog();
     if (!p) return;
-    setFilePath(p);
+    override(p);
     if (sel) { setRes(null); m.mutate({ s: sel, path: p }); }
   }
 
@@ -167,7 +168,7 @@ export default function PrintQuality() {
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
           <Button size="sm" variant="secondary" onClick={addFile}>
-            <FilePlus className="h-4 w-4" /> {filePath ? "Change file" : "Add your file for file-specific checks"}
+            <FilePlus className="h-4 w-4" /> {filePath ? (fromSession ? "Using your open model — change" : "Change file") : "Add your file for file-specific checks"}
           </Button>
           {filePath
             ? <span>Studio grounds the advice in your model — read-only, nothing is changed.</span>
