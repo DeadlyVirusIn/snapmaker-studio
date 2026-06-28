@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from .container import ThreeMF
 from .config_io import load_project_settings
+from .collision import assess_spacing
 
 SETTINGS = "Metadata/project_settings.config"
 
@@ -137,6 +138,49 @@ def check(path: str) -> dict:
                 "Only add G92 E0 to the layer-change g-code if you understand the setting.",
                 "use_relative_e_distances is enabled; no 'G92 E0' found in layer-change g-code",
             ))
+
+    # Object spacing / collisions are NOT verified by Studio — surface that here so
+    # this Doctor never implies a multi-object plate is collision-free.
+    try:
+        from .fingerprint import compute_fingerprint
+        oc = compute_fingerprint(tm).object_count
+    except Exception:
+        oc = 0
+    spacing = assess_spacing(oc, is_stl=False)
+    if spacing["status"] != "pass":
+        findings.append(_finding(
+            "layout.object_spacing", "warning",
+            "Object spacing / collisions are not verified by Studio yet",
+            "Studio does not yet check object-to-object spacing for multi-part 3MF "
+            "layouts, so it cannot confirm objects aren't too close or colliding.",
+            "Object layout (plate)",
+            "Open in Snapmaker Orca and check for too-close / collision warnings; use "
+            "Arrange or move objects before slicing.",
+            f"{oc} object(s) on the plate; spacing unchecked by Studio",
+        ))
+
+    # Support enforcers present but support generation disabled — Orca warns
+    # ("Support enforcers are used but support is not enabled"). Deterministic:
+    # only flag when enable_support is explicitly off AND the model has enforcers.
+    try:
+        if "enable_support" in cfg and not _truthy(cfg, "enable_support"):
+            enforcers = 0
+            if tm.has_part("Metadata/model_settings.config"):
+                ms = tm.read_part("Metadata/model_settings.config").decode("utf-8", "replace")
+                enforcers = ms.count("support_enforcer")
+            if enforcers:
+                findings.append(_finding(
+                    "support.enforcer_without_support", "warning",
+                    "Support enforcers used but support is not enabled",
+                    "This model marks regions that need support, but support generation "
+                    "is turned off — those areas can print unsupported and fail.",
+                    f"{SETTINGS} -> enable_support",
+                    "Enable support in Snapmaker Orca (or remove the support enforcers) "
+                    "before slicing.",
+                    f"{enforcers} support-enforcer reference(s); enable_support is off",
+                ))
+    except Exception:
+        pass
 
     errors = sum(1 for f in findings if f["severity"] == "error")
     warns = sum(1 for f in findings if f["severity"] == "warning")

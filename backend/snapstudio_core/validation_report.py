@@ -15,6 +15,7 @@ from .doctor import diagnose_path, READY, CONVERTIBLE
 from .intelligence import project_info
 from .container import ThreeMF
 from .config_io import load_project_settings
+from .collision import assess_spacing
 
 SCHEMA_VERSION = "report/1"
 SETTINGS = "Metadata/project_settings.config"
@@ -142,6 +143,14 @@ def readiness_report(path: str) -> dict:
                 layout["messages"][0] if layout["messages"] else "Layout needs review in Snapmaker Orca"))
             at_risk.extend(layout["messages"])
 
+    # Object spacing / collisions — Studio does not yet verify object-to-object
+    # spacing for multi-object 3MF layouts, so report an honest 'unknown' that
+    # blocks a green "ready". A wrong collision guess would be worse than this.
+    spacing = assess_spacing(info.get("objects"), is_stl)
+    if spacing["status"] != "pass":
+        checks.append(_check("Object spacing / collisions", False, spacing["messages"][0]))
+        at_risk.extend(spacing["messages"])
+
     # Honest readiness: a failed check OR any at-risk item means it is NOT ready as-is.
     # (Do not let a compatible profile verdict override real print-setup risks.)
     ready = all(c["status"] == "pass" for c in checks) and not at_risk
@@ -166,4 +175,6 @@ def readiness_report(path: str) -> dict:
         "warnings": warnings,
         "layout_status": layout["status"] if layout else None,
         "layout_messages": layout["messages"] if layout else [],
+        "collision_status": spacing["status"],
+        "collision_messages": spacing["messages"],
     }

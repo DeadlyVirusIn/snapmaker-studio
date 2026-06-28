@@ -607,8 +607,13 @@ def intelligence_report(path: str, host: str | None = None, filename: str | None
     cost = _safe(cost_to_price, path, host, filename, port, currency, **factors)
     pricing = _safe(pricing_doctor, path, host, filename, port, currency, **factors)
     profit = _safe(profit_doctor, path, host, filename, port, currency=currency, **factors)
+    # Object spacing / collisions are not verified by Studio yet — pass an honest
+    # status so the report never claims "no major blockers" for multi-object plates.
+    from snapstudio_core.collision import assess_spacing
+    _info = _safe(insights, path) or {}
+    spacing = assess_spacing(_info.get("objects"), str(path).lower().endswith(".stl"))
     return ir.build(predict=predict, bed_fit=bed, mm=mm, first_layer=fl,
-                    health=health, cost=cost, pricing=pricing, profit=profit)
+                    health=health, cost=cost, pricing=pricing, profit=profit, spacing=spacing)
 
 
 def printer_health(host: str, port: int = 7125, limit: int = 50) -> dict:

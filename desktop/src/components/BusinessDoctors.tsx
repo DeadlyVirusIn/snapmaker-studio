@@ -67,20 +67,20 @@ export function BusinessDoctors({ filePath, host }: { filePath: string; host?: s
 
   const c = cost.data, p = pricing.data, pr = profit.data;
   const loading = cost.isLoading || pricing.isLoading;
-  if (!c?.available && !p?.available) {
-    // Honest unavailable state — never a silent blank/absent calculator.
+  if (loading && !c?.available && !p?.available) {
     return (
       <Card><CardContent className="space-y-1 p-5">
         <span className="text-sm font-semibold">Cost, Pricing &amp; Profit</span>
-        <p className="text-xs text-muted-foreground">
-          {loading
-            ? "Estimating cost…"
-            : "Cost estimate unavailable for this file — Studio couldn't read grams/volume. "
-              + "Enter grams manually in the assumptions, or open a model with readable geometry."}
-        </p>
+        <p className="text-xs text-muted-foreground">Estimating cost…</p>
       </CardContent></Card>
     );
   }
+  // Studio couldn't read grams/volume from this file — do NOT dead-end. Show the
+  // assumptions form below so the user can enter grams from Orca's filament
+  // estimate and still get cost / price / profit.
+  const unreadable = !c?.available && !p?.available;
+  // Has the user supplied grams manually (so we can actually calculate)?
+  const hasManualGrams = (draft.gramsOverride || 0) > 0 || (applied.gramsOverride || 0) > 0;
   const cur = c?.currency ?? p?.currency ?? "$";
   const mk = p?.tiers?.find((t) => t.label === "Marketplace");
 
@@ -106,25 +106,39 @@ export function BusinessDoctors({ filePath, host }: { filePath: string; host?: s
           <span className="text-[11px] text-muted-foreground">rough estimates · your assumptions · not financial advice</span>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Pillar icon={Coins} name="Cost Doctor" token="--doctor-cost"
-                  value={c?.available ? `${cur}${c.true_cost}` : "—"}
-                  sub="true cost to make" />
-          <Pillar icon={Tag} name="Pricing Doctor" token="--stage-validate"
-                  value={mk ? `${cur}${mk.price}` : "—"}
-                  sub="suggested marketplace price" />
-          <Pillar icon={TrendingUp} name="Profit Doctor" token="--stage-output"
-                  value={pr?.available ? `${cur}${pr.profit_per_print}` : "—"}
-                  sub={pr?.available ? `${pr.margin_pct}% margin / print` : "profit per print"} />
-        </div>
+        {unreadable && (
+          <div className="rounded-md border border-doctor-cost/40 bg-doctor-cost/5 p-2.5 text-xs text-muted-foreground">
+            Studio couldn&apos;t read grams from this file. Enter grams from Orca&apos;s filament estimate below, then click Recalculate.
+          </div>
+        )}
 
-        <button onClick={() => setOpen((o) => !o)}
-                className="flex items-center gap-1 text-xs font-medium text-primary">
-          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
-          {open ? "Hide details" : "Show details & assumptions"}
-        </button>
+        {unreadable && !hasManualGrams ? (
+          <div className="rounded-lg border border-border p-3 text-xs text-muted-foreground">
+            Enter grams to calculate cost.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Pillar icon={Coins} name="Cost Doctor" token="--doctor-cost"
+                    value={c?.available ? `${cur}${c.true_cost}` : "—"}
+                    sub="true cost to make" />
+            <Pillar icon={Tag} name="Pricing Doctor" token="--stage-validate"
+                    value={mk ? `${cur}${mk.price}` : "—"}
+                    sub="suggested marketplace price" />
+            <Pillar icon={TrendingUp} name="Profit Doctor" token="--stage-output"
+                    value={pr?.available ? `${cur}${pr.profit_per_print}` : "—"}
+                    sub={pr?.available ? `${pr.margin_pct}% margin / print` : "profit per print"} />
+          </div>
+        )}
 
-        {open && (
+        {!unreadable && (
+          <button onClick={() => setOpen((o) => !o)}
+                  className="flex items-center gap-1 text-xs font-medium text-primary">
+            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+            {open ? "Hide details" : "Show details & assumptions"}
+          </button>
+        )}
+
+        {(open || unreadable) && (
           <div className="space-y-3 border-t border-border pt-3 text-xs">
             <div className="space-y-2 rounded-md border border-border p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -150,7 +164,7 @@ export function BusinessDoctors({ filePath, host }: { filePath: string; host?: s
                   helper="Usually 1000 g for a 1 kg spool" error={errors.spoolWeightG} />
                 <NumField label="Grams used" value={draft.gramsOverride}
                   onChange={(v) => setField("gramsOverride", v)} blankWhenZero
-                  helper={`Leave blank to use Studio estimate: ${c?.grams ?? "—"} g`} error={errors.gramsOverride} />
+                  helper={unreadable ? "Enter grams from Orca's filament estimate." : `Leave blank to use Studio estimate: ${c?.grams ?? "—"} g`} error={errors.gramsOverride} />
                 <label className="flex flex-col gap-0.5">
                   <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Material</span>
                   <select value={draft.material} onChange={(e) => setField("material", e.target.value)}

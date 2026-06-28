@@ -60,8 +60,11 @@ def demo() -> dict:
 
 
 def build(predict=None, bed_fit=None, mm=None, first_layer=None, health=None,
-          cost=None, pricing=None, profit=None) -> dict:
-    """Combine the Doctors into one report. All inputs are their build() outputs."""
+          cost=None, pricing=None, profit=None, spacing=None) -> dict:
+    """Combine the Doctors into one report. All inputs are their build() outputs.
+
+    `spacing` is the object-spacing/collision status ({"status": ...}); when it is
+    "unknown" the report must not claim "no major blockers found"."""
     avail = {
         "predict": bool(predict and predict.get("available")),
         "bed_fit": bool(bed_fit and bed_fit.get("available")),
@@ -132,6 +135,13 @@ def build(predict=None, bed_fit=None, mm=None, first_layer=None, health=None,
                       "text": "Priced below cost — not profitable as-is."})
         recs.append("Raise the price or cut cost before selling.")
 
+    # Object spacing / collisions not verified by Studio yet — a real blocker that
+    # must keep the report from saying "no major blockers found".
+    if spacing and spacing.get("status") == "unknown":
+        risks.append({"doctor": "Object spacing", "level": "warn",
+                      "text": "Object spacing / collisions not verified by Studio — "
+                              "check for too-close / collision warnings in Snapmaker Orca before slicing."})
+
     # dedup, severity-sort
     seen = set()
     risks = [r for r in risks if not (r["text"] in seen or seen.add(r["text"]))]
@@ -196,6 +206,9 @@ def build(predict=None, bed_fit=None, mm=None, first_layer=None, health=None,
     add("Pricing Doctor", avail["pricing"], (pricing or {}).get("verdict", ""), "Hobby / Marketplace / Premium tiers.")
     add("Profit Doctor", avail["profit"], f"{cur}{profit_v}/print" if profit_v is not None else "—",
         (profit or {}).get("verdict", ""))
+    if spacing and spacing.get("status") == "unknown":
+        add("Object spacing", True, "Check in Orca",
+            "Studio does not verify object-to-object spacing yet — confirm in Snapmaker Orca.")
 
     # --- one-line verdict ---
     bits = []
