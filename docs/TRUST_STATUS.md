@@ -4,12 +4,13 @@ Honest, current verification state for the latest beta. This file does **not**
 mark a release "accepted" until the interactive install acceptance below is
 completed and recorded.
 
-## v0.4.0-beta.20.2 — PARTIAL / PENDING (not accepted)
+## v0.4.0-beta.20.3 — PARTIAL / PENDING (not accepted)
 
 | Check | Status |
 |---|---|
 | Installer integrity / SHA256 | **PASS** |
 | Backend / sidecar boot | **PASS** |
+| STL Project Doctor — design score, no CLI text | **VERIFIED** |
 | Business Doctor — manual grams entry | **VERIFIED** |
 | Object spacing / collision honesty | **VERIFIED (honest "unknown")** |
 | Support-enforcer-without-support warning | **VERIFIED** |
@@ -17,9 +18,16 @@ completed and recorded.
 | Installed-app acceptance | **PENDING (Kunal)** |
 | Overall trust status | **PARTIAL / PENDING — not accepted** |
 
-### What changed since beta.20.1
+### What changed (most recent first)
 
-Installed-app acceptance found gaps on complex multi-object 3MF projects, fixed here:
+- **beta.20.3 — STL Project Doctor consistency.** A readable STL now gets a real
+  design-health score (mesh quality) instead of "—", and the GUI no longer shows raw
+  `repair` command-line text — it reads "Create a U1 profile copy, then review it in
+  Snapmaker Orca" with a Prepare U1 copy step. Design health and U1-profile
+  preparation are shown separately; a healthy STL is never called "ready". (Verified:
+  a real STL with readable geometry scores from its mesh, no CLI text.)
+
+Earlier (beta.20.2) — gaps on complex multi-object 3MF projects, fixed:
 
 - **Cost & Pricing Doctor — manual grams.** When Studio can't read grams/volume,
   the calculator no longer dead-ends; it shows the assumptions form, and manual
@@ -42,8 +50,8 @@ Installed-app acceptance found gaps on complex multi-object 3MF projects, fixed 
 ### Automatically verified (3 clean-room checks passed)
 
 1. **Installer integrity.** Release asset SHA256 =
-   `0315d32dcb65ad6822abda1c58c00dfe58e6d99962ef0c612afe71fe1741fc10`
-   (size 15,880,246 bytes). Valid Windows installer.
+   `ac69c78ceb081054066378258603c7abd98bf1d0fb66f706a64d5e4460a6acd9`
+   (size 15,882,349 bytes). Valid Windows installer.
 2. **Backend / sidecar boot.** The re-frozen engine sidecar starts standalone (no
    Python on host) and prints its `{port, token}` handshake.
 3. **Business Doctor / spacing / enforcer behaviour** verified in code + unit tests
@@ -70,7 +78,7 @@ Installed-app acceptance found gaps on complex multi-object 3MF projects, fixed 
   be verified in Snapmaker Orca before slicing. No Orca PartPlate-equivalent
   validation is claimed.
 
-## Acceptance checklist — for Kunal to complete (beta.20.2)
+## Acceptance checklist — for Kunal to complete (beta.20.3)
 
 Run on a clean Windows environment / VM / fresh user profile. Tick each; flip the
 status to ACCEPTED only when all pass:
