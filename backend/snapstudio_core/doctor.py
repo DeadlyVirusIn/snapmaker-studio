@@ -122,14 +122,47 @@ def diagnose(tm: ThreeMF) -> Diagnosis:
     )
 
 
+def _stl_design_score(md: dict) -> int | None:
+    """A 0-100 design-health score for a readable STL mesh — geometry quality only
+    (an STL carries no U1 profile to judge, so this is mesh health, not profile
+    compatibility). None when the mesh can't be read."""
+    if not md.get("available"):
+        return None
+    s = 100
+    integ = md.get("integrity") or {}
+    if not integ.get("watertight"):
+        s -= 25
+        if integ.get("non_manifold_edges"):
+            s -= 10
+    if (md.get("overhang") or {}).get("supports_likely"):
+        s -= 15
+    if (md.get("stability") or {}).get("tip_risk"):
+        s -= 15
+    return max(0, min(100, s))
+
+
 def diagnose_path(path) -> Diagnosis:
     """Entry point: classify by file type, then diagnose. Read-only."""
     p = Path(path)
     if p.suffix.lower() == ".stl":
+        # An STL has real geometry but no U1 profile. Score its DESIGN HEALTH from
+        # the mesh (separate from U1-profile preparation); only fall back to "—"
+        # when the geometry genuinely can't be read. Never show CLI text in the GUI.
+        from .mesh_diagnostics import analyze as _mesh
+        md = _mesh(str(path))
+        if md.get("available"):
+            score = _stl_design_score(md)
+            action = "Create a U1 profile copy, then review it in Snapmaker Orca before slicing."
+            issues: list = []
+        else:
+            score = None
+            action = ("Studio could not read the geometry from this STL. Try opening it in "
+                      "Snapmaker Orca, or export it again from the source.")
+            issues = ["Geometry could not be read from this STL."]
         return Diagnosis(
-            verdict=CONVERTIBLE, score=None, family="stl", printer_model=None, is_u1=False,
+            verdict=CONVERTIBLE, score=score, family="stl", printer_model=None, is_u1=False,
             object_count=0, plate_count=0, filament_count=0, painted=False, input_type="stl",
-            recommended_action=f"Run `u1convert repair {p.name}` to generate a U1 project.")
+            validation_issues=issues, recommended_action=action)
     try:
         tm = ThreeMF.open(path)
     except Exception:
