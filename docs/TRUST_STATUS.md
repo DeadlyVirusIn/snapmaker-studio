@@ -4,74 +4,85 @@ Honest, current verification state for the latest beta. This file does **not**
 mark a release "accepted" until the interactive install acceptance below is
 completed and recorded.
 
-## v0.4.0-beta.20.1 — PARTIAL / PENDING (not accepted)
+## v0.4.0-beta.20.2 — PARTIAL / PENDING (not accepted)
 
 | Check | Status |
 |---|---|
 | Installer integrity / SHA256 | **PASS** |
 | Backend / sidecar boot | **PASS** |
-| Business Doctor UX (manual Recalculate) | **VERIFIED** |
+| Business Doctor — manual grams entry | **VERIFIED** |
+| Object spacing / collision honesty | **VERIFIED (honest "unknown")** |
+| Support-enforcer-without-support warning | **VERIFIED** |
 | Interactive GUI install smoke | **PENDING (Kunal)** |
 | Installed-app acceptance | **PENDING (Kunal)** |
 | Overall trust status | **PARTIAL / PENDING — not accepted** |
 
-### What was verified automatically (3 clean-room checks passed)
+### What changed since beta.20.1
 
-1. **Installer integrity.** The published release asset was downloaded and hashed.
-   SHA256 = `5e4092b6589d6f33c4dd8b6e0ea4fe3fd202512febdb7800b41dc5cdb5bc09a9`
-   (size 15,877,411 bytes), matching the build output. Valid Windows installer.
-2. **Backend / sidecar boot.** The bundled, frozen engine sidecar starts standalone
-   on a host with no Python installed, prints its `{port, token}` handshake, and
-   answers `GET /health` with `200 {"status":"ok"}`. This confirms the packaged
-   engine runs without developer tooling.
-3. **Business Doctor UX / recalculate behavior** — verified in code and unit tests:
-   - The sidebar shows a single **Cost & Pricing Doctor** item (not separate
-     Cost / Pricing / Profit entries).
-   - Editing assumptions edits a *draft*; the Cost, Pricing and Profit cards do
-     **not** recalculate while typing.
-   - A **Recalculate** button applies the draft; until then the page shows
-     "Changes not applied yet".
-   - The grams field reads "Grams used" with the helper "Leave blank to use Studio
-     estimate: <n> g" — blank uses the estimate, a typed value overrides it after
-     Recalculate. (No confusing "0 = estimate" label.)
+Installed-app acceptance found gaps on complex multi-object 3MF projects, fixed here:
 
-### What was NOT run (12 interactive GUI steps)
+- **Cost & Pricing Doctor — manual grams.** When Studio can't read grams/volume,
+  the calculator no longer dead-ends; it shows the assumptions form, and manual
+  grams + Recalculate produces cost / suggested price / profit. (Verified: a file
+  with unreadable geometry returns no cost until grams are entered, then computes
+  from the entered weight.)
+- **Object spacing / collisions — honest "unknown".** Studio does **not** yet
+  verify object-to-object spacing for multi-part 3MF layouts (Bambu instancing /
+  source_object_id / part matrices / assemble-vs-build coordinate semantics are not
+  implemented). An attempted bounding-box detector mis-placed instanced objects —
+  it flagged the wrong objects and missed the real Orca-reported collision — so it
+  is **intentionally not shipped**. Instead the Project Doctor, Compatibility Doctor
+  and Intelligence Report report spacing as unknown: they never say
+  ready / no issues / no major blockers for a multi-object plate, and direct the
+  user to check Orca for too-close / collision warnings. (Verified on two real
+  multi-object files: both report not-ready + the spacing warning.)
+- **Support enforcers vs support.** The Compatibility Doctor warns when a model has
+  support enforcers but support generation is disabled. (Verified on a real file.)
 
-The clean-room install smoke test was **not** executed end-to-end. The following
-require an interactive Windows session and have not been performed:
+### Automatically verified (3 clean-room checks passed)
 
-install → launch from Start Menu → open an STL → open a 3MF → run Project Doctor →
-run Compatibility / prepare a U1 profile copy → open the output in Snapmaker Orca →
-run the Cost & Pricing Doctor → close the app → reopen the app → uninstall →
-confirm clean uninstall.
+1. **Installer integrity.** Release asset SHA256 =
+   `0315d32dcb65ad6822abda1c58c00dfe58e6d99962ef0c612afe71fe1741fc10`
+   (size 15,880,246 bytes). Valid Windows installer.
+2. **Backend / sidecar boot.** The re-frozen engine sidecar starts standalone (no
+   Python on host) and prints its `{port, token}` handshake.
+3. **Business Doctor / spacing / enforcer behaviour** verified in code + unit tests
+   (backend 321 passing; frontend tsc clean, 138 passing).
 
-**beta.20.1 cannot be called accepted** until install → launch → open STL/3MF →
-prepare U1 copy → open in Orca → close/reopen → uninstall are manually verified on
-a clean (or as-clean-as-possible) Windows environment.
+### What is NOT verified / NOT claimed
 
-### Product truths (always true, independent of acceptance)
+- The interactive GUI install smoke + installed-app acceptance were **not run** —
+  install → launch → open STL/3MF → prepare U1 copy → open in Orca → close/reopen →
+  uninstall require a hands-on Windows session. **beta.20.2 is not accepted** until
+  these pass.
+- Studio does **not** detect object collisions / boundary / bed-clearance itself —
+  these are reported as **advisory / not verified** and must be checked in Snapmaker
+  Orca. Real Orca-equivalent collision + boundary/clearance detection is deferred to
+  a later release (beta.20.3).
+
+### Product truths (always true)
 
 - Studio prepares **U1 profile copies for review in Snapmaker Orca**.
 - Studio **does not slice** — Snapmaker Orca does.
 - **Originals are never modified** — preparing a model writes a new copy.
 - **No print-success guarantees.**
-- **Layout / scale placement remains advisory** and must be verified in Snapmaker
-  Orca before slicing.
+- **Object placement / scale / spacing / bed-boundary fit remain advisory** and must
+  be verified in Snapmaker Orca before slicing. No Orca PartPlate-equivalent
+  validation is claimed.
 
-## Acceptance checklist — for Kunal to complete
+## Acceptance checklist — for Kunal to complete (beta.20.2)
 
-Run on a clean Windows environment / VM / fresh user profile. Tick each, then
-record the result back into this file (and flip the status to ACCEPTED only when
-all pass):
+Run on a clean Windows environment / VM / fresh user profile. Tick each; flip the
+status to ACCEPTED only when all pass:
 
 - [ ] 1. Install app
 - [ ] 2. Launch from Start Menu
 - [ ] 3. Open STL
 - [ ] 4. Open 3MF
-- [ ] 5. Project Doctor works
+- [ ] 5. Project Doctor works (multi-object 3MF shows "spacing not verified — check Orca")
 - [ ] 6. Compatibility / Prepare U1 copy works (original intact)
 - [ ] 7. Output opens in Snapmaker Orca
-- [ ] 8. Cost & Pricing Doctor works (Recalculate behavior)
+- [ ] 8. Cost & Pricing Doctor: unreadable file shows the form; manual grams + Recalculate gives cost/price/profit
 - [ ] 9. Close app (no orphan sidecar process)
 - [ ] 10. Reopen app
 - [ ] 11. Uninstall app
