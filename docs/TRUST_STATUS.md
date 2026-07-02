@@ -4,7 +4,16 @@ Honest, current verification state for the latest beta. This file does **not**
 mark a release "accepted" until the interactive install acceptance below is
 completed and recorded.
 
-## v0.4.0-beta.20.4 — PARTIAL / PENDING (not accepted)
+## v0.4.0-beta.20.4 — ACCEPTED — installed-app acceptance passed
+
+Accepted 2026-07-01 after Kunal completed the interactive GUI acceptance on the
+installed build (rows 3–8 + X-button close). Honest limits stay in force:
+
+- Studio prepares **U1 profile copies for review in Snapmaker Orca** — Studio does not slice.
+- **Originals are never modified** — preparing a model writes a new copy.
+- **No print-success guarantees.**
+- **Layout, scale and object spacing remain advisory / unknown** unless verified in
+  Snapmaker Orca. **No Orca PartPlate-equivalent validation is claimed.**
 
 Release theme: **release acceptance + trust cleanup** — no new features. App changes
 are naming/copy consistency only (Printer Hub naming, no future-tense promises);
@@ -18,25 +27,24 @@ and two new regression tests (naming guard, 3MF zip path-traversal guard).
 | Frontend | **PASS** — tsc clean; vitest 139 passed (includes new `naming.test.ts`) |
 | Scripted install smoke (this machine) | **PASS** — silent install → launch (app + sidecar up) → exit (no orphan sidecar) → reopen → silent uninstall (exit 0) |
 | Uninstall cleanliness | **PASS with note (P2)** — all files, Start-Menu shortcut and processes removed; one *empty* folder remains at `%LOCALAPPDATA%\Snapmaker Studio` |
-| Interactive GUI acceptance (rows 3–8: open STL/3MF, Project Doctor, Prepare U1 copy, opens in Orca, Cost & Pricing) | **PENDING (Kunal)** — needs human eyes on the installed GUI |
-| Graceful window close (X button) | **PENDING (Kunal)** — scripted run had to force-terminate from a non-interactive session; no orphan either way |
-| Overall trust status | **PARTIAL / PENDING — not accepted** |
+| Interactive GUI acceptance (rows 3–8: open STL/3MF, Project Doctor, Prepare U1 copy, opens in Orca, Cost & Pricing) | **PASS** — completed by Kunal on the installed app, 2026-07-01 |
+| Graceful window close (X button) | **PASS** — Kunal, 2026-07-01: normal X close, no orphan sidecar |
+| Overall trust status | **ACCEPTED — installed-app acceptance passed** |
 
-### Acceptance checklist — for Kunal to complete (beta.20.4)
+### Acceptance checklist — completed (beta.20.4)
 
-Scripted rows are pre-checked from the automated smoke on this machine; a clean
-VM / fresh profile re-run is still the gold standard. Flip to ACCEPTED only when
-all 12 pass:
+Rows 1/2/9–12 from the scripted smoke; rows 3–8 and the X-button close verified
+by Kunal on the installed app, 2026-07-01. All 12 pass → status ACCEPTED.
 
 - [x] 1. Install app *(scripted: silent install exit 0)*
 - [x] 2. Launch from Start Menu *(scripted: shortcut target launches; app + sidecar processes up)*
-- [ ] 3. Open STL
-- [ ] 4. Open 3MF
-- [ ] 5. Project Doctor works (multi-object 3MF shows "spacing not verified — check Orca")
-- [ ] 6. Compatibility / Prepare U1 copy works (original intact)
-- [ ] 7. Output opens in Snapmaker Orca
-- [ ] 8. Cost & Pricing Doctor: unreadable file shows the form; manual grams + Recalculate gives cost/price/profit
-- [x] 9. Close app — no orphan sidecar *(scripted: zero `snapstudio-api` processes after exit; graceful X-button close still needs a human check)*
+- [x] 3. Open STL *(Kunal)*
+- [x] 4. Open 3MF *(Kunal)*
+- [x] 5. Project Doctor works and wording is honest *(Kunal)*
+- [x] 6. Compatibility / Prepare U1 copy works (original intact) *(Kunal)*
+- [x] 7. Output opens in Snapmaker Orca *(Kunal)*
+- [x] 8. Cost & Pricing Doctor works *(Kunal)*
+- [x] 9. Close app — no orphan sidecar *(scripted + Kunal: normal X close, no orphan)*
 - [x] 10. Reopen app *(scripted: relaunch OK)*
 - [x] 11. Uninstall app *(scripted: silent uninstall exit 0)*
 - [x] 12. Confirm uninstall *(scripted: files/shortcut/processes removed; one empty folder left — P2 cosmetic)*
