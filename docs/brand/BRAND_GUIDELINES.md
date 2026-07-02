@@ -2,7 +2,7 @@
 
 > **Source of truth:** the **Brand Identity Asset Pack** —
 > [`Brand Identity Snapmaker Studio/`](Brand%20Identity%20Snapmaker%20Studio/)
-> (master deck `Gemini_Generated_Image_awl389awl389awl3.png`). Do not redesign;
+> (master deck `brand-master-deck.png`). Do not redesign;
 > align assets to the Pack. See [`ASSET_MAPPING.md`](ASSET_MAPPING.md) (per-file
 > audit), [`COLOR_PALETTE.md`](COLOR_PALETTE.md) (Pack-verbatim palette), and
 > [`EXPORT_CHECKLIST.md`](EXPORT_CHECKLIST.md). The earlier hexagon/chevron mark
@@ -25,7 +25,7 @@ emerge as a finished, multicolor **print (isometric cube)**.
 It encodes the product in one image:
 - **Ribbons (spectrum)** → multi-material input from any ecosystem
 - **Portal / lens with a bright core** → diagnose + transform (the engine)
-- **Multicolor cube** → a clean, validated, print-ready result
+- **Multicolor cube** → a prepared U1 profile copy for review in Orca
 - Left-to-right flow → the mandatory workflow **Input → Diagnose → Transform →
   Validate → Output** (Validate is never dropped — see `../ROADMAP.md`).
 

@@ -2,7 +2,7 @@
 
 > **Source of truth:** the **Brand Identity Asset Pack** —
 > [`Brand Identity Snapmaker Studio/`](Brand%20Identity%20Snapmaker%20Studio/)
-> (master deck `Gemini_Generated_Image_awl389awl389awl3.png`, section 6
+> (master deck `brand-master-deck.png`, section 6
 > "Official Color Palette"). Hexes below are transcribed verbatim from that deck.
 > Do not introduce colors outside this list.
 

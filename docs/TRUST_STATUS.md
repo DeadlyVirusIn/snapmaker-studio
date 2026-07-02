@@ -17,10 +17,10 @@ backend analysis changes — the Fix Plan reuses checks that already run.
 | Backend tests | **PASS** — 326 passed, 3 skipped (no backend changes) |
 | Frontend | **PASS** — tsc clean; vitest 144 passed (new: Simple-IA nav tests, future-tense copy guard) |
 | Scripted install smoke | **PASS** — silent install → launch (app + sidecar) → exit (no orphan) → reopen → silent uninstall; same P2 empty-folder leftover as beta.20.4 |
-| Interactive GUI acceptance | **PENDING (Kunal)** |
+| Interactive GUI acceptance | **PENDING (manual installed-app acceptance)** |
 | Overall trust status | **PARTIAL / PENDING — not accepted** |
 
-### Acceptance checklist — for Kunal (beta.21)
+### Acceptance checklist — manual installed-app acceptance (beta.21)
 
 - [ ] 1. Fresh install lands in Simple mode; sidebar shows exactly: Home · Check my model · My designs · Printer · Help (+ More tools)
 - [ ] 2. Existing install that chose Advanced stays Advanced
@@ -36,7 +36,7 @@ backend analysis changes — the Fix Plan reuses checks that already run.
 
 ## v0.4.0-beta.20.4 — ACCEPTED — installed-app acceptance passed
 
-Accepted 2026-07-01 after Kunal completed the interactive GUI acceptance on the
+Accepted 2026-07-01 after the maintainer completed the interactive GUI acceptance on the
 installed build (rows 3–8 + X-button close). Honest limits stay in force:
 
 - Studio prepares **U1 profile copies for review in Snapmaker Orca** — Studio does not slice.
@@ -57,24 +57,24 @@ and two new regression tests (naming guard, 3MF zip path-traversal guard).
 | Frontend | **PASS** — tsc clean; vitest 139 passed (includes new `naming.test.ts`) |
 | Scripted install smoke (this machine) | **PASS** — silent install → launch (app + sidecar up) → exit (no orphan sidecar) → reopen → silent uninstall (exit 0) |
 | Uninstall cleanliness | **PASS with note (P2)** — all files, Start-Menu shortcut and processes removed; one *empty* folder remains at `%LOCALAPPDATA%\Snapmaker Studio` |
-| Interactive GUI acceptance (rows 3–8: open STL/3MF, Project Doctor, Prepare U1 copy, opens in Orca, Cost & Pricing) | **PASS** — completed by Kunal on the installed app, 2026-07-01 |
-| Graceful window close (X button) | **PASS** — Kunal, 2026-07-01: normal X close, no orphan sidecar |
+| Interactive GUI acceptance (rows 3–8: open STL/3MF, Project Doctor, Prepare U1 copy, opens in Orca, Cost & Pricing) | **PASS** — completed by the maintainer on the installed app, 2026-07-01 |
+| Graceful window close (X button) | **PASS** — the maintainer, 2026-07-01: normal X close, no orphan sidecar |
 | Overall trust status | **ACCEPTED — installed-app acceptance passed** |
 
 ### Acceptance checklist — completed (beta.20.4)
 
 Rows 1/2/9–12 from the scripted smoke; rows 3–8 and the X-button close verified
-by Kunal on the installed app, 2026-07-01. All 12 pass → status ACCEPTED.
+by the maintainer on the installed app, 2026-07-01. All 12 pass → status ACCEPTED.
 
 - [x] 1. Install app *(scripted: silent install exit 0)*
 - [x] 2. Launch from Start Menu *(scripted: shortcut target launches; app + sidecar processes up)*
-- [x] 3. Open STL *(Kunal)*
-- [x] 4. Open 3MF *(Kunal)*
-- [x] 5. Project Doctor works and wording is honest *(Kunal)*
-- [x] 6. Compatibility / Prepare U1 copy works (original intact) *(Kunal)*
-- [x] 7. Output opens in Snapmaker Orca *(Kunal)*
-- [x] 8. Cost & Pricing Doctor works *(Kunal)*
-- [x] 9. Close app — no orphan sidecar *(scripted + Kunal: normal X close, no orphan)*
+- [x] 3. Open STL *(maintainer)*
+- [x] 4. Open 3MF *(maintainer)*
+- [x] 5. Project Doctor works and wording is honest *(maintainer)*
+- [x] 6. Compatibility / Prepare U1 copy works (original intact) *(maintainer)*
+- [x] 7. Output opens in Snapmaker Orca *(maintainer)*
+- [x] 8. Cost & Pricing Doctor works *(maintainer)*
+- [x] 9. Close app — no orphan sidecar *(scripted + the maintainer: normal X close, no orphan)*
 - [x] 10. Reopen app *(scripted: relaunch OK)*
 - [x] 11. Uninstall app *(scripted: silent uninstall exit 0)*
 - [x] 12. Confirm uninstall *(scripted: files/shortcut/processes removed; one empty folder left — P2 cosmetic)*
@@ -89,8 +89,8 @@ by Kunal on the installed app, 2026-07-01. All 12 pass → status ACCEPTED.
 | Business Doctor — manual grams entry | **VERIFIED** |
 | Object spacing / collision honesty | **VERIFIED (honest "unknown")** |
 | Support-enforcer-without-support warning | **VERIFIED** |
-| Interactive GUI install smoke | **PENDING (Kunal)** |
-| Installed-app acceptance | **PENDING (Kunal)** |
+| Interactive GUI install smoke | **PENDING (manual installed-app acceptance)** |
+| Installed-app acceptance | **PENDING (manual installed-app acceptance)** |
 | Overall trust status | **PARTIAL / PENDING — not accepted** |
 
 ### What changed (most recent first)

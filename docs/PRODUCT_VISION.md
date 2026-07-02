@@ -67,7 +67,7 @@ pillars do not change when printers do.
 |---|---|---|
 | **Diagnose** | Compatibility scoring, issue detection, "will it print here?" | Doctor (READY/REPAIRABLE/CONVERTIBLE/HIGH_RISK, score/100) |
 | **Transform** | Convert/repair/normalize across ecosystems, preserving design | Bambu/Orca→U1, Prusa/geometry-only 3MF wrap, STL wrap, identity normalization |
-| **Validate** | Prove output is clean before the user wastes a print | `is_u1_clean` gate + real-world corpus (112 files, 100%) |
+| **Validate** | Prove output is clean before the user wastes a print | `is_u1_clean` gate + real-world corpus (112 files, 100% structurally valid — internal gate, not print success) |
 | **Manage** | Projects, versions, libraries, comparison, history | Workspace + diff foundation (mock UI shipped; engine in progress) |
 | **Optimize** | Printability, material/cost/time intelligence, tuning | Optimization profiles (foundation in engine) |
 
@@ -214,7 +214,7 @@ free at its core.
 
 Not a deck promise — shipped and measured:
 
-- **112 real-world files, 100% clean conversion** (Bambu, Orca, Prusa/geometry,
+- **112 real-world files, 100% structurally valid conversions (internal gate — not print success)** (Bambu, Orca, Prusa/geometry,
   STL; single + multi-color; custom presets; large + non-English files), proven
   by an automated validation corpus.
 - **Prepared U1 output reviewed in Snapmaker Orca** on real user files (e.g. a Bambu H2D

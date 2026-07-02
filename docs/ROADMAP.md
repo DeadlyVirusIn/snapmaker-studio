@@ -106,7 +106,7 @@ The Diagnose → Transform → Validate loop, proven on real files.
   3MF wrap, STL wrap, U1 identity normalization, foreign-metadata scrub,
   filament-array conformance.
 - **Validation** — `is_u1_clean` gate; automated real-world corpus validator.
-  **Result: 112 files, 100% clean.**
+  **Result: 112 files, 100% structurally valid in the internal gate — not a print-success measure.**
 - **Sidecar** — frozen Python engine, no system Python required, zero-orphan
   lifecycle (Job Object + watchdog).
 

@@ -1,3 +1,5 @@
+> **INTERNAL ENGINEERING REVIEW — not user documentation.**
+
 # Fabel Review — Findings Tables
 
 **Date:** 2026-07-01 · Companion to `docs/FABEL_DEVIL_ADVOCATE_REVIEW.md`. Live upstream data gathered 2026-07-01 via the GitHub API.

@@ -6,7 +6,7 @@ it converts a TEMP copy (the source directory is never touched), runs Doctor on
 the output, and records the result. Failures are root-caused into categories.
 
 Usage:
-    python validation/validate_corpus.py --input "D:/STL Files" --report validation/report.md
+    python validation/validate_corpus.py --input "path/to/your/3mf-folder" --report validation/report.md
 
 Inputs are referenced by path, never copied into the repo (they are large and
 often personal). Only the validator and the generated report.md are tracked.

@@ -1,7 +1,9 @@
+> **INTERNAL ENGINEERING REVIEW — not user documentation.**
+
 # Fabel Roadmap Reset — Snapmaker Studio
 
 **Date:** 2026-07-01 · Companion to `docs/FABEL_DEVIL_ADVOCATE_REVIEW.md` and `docs/FABEL_REVIEW_FINDINGS_TABLE.md`.
-**Status:** proposal only — does not replace `docs/ROADMAP.md` until Kunal approves.
+**Status:** proposal only — does not replace `docs/ROADMAP.md` until the maintainer approves.
 
 Principle for every release below: *one theme, shipped and accepted, beats three themes pending.* Nothing enters beta.21 until beta.20.4 is ACCEPTED in TRUST_STATUS.md.
 
@@ -36,7 +38,7 @@ Highest-value simplification. Theme: a first-time U1 owner opens a model and kno
 | Dead-end cleanup: one "Not supported yet — do this in Orca" component replaces disabled buttons + future-tense promises | Reads as broken | ScaleDoctor disabled button; FirstLayer future-tense copy | S | none | No disabled primary buttons; grep "coming"/"will live" in user-facing copy returns 0 |
 | Narrowed AABB collision check (component-transform files only; instanced/source_object_id stays "unknown" with plain-language reason) | Shrink the biggest "unknown"; keep honesty | build_item_dims already computes world AABBs; prior failure was on instanced files | M | False positives → keep strictly to clear-overlap reporting with margin; fixture-gated | Known collision file flagged; known-good corpus files not flagged; instanced fixture still returns "unknown — verify in Orca"; tests added |
 | Print-by-object collision advisory promotion + mixing-aware color caveat | U1 users report hardware-damage risk (fork issue #136); fork 2.3.3 mixing changes color advice | validation_report at_risk signal exists | S | none | By-object multi-object file shows explicit toolhead-collision warning; >4-color advice mentions mixing caveat |
-| Simple mode default for new installs (one-time chooser) | Novice red-team P0 | NOVICE_UX_RED_TEAM #1 | S | Pending Kunal decision (review Q5) | Fresh install lands in Simple (or chooser); setting persists |
+| Simple mode default for new installs (one-time chooser) | Novice red-team P0 | NOVICE_UX_RED_TEAM #1 | S | Pending maintainer decision (review Q5) | Fresh install lands in Simple (or chooser); setting persists |
 | Automated installed-app smoke (install → launch → open file → prepare copy → uninstall, scripted) | Removes the single-human release gate | Findings table R1 | M-L | Windows UI automation flakiness; scope to smoke, not full acceptance | Script runs on release candidate and produces pass/fail log; wired into RELEASE_CHECKLIST.md |
 | Judge docs regenerated from accepted build + demo script pinned | Judge-facing accuracy | R2, R14 | S | none | JUDGE_OVERVIEW/WHAT_TO_TEST_FIRST match shipped build; demo script has zero live-site dependencies |
 | Constants module for hardware/heuristic facts (U1_BUILD, toolheads, density, thresholds) with provenance | Single home for facts; enables freshness watcher | Backend inventory (scattered hardcodes) | S | none | One module; all consumers import it; provenance comment per constant |

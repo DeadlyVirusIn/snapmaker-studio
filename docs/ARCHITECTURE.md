@@ -79,7 +79,7 @@ processes** on graceful close, crash, or force-kill.
 `validate_corpus.py` scans a directory of **real** files (referenced by path,
 never committed), converts each in a temp dir (sources untouched), runs Doctor,
 classifies family + failure category, and writes `report.md` (success rate,
-composition, per-file table). **Current: 112 files, 100% clean.** This is the
+composition, per-file table). **Current: 112 files, 100% structurally valid in the internal gate — not print success.** This is the
 reliability backbone and the future CI gate for plugins.
 
 ## Key design decisions

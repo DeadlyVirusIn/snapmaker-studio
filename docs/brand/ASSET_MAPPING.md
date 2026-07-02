@@ -2,7 +2,7 @@
 
 > **Source of truth:** the **Brand Identity Asset Pack** —
 > [`Brand Identity Snapmaker Studio/`](Brand%20Identity%20Snapmaker%20Studio/).
-> Master deck: `Gemini_Generated_Image_awl389awl389awl3.png`.
+> Master deck: `brand-master-deck.png`.
 > This document maps every `*.svg` to its Pack reference and records alignment.
 >
 > **STATUS: IMPLEMENTATION COMPLETE.** All color assets were re-authored to the

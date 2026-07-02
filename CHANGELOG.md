@@ -6,7 +6,7 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-## [0.4.0-beta.1] - UNRELEASED
+## [0.4.0-beta.1] - 2026-06 (internal milestone — never tagged)
 
 > Positioning: **the workflow platform for modern 3D printing** — understand any
 > design, validate it, get it ready, and monitor your U1 (read-only). Snapmaker Orca
@@ -49,7 +49,7 @@ All notable changes to this project are documented here. The format is based on
 - Landing page repaletted to the official palette.
 
 ### Fixed
-- Clean Bambu/Orca 3MF → Snapmaker U1 conversion for a real-world corpus (112 files → 100% Doctor READY), incl. identity normalization, foreign-token scrub, and filament-array conform.
+- Clean Bambu/Orca 3MF → Snapmaker U1 conversion for a real-world corpus (112 files → 100% passed the internal structural validation gate — structurally valid U1 profile copies, not a print-success measure), incl. identity normalization, foreign-token scrub, and filament-array conform.
 
 ## [0.2.0] - 2026-06-17
 

@@ -1,6 +1,6 @@
 # Orca CLI Spike — can "Verified by Orca" work? (beta.22 pricing spike)
 
-**Date:** 2026-07-01 · Timeboxed 1-day spike per `docs/FABEL_ROADMAP_RESET.md` (beta.20.4 item).
+**Date:** 2026-07-01 · Timeboxed 1-day spike per `docs/internal/FABEL_ROADMAP_RESET.md` (beta.20.4 item).
 **Question:** can Studio run an Orca CLI slice on a prepared U1 copy and read back a machine-readable verdict (typed exit codes / `result.json` warnings) to upgrade its collision/layout "unknown"?
 **Answer (short):** Snapmaker Orca's CLI is **not viable** (segfaults). Upstream Orca 2.4.1 CLI **runs headless reliably**, but in the 2.4.1 release build **no `result.json` was produced and no typed failure exit codes fired** for naive out-of-bounds / overlapping fixtures. **Recommendation: viable-with-caveats — do not commit beta.22 scope until the machine-readable verdict channel is confirmed** (flag matrix + newer build follow-up below).
 
@@ -53,3 +53,29 @@ Fixtures built from `examples/sample_cube_U1_SnapmakerU1.3mf` (a Studio-prepared
 ## result.json example structure
 
 Not observed in this spike (see finding 3). The upstream `main`-branch writer emits, per source: exit code/error message, `prepare_time`, `export_time`, `layer_height`, `wall_loops`, `sparse_infill_density`, and per-plate objects with `id`, `sliced_time`, `triangle_count`, `warning_message`. Treat as unverified until reproduced on a real build.
+
+---
+
+## Addendum (2026-07-02) — root cause found, spike question closed
+
+Follow-up source inspection of the **v2.4.1 tag** (not `main`) resolved finding 3:
+`record_exit_reson()` **is present in v2.4.1** and is called on every exit path —
+but its entire body is wrapped in **`#if defined(__linux__) || defined(__LINUX__)`**.
+It is a compile-time gate, not a flag: **official Windows and macOS builds never
+write `result.json`.** That is exactly why this spike's Windows runs produced none.
+
+Consequences for beta.22 "Verify with Orca":
+
+- **Rescope on Windows** to what the CLI reliably provides: exit code + produced
+  artifacts (slice-success verification) and time/filament parsed from the output
+  gcode/`.gcode.3mf` — the cost item stands; the machine-readable warning channel
+  does not, on Windows.
+- Options if the warning channel is still wanted: run the Linux CLI in WSL/container
+  (heavy, not novice-friendly) or propose an upstream change lifting the platform
+  gate (small patch, reasonable ask).
+- **Snapmaker fork watch list:** fork `version.inc` already reads 2.3.5 (unreleased),
+  and three community PRs opened 2026-07-01 fix fork CLI crashes — **#560**
+  (`--load-assemble-list` plate-loading crash), **#561** (profile normalization
+  without `nozzle_diameter`), **#562** (GUI filament state during extruder
+  expansion). If these land in 2.3.5, re-run this spike against the fork build —
+  a working fork CLI would remove the dual-install requirement entirely.

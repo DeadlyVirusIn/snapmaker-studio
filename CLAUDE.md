@@ -22,7 +22,7 @@ to the U1 via Printer Hub.
   hostnames, local paths, usernames, or private/copyrighted model names) in tracked files
   or screenshots — anonymize proof data.
 - **Release safety: never force-kill `snapmaker-orca`, printer, slicer, or user GUI
-  processes without explicit approval from Kunal.** Only terminate processes you
+  processes without explicit approval from the maintainer.** Only terminate processes you
   started yourself (track the PID); check a process's start time / owner before
   touching anything else.
 

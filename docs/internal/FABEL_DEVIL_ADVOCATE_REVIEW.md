@@ -1,3 +1,5 @@
+> **INTERNAL ENGINEERING REVIEW — not user documentation.**
+
 # Fabel Devil's-Advocate Review — Snapmaker Studio
 
 **Date:** 2026-07-01
@@ -17,7 +19,7 @@ Snapmaker Studio is an honest product wrapped in an unfinished release process a
 
 Three structural problems dominate everything else:
 
-**First, the release never lands.** beta.20.1, .20.2, and .20.3 all stalled at the same gate: a 12-item interactive installed-app acceptance checklist that only Kunal can run, and that is currently entirely unchecked. Trust status is "PARTIAL / PENDING — not accepted" for the third consecutive point release. Until installed-app acceptance is either passed or partially automated, every feature conversation is premature.
+**First, the release never lands.** beta.20.1, .20.2, and .20.3 all stalled at the same gate: a 12-item interactive installed-app acceptance checklist that only the maintainer can run, and that is currently entirely unchecked. Trust status is "PARTIAL / PENDING — not accepted" for the third consecutive point release. Until installed-app acceptance is either passed or partially automated, every feature conversation is premature.
 
 **Second, the documentation contradicts itself in ways a judge will find in minutes.** README carries a blank SHA256. JUDGE_OVERVIEW and WHAT_TO_TEST_FIRST describe beta.15 — five point releases stale. Fund docs (AUDIT, RELEASE_READINESS, SCORECARD) describe a beta.1-era product and explicitly say "Do NOT claim printer control — Studio is deliberately read-only," while the shipping product sends g-code and starts prints. Test counts disagree (166 vs 321+138). One doc says CSP shipped; another says CSP is disabled and a pre-GA blocker. CHANGELOG says the U1 bed is 270×270×270; the hardware verification record says 271×335×275. For a product whose entire pitch is *trustworthy honesty*, internal contradiction is the single fastest way to lose a judge.
 
@@ -172,7 +174,7 @@ Full plan with per-item evidence/effort/acceptance tests in `docs/FABEL_ROADMAP_
 
 ---
 
-## 10. Questions for Kunal
+## 10. Questions for the maintainer
 
 1. **Judge deadline:** is there a fixed Innovation Fund submission date? beta.20.4's scope (acceptance + truth) is sized for "soon"; a hard date could shrink it further.
 2. **Code signing budget:** deferral is documented, but is a certificate (or Azure Trusted Signing) actually out of budget for the fund submission window? SmartScreen is a first-impression tax on every judge.

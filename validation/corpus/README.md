@@ -20,7 +20,7 @@ source) and writes `validation/report.md`.
 
 ## Running
 ```
-python validation/validate_corpus.py --input "D:/STL Files" --report validation/report.md
+python validation/validate_corpus.py --input "path/to/your/3mf-folder" --report validation/report.md
 ```
 Already-converted artifacts (`*_SnapmakerU1`, `*_FIXED`, `*.orig`, stock/sample,
 `*_U1.`) are skipped so only genuine source inputs are measured.

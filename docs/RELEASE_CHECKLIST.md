@@ -71,11 +71,12 @@ so users can verify. Signing readiness: `docs/windows-code-signing.md`.
 ## 9. Public release-notes protocol (EVERY release)
 `docs/RELEASE_NOTES.md` becomes the GitHub release body. It is public/marketing.
 - **User-facing only.** Describe features and fixes. NEVER mention internal review
-  tools, AI model names, the security-review process, implementation mechanics, or
-  exploit-style detail (e.g. octo/`/octo:review`, Codex/Claude/Sonnet/Gemini/
-  Antigravity, multi-provider review, body-drain, NaN/Infinity, CSP, tokens,
-  security surfaces). Use safe wording: "improved validation/reliability", "release
-  packaging checks", "advisory wording", "planned security hardening".
+  tools, AI model or vendor names, the security-review process, implementation
+  mechanics, or exploit-style detail (external review tooling, independent review
+  passes, automated reviewers, and specific security surfaces all stay unnamed).
+  Use safe wording: "improved validation/reliability", "release packaging checks",
+  "advisory wording", "planned security hardening". Before `gh release create`,
+  grep the drafted body for banned terms (see docs/internal/FABLE_RELEASE_COPY_REVIEW.md §4).
 - **No guarantees / no paid model names** (the unqualified-claim + tooling-term
   guards in `backend/tests/test_public_claims.py` enforce both — keep them green).
 - **Absolute links.** A GitHub *release page* resolves relative links against the
@@ -84,3 +85,7 @@ so users can verify. Signing readiness: `docs/windows-code-signing.md`.
 - **Verify the LIVE body after publishing:** open the release, click every link
   (no 404s), confirm SHA256 + unsigned notice present, asset attached, and no banned
   terms. Same protocol when adding any "superseded" notice to an older release.
+
+## Open follow-ups
+
+- [ ] Refresh README screenshots (current set is beta.16-era: pre-truth-sweep hero wording + old version stamps) after beta.21 acceptance.

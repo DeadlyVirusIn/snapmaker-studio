@@ -3,14 +3,14 @@
 Project visual identity (independent open-source project; not affiliated with Snapmaker). This directory is the single source
 for the brand. **Source of truth:** the **Brand Identity Asset Pack** —
 [`Brand Identity Snapmaker Studio/`](Brand%20Identity%20Snapmaker%20Studio/)
-(master deck `Gemini_Generated_Image_awl389awl389awl3.png`). The earlier raster
+(master deck `brand-master-deck.png`). The earlier raster
 `studio-hub-concept.png` and its pastel palette are **deprecated** in favor of the
 Pack — see [`ASSET_MAPPING.md`](ASSET_MAPPING.md) for the per-file alignment audit.
 
 ## Concept
 Multi-material **color ribbons** flow into a glowing **transform portal** and
 emerge as a finished, multicolor **print (cube)**. One image = the whole product:
-many materials, from any ecosystem, transformed into one clean, print-ready
+many materials, from any ecosystem, transformed into one prepared, review-in-Orca
 result.
 
 ## Rationale

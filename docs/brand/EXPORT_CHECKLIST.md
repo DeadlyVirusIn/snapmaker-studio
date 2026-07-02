@@ -41,7 +41,7 @@
 
 ## Innovation Fund deck
 - [ ] Title/cover uses `logo.svg` lockup on Primary Dark `#0A101C`
-- [ ] Master deck `Gemini_Generated_Image_awl389awl389awl3.png` as the brand-identity slide
+- [ ] Master deck `brand-master-deck.png` as the brand-identity slide
 - [ ] Workflow slide mirrors §8 interface mockup (Input → Diagnose → Transform → Validate → Output)
 - [ ] Palette slide = §6 Official Color Palette (7 streams + Primary Dark + Accent White)
 - [ ] All screenshots use the in-app neutral UI; spectrum only on the mark/status
