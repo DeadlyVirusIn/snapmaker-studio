@@ -44,9 +44,10 @@ def readiness_report(path: str) -> dict:
 
     # --- compatibility checks -------------------------------------------------
     checks.append(_check(
-        "Prints on Snapmaker U1",
+        "Fits U1 profile checks",
         verdict in (READY, CONVERTIBLE, "REPAIRABLE"),
-        "Ready after preparation" if verdict != READY else "Ready as-is"))
+        "Prepare a U1 copy and review in Orca" if verdict != READY
+        else "Review in Orca before slicing"))
     if dims:
         fits = dims["x"] <= U1_BUILD[0] and dims["y"] <= U1_BUILD[1] and dims["z"] <= U1_BUILD[2]
         checks.append(_check(
@@ -108,7 +109,7 @@ def readiness_report(path: str) -> dict:
                     checks.append(_check("Mesh is manifold", False,
                         f"{integ['non_manifold_edges']} non-manifold edge(s) — slicers may misread the surface; repair recommended"))
             else:
-                checks.append(_check("Mesh is watertight", True, "Closed, manifold mesh — clean to slice"))
+                checks.append(_check("Mesh is watertight", True, "Closed, manifold mesh — readable by the slicer"))
             if md["overhang"]["supports_likely"]:
                 checks.append(_check("Overhangs", False,
                     f"{md['overhang']['overhang_pct']}% steep overhangs — supports will likely be needed (enable in Orca)"))
@@ -154,7 +155,7 @@ def readiness_report(path: str) -> dict:
         checks.append(_check("Object spacing / collisions", False, spacing["messages"][0]))
         at_risk.extend(spacing["messages"])
 
-    # Honest readiness: a failed check OR any at-risk item means it is NOT ready as-is.
+    # Honest readiness: a failed check OR any at-risk item blocks a green verdict.
     # (Do not let a compatible profile verdict override real print-setup risks.)
     ready = all(c["status"] == "pass" for c in checks) and not at_risk
     base = diag.get("score")

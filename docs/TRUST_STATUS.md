@@ -4,7 +4,29 @@ Honest, current verification state for the latest beta. This file does **not**
 mark a release "accepted" until the interactive install acceptance below is
 completed and recorded.
 
-## v0.4.0-beta.21 — PARTIAL / PENDING (not accepted)
+## v0.4.0-beta.21.1 — PARTIAL / PENDING (not accepted)
+
+Wording patch on beta.21. The beta.21 GUI check found the flow works but surfaced a
+P1 copy-truth issue: fit/profile checks read as print-readiness ("Prints on
+Snapmaker U1 — Ready as-is / Ready after preparation", "clean to slice") while the
+same report says spacing/layout are not verified by Studio. beta.21.1 replaces that
+wording ("Fits U1 profile checks — review in Orca before slicing"; "readable by the
+slicer") and pins it with tests (`backend/tests/test_readiness_wording.py`).
+
+| Check | Status |
+|---|---|
+| Installer integrity / SHA256 | **PASS** — `53f5de884f5e39eba7843deeda119c44049043cb3cc5b8323cf6ce95ba22bf22` (16,136,737 bytes), see `RELEASE_METADATA.md` |
+| Backend tests | **PASS** — 330 passed, 3 skipped (adds readiness-wording guards) |
+| Frontend | **PASS** — tsc clean; vitest 144 passed |
+| Scripted install smoke | **PASS** — silent install → launch (app + sidecar) → exit (no orphan) → uninstall (exit 0) |
+| Interactive GUI acceptance | **PENDING (manual installed-app acceptance)** — re-check the beta.21 checklist below on the 21.1 build, plus the new wording row |
+| Overall trust status | **PARTIAL / PENDING — not accepted** |
+
+Additional acceptance row for beta.21.1:
+
+- [ ] 0. Validation Center shows "Fits U1 profile checks — … review in Orca" (no "Ready as-is / Ready after preparation / Prints on Snapmaker U1"); Design Health says "readable by the slicer" (no "clean to slice")
+
+## v0.4.0-beta.21 — superseded by beta.21.1 (was PARTIAL / PENDING; GUI flow verified, wording patch required)
 
 Release theme: **one clear path for a novice.** Simple-mode IA collapse (5 nav
 items), a prioritized beginner Fix Plan on the open model, dead-end/duplicate

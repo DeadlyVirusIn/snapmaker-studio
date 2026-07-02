@@ -1,39 +1,21 @@
-# Snapmaker Studio v0.4.0-beta.21 — One Clear Path for a Novice
+# Snapmaker Studio v0.4.0-beta.21.1 — Readiness Wording Cleanup
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-This release makes the first ten minutes simple: open a model, see one prioritized
-fix plan, prepare a U1 profile copy, hand it to Snapmaker Orca. Power users lose
-nothing — Advanced mode is unchanged and one click away.
+A small wording patch on top of beta.21. No feature changes.
 
-## Simple mode, simplified
+## What changed
 
-- **Five sidebar items instead of twelve:** **Home · Check my model · My designs ·
-  Printer · Help.** Everything else (Get Started, Compatibility, Scale, Print
-  Quality, Colors & Materials, Cost, Find Models, Batch) lives under **More tools**.
-- **Simple mode is the default for new installs.** If you already chose Advanced,
-  your choice is kept — Advanced mode itself is untouched.
-
-## Your fix plan
-
-Opening a model now starts with **Your fix plan** — at most five prioritized,
-plain-language actions built from the checks Studio already ran (plate fit, mesh
-health, colours vs toolheads, supports, multi-part spacing). Each action says
-whether to **do it in Studio** or **do it in Snapmaker Orca**, and the list is
-labelled what it is: advisory — not a guarantee.
-
-## Fewer dead ends
-
-- The old Multi-Material explainer tab (which only told you to go somewhere else)
-  is gone; the colour check runs automatically on an open model.
-- `/doctor/pricing` and `/doctor/profit` now land on the one Cost page instead of
-  quietly showing the same content under three names.
-- The Scale page states plainly that 3MF scaled export isn't supported (preview,
-  then resize in Orca) — no more disabled "not ready" button, and no more
-  future-tense promises anywhere in the app (a test now enforces this).
-- Raw technical fields (setting paths, evidence strings) in Compatibility findings
-  are tucked behind a "Technical detail" disclosure.
+- **Validation Center wording clarified** so fit/profile checks are not described as
+  print-ready. "Prints on Snapmaker U1 — Ready as-is / Ready after preparation" now
+  reads **"Fits U1 profile checks — review in Orca before slicing"** (or "prepare a
+  U1 copy and review in Orca"). A watertight mesh is described as **"readable by the
+  slicer"**, not "clean to slice".
+- **Orca review language stays prominent** before slicing — a passing profile check
+  never means a print is guaranteed, especially while object spacing and plate
+  layout remain advisory.
+- New tests pin this wording so it cannot regress.
 
 ## Honest limits (unchanged)
 
@@ -42,5 +24,12 @@ labelled what it is: advisory — not a guarantee.
 - **No print-success guarantees.**
 - Object placement, spacing and bed-boundary fit remain **advisory / not verified by
   Studio** and must be checked in Snapmaker Orca before slicing.
+
+## Download & verify
+
+- Installer: `Snapmaker.Studio_0.4.0-beta.21.1_x64-setup.exe` (attached below)
+- SHA256 and size: see [docs/RELEASE_METADATA.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/RELEASE_METADATA.md)
+- The installer is not code-signed yet, so Windows SmartScreen may show "Unknown publisher". Download only from this GitHub release page and verify the checksum first:
+  `Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.21.1_x64-setup.exe`
 
 Local-first · open source (MIT).

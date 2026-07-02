@@ -251,7 +251,7 @@ def _footprint(m: Mesh) -> dict:
 def _plain(integrity, overhang, stability, vol_cm3, grams) -> list:
     out = []
     if integrity["watertight"]:
-        out.append({"level": "ok", "text": "Mesh is watertight and manifold — clean to slice."})
+        out.append({"level": "ok", "text": "Mesh is watertight and manifold — readable by the slicer."})
     else:
         if integrity["holes"]:
             out.append({"level": "risk", "text": f"{integrity['holes']} hole(s) in the mesh — may print with gaps or fail. Repair before printing."})
