@@ -7,9 +7,10 @@ filenames. Every file is run end to end: **diagnose → get it ready → validat
 
 ## Headline
 
-- **Internal validation corpus: 112/112 outputs passed the internal validation gate.**
-  This measures Studio's read → prepare → validate pipeline, **not** a guarantee of print
-  success on hardware.
+- **Internal validation corpus: 112/112 files produced structurally valid U1 profile
+  copies in the internal validation gate — this is not a print-success guarantee.**
+  This measures Studio's read → prepare → validate pipeline, not print success on
+  hardware.
 - Files are anonymized below as `sample-NNN`; source family, size, before/after verdict,
   and validation result are kept.
 - Originals are never modified; a prepared U1 profile copy is produced — review in Orca before slicing.
@@ -37,7 +38,7 @@ The machine-generated results (filenames anonymized):
 **Corpus:** 112 files  
 **Validated (READY + checks pass):** 112  
 **Failures:** 0  
-**Validation-gate pass rate: 112/112 (not a print-success guarantee).**
+**112/112 files produced structurally valid U1 profile copies in the internal validation gate — this is not a print-success guarantee.**
 
 ## Corpus composition
 

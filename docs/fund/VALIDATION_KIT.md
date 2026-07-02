@@ -1,5 +1,7 @@
 # Snapmaker Studio — External Validation Kit
 
+> **HISTORICAL — describes the v0.4.0-beta.1 RC era; not the current release.** In particular, 'read-only printer access / no printer control' was true then; the current Printer Hub provides monitoring plus user-confirmed controls (never auto-start). Current state: [`../TRUST_STATUS.md`](../TRUST_STATUS.md) · [`../RELEASE_METADATA.md`](../RELEASE_METADATA.md).
+
 ## 1. Lightweight tester feedback form
 Keep it to 7 questions — under 3 minutes. (Host on a Google Form / Tally; questions
 below are the source of truth.)

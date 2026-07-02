@@ -1,30 +1,45 @@
-# Snapmaker Studio v0.4.0-beta.20.3 — STL Project Doctor Consistency Fix
+# Snapmaker Studio v0.4.0-beta.20.4 — Release Acceptance + Trust Cleanup
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-Installed-app acceptance found that an STL and its matching 3MF — the same design —
-got very different Project Doctor results. This patch makes STL analysis consistent
-and removes developer text from the GUI.
+No new features. This release makes what Studio says about itself match what it
+actually does — in the app and across every document.
 
-## Fixes
+## In the app
 
-- **STL files now get real Project Doctor design analysis.** When Studio can read an
-  STL's geometry it shows a design-health score and findings (watertight, overhang /
-  support, bed fit) — the same kind of result a 3MF gets — instead of a blank "—".
-  A blank score now appears only when the geometry genuinely can't be read.
-- **No command-line text in the GUI.** The Project Doctor no longer shows raw
-  `repair` command text. STL preparation now reads "Create a U1 profile copy, then
-  review it in Snapmaker Orca before slicing", with a **Prepare U1 copy** button.
-- **Design health and U1 preparation are separate.** A healthy STL still needs a U1
-  profile copy before Orca — Studio shows the design score and the "prepare a U1
-  copy" step as distinct things, and does not call an unprepared STL "ready".
-- Cost & Pricing manual-grams behaviour is unchanged.
+- **One name for the printer page.** It is the **Printer Hub** everywhere now; a few
+  places still called it "Printer Doctor" and one step claimed live monitoring was
+  "read-only" — the Printer Hub monitors *and* offers controls that always ask for an
+  explicit confirmation. A test now keeps the naming consistent.
+- **No more future-tense promises.** The First Layer page pointed at checks that
+  "will live in" another page; it now points at what exists today (bed-mesh and
+  telemetry live in the Printer Hub).
 
-## Honest limits
+## Documentation truth pass
 
-- Studio prepares **U1 profile copies for review in Snapmaker Orca** — it does not
-  slice.
+- **One canonical source for release facts.** New
+  [docs/RELEASE_METADATA.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/RELEASE_METADATA.md)
+  holds the current version, installer name, size, SHA256, and trust status — other
+  docs point at it instead of repeating (and drifting from) those values. The README
+  checksum is filled in again.
+- **Historical documents are labelled.** Early fund/judge documents described a
+  read-only beta that predates Printer Hub controls; each now carries a clear
+  "HISTORICAL" banner so old claims can't be mistaken for current ones.
+- **Build volume clarified.** The U1's printable volume is **270×270×270 mm**
+  (per the Snapmaker Orca U1 profile). The larger figures reported by the printer
+  itself are axis *travel* limits, not printable area — the docs now say which is which.
+- **Honest corpus wording.** Every "112/112" mention now reads: 112/112 files
+  produced structurally valid U1 profile copies in the internal validation gate —
+  this is not a print-success guarantee.
+- **Security notes updated.** The desktop app's Content-Security-Policy is enabled
+  and documented. A new test pins that 3MF archives are parsed fully in memory —
+  archive entry names are never used as file paths, so crafted-archive path-traversal
+  attacks don't apply.
+
+## Honest limits (unchanged)
+
+- Studio prepares **U1 profile copies for review in Snapmaker Orca** — it does not slice.
 - **Originals are never modified** — preparing a model writes a new copy.
 - **No print-success guarantees.**
 - Object placement, spacing and bed-boundary fit remain **advisory / not verified by

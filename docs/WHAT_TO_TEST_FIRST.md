@@ -1,4 +1,6 @@
-# What to Test First (v0.4.0-beta.15)
+# What to Test First (current beta)
+
+> Written against beta.15; the paths below still exist in the current release. Current release + checksums: [`RELEASE_METADATA.md`](RELEASE_METADATA.md).
 
 **New since beta.12 — try these first:**
 1. **Source Check** (sidebar) → pick any STL/3MF → see the detected slicer, what Studio

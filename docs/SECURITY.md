@@ -11,29 +11,27 @@ the machine; there is no account, cloud, or upload.
 - **Input validation** — bad request input returns a sanitized HTTP 400; 500 bodies are generic (`internal error`), never raw tracebacks (`request_validation.py`).
 - **Engine safety** — hardened lxml parser (entities/DTD/network off), GET-only outbound (printer probes), no `subprocess`/`eval`/`pickle`, parameterized SQL, provider API keys read from env server-side only, originals never mutated (verified safe-copy writers), report writes path-validated.
 
-## Open pre-GA security blocker — Content Security Policy (NOT yet fixed)
+## Content Security Policy (implemented)
 
-`desktop/src-tauri/tauri.conf.json` sets `security.csp = null` (no CSP). The renderer
-can obtain the sidecar token via the `get_api_info` Tauri command. Today the risk is
-**limited** because the webview loads only local, bundled assets — no remote or
-user-controlled HTML/script is ever loaded. But with no CSP, any script injected into
-the renderer (e.g. via a future dependency or content-rendering bug) could call the
-authenticated loopback API.
+CSP is now set in `desktop/src-tauri/tauri.conf.json` (`security.csp`). Summary of the
+policy: `default-src 'self'`; `script-src 'self'`; `style-src 'self' 'unsafe-inline'`;
+`connect-src` limited to `'self'`, the Tauri IPC origins, and loopback
+(`http://127.0.0.1:*` / `http://localhost:*`); `object-src 'none'`; `frame-src 'none'`.
+The renderer can still obtain the sidecar token via the `get_api_info` Tauri command;
+the webview loads only local, bundled assets — no remote or user-controlled HTML/script
+is ever loaded.
 
-**Status: documented only — CSP is NOT implemented.** This must be hardened before any
-**wider / signed public (GA) release**. It is acceptable for the current beta, whose
-renderer is local-only.
+Interactive verification of the CSP (app launch, navigation, sidecar API calls,
+images/icons/theme) happens in the installed-app smoke each release. Optionally, a
+future hardening could proxy sidecar calls through Tauri commands so the token is never
+exposed to JS at all.
 
-Planned hardening (requires interactive GUI verification before merge):
-- Set an explicit CSP in `tauri.conf.json`, roughly:
-  - `default-src 'self'`
-  - `script-src 'self'`
-  - `style-src 'self' 'unsafe-inline'` (only if the app's styling needs it)
-  - `img-src 'self' asset: http://asset.localhost data: blob:` (only as needed for icons/assets)
-  - `connect-src 'self' http://127.0.0.1:* tauri:`
-  - `object-src 'none'`, `frame-src 'none'`
-- Then GUI-smoke: app launch, navigation, every sidecar API call, images/icons/theme.
-- Optionally, proxy sidecar calls through Tauri commands so the token is never exposed to JS at all.
+## 3MF archive handling (path traversal)
+
+Studio parses 3MF zips fully in memory (`backend/snapstudio_core/container.py`);
+archive entry names are never used as filesystem paths, so the OrcaSlicer-class 3MF
+path-traversal issue does not apply. This behaviour is pinned by
+`backend/tests/test_container_paths.py`.
 
 ## Reporting
 This is an independent open-source project (not affiliated with Snapmaker). Report

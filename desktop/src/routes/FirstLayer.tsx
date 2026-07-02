@@ -140,8 +140,8 @@ export default function FirstLayer() {
             <Link to="/print-quality" className="text-primary hover:underline">Print Quality Doctor</Link>.
             {" "}Contact-area / stability / fit risk → open a model and run the{" "}
             <Link to="/doctor/project" className="text-primary hover:underline">Project Doctor</Link>.
-            {" "}Bed mesh / telemetry checks will live in the{" "}
-            <Link to="/printers" className="text-primary hover:underline">Printer Doctor</Link>.
+            {" "}Bed mesh / printer telemetry → see the{" "}
+            <Link to="/printers" className="text-primary hover:underline">Printer Hub</Link>.
           </p>
         </CardContent></Card>
       )}

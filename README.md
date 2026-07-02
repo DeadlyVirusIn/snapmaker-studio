@@ -9,7 +9,7 @@
 
 **The Intelligence Layer for Open 3D Printing.**
 
-_Project Doctor. Printer Doctor. Cost Doctor — Studio checks every model, surfaces likely print risks, estimates cost, and helps you price it, before your U1 ever sees it._
+_Project Doctor. Printer Hub. Cost Doctor — Studio checks every model, surfaces likely print risks, estimates cost, and helps you price it, before your U1 ever sees it._
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.** "Snapmaker" is a trademark of its respective owner.
 
@@ -41,8 +41,8 @@ monitor your U1 and, with an explicit confirmation each time, control a print
 control Orca.
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
-> Internal validation corpus: **112/112 outputs passed the internal validation gate —
-> not a print-success guarantee** (see [PROOF.md](PROOF.md)). More context:
+> Internal validation corpus: **112/112 files produced structurally valid U1 profile copies
+> in the internal validation gate — this is not a print-success guarantee** (see [PROOF.md](PROOF.md)). More context:
 > [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) ·
 > [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md) ·
 > [`docs/INNOVATION_FUND.md`](docs/INNOVATION_FUND.md) ·
@@ -64,6 +64,8 @@ safe / fixed / validated / passed" no longer appear from a profile verdict or st
 validation alone. A converted copy reads "U1 profile copy saved · open in Orca and review
 before slicing". Studio does not slice; originals are never modified; no print-success
 guarantees. See [RELEASE_NOTES.md](docs/RELEASE_NOTES.md).
+
+Point releases beta.20.1–beta.20.4 add Printer Hub honesty, manual cost entry, collision honesty, STL Project Doctor consistency, and a release-acceptance/trust cleanup — see [RELEASE_NOTES.md](docs/RELEASE_NOTES.md) and [TRUST_STATUS.md](docs/TRUST_STATUS.md).
 
 ### Earlier betas
 
@@ -95,9 +97,11 @@ Carried forward: hardware-verified **Printer Hub**, **Print Quality** evidence g
 your own file, **Plate Color Remap**, **Source Check**, Model Browser. All local, advisory
 — no cloud, no account, no guarantees. Studio does not slice; Orca does.
 
-- Release: [v0.4.0-beta.20](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.20)
-- Installer: `Snapmaker.Studio_0.4.0-beta.20_x64-setup.exe`
-- SHA256: ``
+- Release: [v0.4.0-beta.20.4](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.20.4)
+- Installer: `Snapmaker.Studio_0.4.0-beta.20.4_x64-setup.exe`
+- Size: 16,138,638 bytes
+- SHA256: `6b1feb43458112c72452f83c20f4d082f30a56f9afaabb91e3bf6d853d48a81b`
+- Canonical release metadata: [docs/RELEASE_METADATA.md](docs/RELEASE_METADATA.md)
 - Unsigned beta: the installer is not code-signed yet, so Windows SmartScreen may show “Unknown publisher.” That is expected for this beta. Download only from the release link above and verify the SHA256 before installing.
 
 Install:
@@ -106,7 +110,7 @@ Install:
 2. Verify the checksum. It must match the SHA256 published on the release:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.20_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.20.4_x64-setup.exe
 ```
 
 3. Run it. On the SmartScreen prompt choose **More info → Run anyway** only after verifying the hash.

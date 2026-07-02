@@ -94,7 +94,7 @@ phased plan in [`ROADMAP.md`](ROADMAP.md) and the audit in
 ## Proof links (current)
 - Repo: github.com/DeadlyVirusIn/snapmaker-studio
 - Vision: `docs/PRODUCT_VISION.md` . Roadmap: `docs/ROADMAP.md`
-- Reliability: `../PROOF.md` (112-file validation corpus, 112/112 passed the internal validation gate — not a print-success guarantee)
+- Reliability: `../PROOF.md` (112-file corpus: 112/112 produced structurally valid U1 profile copies in the internal gate — not a print-success guarantee)
 - Release process: `RELEASE.md`
 
 ## Asks / notes for submission

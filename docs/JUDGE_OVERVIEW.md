@@ -1,4 +1,6 @@
-# Snapmaker Studio — Judge Overview (v0.4.0-beta.15)
+# Snapmaker Studio — Judge Overview
+
+> Current release + checksums: [`RELEASE_METADATA.md`](RELEASE_METADATA.md) · verification state: [`TRUST_STATUS.md`](TRUST_STATUS.md). Feature sections below note the beta in which they shipped.
 
 > Independent open-source project — not affiliated with or endorsed by Snapmaker.
 > "Snapmaker" is a trademark of its respective owner.
@@ -9,8 +11,9 @@ Snapmaker Studio is a local-first desktop app (plus a scriptable engine and CLI)
 that reads the real geometry of a 3D design and walks it through the whole
 pre-print workflow — understand, validate, prepare, monitor — before your U1 ever
 sees the file. It is advisory: it surfaces likely print risks and explains why,
-so you can decide what to fix before wasting filament. It does not slice and it
-does not control the printer.
+so you can decide what to fix before wasting filament. It does not slice. Printer
+actions (pause/resume/cancel/start/emergency-stop) are local and each requires an
+explicit user confirmation — Studio never auto-starts a print.
 
 ## Problem
 
@@ -59,6 +62,8 @@ print before opening the slicer.
   what Studio can read vs cannot convert yet, and the safe next step. Migration (preparing
   a non-U1 source) is planned.
 
+Later betas (beta.16–beta.20.x) added honest readiness wording, manual cost entry, collision honesty ('unknown' instead of guesses), and STL Project Doctor consistency — see [`RELEASE_NOTES.md`](RELEASE_NOTES.md).
+
 Demo path + walkthrough: [`JUDGE_DEMO.md`](JUDGE_DEMO.md). Proof captures:
 [`SCREENSHOTS_BETA16.md`](SCREENSHOTS_BETA16.md).
 
@@ -100,8 +105,9 @@ what to fix, Orca slices, Fluidd monitors, and the U1 prints.
 ## Safety and trust posture
 
 Studio runs entirely on your machine — no cloud, no account, no upload. Originals
-are never modified; preparation always produces a new copy. The monitoring view
-is read-only. Findings are advisory readiness estimates with reasons, not
+are never modified; preparation always produces a new copy. Monitoring is
+read-first; control actions each require an explicit confirmation and never run
+automatically. Findings are advisory readiness estimates with reasons, not
 guarantees of print success. The Windows installer is not code-signed yet, so
 SmartScreen may show "Unknown publisher" for this beta; downloads should be taken
 only from the official release and verified by SHA256.

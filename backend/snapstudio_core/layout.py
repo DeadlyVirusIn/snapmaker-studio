@@ -15,6 +15,10 @@ from .geometry import build_item_dims
 from .intelligence import project_info
 
 # Snapmaker U1 printable area (mm). Square bed; the same value guards X and Y.
+# Printable volume per the Snapmaker Orca U1 machine profile
+# (printable_area 0.5,1 -> 270.5,271 = 270x270 bed; printable_height 270.05).
+# Note: Moonraker axis_maximum on real hardware reports larger axis TRAVEL limits
+# (~271x335x275) — that is toolhead travel incl. parking, not printable area.
 U1_PLATE_MM = 270.0
 U1_HEIGHT_MM = 270.0   # Z build height limit
 

@@ -21,7 +21,7 @@ export interface Doctor {
   answers: string;
   tier: "P0" | "P1";
   // Where this Doctor lives in the app. Doctors that run on an open model route
-  // to a landing page that explains them and opens a model; Printer Doctor has a
+  // to a landing page that explains them and opens a model; the Printer Hub has a
   // real page (Printers). Single source of truth for sidebar + dashboard cards.
   route: string;
 }

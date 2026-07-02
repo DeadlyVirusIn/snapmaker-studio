@@ -23,8 +23,8 @@ const STEPS: Step[] = [
     body: "Load filament, level the bed and set Z-offset on the U1. Make sure the build plate is clean." },
   { n: 7, title: "Watch the first layer", inStudio: true, to: "/first-layer", link: "First Layer Doctor",
     body: "The first layer makes or breaks a print. If it looks wrong, the First Layer Doctor lists safe first checks." },
-  { n: 8, title: "Monitor the print", inStudio: true, to: "/printers", link: "Printer Doctor",
-    body: "Keep an eye on it. If the result looks bad, the Print Quality Doctor helps diagnose. (Live monitoring is read-only.)" },
+  { n: 8, title: "Monitor the print", inStudio: true, to: "/printers", link: "Printer Hub",
+    body: "Keep an eye on it. If the result looks bad, the Print Quality Doctor helps diagnose. (Printer controls always ask for an explicit confirmation.)" },
 ];
 
 export default function BeginnerWorkflow() {

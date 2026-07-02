@@ -4,7 +4,44 @@ Honest, current verification state for the latest beta. This file does **not**
 mark a release "accepted" until the interactive install acceptance below is
 completed and recorded.
 
-## v0.4.0-beta.20.3 — PARTIAL / PENDING (not accepted)
+## v0.4.0-beta.20.4 — PARTIAL / PENDING (not accepted)
+
+Release theme: **release acceptance + trust cleanup** — no new features. App changes
+are naming/copy consistency only (Printer Hub naming, no future-tense promises);
+everything else is documentation truth repairs, a canonical release-metadata source,
+and two new regression tests (naming guard, 3MF zip path-traversal guard).
+
+| Check | Status |
+|---|---|
+| Installer integrity / SHA256 | **PASS** — `6b1feb43458112c72452f83c20f4d082f30a56f9afaabb91e3bf6d853d48a81b` (16,138,638 bytes), see `RELEASE_METADATA.md` |
+| Backend tests | **PASS** — 326 passed, 3 skipped (includes new `test_container_paths.py`) |
+| Frontend | **PASS** — tsc clean; vitest 139 passed (includes new `naming.test.ts`) |
+| Scripted install smoke (this machine) | **PASS** — silent install → launch (app + sidecar up) → exit (no orphan sidecar) → reopen → silent uninstall (exit 0) |
+| Uninstall cleanliness | **PASS with note (P2)** — all files, Start-Menu shortcut and processes removed; one *empty* folder remains at `%LOCALAPPDATA%\Snapmaker Studio` |
+| Interactive GUI acceptance (rows 3–8: open STL/3MF, Project Doctor, Prepare U1 copy, opens in Orca, Cost & Pricing) | **PENDING (Kunal)** — needs human eyes on the installed GUI |
+| Graceful window close (X button) | **PENDING (Kunal)** — scripted run had to force-terminate from a non-interactive session; no orphan either way |
+| Overall trust status | **PARTIAL / PENDING — not accepted** |
+
+### Acceptance checklist — for Kunal to complete (beta.20.4)
+
+Scripted rows are pre-checked from the automated smoke on this machine; a clean
+VM / fresh profile re-run is still the gold standard. Flip to ACCEPTED only when
+all 12 pass:
+
+- [x] 1. Install app *(scripted: silent install exit 0)*
+- [x] 2. Launch from Start Menu *(scripted: shortcut target launches; app + sidecar processes up)*
+- [ ] 3. Open STL
+- [ ] 4. Open 3MF
+- [ ] 5. Project Doctor works (multi-object 3MF shows "spacing not verified — check Orca")
+- [ ] 6. Compatibility / Prepare U1 copy works (original intact)
+- [ ] 7. Output opens in Snapmaker Orca
+- [ ] 8. Cost & Pricing Doctor: unreadable file shows the form; manual grams + Recalculate gives cost/price/profit
+- [x] 9. Close app — no orphan sidecar *(scripted: zero `snapstudio-api` processes after exit; graceful X-button close still needs a human check)*
+- [x] 10. Reopen app *(scripted: relaunch OK)*
+- [x] 11. Uninstall app *(scripted: silent uninstall exit 0)*
+- [x] 12. Confirm uninstall *(scripted: files/shortcut/processes removed; one empty folder left — P2 cosmetic)*
+
+## v0.4.0-beta.20.3 — superseded (was PARTIAL / PENDING, never accepted)
 
 | Check | Status |
 |---|---|
@@ -61,12 +98,12 @@ Earlier (beta.20.2) — gaps on complex multi-object 3MF projects, fixed:
 
 - The interactive GUI install smoke + installed-app acceptance were **not run** —
   install → launch → open STL/3MF → prepare U1 copy → open in Orca → close/reopen →
-  uninstall require a hands-on Windows session. **beta.20.2 is not accepted** until
+  uninstall require a hands-on Windows session. **beta.20.3 is not accepted** until
   these pass.
 - Studio does **not** detect object collisions / boundary / bed-clearance itself —
   these are reported as **advisory / not verified** and must be checked in Snapmaker
   Orca. Real Orca-equivalent collision + boundary/clearance detection is deferred to
-  a later release (beta.20.3).
+  a later release.
 
 ### Product truths (always true)
 
@@ -78,20 +115,7 @@ Earlier (beta.20.2) — gaps on complex multi-object 3MF projects, fixed:
   be verified in Snapmaker Orca before slicing. No Orca PartPlate-equivalent
   validation is claimed.
 
-## Acceptance checklist — for Kunal to complete (beta.20.3)
+### beta.20.3 acceptance checklist — superseded
 
-Run on a clean Windows environment / VM / fresh user profile. Tick each; flip the
-status to ACCEPTED only when all pass:
-
-- [ ] 1. Install app
-- [ ] 2. Launch from Start Menu
-- [ ] 3. Open STL
-- [ ] 4. Open 3MF
-- [ ] 5. Project Doctor works (multi-object 3MF shows "spacing not verified — check Orca")
-- [ ] 6. Compatibility / Prepare U1 copy works (original intact)
-- [ ] 7. Output opens in Snapmaker Orca
-- [ ] 8. Cost & Pricing Doctor: unreadable file shows the form; manual grams + Recalculate gives cost/price/profit
-- [ ] 9. Close app (no orphan sidecar process)
-- [ ] 10. Reopen app
-- [ ] 11. Uninstall app
-- [ ] 12. Confirm uninstall (clean removal)
+The beta.20.3 checklist was never completed; it is superseded by the beta.20.4
+checklist at the top of this file.

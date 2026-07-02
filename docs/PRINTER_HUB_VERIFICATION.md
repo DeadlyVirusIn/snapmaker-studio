@@ -1,5 +1,7 @@
 # Printer Hub — verification status (Historical verification record from beta.16.1)
 
+> **HISTORICAL — verification record from beta.16.1 (2026-06-24); not re-verified on the current build.**
+
 > Independent open-source project — not affiliated with or endorsed by Snapmaker.
 
 > **Historical verification record from v0.4.0-beta.16.1**, captured 2026-06-24 on a real U1
@@ -50,7 +52,7 @@ user-confirmed printer actions; Studio never auto-starts a print.
 | Online / printer state (`klippy_state`) | Real U1 (`/server/info`, `/printer/info`) | ✅ **HARDWARE-VERIFIED** (ready/standby) |
 | Bed + toolhead temperatures | Real U1 (`/printer/objects/query`) | ✅ **HARDWARE-VERIFIED** (bed 24°, extruder 24°) |
 | 4-toolhead presence (mcu e0–e3) | Real U1 (`/printer/objects/list`) | ✅ **HARDWARE-VERIFIED** |
-| Bed volume (axis_maximum) | Real U1 (toolhead object) | ✅ **HARDWARE-VERIFIED** (271×335×275 mm) |
+| Bed volume (axis_maximum) | Real U1 (toolhead object) | ✅ **HARDWARE-VERIFIED** (271×335×275 mm — axis_maximum = toolhead travel limits (incl. parking), not printable area. Printable volume is 270×270×270 per the Snapmaker Orca U1 profile.) |
 | Firmware version | Real U1 (`/printer/info.software_version`) | ✅ **HARDWARE-VERIFIED** (1.4.1.6, extended firmware) |
 | History / totals | Real U1 (`/server/history/totals`) | ✅ **HARDWARE-VERIFIED** (16 jobs) |
 | Control: start / pause / resume / cancel | **Real U1, 2026-06-24** | ✅ **HARDWARE-VERIFIED** (full loop on a supervised homed cold-motion print; long timeout needed) |
@@ -93,7 +95,7 @@ Control (have filament loaded, bed clear, supervise the machine):
 | 2026-06-24 | 1.4.1.6 (extended) | Discovery + connection (Moonraker :7125) | **PASS** | reached on LAN by IP (mDNS `U1.local` did not resolve on this network) |
 | 2026-06-24 | 1.4.1.6 (extended) | Online / state | **PASS** | klippy ready, standby |
 | 2026-06-24 | 1.4.1.6 (extended) | Bed + toolhead temps | **PASS** | bed 24°, extruder 24° |
-| 2026-06-24 | 1.4.1.6 (extended) | 4 toolheads + bed volume | **PASS** | mcu e0–e3; 271×335×275 mm |
+| 2026-06-24 | 1.4.1.6 (extended) | 4 toolheads + bed volume | **PASS** | mcu e0–e3; 271×335×275 mm (axis_maximum = toolhead travel limits (incl. parking), not printable area. Printable volume is 270×270×270 per the Snapmaker Orca U1 profile.) |
 | 2026-06-24 | 1.4.1.6 (extended) | History / totals | **PASS** | 16 jobs |
 | 2026-06-24 | 1.4.1.6 (extended) | Upload sliced gcode (send path) | **PASS** | operator-approved; tiny no-motion gcode uploaded (`print_started:false`), confirmed, deleted |
 | 2026-06-24 | 1.4.1.6 (extended) | **Start** | **PASS** | operator-approved; state → printing (dwell-only no-motion gcode) |

@@ -281,8 +281,8 @@ _Understand any design, check if it will print, get it ready._ The flow is alway
 
 ## How we measure the mission
 
-- **Conversion reliability:** real-world corpus success rate (today: 112/112,
-  100%) — held at or near 100% as coverage grows.
+- **Conversion reliability:** internal validation-gate pass rate (today: 112/112
+  structurally valid outputs — not print success) — held at or near 100% as coverage grows.
 - **Breadth:** ecosystems and printers supported.
 - **Truthfulness:** zero "validated but actually warns in the slicer" defects.
 - **Preservation:** zero geometry/color-loss incidents.

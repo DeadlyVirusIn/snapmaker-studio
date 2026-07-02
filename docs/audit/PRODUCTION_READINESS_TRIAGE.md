@@ -12,7 +12,7 @@ Each remaining audit issue mapped to an action class.
 - **Minor forward-compat nits** → schema_version in TS types, printer/symptom params, speed-evidence edge, drop `path:"none"` sentinel.
 
 ## Document / pre-GA blocker (no risky change)
-- **CSP disabled + renderer token exposure** (`tauri.conf.json:16`) → keep documented in `SECURITY.md`/`RELEASE_CHECKLIST.md`; implement only when the GUI can be interactively smoke-tested. NOT claimed fixed.
+- **Renderer token exposure** (`tauri.conf.json`) → CSP is now enabled in `tauri.conf.json` (beta.20.x); remaining concern is the renderer's access to the sidecar token via `get_api_info`, plus interactive re-verification of the GUI after any CSP change. Documented in `SECURITY.md`/`RELEASE_CHECKLIST.md`.
 - **Plate Remap regex XML parser** (`plate_remap.py`) → writer untouched; add read-only equivalence tests only. Full lxml writer stays deferred (needs byte-equivalence proof).
 
 ## External blocker (needs purchase/account)

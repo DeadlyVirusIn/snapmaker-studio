@@ -65,8 +65,8 @@ so users can verify. Signing readiness: `docs/windows-code-signing.md`.
 
 ## 8. Pre-GA blockers (OK for beta, must close before a wider/signed public launch)
 - **Code signing** — acquire a cert; see `docs/windows-code-signing.md`.
-- **CSP hardening** — `tauri.conf.json` currently has `csp: null`; harden + GUI-verify
-  before GA. See `docs/SECURITY.md`. (Acceptable for beta: local-only renderer.)
+- **CSP** — set in `tauri.conf.json`; re-verify the GUI still reaches the local engine
+  after any CSP change. See `docs/SECURITY.md`.
 
 ## 9. Public release-notes protocol (EVERY release)
 `docs/RELEASE_NOTES.md` becomes the GitHub release body. It is public/marketing.

@@ -5,11 +5,10 @@
 
 ## Current latest build for testing
 
-- **Version:** v0.4.0-beta.20 — page-by-page product-truth audit
-- **URL:** https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.20
-- **Installer:** `Snapmaker.Studio_0.4.0-beta.20_x64-setup.exe`
-- **Size:** 16129758 bytes
-- **SHA256:** `d53b41d0ed947af3ed611b41fbfe45eac26010d1bf376b9832ea333d2f5dcfcf`
+- **Version:** v0.4.0-beta.20.4
+- **URL:** https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.20.4
+- **Installer:** `Snapmaker.Studio_0.4.0-beta.20.4_x64-setup.exe`
+- **Size / SHA256:** see [RELEASE_METADATA.md](RELEASE_METADATA.md) (canonical release metadata)
 - Unsigned beta — verify the SHA256 before installing. See [windows-install.md](windows-install.md).
 
 ## Submitted build (frozen — Innovation Fund submission record)

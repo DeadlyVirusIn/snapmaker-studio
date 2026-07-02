@@ -12,7 +12,7 @@ product or the branding. Brand: [`brand/`](brand/README.md).
 
 ---
 
-## Shipped (as of v0.4.0-beta.17)
+## Shipped (as of v0.4.0-beta.20.x)
 
 - **Scale Doctor — prepare scaled copy (STL) — SHIPPED (beta.17).** Creates a real
   scaled U1 3MF from an STL (geometry truly scaled; original never modified). 3MF scaled
@@ -30,7 +30,7 @@ product or the branding. Brand: [`brand/`](brand/README.md).
 - Verified 3MF scaled export (multi-part / multi-plate uniform scaling, Orca-checked).
 - More business inputs (spool weight, material type, packaging, shipping, manual print hours).
 
-## Shipped (as of v0.4.0-beta.15)
+## Shipped (as of v0.4.0-beta.15) (historical)
 
 LIVE in the published beta — routes, endpoints, and tests exist (mocked where no
 hardware is in CI). Status is one of **SHIPPED**, **partially shipped**, or **PLANNED**.

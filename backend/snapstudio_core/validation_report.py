@@ -20,6 +20,9 @@ from .collision import assess_spacing
 SCHEMA_VERSION = "report/1"
 SETTINGS = "Metadata/project_settings.config"
 # Approx U1 build volume (mm) from the U1 printable_area; used for a bed-fit check.
+# Printable volume per the Snapmaker Orca U1 machine profile (printable_area
+# 270x270, printable_height 270.05). Moonraker's axis_maximum reports travel
+# limits (~271x335x275), not printable area — do not "correct" this to those.
 U1_BUILD = (270.0, 270.0, 270.0)
 U1_TOOLHEADS = 4  # the U1 has 4 toolheads; more colours need swaps/remap in Orca
 

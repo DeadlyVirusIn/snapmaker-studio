@@ -1,5 +1,7 @@
 # Snapmaker Studio — Reviewer One-Pager
 
+> **HISTORICAL — describes the v0.4.0-beta.1 RC era; not the current release.** In particular, 'read-only printer access / no printer control' was true then; the current Printer Hub provides monitoring plus user-confirmed controls (never auto-start). Current state: [`../TRUST_STATUS.md`](../TRUST_STATUS.md) · [`../RELEASE_METADATA.md`](../RELEASE_METADATA.md).
+
 **The Intelligence Layer for open 3D printing.** Local-first desktop companion for
 the Snapmaker U1. *Independent open-source project — not affiliated with Snapmaker.*
 

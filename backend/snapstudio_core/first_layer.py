@@ -19,7 +19,7 @@ _BED_HIGH = 0.20
 _FOOT_SMALL_AREA = 100.0
 _FOOT_TINY_AREA = 40.0
 _FOOT_NARROW_DIM = 10.0
-_DEFAULT_BED = 270.0
+_DEFAULT_BED = 270.0  # printable bed edge per Snapmaker Orca U1 profile (270x270)
 
 
 def _f(level, text):

@@ -1,5 +1,7 @@
 # Snapmaker Studio — Release-Readiness Report (v0.4.0-beta.1 RC)
 
+> **HISTORICAL — describes the v0.4.0-beta.1 RC era; not the current release.** In particular, 'read-only printer access / no printer control' was true then; the current Printer Hub provides monitoring plus user-confirmed controls (never auto-start). Current state: [`../TRUST_STATUS.md`](../TRUST_STATUS.md) · [`../RELEASE_METADATA.md`](../RELEASE_METADATA.md).
+
 ## Production-ready (show with confidence)
 - **Conversion + validation engine** — STL/3MF → U1-ready project; foreign
   (Bambu/Orca) project repair. Long-standing, heavily tested.
