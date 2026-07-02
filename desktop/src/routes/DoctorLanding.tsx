@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Navigate, Link } from "react-router-dom";
 import { ArrowRight, Plus, Stethoscope, GitCompareArrows } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,11 @@ export default function DoctorLanding() {
   }, [file, doc?.id, nav]);
 
   if (!doc) return <NotFound />;
+  // /doctor/pricing and /doctor/profit are legacy aliases of the one Cost page —
+  // redirect so there is a single canonical URL (beta.21 dedupe).
+  if (doc.id === "pricing" || doc.id === "profit") {
+    return <Navigate to="/doctor/cost" replace />;
+  }
   const Icon = doc.icon;
 
   // Cost / Pricing / Profit run on the open model — show the real calculator here,

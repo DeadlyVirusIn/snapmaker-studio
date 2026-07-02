@@ -4,6 +4,36 @@ Honest, current verification state for the latest beta. This file does **not**
 mark a release "accepted" until the interactive install acceptance below is
 completed and recorded.
 
+## v0.4.0-beta.21 — PARTIAL / PENDING (not accepted)
+
+Release theme: **one clear path for a novice.** Simple-mode IA collapse (5 nav
+items), a prioritized beginner Fix Plan on the open model, dead-end/duplicate
+cleanup, developer copy tucked behind disclosures. Advanced mode unchanged. No
+backend analysis changes — the Fix Plan reuses checks that already run.
+
+| Check | Status |
+|---|---|
+| Installer integrity / SHA256 | **PASS** — `792ea37dc8e620cbd9be44fd475d0b1f6531f20a81cec8b44f5a621f43bea2b2` (16,137,296 bytes), see `RELEASE_METADATA.md` |
+| Backend tests | **PASS** — 326 passed, 3 skipped (no backend changes) |
+| Frontend | **PASS** — tsc clean; vitest 144 passed (new: Simple-IA nav tests, future-tense copy guard) |
+| Scripted install smoke | **PASS** — silent install → launch (app + sidecar) → exit (no orphan) → reopen → silent uninstall; same P2 empty-folder leftover as beta.20.4 |
+| Interactive GUI acceptance | **PENDING (Kunal)** |
+| Overall trust status | **PARTIAL / PENDING — not accepted** |
+
+### Acceptance checklist — for Kunal (beta.21)
+
+- [ ] 1. Fresh install lands in Simple mode; sidebar shows exactly: Home · Check my model · My designs · Printer · Help (+ More tools)
+- [ ] 2. Existing install that chose Advanced stays Advanced
+- [ ] 3. Open STL → "Your fix plan" appears with ≤5 numbered actions, each labelled "Do this in Studio" or "Do this in Orca"
+- [ ] 4. Open multi-object 3MF → fix plan includes the arrange/spacing step (honest "Studio can't verify spacing")
+- [ ] 5. Check my model → with no model open: honest landing with Open a model; with a model open: goes to the results
+- [ ] 6. /doctor/pricing and /doctor/profit land on the Cost page
+- [ ] 7. Colors & Materials shows Plate Color Remap directly (no explainer tab); Scale page 3MF rows say "Preview only — resize in Orca" with no disabled button
+- [ ] 8. Compatibility findings hide Setting/Evidence behind "Technical detail"
+- [ ] 9. Prepare U1 copy → wording stays "review in Orca before slicing"; original untouched
+- [ ] 10. Advanced mode nav unchanged from beta.20.4
+- [ ] 11. Close/reopen/uninstall clean (as in beta.20.4)
+
 ## v0.4.0-beta.20.4 — ACCEPTED — installed-app acceptance passed
 
 Accepted 2026-07-01 after Kunal completed the interactive GUI acceptance on the

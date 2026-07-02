@@ -51,16 +51,19 @@ export const PRIMARY_NAV: NavItem[] = [
   { to: "/batch", label: "Batch Prepare", icon: Wand2 },
 ];
 
-// Simple mode IA: a short beginner path up top, the rest tucked under "More
-// tools". Advanced mode keeps the full PRIMARY_NAV. Derived from PRIMARY_NAV so
-// there's still one source of truth (and routes stay validated).
-const BEGINNER_ROUTES: string[] = [
-  "/", "/start", doctorRoute("project"), "/projects", "/compatibility",
+// Simple mode IA (beta.21 "one clear path for a novice"): exactly five items
+// with novice labels — Home / Check my model / My designs / Printer / Help.
+// Everything else lives under "More tools". Advanced mode keeps the full
+// PRIMARY_NAV unchanged. Routes stay validated by isKnownRoute().
+export const BEGINNER_NAV: NavItem[] = [
+  { to: "/", label: "Home", icon: LayoutDashboard, end: true },
+  { to: doctorRoute("project"), label: "Check my model", icon: FileCheck2, doctorId: "project" },
+  { to: "/projects", label: "My designs", icon: FolderKanban },
+  { to: doctorRoute("printer"), label: "Printer", icon: HeartPulse, doctorId: "printer" },
+  { to: "/help", label: "Help", icon: BookOpen },
 ];
-export const BEGINNER_NAV: NavItem[] =
-  BEGINNER_ROUTES.map((r) => PRIMARY_NAV.find((n) => n.to === r)!);
 export const MORE_NAV: NavItem[] =
-  PRIMARY_NAV.filter((n) => !BEGINNER_ROUTES.includes(n.to));
+  PRIMARY_NAV.filter((n) => !BEGINNER_NAV.some((b) => b.to === n.to));
 
 // Secondary — supporting / about / help. "Why Studio?" is here on purpose so it
 // supports the story without interrupting the task flow.
@@ -69,6 +72,9 @@ export const SECONDARY_NAV: NavItem[] = [
   { to: "/help", label: "Docs / Help", icon: BookOpen },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
+// Simple mode footer: Help is already a primary item there, so it isn't repeated.
+export const SIMPLE_SECONDARY_NAV: NavItem[] =
+  SECONDARY_NAV.filter((n) => n.to !== "/help");
 
 // Static routes the app actually mounts (App.tsx). Doctor landings are dynamic
 // (/doctor/:id) and validated against DOCTORS below.

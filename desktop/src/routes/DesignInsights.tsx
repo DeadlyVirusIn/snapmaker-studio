@@ -19,6 +19,7 @@ import { OrcaHandoff } from "@/components/OrcaHandoff";
 import { StrategyPicker } from "@/components/StrategyPicker";
 import { BusinessDoctors } from "@/components/BusinessDoctors";
 import { IntelligenceReport } from "@/components/IntelligenceReport";
+import { FixPlan } from "@/components/FixPlan";
 import { DesignHealth } from "@/components/DesignHealth";
 import { HeartPulse } from "lucide-react";
 import {
@@ -241,6 +242,16 @@ export default function DesignInsights() {
 
       {doctor.status === "done" && d && status && (
         <>
+          {/* Beginner Fix Plan — the one prioritized "what do I do next" list */}
+          <FixPlan
+            doctor={d}
+            isStl={file.name.toLowerCase().endsWith(".stl")}
+            report={rep}
+            bed={bed}
+            mm={mm}
+            mesh={meshData}
+          />
+
           {/* Studio Intelligence Report — the one-screen synthesis (the product) */}
           <IntelligenceReport filePath={file.path} host={u1Host} />
 

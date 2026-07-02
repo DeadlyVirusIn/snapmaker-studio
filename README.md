@@ -65,7 +65,7 @@ validation alone. A converted copy reads "U1 profile copy saved · open in Orca 
 before slicing". Studio does not slice; originals are never modified; no print-success
 guarantees. See [RELEASE_NOTES.md](docs/RELEASE_NOTES.md).
 
-Point releases beta.20.1–beta.20.4 add Printer Hub honesty, manual cost entry, collision honesty, STL Project Doctor consistency, and a release-acceptance/trust cleanup — see [RELEASE_NOTES.md](docs/RELEASE_NOTES.md) and [TRUST_STATUS.md](docs/TRUST_STATUS.md).
+Point releases beta.20.1–beta.20.4 add Printer Hub honesty, manual cost entry, collision honesty, STL Project Doctor consistency, and a release-acceptance/trust cleanup. beta.21 simplifies Simple mode to five nav items and adds a beginner Fix Plan — see [RELEASE_NOTES.md](docs/RELEASE_NOTES.md) and [TRUST_STATUS.md](docs/TRUST_STATUS.md).
 
 ### Earlier betas
 
@@ -97,10 +97,10 @@ Carried forward: hardware-verified **Printer Hub**, **Print Quality** evidence g
 your own file, **Plate Color Remap**, **Source Check**, Model Browser. All local, advisory
 — no cloud, no account, no guarantees. Studio does not slice; Orca does.
 
-- Release: [v0.4.0-beta.20.4](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.20.4)
-- Installer: `Snapmaker.Studio_0.4.0-beta.20.4_x64-setup.exe`
-- Size: 16,138,638 bytes
-- SHA256: `6b1feb43458112c72452f83c20f4d082f30a56f9afaabb91e3bf6d853d48a81b`
+- Release: [v0.4.0-beta.21](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.21)
+- Installer: `Snapmaker.Studio_0.4.0-beta.21_x64-setup.exe`
+- Size: 16,137,296 bytes
+- SHA256: `792ea37dc8e620cbd9be44fd475d0b1f6531f20a81cec8b44f5a621f43bea2b2`
 - Canonical release metadata: [docs/RELEASE_METADATA.md](docs/RELEASE_METADATA.md)
 - Unsigned beta: the installer is not code-signed yet, so Windows SmartScreen may show “Unknown publisher.” That is expected for this beta. Download only from the release link above and verify the SHA256 before installing.
 
@@ -110,7 +110,7 @@ Install:
 2. Verify the checksum. It must match the SHA256 published on the release:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.20.4_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.21_x64-setup.exe
 ```
 
 3. Run it. On the SmartScreen prompt choose **More info → Run anyway** only after verifying the hash.

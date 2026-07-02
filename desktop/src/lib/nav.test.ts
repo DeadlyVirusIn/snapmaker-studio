@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { PRIMARY_NAV, SECONDARY_NAV, isKnownRoute } from "./nav";
+import {
+  PRIMARY_NAV, SECONDARY_NAV, BEGINNER_NAV, MORE_NAV, SIMPLE_SECONDARY_NAV,
+  isKnownRoute,
+} from "./nav";
 import { DOCTORS } from "./doctors";
 
 const primaryLabels = PRIMARY_NAV.map((n) => n.label);
@@ -71,5 +74,27 @@ describe("5. no broken routes / blank pages", () => {
   it("rejects an unknown route", () => {
     expect(isKnownRoute("/doctor/does-not-exist")).toBe(false);
     expect(isKnownRoute("/nope")).toBe(false);
+  });
+});
+
+describe("6. Simple mode IA (beta.21 — one clear path for a novice)", () => {
+  it("has at most 5 primary items, in the novice order", () => {
+    expect(BEGINNER_NAV.length).toBeLessThanOrEqual(5);
+    expect(BEGINNER_NAV.map((n) => n.label)).toEqual([
+      "Home", "Check my model", "My designs", "Printer", "Help",
+    ]);
+  });
+  it("keeps every advanced tool reachable (More tools covers the rest of PRIMARY_NAV)", () => {
+    const simpleRoutes = new Set([...BEGINNER_NAV, ...MORE_NAV].map((n) => n.to));
+    for (const n of PRIMARY_NAV) expect(simpleRoutes.has(n.to)).toBe(true);
+  });
+  it("does not repeat Help in the Simple footer", () => {
+    expect(SIMPLE_SECONDARY_NAV.some((n) => n.to === "/help")).toBe(false);
+    expect(SECONDARY_NAV.some((n) => n.to === "/help")).toBe(true);
+  });
+  it("every Simple destination resolves to a real route", () => {
+    for (const n of [...BEGINNER_NAV, ...MORE_NAV, ...SIMPLE_SECONDARY_NAV]) {
+      expect(isKnownRoute(n.to)).toBe(true);
+    }
   });
 });

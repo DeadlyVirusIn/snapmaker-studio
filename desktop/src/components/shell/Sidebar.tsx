@@ -6,7 +6,7 @@ import { library } from "@/api";
 import { useSession } from "@/store/session";
 import { useMode } from "@/store/mode";
 import { useOpenFile } from "@/hooks/useOpenFile";
-import { PRIMARY_NAV, SECONDARY_NAV, BEGINNER_NAV, MORE_NAV } from "@/lib/nav";
+import { PRIMARY_NAV, SECONDARY_NAV, SIMPLE_SECONDARY_NAV, BEGINNER_NAV, MORE_NAV } from "@/lib/nav";
 
 function navClass({ isActive }: { isActive: boolean }) {
   return cn(
@@ -126,7 +126,7 @@ export function Sidebar() {
           </div>
         </div>
         <nav className="flex flex-col gap-1">
-          {SECONDARY_NAV.map((n) => (
+          {(mode === "simple" ? SIMPLE_SECONDARY_NAV : SECONDARY_NAV).map((n) => (
             <NavLink key={n.to} to={n.to} end={n.end} className={navClass}>
               <n.icon className="h-4 w-4" /> {n.label}
             </NavLink>

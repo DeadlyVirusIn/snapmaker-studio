@@ -95,8 +95,11 @@ export default function Compatibility() {
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">{f.explanation}</p>
                   <p className="mt-1 text-xs"><span className="font-medium">Do this:</span> <span className="text-muted-foreground">{f.suggested_action}</span></p>
-                  <p className="mt-1 text-[11px] text-muted-foreground"><span className="font-medium">Setting:</span> <span className="break-all">{f.setting_path}</span></p>
-                  <p className="text-[11px] text-muted-foreground"><span className="font-medium">Evidence:</span> {f.evidence}</p>
+                  <details className="mt-1">
+                    <summary className="cursor-pointer text-[11px] text-muted-foreground hover:text-foreground">Technical detail</summary>
+                    <p className="mt-1 text-[11px] text-muted-foreground"><span className="font-medium">Setting:</span> <span className="break-all">{f.setting_path}</span></p>
+                    <p className="text-[11px] text-muted-foreground"><span className="font-medium">Evidence:</span> {f.evidence}</p>
+                  </details>
                 </li>
               ))}
             </ul>

@@ -102,7 +102,7 @@ export function importReasonLabel(reason?: string): string {
     case "license_unclear": return "License unclear — open on the source site";
     case "auth_required": return "Sign-in required on the source site";
     case "source_link_out_only":
-    default: return "Import coming later — open on the source site";
+    default: return "Import isn't supported — open on the source site";
   }
 }
 

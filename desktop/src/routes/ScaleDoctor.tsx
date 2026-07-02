@@ -85,9 +85,9 @@ export default function ScaleDoctor() {
         <div className="flex items-start gap-2 rounded-md border border-doctor-cost/40 bg-doctor-cost/5 p-3 text-sm">
           <Info className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "hsl(var(--doctor-cost))" }} />
           <span className="text-muted-foreground">
-            <b>Scaled export is available for STL in this beta.</b> For this 3MF, preview the scale
-            here, then resize in Snapmaker Orca — verified 3MF scaling (multi-part / colour
-            preservation) is coming.
+            <b>Scaled export is available for STL.</b> 3MF scaled export isn't supported —
+            multi-part / colour preservation can't be verified yet, so Studio won't write a
+            copy it can't stand behind. Preview the scale here, then resize in Snapmaker Orca.
           </span>
         </div>
       )}
@@ -255,12 +255,9 @@ export default function ScaleDoctor() {
                                 Prepare {o.scale_percent}% copy
                               </Button>
                             ) : (
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-muted-foreground">Preview only</span>
-                                <button disabled className="cursor-not-allowed rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground opacity-60">
-                                  3MF export not ready
-                                </button>
-                              </div>
+                              <span className="text-[11px] text-muted-foreground">
+                                Preview only — resize in Orca
+                              </span>
                             )}
                           </td>
                         </tr>
