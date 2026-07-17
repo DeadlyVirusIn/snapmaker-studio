@@ -239,10 +239,23 @@ def _make_handler(token: str):
                 if not path:
                     self._send(400, {"error": "missing 'path'"})
                     return
+                prepare_mode = data.get("prepare_mode", "preserve")
+                if prepare_mode == "u1":
+                    prepare_mode = "recommended"
+                if prepare_mode not in ("preserve", "recommended"):
+                    self._send(400, {"error": "prepare_mode must be 'preserve' or 'recommended'"})
+                    return
+                dry_run = data.get("dry_run", False)
+                if not isinstance(dry_run, bool):
+                    self._send(400, {"error": "dry_run must be a boolean"})
+                    return
                 try:
-                    result = service.convert(path, data.get("out_dir"))
-                    service.record_conversion(path, result)  # best-effort index
+                    result = service.convert(path, data.get("out_dir"), prepare_mode, dry_run)
+                    if not dry_run:
+                        service.record_conversion(path, result)  # best-effort index
                     self._send(200, result)
+                except ValueError as e:
+                    self._send(400, {"error": str(e)})
                 except Exception:  # adapter must not crash the server
                     self._send(500, {"error": "internal error"})
             elif self.path == "/prepare_scaled":

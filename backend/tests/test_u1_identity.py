@@ -119,7 +119,9 @@ def _bambu_3mf(tmp_path):
 
 def test_convert_3mf_strips_all_foreign(tmp_path):
     src = _bambu_3mf(tmp_path)
-    res = convert_to_u1(str(src))
+    # Full foreign-token scrubbing is the explicit recommended-profile path;
+    # the default preserve mode intentionally keeps creator-owned text values.
+    res = convert_to_u1(str(src), prepare_mode="recommended")
     z = zipfile.ZipFile(res.output_path)
     cfg = load_project_settings(z.read("Metadata/project_settings.config"))
     # No foreign tokens survive in any VALUE (key names like `bbl_calib_mark_logo`

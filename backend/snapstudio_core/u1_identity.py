@@ -45,7 +45,8 @@ def normalize_values(cfg: dict) -> list[dict]:
         cur = cfg.get(key)
         if isinstance(cur, str) and cur in mapping:
             new = mapping[cur]
-            changes.append({"key": key, "old": cur, "new": new})
+            changes.append({"key": key, "old": cur, "new": new,
+                            "reason": "value from a newer Orca schema mapped for Snapmaker Orca"})
             cfg[key] = new
     return changes
 
@@ -59,7 +60,8 @@ def _has_foreign(value) -> bool:
     return False
 
 
-def normalize_project_identity(cfg: dict, n_filaments: int) -> dict:
+def normalize_project_identity(cfg: dict, n_filaments: int,
+                               *, preserve_filament_identity: bool = False) -> dict:
     """Force the U1 preset identity block. Returns the changes applied (old->new).
     Filament identity arrays are sized to `n_filaments` (the real colour count)."""
     n = max(1, n_filaments)
@@ -70,13 +72,16 @@ def normalize_project_identity(cfg: dict, n_filaments: int) -> dict:
         "printer_variant": U1_PRINTER_VARIANT,
         "print_settings_id": U1_PRINT_SETTINGS_ID,
         "default_print_profile": U1_PRINT_SETTINGS_ID,
-        "default_filament_profile": [U1_FILAMENT_SETTINGS_ID],
         "compatible_printers": [U1_PRINTER_SETTINGS_ID],
         "print_compatible_printers": [U1_PRINTER_SETTINGS_ID],
         "nozzle_type": U1_NOZZLE_TYPE,
-        "filament_settings_id": [U1_FILAMENT_SETTINGS_ID] * n,
-        "filament_vendor": [U1_FILAMENT_VENDOR] * n,
     }
+    if not preserve_filament_identity:
+        targets.update({
+            "default_filament_profile": [U1_FILAMENT_SETTINGS_ID],
+            "filament_settings_id": [U1_FILAMENT_SETTINGS_ID] * n,
+            "filament_vendor": [U1_FILAMENT_VENDOR] * n,
+        })
     changes = []
     for k, v in targets.items():
         if cfg.get(k) != v:
@@ -94,21 +99,23 @@ def normalize_project_identity(cfg: dict, n_filaments: int) -> dict:
 U1_PRINT_SEQUENCE = "by layer"
 
 
-def normalize_presets(cfg: dict) -> list[dict]:
+def normalize_presets(cfg: dict, *, preserve_creator_settings: bool = False) -> list[dict]:
     """Clear the markers Snapmaker Orca uses to flag a project as customized and
     reset the print sequence to the U1 default. Returns the changes (old->new)."""
     changes = []
     # 1. different_settings_to_system — blank every entry, keep list shape.
     dss = cfg.get("different_settings_to_system")
-    if isinstance(dss, list) and any(str(x) for x in dss):
-        cleared = [""] * len(dss)
-        changes.append({"key": "different_settings_to_system", "old": dss, "new": cleared})
-        cfg["different_settings_to_system"] = cleared
-    elif isinstance(dss, str) and dss:
-        changes.append({"key": "different_settings_to_system", "old": dss, "new": ""})
-        cfg["different_settings_to_system"] = ""
+    if not preserve_creator_settings:
+        if isinstance(dss, list) and any(str(x) for x in dss):
+            cleared = [""] * len(dss)
+            changes.append({"key": "different_settings_to_system", "old": dss, "new": cleared})
+            cfg["different_settings_to_system"] = cleared
+        elif isinstance(dss, str) and dss:
+            changes.append({"key": "different_settings_to_system", "old": dss, "new": ""})
+            cfg["different_settings_to_system"] = ""
     # 2. print_sequence — "by object" triggers the collision warning.
-    if cfg.get("print_sequence") not in (None, U1_PRINT_SEQUENCE):
+    if (not preserve_creator_settings
+            and cfg.get("print_sequence") not in (None, U1_PRINT_SEQUENCE)):
         changes.append({"key": "print_sequence", "old": cfg.get("print_sequence"), "new": U1_PRINT_SEQUENCE})
         cfg["print_sequence"] = U1_PRINT_SEQUENCE
     # 3. Defensive: explicit custom-preset flag, cleared only if actually set
@@ -120,31 +127,56 @@ def normalize_presets(cfg: dict) -> list[dict]:
     return changes
 
 
-def scrub_foreign(cfg: dict) -> list[str]:
+def scrub_foreign(cfg: dict, *, preserve_creator_settings: bool = False,
+                  compat_keys: set[str] | None = None) -> dict:
     """Blank any remaining Bambu/BBL/H2D-bearing values (typically leftover
     machine G-code blocks like time_lapse_gcode / wrapping_detection_gcode).
     Returns the list of keys that were cleared."""
     cleared = []
+    warnings = []
+    allowed = set(compat_keys or ()) | {
+        "time_lapse_gcode", "wrapping_detection_gcode", "printhost",
+        "printhost_type", "printhost_authorization_type", "printhost_port",
+        "printhost_api_key", "device_ip", "device_type", "device_name",
+    }
     for k, v in list(cfg.items()):
-        if isinstance(v, str) and _has_foreign(v):
+        if not _has_foreign(v):
+            continue
+        machine_or_device = k in allowed or "printhost" in k or k.startswith("device_")
+        if preserve_creator_settings and not machine_or_device:
+            warnings.append(f"Creator setting '{k}' contains foreign slicer metadata and was kept from the original file.")
+            continue
+        old = v
+        if isinstance(v, str):
             cfg[k] = ""
-            cleared.append(k)
-        elif isinstance(v, list) and _has_foreign(v):
+        elif isinstance(v, list):
             cfg[k] = ["" if _has_foreign(x) else x for x in v]
-            cleared.append(k)
-    return cleared
+        cleared.append({"key": k, "old": old, "new": cfg[k],
+                        "reason": "foreign machine or device metadata is not carried"})
+    return {"cleared": cleared, "warnings": warnings}
 
 
-def find_foreign(cfg: dict) -> list[str]:
+def find_foreign(cfg: dict, *, preserve_creator_settings: bool = False,
+                 compat_keys: set[str] | None = None) -> list[str]:
     """Keys whose value still contains a foreign token (for validation)."""
-    return [k for k, v in cfg.items() if _has_foreign(v)]
+    foreign = [k for k, v in cfg.items() if _has_foreign(v)]
+    if not preserve_creator_settings:
+        return foreign
+    allowed = set(compat_keys or ()) | {"time_lapse_gcode", "wrapping_detection_gcode",
+                                        "printhost", "printhost_type", "printhost_authorization_type",
+                                        "printhost_port", "printhost_api_key", "device_ip",
+                                        "device_type", "device_name"}
+    return [key for key in foreign
+            if key in allowed or "printhost" in key or key.startswith("device_")]
 
 
-def is_u1_clean(cfg: dict) -> tuple[bool, list[str]]:
+def is_u1_clean(cfg: dict, *, preserve_creator_settings: bool = False,
+                compat_keys: set[str] | None = None) -> tuple[bool, list[str]]:
     """True only if the project reads as a genuine U1 project: no foreign tokens
     and the identity block matches U1 expectations."""
     issues = []
-    foreign = find_foreign(cfg)
+    foreign = find_foreign(cfg, preserve_creator_settings=preserve_creator_settings,
+                           compat_keys=compat_keys)
     if foreign:
         issues.append(f"foreign Bambu/BBL/H2D metadata remains in: {', '.join(sorted(foreign)[:8])}")
     if cfg.get("printer_model") != U1_PRINTER_MODEL:
@@ -154,18 +186,27 @@ def is_u1_clean(cfg: dict) -> tuple[bool, list[str]]:
     if "@Snapmaker U1" not in str(cfg.get("print_settings_id", "")):
         issues.append(f"print_settings_id {cfg.get('print_settings_id')!r} is not a U1 process preset")
     fsi = cfg.get("filament_settings_id")
-    if isinstance(fsi, list) and not all(str(x).startswith("Snapmaker") for x in fsi):
+    if (not preserve_creator_settings and isinstance(fsi, list)
+            and not all(str(x).startswith("Snapmaker") for x in fsi)):
         issues.append("filament_settings_id contains non-Snapmaker presets")
     if not cfg.get("version"):
         issues.append("missing version")
     # Clean-import markers (Snapmaker Orca dialogs):
     dss = cfg.get("different_settings_to_system")
-    if (isinstance(dss, list) and any(str(x) for x in dss)) or (isinstance(dss, str) and dss):
+    if (not preserve_creator_settings
+            and ((isinstance(dss, list) and any(str(x) for x in dss)) or (isinstance(dss, str) and dss))):
         issues.append("different_settings_to_system is non-empty (triggers 'Customized Preset')")
+    elif preserve_creator_settings and ((isinstance(dss, list) and any(str(x) for x in dss))
+                                         or (isinstance(dss, str) and dss)):
+        issues.append("warning: creator's different_settings_to_system was kept")
     ps = cfg.get("print_sequence")
-    if ps not in (None, U1_PRINT_SEQUENCE):
+    if not preserve_creator_settings and ps not in (None, U1_PRINT_SEQUENCE):
         issues.append(f"print_sequence is {ps!r}, expected {U1_PRINT_SEQUENCE!r} (triggers 'Print By Object')")
-    return (not issues, issues)
+    elif preserve_creator_settings and ps == "by object":
+        issues.append("warning: creator's print_sequence 'by object' was kept")
+    if preserve_creator_settings and isinstance(fsi, list) and not all(str(x).startswith("Snapmaker") for x in fsi):
+        issues.append("warning: Orca may ask to map an unknown filament preset")
+    return (not [issue for issue in issues if not issue.startswith("warning:")], issues)
 
 
 # slice_info.config carries an X-BBL-Client-Version stamp; the known-good U1
