@@ -6,6 +6,35 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.4.0-beta.21.2] - 2026-07-17
+
+### Fixed
+- **Preserve creator settings by default (P0 trust fix).** Preparing a U1 profile
+  copy previously replaced creator-tuned slicer settings silently (nozzle
+  temperatures, Z-hop, prime/wipe tower position and shape, print order) via a full
+  U1 profile swap — a reported cause of stringing/webbing and poor print quality.
+  Preparing now defaults to **Preserve creator settings**: only the minimum machine /
+  project-wrapper fields required for Snapmaker Orca U1 compatibility change, and a
+  runtime preservation invariant fails the conversion if any setting changes without
+  being reported.
+
+### Added
+- **Preparation mode choice** before preparing: Preserve creator settings (default),
+  Apply Studio recommended U1 settings (opt-in; the previous swap behavior), Custom
+  (dry-run preview of the settings summary before preparing).
+- **Settings summary** on every prepared copy: kept count, changed-for-U1-compatibility
+  list (with reasons), could-not-carry list, warnings, and a preview of what the
+  recommended mode would change. Sensitive values (print-host keys, tokens) are
+  redacted; machine G-code is summarized, never included verbatim.
+- **STL / geometry-only clarity**: such inputs are labeled as having no creator
+  slicer settings; Studio uses a U1 starter profile unless the user chooses another
+  profile in Orca.
+- Regression tests: creator-tuned, multi-material and support-heavy 3MF fixtures
+  proving preservation of temperatures, retraction, speed/acceleration, cooling,
+  supports, layer height, flow, prime/wipe tower and print order; a non-tautological
+  invariant test that fails on any unaccounted mutation; UI tests for default mode,
+  dry-run preview, stale-response safety and banned-overclaim copy.
+
 ## [0.4.0-beta.1] - 2026-06 (internal milestone — never tagged)
 
 > Positioning: **the workflow platform for modern 3D printing** — understand any

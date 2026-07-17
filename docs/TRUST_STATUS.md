@@ -4,7 +4,41 @@ Honest, current verification state for the latest beta. This file does **not**
 mark a release "accepted" until the interactive install acceptance below is
 completed and recorded.
 
-## v0.4.0-beta.21.1 — PARTIAL / PENDING (not accepted)
+## v0.4.0-beta.21.2 — PARTIAL / PENDING (not accepted)
+
+**P0 trust fix: preserve creator settings by default.** Multiple users reported that
+prepared U1 copies changed the original creator's slicer settings and caused print
+problems (webbing/stringing). Confirmed by an original-vs-prepared settings diff:
+the U1 profile swap silently replaced nozzle temperatures (e.g. PETG 235/240 → PLA
+220/220), Z-hop (0.2 "Normal Lift" → 0.4 "Auto Lift"), prime tower width, wipe tower
+position/shape/spacing, and print order ("by object" → "by layer"). Classified **P0**
+(silent changes affecting print quality).
+
+Fix shipped in this release: preparing defaults to **Preserve creator settings**
+(only minimum U1 wrapper/machine fields change, every change reported); Studio
+recommended settings are opt-in; a Kept / Changed for U1 compatibility / Could not
+carry over summary is always shown; a runtime preservation invariant fails the
+conversion on any unreported change.
+
+| Check | Status |
+|---|---|
+| Backend tests | **PASS** — 341 passed, 3 skipped (adds preserve-mode + invariant suite) |
+| Frontend | **PASS** — tsc clean; vitest 150 passed (adds mode-chooser, summary, race-safety, copy-guard tests) |
+| Original-vs-prepared diff proof | **PASS** — creator-tuned fixture: all quality settings preserved byte-identical (temps, retraction, speed, accel, cooling, supports, layer height, tower, print order); zero unaccounted changes; recommended mode reproduces the old swap only when selected |
+| Independent code review | Two independent review passes (initial BLOCK verdicts; all CRITICAL/HIGH findings fixed: summary secret redaction, per-extruder value loss, scrub allowlist, invariant tautology, UI races, overclaim copy) — final re-review recorded in `docs/internal/` |
+| Installer integrity / SHA256 | **PENDING** — build not yet produced |
+| Scripted install smoke | **PENDING** |
+| Interactive GUI acceptance | **PENDING (manual installed-app acceptance)** |
+| Overall trust status | **PARTIAL / PENDING — not accepted** |
+
+Acceptance checklist additions for beta.21.2 (on top of the beta.21 checklist):
+
+- [ ] A. Open a creator-tuned 3MF → Prepare U1 copy defaults to "Preserve creator settings"; summary shows Kept / Changed for U1 compatibility / Could not carry over
+- [ ] B. Prepared copy opened in Orca shows the creator's temperatures/settings (not 220/220 defaults)
+- [ ] C. "Apply Studio recommended U1 settings" changes print behavior only when explicitly selected
+- [ ] D. Open an STL → notice says it has no creator slicer settings and uses a U1 starter profile
+
+## v0.4.0-beta.21.1 — superseded by beta.21.2 (was PARTIAL / PENDING, not accepted)
 
 Wording patch on beta.21. The beta.21 GUI check found the flow works but surfaced a
 P1 copy-truth issue: fit/profile checks read as print-readiness ("Prints on
