@@ -126,9 +126,10 @@ def first_layer_check(symptom: str) -> dict:
     return first_layer_doctor.lookup(symptom)
 
 
-def convert(path: str, out_dir: str | None = None) -> dict:
+def convert(path: str, out_dir: str | None = None, prepare_mode: str = "preserve",
+            dry_run: bool = False) -> dict:
     """Make a file U1-ready and save it next to the source. Returns the result."""
-    return convert_to_u1(path, out_dir).to_dict()
+    return convert_to_u1(path, out_dir, prepare_mode=prepare_mode, dry_run=dry_run).to_dict()
 
 
 def prepare_scaled(path: str, scale_percent: float, out_dir: str | None = None) -> dict:
@@ -734,7 +735,7 @@ def record_conversion(path: str, result: dict) -> None:
 def _convert_and_record(path: str, out_dir: str | None = None) -> dict:
     """Convert one file and index it. Used by the batch worker so batched
     conversions land in the library exactly like single ones."""
-    result = convert(path, out_dir)
+    result = convert(path, out_dir, prepare_mode="preserve")
     record_conversion(path, result)
     return result
 

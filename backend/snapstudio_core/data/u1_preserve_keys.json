@@ -1,0 +1,22 @@
+{
+  "schema": "u1-preserve-keys/1",
+  "category_a": [
+    "nozzle_temperature", "nozzle_temperature_initial_layer",
+    "nozzle_temperature_range_high", "nozzle_temperature_range_low",
+    "z_hop", "z_hop_types", "z_hop_when_prime", "prime_tower_width",
+    "prime_volume", "wipe_tower_x", "wipe_tower_y", "wipe_tower_bridging",
+    "wipe_tower_cone_angle", "wipe_tower_extra_flow", "wipe_tower_extra_rib_length",
+    "wipe_tower_extra_spacing", "wipe_tower_fillet_wall", "wipe_tower_max_purge_speed",
+    "wipe_tower_no_sparse_layers", "wipe_tower_rib_width", "wipe_tower_rotation_angle",
+    "wipe_tower_wall_type", "curr_bed_type", "default_bed_type", "wipe_tower_filament",
+    "gcode_comments", "single_extruder_multi_material_priming"
+  ],
+  "per_extruder_vectors": [
+    "nozzle_temperature", "nozzle_temperature_initial_layer",
+    "nozzle_temperature_range_high", "nozzle_temperature_range_low",
+    "z_hop", "z_hop_types", "z_hop_when_prime"
+  ],
+  "valid_bed_types": [
+    "Textured PEI Plate", "High Temp Plate", "Smooth PEI Plate", "Graphic Effect Plate"
+  ]
+}
