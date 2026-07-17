@@ -14,6 +14,7 @@ Geometry, object layout, filament colours/types and count are left untouched.
 """
 from __future__ import annotations
 import re
+from .profile import load_profile
 
 # Canonical U1 identity, copied verbatim from a known-good Snapmaker U1 export.
 U1_VERSION = "2.3.3"
@@ -35,6 +36,26 @@ FOREIGN_TOKENS = ("bbl", "h2d", "bambu")
 VALUE_NORMALIZATIONS = {
     "ensure_vertical_shell_thickness": {"enabled": "ensure_all"},
 }
+
+# Profile-defined G-code is authoritative for the bundled U1 template.  These
+# are template machine blocks that are not currently represented in that
+# profile; keep the list here so both scrub and validation use the same set.
+_EXTRA_MACHINE_GCODE_KEYS = frozenset({
+    "change_extrusion_role_gcode",
+    "printing_by_object_gcode",
+    "time_lapse_gcode",
+    "wrapping_detection_gcode",
+})
+
+
+def machine_gcode_keys() -> frozenset[str]:
+    """Return every machine G-code key recognized by the U1 template.
+
+    New G-code blocks in the profile are included automatically; template
+    blocks absent from the profile remain in the small maintained supplement.
+    """
+    profile_keys = load_profile("snapmaker_u1")["keys"]
+    return frozenset(k for k in profile_keys if k.endswith("_gcode")) | _EXTRA_MACHINE_GCODE_KEYS
 
 
 def normalize_values(cfg: dict) -> list[dict]:
@@ -85,7 +106,8 @@ def normalize_project_identity(cfg: dict, n_filaments: int,
     changes = []
     for k, v in targets.items():
         if cfg.get(k) != v:
-            changes.append({"key": k, "old": cfg.get(k), "new": v})
+            changes.append({"key": k, "old": cfg.get(k), "new": v,
+                            "reason": "U1 project identity normalized"})
             cfg[k] = v
     return {"changed": changes}
 
@@ -108,21 +130,26 @@ def normalize_presets(cfg: dict, *, preserve_creator_settings: bool = False) -> 
     if not preserve_creator_settings:
         if isinstance(dss, list) and any(str(x) for x in dss):
             cleared = [""] * len(dss)
-            changes.append({"key": "different_settings_to_system", "old": dss, "new": cleared})
+            changes.append({"key": "different_settings_to_system", "old": dss, "new": cleared,
+                            "reason": "custom-preset marker cleared"})
             cfg["different_settings_to_system"] = cleared
         elif isinstance(dss, str) and dss:
-            changes.append({"key": "different_settings_to_system", "old": dss, "new": ""})
+            changes.append({"key": "different_settings_to_system", "old": dss, "new": "",
+                            "reason": "custom-preset marker cleared"})
             cfg["different_settings_to_system"] = ""
     # 2. print_sequence — "by object" triggers the collision warning.
     if (not preserve_creator_settings
             and cfg.get("print_sequence") not in (None, U1_PRINT_SEQUENCE)):
-        changes.append({"key": "print_sequence", "old": cfg.get("print_sequence"), "new": U1_PRINT_SEQUENCE})
+        changes.append({"key": "print_sequence", "old": cfg.get("print_sequence"),
+                        "new": U1_PRINT_SEQUENCE,
+                        "reason": "print sequence normalized to the U1 default"})
         cfg["print_sequence"] = U1_PRINT_SEQUENCE
     # 3. Defensive: explicit custom-preset flag, cleared only if actually set
     #    (absent/None on the investigated sample — guard against other sources).
     v = cfg.get("is_custom_defined")
     if v not in (None, "", "0"):
-        changes.append({"key": "is_custom_defined", "old": v, "new": "0"})
+        changes.append({"key": "is_custom_defined", "old": v, "new": "0",
+                        "reason": "custom-preset flag cleared"})
         cfg["is_custom_defined"] = "0"
     return changes
 
@@ -134,8 +161,9 @@ def scrub_foreign(cfg: dict, *, preserve_creator_settings: bool = False,
     Returns the list of keys that were cleared."""
     cleared = []
     warnings = []
-    allowed = set(compat_keys or ()) | {
-        "time_lapse_gcode", "wrapping_detection_gcode", "printhost",
+    machine_keys = machine_gcode_keys()
+    allowed = set(compat_keys or ()) | machine_keys | {
+        "printhost",
         "printhost_type", "printhost_authorization_type", "printhost_port",
         "printhost_api_key", "device_ip", "device_type", "device_name",
     }
@@ -162,7 +190,7 @@ def find_foreign(cfg: dict, *, preserve_creator_settings: bool = False,
     foreign = [k for k, v in cfg.items() if _has_foreign(v)]
     if not preserve_creator_settings:
         return foreign
-    allowed = set(compat_keys or ()) | {"time_lapse_gcode", "wrapping_detection_gcode",
+    allowed = set(compat_keys or ()) | machine_gcode_keys() | {
                                         "printhost", "printhost_type", "printhost_authorization_type",
                                         "printhost_port", "printhost_api_key", "device_ip",
                                         "device_type", "device_name"}

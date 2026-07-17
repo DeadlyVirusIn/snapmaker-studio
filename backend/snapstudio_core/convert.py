@@ -20,8 +20,8 @@ from .fingerprint import compute_fingerprint
 from .repair import repair as do_repair
 from .validate import validate as do_validate
 from .u1_identity import is_u1_clean
-from .profile import load_profile, apply_swap
-from .preserve import CATEGORY_A, config_diff, display_value, machine_compat_keys
+from .profile import load_profile
+from .preserve import config_diff, display_value, machine_compat_keys
 
 SETTINGS = "Metadata/project_settings.config"
 
@@ -98,6 +98,7 @@ def _action_reasons(report: dict) -> tuple[dict[str, str], set[str]]:
     reasons: dict[str, str] = {}
     cleared: set[str] = set()
     groups = [report.get("normalizations", []), report.get("profile_changes", []),
+              report.get("filament_array_changes", []),
               report.get("value_normalizations", []), report.get("preserved_value_changes", []),
               report.get("presets_normalized", []), report.get("foreign_cleared", [])]
     identity = report.get("identity", {})
@@ -106,7 +107,9 @@ def _action_reasons(report: dict) -> tuple[dict[str, str], set[str]]:
         for item in group:
             if not isinstance(item, dict) or "key" not in item:
                 continue
-            reasons[item["key"]] = item.get("reason", "changed only for U1 compatibility")
+            reason = item.get("reason")
+            if isinstance(reason, str) and reason:
+                reasons[item["key"]] = reason
     for item in report.get("foreign_cleared", []):
         if isinstance(item, dict):
             cleared.add(item["key"])
@@ -114,26 +117,60 @@ def _action_reasons(report: dict) -> tuple[dict[str, str], set[str]]:
 
 
 def _settings_summary(before: dict, after: dict, raw_config: bytes, outcome,
-                      prepare_mode: str, profile_name: str = "snapmaker_u1") -> dict:
+                      prepare_mode: str, profile_name: str = "snapmaker_u1",
+                      recommended_after: dict | None = None) -> dict:
     profile = load_profile(profile_name)
     diffs = config_diff(before, after)  # independent source of truth (A13)
     reasons, cleared = _action_reasons(outcome.report)
+    allowlist = machine_compat_keys(profile)
+    slice_info = {
+        item["key"]: item["reason"]
+        for item in outcome.report.get("slice_info", [])
+        if isinstance(item, dict) and isinstance(item.get("key"), str)
+        and isinstance(item.get("reason"), str) and item["reason"]
+    }
     compat, could_not_carry = [], []
+    unexplained = []
     for item in diffs:
-        entry = {"key": item["key"], "old": display_value(item["old"]),
-                 "new": display_value(item["new"]),
-                 "reason": reasons.get(item["key"], "changed only for U1 compatibility")}
-        (could_not_carry if item["key"] in cleared else compat).append(entry)
+        key = item["key"]
+        if key in cleared:
+            # Values in this category were deliberately discarded.  They may
+            # be credentials or arbitrary creator G-code, so never echo them.
+            could_not_carry.append({"key": key, "reason": reasons[key]})
+        elif key in reasons:
+            compat.append({"key": key, "old": display_value(item["old"], key=key),
+                           "new": display_value(item["new"], key=key),
+                           "reason": reasons[key]})
+        elif key in allowlist:
+            compat.append({"key": key, "old": display_value(item["old"], key=key),
+                           "new": display_value(item["new"], key=key),
+                           "reason": "changed only for U1 compatibility"})
+        elif key in slice_info:
+            could_not_carry.append({"key": key, "reason": slice_info[key]})
+        else:
+            unexplained.append(key)
+            # Recommended mode remains non-strict, but an unreported mutation
+            # is never presented as a deliberate compatibility change.
+            if prepare_mode != "preserve":
+                compat.append({"key": key, "old": display_value(item["old"], key=key),
+                               "new": display_value(item["new"], key=key),
+                               "reason": "change was not reported by the repair pipeline"})
+
+    for key, reason in slice_info.items():
+        if not any(item["key"] == key for item in could_not_carry):
+            could_not_carry.append({"key": key, "reason": reason})
 
     recommended_changes = []
-    if prepare_mode == "preserve":
-        preview = copy.deepcopy(before)
-        for item in apply_swap(preview, profile):
-            if item["key"] in CATEGORY_A:
-                recommended_changes.append({"key": item["key"],
-                                            "old": display_value(item["old"]),
-                                            "new": display_value(item["new"]),
-                                            "reason": "available with the recommended U1 profile"})
+    if prepare_mode == "preserve" and recommended_after is not None:
+        # This is the actual recommended pipeline's complete dry-run result,
+        # not a hand-maintained subset of profile swaps.
+        for item in config_diff(before, recommended_after):
+            key = item["key"]
+            recommended_changes.append({
+                "key": key, "old": display_value(item["old"], key=key),
+                "new": display_value(item["new"], key=key),
+                "reason": "available with the recommended U1 profile",
+            })
 
     summary = {
         "summary_schema": "settings-summary/1", "engine_version": _engine_version(),
@@ -146,12 +183,11 @@ def _settings_summary(before: dict, after: dict, raw_config: bytes, outcome,
         "recommendations_available": prepare_mode == "preserve",
         "recommended_changes": recommended_changes if prepare_mode == "preserve" else [],
     }
-    # Preservation invariant: every source setting that changed or disappeared
-    # is explicitly accounted for, unless it is in the profile-owned B allowlist.
-    accounted = {x["key"] for x in compat + could_not_carry}
-    allowlist = machine_compat_keys(profile)
-    violations = [x["key"] for x in diffs if x["key"] in before
-                  and x["key"] not in allowlist and x["key"] not in accounted]
+    # Preservation invariant: every changed source setting needs a specific
+    # repair-pipeline reason, a deliberate foreign-value clear, or the
+    # profile-owned machine/compat allowlist.  The independent diff is the
+    # authority; summary rendering cannot make a mutation accounted for.
+    violations = [key for key in unexplained if key in before]
     if prepare_mode == "preserve" and violations:
         raise ValueError("preservation invariant failed for: " + ", ".join(violations))
     return summary
@@ -210,10 +246,18 @@ def convert_to_u1(path: str, out_dir: str | None = None, prepare_mode: str = "pr
     src_fp = compute_fingerprint(tm)
     raw_config = tm.read_part(SETTINGS)
     before = load_project_settings(raw_config)
+    recommended_tm = copy.deepcopy(tm) if prepare_mode == "preserve" else None
     internal_mode = "preserve" if prepare_mode == "preserve" else "u1"
     outcome = do_repair(tm, mode=internal_mode, remap=None, dry_run=dry_run, opt_profile=None)
     after = load_project_settings(tm.read_part(SETTINGS))
-    summary = _settings_summary(before, after, raw_config, outcome, prepare_mode)
+    recommended_after = None
+    if recommended_tm is not None:
+        # Use the normal repair path on a wholly in-memory project so preview
+        # results cannot diverge from a real recommended conversion or write.
+        do_repair(recommended_tm, mode="u1", remap=None, dry_run=True, opt_profile=None)
+        recommended_after = load_project_settings(recommended_tm.read_part(SETTINGS))
+    summary = _settings_summary(before, after, raw_config, outcome, prepare_mode,
+                                recommended_after=recommended_after)
     backup = src.with_suffix(".orig.3mf")
     if not dry_run and not backup.exists():
         shutil.copy2(src, backup)

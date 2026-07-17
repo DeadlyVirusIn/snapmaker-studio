@@ -22,6 +22,7 @@ def apply_swap(cfg: dict, profile: dict, *, preserve_creator_settings: bool = Fa
         if preserve_creator_settings and k in CATEGORY_A:
             continue
         if cfg.get(k) != v:
-            changes.append({"key": k, "old": cfg.get(k), "new": v})
+            changes.append({"key": k, "old": cfg.get(k), "new": v,
+                            "reason": "U1 machine profile setting applied"})
             cfg[k] = v
     return changes

@@ -14,7 +14,9 @@ from snapstudio_core.config_io import dump_project_settings, load_project_settin
 from snapstudio_core.container import ThreeMF
 from snapstudio_core.convert import convert_to_u1
 from snapstudio_core.filaments import PER_FILAMENT_KEYS
-from snapstudio_core.preserve import CATEGORY_A, config_diff
+from snapstudio_core.preserve import CATEGORY_A, config_diff, display_value
+from snapstudio_core import repair as repair_module
+from snapstudio_api import service
 from snapstudio_api.server import build_server
 
 
@@ -85,9 +87,13 @@ def test_preserve_keeps_creator_quality_and_accounts_for_every_change(tmp_path):
     }
     for key in replicated:
         assert after[key] == [before[key][0]] * len(before["filament_colour"]), key
-    for key in ("retraction_length", "filament_retraction_length", "outer_wall_speed",
-                "fan_max_speed", "enable_support", "support_type", "layer_height",
-                "filament_flow_ratio", "wall_loops", "seam_position", "hot_plate_temp"):
+    for key in ("retraction_length", "retraction_speed", "filament_retraction_length",
+                "filament_retraction_speed", "outer_wall_speed", "inner_wall_speed",
+                "sparse_infill_speed", "outer_wall_acceleration", "fan_max_speed",
+                "fan_min_speed", "slow_down_layer_time", "slow_down_min_speed",
+                "enable_support", "support_type", "support_threshold_angle", "layer_height",
+                "filament_flow_ratio", "wall_loops", "top_surface_pattern", "seam_position",
+                "ironing_type", "brim_type", "hot_plate_temp"):
         if key in replicated:
             assert after[key] == [before[key][0]] * len(before["filament_colour"]), key
         else:
@@ -117,7 +123,14 @@ def test_recommended_is_opt_in_and_print_sequence_contract(tmp_path):
     assert _prepared(recommended)["print_sequence"] == "by layer"
     assert _prepared(recommended)["nozzle_temperature"] != before["nozzle_temperature"]
     assert any(x["key"] == "nozzle_temperature" for x in recommended.settings_summary["compat_changed"])
-    assert preserve.settings_summary["recommended_changes"]
+    preview = preserve.settings_summary["recommended_changes"]
+    assert preview
+    # Preview is the complete real recommended pipeline delta, including the
+    # identity/preset work that a profile-swap-only preview missed.
+    actual_delta = {x["key"] for x in config_diff(before, _prepared(recommended))}
+    assert {x["key"] for x in preview} == actual_delta
+    assert {"nozzle_temperature", "filament_settings_id", "filament_vendor",
+            "default_filament_profile", "different_settings_to_system", "print_sequence"} <= actual_delta
 
 
 def test_dry_run_starter_and_multimaterial_preservation(tmp_path):
@@ -125,6 +138,7 @@ def test_dry_run_starter_and_multimaterial_preservation(tmp_path):
     dry = convert_to_u1(str(src), dry_run=True)
     assert dry.output_path == "" and dry.validated_ok and dry.settings_summary["compat_changed"]
     assert not list(tmp_path.glob("creator_SnapmakerU1*.3mf"))
+    assert not src.with_suffix(".orig.3mf").exists()
     result = convert_to_u1(str(src))
     after = _prepared(result)
     for key in ("prime_tower_width", "wipe_tower_x", "wipe_tower_y", "flush_volumes_matrix", "flush_volumes_vector"):
@@ -162,13 +176,89 @@ def test_summary_copy_guard_and_large_values(tmp_path):
     src, _ = _creator_project(tmp_path)
     tm = ThreeMF.open(src)
     cfg = load_project_settings(tm.read_part(SETTINGS))
-    cfg["machine_start_gcode"] = "bambu " + "x" * 400
+    source_gcode = "creator-user-path " + "x" * 400
+    cfg["machine_start_gcode"] = source_gcode
+    cfg["time_lapse_gcode"] = "bambu private-macro"
     tm.replace_part(SETTINGS, dump_project_settings(cfg)); tm.save(src)
     result = convert_to_u1(str(src))
     blob = json.dumps(result.settings_summary).lower()
     assert not any(word in blob for word in ("optimized", "safe settings", "we fixed", "best", "ready", "clean"))
+    assert source_gcode not in blob and "private-macro" not in blob
     start = next(x for x in result.settings_summary["compat_changed"] if x["key"] == "machine_start_gcode")
-    assert isinstance(start["old"], str) and start["old"].endswith("…") and len(start["old"]) <= 120
+    assert start["old"] == f"machine G-code replaced with U1 machine G-code ({len(source_gcode)} chars)"
+    discarded = next(x for x in result.settings_summary["could_not_carry"] if x["key"] == "time_lapse_gcode")
+    assert set(discarded) == {"key", "reason"}
+    assert display_value("secret", key="printhost_api_key") == "[redacted]"
+
+
+def test_per_extruder_vectors_keep_distinct_creator_slots(tmp_path):
+    src, _ = _creator_project(tmp_path)
+    tm = ThreeMF.open(src)
+    cfg = load_project_settings(tm.read_part(SETTINGS))
+    cfg.update({
+        "nozzle_temperature": ["210", "220", "230", "240"],
+        "nozzle_temperature_initial_layer": ["211", "221", "231", "241"],
+        "nozzle_temperature_range_high": ["215", "225", "235", "245"],
+        "nozzle_temperature_range_low": ["205", "215", "225", "235"],
+        "z_hop": ["0.1", "0.2", "0.3", "0.4"],
+        "z_hop_types": ["Normal", "Spiral", "Auto Lift", "Normal"],
+        "z_hop_when_prime": ["0", "1", "2", "3"],
+    })
+    tm.replace_part(SETTINGS, dump_project_settings(cfg)); tm.save(src)
+    after = _prepared(convert_to_u1(str(src)))
+    for key in ("nozzle_temperature", "nozzle_temperature_initial_layer",
+                "nozzle_temperature_range_high", "nozzle_temperature_range_low",
+                "z_hop", "z_hop_types", "z_hop_when_prime"):
+        assert after[key] == cfg[key], key
+
+
+def test_per_extruder_vector_unusual_size_is_accounted_for(tmp_path):
+    src, _ = _creator_project(tmp_path)
+    tm = ThreeMF.open(src)
+    cfg = load_project_settings(tm.read_part(SETTINGS))
+    cfg["nozzle_temperature"] = ["210", "220", "230"]
+    tm.replace_part(SETTINGS, dump_project_settings(cfg)); tm.save(src)
+    result = convert_to_u1(str(src))
+    after = _prepared(result)
+    assert after["nozzle_temperature"] == ["210", "220", "230", "230"]
+    resize = next(x for x in result.settings_summary["compat_changed"] if x["key"] == "nozzle_temperature")
+    assert resize["old"] == ["210", "220", "230"] and resize["new"] == after["nozzle_temperature"]
+    assert any("nozzle_temperature had 3 slots" in warning for warning in result.settings_summary["warnings"])
+
+
+def test_preservation_invariant_rejects_unaccounted_mutation(tmp_path, monkeypatch):
+    src, _ = _creator_project(tmp_path)
+    original_normalize_values = repair_module.normalize_values
+
+    def inject_unaccounted_creator_mutation(cfg):
+        changes = original_normalize_values(cfg)
+        cfg["outer_wall_speed"] = "synthetically-mutated"
+        return changes
+
+    monkeypatch.setattr(repair_module, "normalize_values", inject_unaccounted_creator_mutation)
+    try:
+        convert_to_u1(str(src))
+        assert False, "the independent preservation invariant must reject an unaccounted mutation"
+    except ValueError as error:
+        assert "outer_wall_speed" in str(error)
+
+
+def test_api_dry_run_creates_neither_backup_nor_library_record(tmp_path, monkeypatch):
+    monkeypatch.setenv("SNAPSTUDIO_DATA_DIR", str(tmp_path / "data"))
+    src, _ = _creator_project(tmp_path)
+    httpd, token = build_server(port=0)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        headers = {"Content-Type": "application/json", "X-Auth-Token": token}
+        request = urllib.request.Request(
+            f"http://127.0.0.1:{httpd.server_address[1]}/convert",
+            data=json.dumps({"path": str(src), "dry_run": True}).encode(), headers=headers)
+        with urllib.request.urlopen(request, timeout=5) as response:
+            assert json.loads(response.read())["output_path"] == ""
+        assert not src.with_suffix(".orig.3mf").exists()
+        assert service.library_list()["count"] == 0
+    finally:
+        httpd.shutdown()
 
 
 def test_api_prepare_mode_validation_and_legacy_alias():

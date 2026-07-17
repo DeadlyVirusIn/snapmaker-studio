@@ -54,6 +54,18 @@ def test_normalize_then_scrub_is_clean_and_preserves_design():
     assert cfg["time_lapse_gcode"] == ""
 
 
+def test_scrub_clears_every_recognized_machine_gcode_block():
+    cfg = _bambu_cfg()
+    cfg.update({
+        "change_extrusion_role_gcode": "; Bambu role macro",
+        "printing_by_object_gcode": "; H2D object macro",
+    })
+    scrub_foreign(cfg, preserve_creator_settings=True)
+    assert cfg["change_extrusion_role_gcode"] == ""
+    assert cfg["printing_by_object_gcode"] == ""
+    assert find_foreign(cfg, preserve_creator_settings=True) == []
+
+
 def test_normalize_presets_clears_customized_markers():
     # mirrors the real KidsCrocsWithSupport beta finding
     cfg = {
@@ -142,6 +154,12 @@ def test_convert_3mf_strips_all_foreign(tmp_path):
     assert cfg["ensure_vertical_shell_thickness"] == "ensure_all"
     assert cfg["filament_colour"] == ["#FF0000", "#00FF00"]  # design preserved
     assert res.validated_ok is True
+    slice_change = next(x for x in res.settings_summary["could_not_carry"]
+                        if x["key"] == "slice_info")
+    assert slice_change == {
+        "key": "slice_info",
+        "reason": "X-BBL-Client-Version blanked for Snapmaker Orca",
+    }
     assert src.exists()  # source untouched
 
 

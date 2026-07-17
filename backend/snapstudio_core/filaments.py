@@ -2,6 +2,7 @@ from __future__ import annotations
 import json
 from importlib.resources import files
 from .errors import FilamentLimitError
+from .preserve import PER_EXTRUDER_VECTORS
 
 FILAMENT_ARRAY_KEYS = (
     "filament_colour", "filament_type", "filament_settings_id",
@@ -29,29 +30,50 @@ def _resize(v: list, keep: int):
     return v + [v[-1]] * (keep - len(v)) if v else v
 
 
-def conform_filament_arrays(cfg: dict, keep: int) -> dict:
+def conform_filament_arrays(cfg: dict, keep: int, *, changes: list[dict] | None = None) -> dict:
     """Make every per-filament array exactly `keep` long (truncate OR pad), and
     resize the purge structures to match:
       per-filament arrays -> length keep
       flush_volumes_matrix -> keep*keep   (reuse existing cells where available)
       flush_volumes_vector -> keep*2
       wiping_volumes_extruders -> unchanged
-    Per-extruder/machine arrays (length 2) are untouched."""
+    Per-extruder vectors are intentionally untouched here and normalized by
+    preserve-mode's four-tool mapping pass."""
     for k in PER_FILAMENT_KEYS:
+        # These keys appear in some slicers' generic per-filament schema but
+        # are toolhead vectors in a U1 project.  Truncating them to the colour
+        # count before four-tool normalization destroys distinct creator slots.
+        if k in PER_EXTRUDER_VECTORS:
+            continue
         v = cfg.get(k)
         if isinstance(v, list) and v:
-            cfg[k] = _resize(v, keep)
+            resized = _resize(v, keep)
+            if resized != v:
+                cfg[k] = resized
+                if changes is not None:
+                    changes.append({"key": k, "old": v, "new": resized,
+                                    "reason": "resized to match the filament count"})
     m = cfg.get("flush_volumes_matrix")
     if isinstance(m, list) and m:
         side = int(round(len(m) ** 0.5))
         square = side * side == len(m)
-        cfg["flush_volumes_matrix"] = [
+        resized = [
             (m[i * side + j] if (square and i < side and j < side) else 0)
             for i in range(keep) for j in range(keep)
         ]
+        if resized != m:
+            cfg["flush_volumes_matrix"] = resized
+            if changes is not None:
+                changes.append({"key": "flush_volumes_matrix", "old": m, "new": resized,
+                                "reason": "resized to match the filament count"})
     fv = cfg.get("flush_volumes_vector")
     if isinstance(fv, list) and fv:
-        cfg["flush_volumes_vector"] = _resize(fv, keep * 2)
+        resized = _resize(fv, keep * 2)
+        if resized != fv:
+            cfg["flush_volumes_vector"] = resized
+            if changes is not None:
+                changes.append({"key": "flush_volumes_vector", "old": fv, "new": resized,
+                                "reason": "resized to match the filament count"})
     # wiping_volumes_extruders intentionally left as-is (stock keeps it length 10)
     return cfg
 

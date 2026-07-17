@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 from importlib.resources import files
 
 
@@ -42,14 +43,18 @@ def prepare_preserved_values(cfg: dict, filament_total: int) -> tuple[list[dict]
             continue
         if len(values) == 4:
             continue
-        if len(values) == 1:
-            new = values * 4
-        elif len(values) < 4:
-            new = values + [values[0]] * (4 - len(values))
-            warnings.append("Source tool mapping was replicated to four U1 toolheads.")
+        if len(values) < 4:
+            new = values + [values[-1]] * (4 - len(values))
+            if len(values) != filament_total:
+                warnings.append(
+                    f"Source tool mapping for {key} had {len(values)} slots; "
+                    "mapped to four U1 toolheads.")
         else:
             new = values[:4]
-            warnings.append("Source tool mapping was reduced to four U1 toolheads.")
+            if len(values) != filament_total:
+                warnings.append(
+                    f"Source tool mapping for {key} had {len(values)} slots; "
+                    "mapped to four U1 toolheads.")
         cfg[key] = new
         changes.append({"key": key, "old": old, "new": new,
                         "reason": "resized to 4 toolheads (values preserved)"})
@@ -82,8 +87,23 @@ def config_diff(before: dict, after: dict) -> list[dict]:
     return result
 
 
-def display_value(value, limit: int = 120):
-    """Keep summaries useful without exposing multi-kilobyte G-code blobs."""
+_SENSITIVE_SUMMARY_KEY = re.compile(
+    r"printhost|api_key|password|token|serial|access_code|auth", re.IGNORECASE)
+
+
+def display_value(value, limit: int = 120, *, key: str = ""):
+    """Return a safe, compact value for a user-facing conversion summary.
+
+    Project settings can contain printer credentials and arbitrary G-code (which
+    commonly embeds usernames, host paths, and tokens).  Neither belongs in an
+    API response or UI summary, even when it would fit the normal truncation.
+    """
+    if _SENSITIVE_SUMMARY_KEY.search(key):
+        return "[redacted]"
+    if "gcode" in key.lower():
+        chars = len(value) if isinstance(value, str) else len(
+            json.dumps(value, ensure_ascii=False, separators=(",", ":")))
+        return f"machine G-code replaced with U1 machine G-code ({chars} chars)"
     encoded = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
     if len(encoded) > limit:
         return encoded[:limit - 1] + "…"

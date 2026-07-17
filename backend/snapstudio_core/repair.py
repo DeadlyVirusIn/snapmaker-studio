@@ -33,6 +33,9 @@ def repair(tm: ThreeMF, mode: str = "u1", remap: dict | None = None,
               "dry_run": dry_run}
 
     report["normalizations"] = apply_clamps(work, load_rules())
+    for change in report["normalizations"]:
+        change["reason"] = (
+            f"U1 compatibility clamp: {change['old']} → {change['new']}")
 
     # U1 supports >4 filament colours (verified: real U1 files carry 8 colours
     # with 4 toolheads). Never auto-cap; preserve all filament arrays in every
@@ -47,10 +50,12 @@ def repair(tm: ThreeMF, mode: str = "u1", remap: dict | None = None,
         report["profile_changes"] = apply_swap(
             work, profile, preserve_creator_settings=preserve_creator_settings)
         # Foreign projects often carry per-filament arrays longer than the real
-        # colour count (e.g. 10 slots, 5 colours). Inconsistent array lengths are
-        # what Orca flags as a "Customized Preset" — conform every per-filament
-        # array to the colour count first.
-        conform_filament_arrays(work, filament_count(work))
+        # colour count (e.g. 10 slots, 5 colours). Per-extruder vectors are
+        # explicitly excluded by conform_filament_arrays and are resized later
+        # to U1's four toolheads without losing their per-slot values.
+        report["filament_array_changes"] = []
+        conform_filament_arrays(work, filament_count(work),
+                                changes=report["filament_array_changes"])
         # Make the project read as a genuine U1 project: rewrite the preset
         # identity block to known-good values and scrub any leftover
         # Bambu/BBL/H2D strings (e.g. foreign machine G-code).
@@ -93,5 +98,12 @@ def repair(tm: ThreeMF, mode: str = "u1", remap: dict | None = None,
     tm.replace_part(SETTINGS, dump_project_settings(work))
     # Blank the Bambu slice_info version stamp (the "newer version" trigger).
     if mode in ("preserve", "u1", "optimize") and SLICE_INFO in tm.list_parts():
-        tm.replace_part(SLICE_INFO, normalize_slice_info(tm.read_part(SLICE_INFO)))
+        original_slice_info = tm.read_part(SLICE_INFO)
+        normalized_slice_info = normalize_slice_info(original_slice_info)
+        if normalized_slice_info != original_slice_info:
+            tm.replace_part(SLICE_INFO, normalized_slice_info)
+            report["slice_info"] = [{
+                "key": "slice_info",
+                "reason": "X-BBL-Client-Version blanked for Snapmaker Orca",
+            }]
     return RepairOutcome(mode=mode, report=report)
