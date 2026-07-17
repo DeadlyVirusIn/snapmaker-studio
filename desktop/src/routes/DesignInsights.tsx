@@ -16,6 +16,8 @@ import { useFilament } from "@/store/filament";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { useToast } from "@/store/toast";
 import { OrcaHandoff } from "@/components/OrcaHandoff";
+import { PrepareModeChooser } from "@/components/PrepareModeChooser";
+import { PrepareSettingsSummary, STARTER_NOTICE } from "@/components/PrepareSettingsSummary";
 import { StrategyPicker } from "@/components/StrategyPicker";
 import { BusinessDoctors } from "@/components/BusinessDoctors";
 import { IntelligenceReport } from "@/components/IntelligenceReport";
@@ -43,6 +45,10 @@ export default function DesignInsights() {
   const convert = useSession((s) => s.convert);
   const runDoctor = useSession((s) => s.runDoctor);
   const runConvert = useSession((s) => s.runConvert);
+  const prepareMode = useSession((s) => s.prepareMode);
+  const setPrepareMode = useSession((s) => s.setPrepareMode);
+  const preview = useSession((s) => s.preview);
+  const previewConvert = useSession((s) => s.previewConvert);
   const openFile = useOpenFile();
   const showToast = useToast((s) => s.show);
   const [showDetails, setShowDetails] = useState(false);
@@ -141,7 +147,7 @@ export default function DesignInsights() {
   // ---- Done: it's ready ------------------------------------------------------
   if (convert.status === "done" && convert.data) {
     return (
-      <div className="mx-auto max-w-xl">
+      <div className="mx-auto max-w-xl space-y-4">
         <Card>
           <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
             <div className={cn("flex h-16 w-16 items-center justify-center rounded-full",
@@ -180,6 +186,7 @@ export default function DesignInsights() {
             </div>
           </CardContent>
         </Card>
+        {convert.data.settings_summary && <PrepareSettingsSummary summary={convert.data.settings_summary} mode={convert.data.prepare_mode} onPrepareRecommended={() => runConvert("recommended")} />}
       </div>
     );
   }
@@ -203,6 +210,11 @@ export default function DesignInsights() {
         </div>
       </div>
 
+      {file.ext !== "stl" && <PrepareModeChooser mode={prepareMode} onModeChange={setPrepareMode} onCustom={previewConvert} previewing={preview.status === "loading"} />}
+      {file.ext === "stl" && <p className="rounded-md border border-border p-3 text-sm text-muted-foreground">{STARTER_NOTICE}</p>}
+      {preview.status === "done" && preview.data?.settings_summary && <PrepareSettingsSummary summary={preview.data.settings_summary} mode={preview.data.prepare_mode} preview onPreparePreserve={() => runConvert("preserve")} onPrepareRecommended={() => runConvert("recommended")} />}
+      {preview.status === "error" && <p className="text-sm text-risk">{preview.error}</p>}
+
       {/* At-a-glance summary + primary action, visible without scrolling */}
       {doctor.status === "done" && d && headlineStatus && (
         <Card className="surface-raised">
@@ -217,7 +229,7 @@ export default function DesignInsights() {
               </div>
               <p className="mt-0.5 text-xs text-muted-foreground">We make a U1 profile copy — your original is never changed.</p>
             </div>
-            <Button onClick={runConvert} disabled={convert.status === "loading"} className="shrink-0">
+            <Button onClick={() => runConvert()} disabled={convert.status === "loading"} className="shrink-0">
               {convert.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
               {convert.status === "loading" ? "Preparing…" : "Prepare U1 copy"}
             </Button>
@@ -542,7 +554,7 @@ export default function DesignInsights() {
                   : <p className="pt-1 text-xs text-muted-foreground">We'll use the recommended setup. No need to choose unless you want to.</p>}
               </div>
 
-              <Button className="w-full" onClick={runConvert} disabled={convert.status === "loading"}>
+              <Button className="w-full" onClick={() => runConvert()} disabled={convert.status === "loading"}>
                 {convert.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                 {convert.status === "loading" ? "Preparing…" : "Prepare U1 copy"}
               </Button>

@@ -7,8 +7,10 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/layout";
-import { open3mfDialog, compatibilityCheck, convert, type CompatibilityResult } from "@/api";
+import { open3mfDialog, compatibilityCheck, convert, type CompatibilityResult, type ConversionResult, type PrepareMode } from "@/api";
 import { OrcaHandoff } from "@/components/OrcaHandoff";
+import { PrepareModeChooser } from "@/components/PrepareModeChooser";
+import { PrepareSettingsSummary } from "@/components/PrepareSettingsSummary";
 import { Copy, Stethoscope } from "lucide-react";
 import { COMPAT_COPY, sortFindings, severityLabel, severityToken, countFindings } from "@/lib/compatibility";
 import { useModelPath } from "@/hooks/useModelPath";
@@ -18,6 +20,8 @@ export default function Compatibility() {
   const { path, fromSession, override } = useModelPath(isExt("3mf"));
   const [result, setResult] = useState<CompatibilityResult | null>(null);
   const [prep, setPrep] = useState<Awaited<ReturnType<typeof convert>> | null>(null);
+  const [prepareMode, setPrepareMode] = useState<PrepareMode>("preserve");
+  const [preview, setPreview] = useState<ConversionResult | null>(null);
 
   const checkM = useMutation({
     mutationFn: (p: string) => compatibilityCheck(p),
@@ -25,9 +29,10 @@ export default function Compatibility() {
   });
 
   const prepM = useMutation({
-    mutationFn: () => convert(path!),
+    mutationFn: (mode: PrepareMode = prepareMode) => convert(path!, undefined, mode),
     onSuccess: (d) => setPrep(d),
   });
+  const previewM = useMutation({ mutationFn: () => convert(path!, undefined, "preserve", true), onSuccess: setPreview });
 
   // Reuse a 3MF already open in the session: check it automatically instead of
   // forcing the user to re-pick the file they just opened.
@@ -39,7 +44,7 @@ export default function Compatibility() {
   async function pick() {
     const p = await open3mfDialog();
     if (!p) return;
-    override(p); setResult(null); setPrep(null);
+    override(p); setResult(null); setPrep(null); setPreview(null); setPrepareMode("preserve");
     checkM.mutate(p);
   }
 
@@ -111,7 +116,10 @@ export default function Compatibility() {
                 This model may be fine, but the project settings are for another printer. Studio can
                 prepare a U1 profile copy so Orca opens it with U1-compatible settings.
               </p>
-              <Button size="sm" onClick={() => prepM.mutate()} disabled={prepM.isPending || !path}>
+              <PrepareModeChooser mode={prepareMode} onModeChange={setPrepareMode} onCustom={() => previewM.mutate()} previewing={previewM.isPending} />
+              {preview && <PrepareSettingsSummary summary={preview.settings_summary} mode={preview.prepare_mode} preview onPreparePreserve={() => { setPrepareMode("preserve"); prepM.mutate("preserve"); }} onPrepareRecommended={() => { setPrepareMode("recommended"); prepM.mutate("recommended"); }} />}
+              {previewM.isError && <p className="text-sm text-risk">Couldn&apos;t review settings: {(previewM.error as Error).message}</p>}
+              <Button size="sm" onClick={() => prepM.mutate(prepareMode)} disabled={prepM.isPending || !path}>
                 {prepM.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus className="h-4 w-4" />}
                 Prepare U1 copy
               </Button>
@@ -133,6 +141,7 @@ export default function Compatibility() {
                 Layout isn't verified — Studio fixed settings/profile, not object placement. Open in
                 Snapmaker Orca and use <b>Arrange all plates</b> before slicing; objects may sit outside a plate.
               </p>
+              {prep.settings_summary && <PrepareSettingsSummary summary={prep.settings_summary} mode={prep.prepare_mode} onPrepareRecommended={() => { setPrepareMode("recommended"); prepM.mutate("recommended"); }} />}
               {prep.errors && prep.errors.length > 0 && (
                 <ul className="space-y-1 text-xs text-muted-foreground">
                   {prep.errors.map((e: string, i: number) => <li key={i}>• {e}</li>)}
