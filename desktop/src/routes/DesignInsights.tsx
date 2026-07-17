@@ -186,7 +186,7 @@ export default function DesignInsights() {
             </div>
           </CardContent>
         </Card>
-        {convert.data.settings_summary && <PrepareSettingsSummary summary={convert.data.settings_summary} mode={convert.data.prepare_mode} onPrepareRecommended={() => runConvert("recommended")} />}
+        {convert.data.settings_summary && <PrepareSettingsSummary summary={convert.data.settings_summary} mode={convert.data.prepare_mode} isStl={file.ext === "stl"} onPrepareRecommended={() => runConvert("recommended")} />}
       </div>
     );
   }
@@ -212,7 +212,7 @@ export default function DesignInsights() {
 
       {file.ext !== "stl" && <PrepareModeChooser mode={prepareMode} onModeChange={setPrepareMode} onCustom={previewConvert} previewing={preview.status === "loading"} />}
       {file.ext === "stl" && <p className="rounded-md border border-border p-3 text-sm text-muted-foreground">{STARTER_NOTICE}</p>}
-      {preview.status === "done" && preview.data?.settings_summary && <PrepareSettingsSummary summary={preview.data.settings_summary} mode={preview.data.prepare_mode} preview onPreparePreserve={() => runConvert("preserve")} onPrepareRecommended={() => runConvert("recommended")} />}
+      {preview.status === "done" && preview.data?.settings_summary && <PrepareSettingsSummary summary={preview.data.settings_summary} mode={preview.data.prepare_mode} isStl={file.ext === "stl"} preview onPreparePreserve={() => runConvert("preserve")} onPrepareRecommended={() => runConvert("recommended")} />}
       {preview.status === "error" && <p className="text-sm text-risk">{preview.error}</p>}
 
       {/* At-a-glance summary + primary action, visible without scrolling */}
@@ -229,7 +229,7 @@ export default function DesignInsights() {
               </div>
               <p className="mt-0.5 text-xs text-muted-foreground">We make a U1 profile copy — your original is never changed.</p>
             </div>
-            <Button onClick={() => runConvert()} disabled={convert.status === "loading"} className="shrink-0">
+            <Button onClick={() => runConvert()} disabled={convert.status === "loading" || preview.status === "loading"} className="shrink-0">
               {convert.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
               {convert.status === "loading" ? "Preparing…" : "Prepare U1 copy"}
             </Button>
@@ -554,7 +554,7 @@ export default function DesignInsights() {
                   : <p className="pt-1 text-xs text-muted-foreground">We'll use the recommended setup. No need to choose unless you want to.</p>}
               </div>
 
-              <Button className="w-full" onClick={() => runConvert()} disabled={convert.status === "loading"}>
+              <Button className="w-full" onClick={() => runConvert()} disabled={convert.status === "loading" || preview.status === "loading"}>
                 {convert.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                 {convert.status === "loading" ? "Preparing…" : "Prepare U1 copy"}
               </Button>

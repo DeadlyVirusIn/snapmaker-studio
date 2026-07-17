@@ -74,7 +74,7 @@ export default function LiveWorkspace() {
           <Button variant="secondary" size="sm" onClick={openFile}>
             <FolderOpen className="h-4 w-4" /> Open another
           </Button>
-          <Button onClick={() => runConvert()} disabled={converting || doctor.status === "loading"}>
+          <Button onClick={() => runConvert()} disabled={converting || preview.status === "loading" || doctor.status === "loading"}>
             {converting ? <Spinner /> : <Wand2 className="h-4 w-4" />} Prepare U1 copy
           </Button>
         </div>
@@ -170,7 +170,7 @@ export default function LiveWorkspace() {
 
       {file.ext !== "stl" && <PrepareModeChooser mode={prepareMode} onModeChange={setPrepareMode} onCustom={previewConvert} previewing={preview.status === "loading"} />}
       {file.ext === "stl" && <p className="rounded-md border border-border p-3 text-sm text-muted-foreground">{STARTER_NOTICE}</p>}
-      {preview.status === "done" && preview.data?.settings_summary && <PrepareSettingsSummary summary={preview.data.settings_summary} mode={preview.data.prepare_mode} preview onPreparePreserve={() => runConvert("preserve")} onPrepareRecommended={() => runConvert("recommended")} />}
+      {preview.status === "done" && preview.data?.settings_summary && <PrepareSettingsSummary summary={preview.data.settings_summary} mode={preview.data.prepare_mode} isStl={file.ext === "stl"} preview onPreparePreserve={() => runConvert("preserve")} onPrepareRecommended={() => runConvert("recommended")} />}
       {preview.status === "error" && <p className="text-sm text-risk">{preview.error}</p>}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_300px]">
@@ -230,7 +230,7 @@ export default function LiveWorkspace() {
                 <div className="pt-1">
                   <OrcaHandoff outputPath={convert.data.output_path} />
                 </div>
-                {convert.data.settings_summary && <PrepareSettingsSummary summary={convert.data.settings_summary} mode={convert.data.prepare_mode} onPrepareRecommended={() => runConvert("recommended")} />}
+                {convert.data.settings_summary && <PrepareSettingsSummary summary={convert.data.settings_summary} mode={convert.data.prepare_mode} isStl={file.ext === "stl"} onPrepareRecommended={() => runConvert("recommended")} />}
               </CardContent>
             </Card>
           )}
@@ -241,7 +241,7 @@ export default function LiveWorkspace() {
                   <AlertTriangle className="h-5 w-5" /> Preparation failed
                 </div>
                 <p className="text-sm text-muted-foreground">{convert.error}</p>
-                <Button variant="secondary" size="sm" onClick={() => runConvert()}>
+                <Button variant="secondary" size="sm" onClick={() => runConvert()} disabled={preview.status === "loading"}>
                   <RotateCw className="h-4 w-4" /> Retry
                 </Button>
               </CardContent>

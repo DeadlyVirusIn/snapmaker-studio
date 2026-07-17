@@ -26,7 +26,19 @@ describe("PrepareSettingsSummary", () => {
   });
 
   it("renders the STL starter notice", () => {
-    const html = renderToStaticMarkup(<PrepareSettingsSummary summary={{ ...summary, source_has_creator_settings: false, warnings: [] }} mode="starter" />);
+    const html = renderToStaticMarkup(<PrepareSettingsSummary summary={{ ...summary, source_has_creator_settings: false, warnings: [] }} mode="starter" isStl />);
     expect(html).toContain(STARTER_NOTICE);
+  });
+
+  it("omits empty sections and renders all starter warnings", () => {
+    const html = renderToStaticMarkup(<PrepareSettingsSummary summary={{ ...summary, kept_count: 0, compat_changed: [], recommendations_available: true, recommended_changes: [] }} mode="preserve" />);
+    expect(html).not.toContain("Kept from the original file");
+    expect(html).not.toContain("Changed for U1 compatibility");
+    expect(html).not.toContain("Optional recommendations");
+    const starter = renderToStaticMarkup(<PrepareSettingsSummary summary={{ ...summary, source_has_creator_settings: false, warnings: ["one", "two"] }} mode="starter" isStl={false} />);
+    expect(starter).toContain("This file does not include creator slicer settings");
+    expect(starter).toContain("Warnings");
+    expect(starter).toContain("one");
+    expect(starter).toContain("two");
   });
 });

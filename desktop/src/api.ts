@@ -100,7 +100,7 @@ export interface ConversionResult {
   errors?: string[];
 }
 
-export async function convert(path: string, outDir?: string, prepareMode?: PrepareMode, dryRun = false): Promise<ConversionResult> {
+export async function convert(path: string, outDir?: string, prepareMode: PrepareMode = "preserve", dryRun = false): Promise<ConversionResult> {
   const { port, token } = await apiInfo();
   const r = await fetch(`http://127.0.0.1:${port}/convert`, {
     method: "POST",
