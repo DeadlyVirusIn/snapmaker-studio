@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   ShieldCheck, FilePlus, AlertTriangle, CheckCircle2, Loader2, Info, ArrowRight,
@@ -7,8 +7,10 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/layout";
-import { open3mfDialog, compatibilityCheck, convert, type CompatibilityResult } from "@/api";
+import { open3mfDialog, compatibilityCheck, convert, type CompatibilityResult, type ConversionResult, type PrepareMode } from "@/api";
 import { OrcaHandoff } from "@/components/OrcaHandoff";
+import { PrepareModeChooser } from "@/components/PrepareModeChooser";
+import { PrepareSettingsSummary } from "@/components/PrepareSettingsSummary";
 import { Copy, Stethoscope } from "lucide-react";
 import { COMPAT_COPY, sortFindings, severityLabel, severityToken, countFindings } from "@/lib/compatibility";
 import { useModelPath } from "@/hooks/useModelPath";
@@ -18,6 +20,9 @@ export default function Compatibility() {
   const { path, fromSession, override } = useModelPath(isExt("3mf"));
   const [result, setResult] = useState<CompatibilityResult | null>(null);
   const [prep, setPrep] = useState<Awaited<ReturnType<typeof convert>> | null>(null);
+  const [prepareMode, setPrepareMode] = useState<PrepareMode>("preserve");
+  const [preview, setPreview] = useState<ConversionResult | null>(null);
+  const requestGeneration = useRef(0);
 
   const checkM = useMutation({
     mutationFn: (p: string) => compatibilityCheck(p),
@@ -25,8 +30,14 @@ export default function Compatibility() {
   });
 
   const prepM = useMutation({
-    mutationFn: () => convert(path!),
-    onSuccess: (d) => setPrep(d),
+    mutationFn: ({ path: requestPath, mode }: { path: string; mode: PrepareMode; generation: number }) => convert(requestPath, undefined, mode),
+    onMutate: () => setPrep(null),
+    onSuccess: (d, variables) => { if (variables.generation === requestGeneration.current) setPrep(d); },
+  });
+  const previewM = useMutation({
+    mutationFn: ({ path: requestPath }: { path: string; generation: number }) => convert(requestPath, undefined, "preserve", true),
+    onMutate: () => setPreview(null),
+    onSuccess: (d, variables) => { if (variables.generation === requestGeneration.current) setPreview(d); },
   });
 
   // Reuse a 3MF already open in the session: check it automatically instead of
@@ -39,7 +50,7 @@ export default function Compatibility() {
   async function pick() {
     const p = await open3mfDialog();
     if (!p) return;
-    override(p); setResult(null); setPrep(null);
+    requestGeneration.current++; override(p); setResult(null); setPrep(null); setPreview(null); setPrepareMode("preserve");
     checkM.mutate(p);
   }
 
@@ -60,7 +71,7 @@ export default function Compatibility() {
       </div>
 
       <Card><CardContent className="flex items-center gap-3 p-5">
-        <Button variant="secondary" size="sm" onClick={pick} disabled={checkM.isPending}>
+        <Button variant="secondary" size="sm" onClick={pick} disabled={checkM.isPending || prepM.isPending || previewM.isPending}>
           <FilePlus className="h-4 w-4" /> {path ? (fromSession ? "Using your open 3MF — choose another" : "Choose another 3MF") : "Open a 3MF project"}
         </Button>
         {path && <span className="truncate text-xs text-muted-foreground" title={path}>{path.split(/[\\/]/).pop()}</span>}
@@ -111,7 +122,10 @@ export default function Compatibility() {
                 This model may be fine, but the project settings are for another printer. Studio can
                 prepare a U1 profile copy so Orca opens it with U1-compatible settings.
               </p>
-              <Button size="sm" onClick={() => prepM.mutate()} disabled={prepM.isPending || !path}>
+              <PrepareModeChooser mode={prepareMode} onModeChange={setPrepareMode} onCustom={() => path && previewM.mutate({ path, generation: ++requestGeneration.current })} previewing={previewM.isPending || prepM.isPending} />
+              {preview && <PrepareSettingsSummary summary={preview.settings_summary} mode={preview.prepare_mode} isStl={false} preview onPreparePreserve={() => { if (path) { setPrepareMode("preserve"); prepM.mutate({ path, mode: "preserve", generation: ++requestGeneration.current }); } }} onPrepareRecommended={() => { if (path) { setPrepareMode("recommended"); prepM.mutate({ path, mode: "recommended", generation: ++requestGeneration.current }); } }} />}
+              {previewM.isError && <p className="text-sm text-risk">Couldn&apos;t review settings: {(previewM.error as Error).message}</p>}
+              <Button size="sm" onClick={() => path && prepM.mutate({ path, mode: prepareMode, generation: ++requestGeneration.current })} disabled={prepM.isPending || previewM.isPending || !path}>
                 {prepM.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus className="h-4 w-4" />}
                 Prepare U1 copy
               </Button>
@@ -126,13 +140,14 @@ export default function Compatibility() {
                 <CheckCircle2 className="h-4 w-4" /> U1 profile copy created
               </p>
               <p className="truncate text-xs text-muted-foreground" title={prep.output_path}>
-                Saved as <b>{prep.output_name}</b> · {prep.validated_ok ? "profile & settings updated" : "see notes"} (new file — original untouched).
+                Saved as <b>{prep.output_name}</b> · creator settings kept where possible; review in Orca before slicing. (new file — original untouched).
               </p>
               <p className="flex items-start gap-1.5 rounded-md border border-doctor-cost/40 bg-doctor-cost/5 p-2 text-[11px] text-muted-foreground">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-doctor-cost" />
-                Layout isn't verified — Studio fixed settings/profile, not object placement. Open in
+                Layout is not verified — this checks the U1 profile copy, not object placement. Open in
                 Snapmaker Orca and use <b>Arrange all plates</b> before slicing; objects may sit outside a plate.
               </p>
+              {prep.settings_summary && <PrepareSettingsSummary summary={prep.settings_summary} mode={prep.prepare_mode} isStl={false} onPrepareRecommended={() => { if (path) { setPrepareMode("recommended"); prepM.mutate({ path, mode: "recommended", generation: ++requestGeneration.current }); } }} />}
               {prep.errors && prep.errors.length > 0 && (
                 <ul className="space-y-1 text-xs text-muted-foreground">
                   {prep.errors.map((e: string, i: number) => <li key={i}>• {e}</li>)}

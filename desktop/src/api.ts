@@ -72,12 +72,40 @@ export async function doctor(path: string): Promise<any> {
   return r.json();
 }
 
-export async function convert(path: string, outDir?: string): Promise<any> {
+export type PrepareMode = "preserve" | "recommended";
+
+export interface SettingsChange {
+  key: string;
+  old: unknown;
+  new: unknown;
+}
+
+export interface SettingsSummary {
+  source_has_creator_settings: boolean;
+  kept_count: number;
+  compat_changed: SettingsChange[];
+  could_not_carry: { key: string; reason: string }[];
+  warnings: string[];
+  recommendations_available: boolean;
+  recommended_changes: SettingsChange[];
+}
+
+export interface ConversionResult {
+  schema_version: "convert/2" | string;
+  prepare_mode: PrepareMode | "starter";
+  settings_summary: SettingsSummary;
+  output_path: string;
+  output_name: string;
+  validated_ok: boolean;
+  errors?: string[];
+}
+
+export async function convert(path: string, outDir?: string, prepareMode: PrepareMode = "preserve", dryRun = false): Promise<ConversionResult> {
   const { port, token } = await apiInfo();
   const r = await fetch(`http://127.0.0.1:${port}/convert`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Auth-Token": token },
-    body: JSON.stringify({ path, out_dir: outDir ?? null }),
+    body: JSON.stringify({ path, out_dir: outDir ?? null, prepare_mode: prepareMode, dry_run: dryRun || undefined }),
   });
   if (!r.ok) {
     let msg = `convert failed (${r.status})`;

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { doctor as apiDoctor, convert as apiConvert, diff as apiDiff } from "@/api";
+import { doctor as apiDoctor, convert as apiConvert, diff as apiDiff, type ConversionResult, type PrepareMode, type SettingsSummary } from "@/api";
 
 export interface FileRef {
   path: string;
@@ -16,6 +16,7 @@ export interface AsyncState<T> {
 }
 
 const blank = <T>(): AsyncState<T> => ({ status: "idle", data: null, error: null });
+let requestGeneration = 0;
 
 function toFileRef(path: string): FileRef {
   const name = path.split(/[\\/]/).pop() || path;
@@ -27,11 +28,16 @@ interface SessionState {
   file: FileRef | null;
   doctor: AsyncState<any>;
   convert: AsyncState<any>;
+  prepareMode: PrepareMode;
+  settingsSummary: SettingsSummary | null;
+  preview: AsyncState<ConversionResult>;
   diff: AsyncState<any>;
   /** Select a file and immediately run Doctor on it. */
   setFile: (path: string) => void;
   runDoctor: () => Promise<void>;
-  runConvert: () => Promise<void>;
+  setPrepareMode: (mode: PrepareMode) => void;
+  runConvert: (mode?: PrepareMode) => Promise<void>;
+  previewConvert: () => Promise<void>;
   runDiff: () => Promise<void>;
   reset: () => void;
 }
@@ -40,43 +46,68 @@ export const useSession = create<SessionState>((set, get) => ({
   file: null,
   doctor: blank(),
   convert: blank(),
+  prepareMode: "preserve",
+  settingsSummary: null,
+  preview: blank(),
   diff: blank(),
 
   setFile: (path) => {
-    set({ file: toFileRef(path), doctor: blank(), convert: blank(), diff: blank() });
+    requestGeneration++;
+    set({ file: toFileRef(path), doctor: blank(), convert: blank(), diff: blank(), prepareMode: "preserve", settingsSummary: null, preview: blank() });
     void get().runDoctor();
   },
 
   runDoctor: async () => {
     const file = get().file;
     if (!file) return;
-    const p = file.path; // guard: ignore results if the active file changes
+    const p = file.path;
+    const generation = ++requestGeneration;
     set({ doctor: { status: "loading", data: null, error: null } });
     try {
       const data = await apiDoctor(p);
-      if (get().file?.path !== p) return;
+      if (requestGeneration !== generation || get().file?.path !== p) return;
       set({ doctor: { status: "done", data, error: null } });
     } catch (e: any) {
-      if (get().file?.path !== p) return;
+      if (requestGeneration !== generation || get().file?.path !== p) return;
       set({ doctor: { status: "error", data: null, error: String(e?.message ?? e) } });
     }
   },
 
-  runConvert: async () => {
+  setPrepareMode: (prepareMode) => set({ prepareMode }),
+
+  runConvert: async (mode) => {
     const file = get().file;
     if (!file) return;
     const p = file.path;
-    set({ convert: { status: "loading", data: null, error: null }, diff: blank() });
+    const generation = ++requestGeneration;
+    const prepareMode = mode ?? get().prepareMode;
+    set({ prepareMode, convert: { status: "loading", data: null, error: null }, diff: blank(), settingsSummary: null });
     try {
-      const data = await apiConvert(p);
-      if (get().file?.path !== p) return;
-      set({ convert: { status: "done", data, error: null } });
+      const data = await apiConvert(p, undefined, prepareMode);
+      if (requestGeneration !== generation || get().file?.path !== p) return;
+      set({ convert: { status: "done", data, error: null }, settingsSummary: data.settings_summary ?? null });
       // Auto-compare only when there's a source *project* to diff against.
       // STL inputs are wrapped into a brand-new U1 project — nothing to compare.
       if (file.ext === "3mf") void get().runDiff();
     } catch (e: any) {
-      if (get().file?.path !== p) return;
-      set({ convert: { status: "error", data: null, error: String(e?.message ?? e) } });
+      if (requestGeneration !== generation || get().file?.path !== p) return;
+      set({ convert: { status: "error", data: null, error: String(e?.message ?? e) }, settingsSummary: null });
+    }
+  },
+
+  previewConvert: async () => {
+    const file = get().file;
+    if (!file) return;
+    const p = file.path;
+    const generation = ++requestGeneration;
+    set({ preview: { status: "loading", data: null, error: null } });
+    try {
+      const data = await apiConvert(p, undefined, "preserve", true);
+      if (requestGeneration !== generation || get().file?.path !== p) return;
+      set({ preview: { status: "done", data, error: null }, settingsSummary: data.settings_summary ?? null });
+    } catch (e: any) {
+      if (requestGeneration !== generation || get().file?.path !== p) return;
+      set({ preview: { status: "error", data: null, error: String(e?.message ?? e) } });
     }
   },
 
@@ -96,5 +127,5 @@ export const useSession = create<SessionState>((set, get) => ({
     }
   },
 
-  reset: () => set({ file: null, doctor: blank(), convert: blank(), diff: blank() }),
+  reset: () => set({ file: null, doctor: blank(), convert: blank(), diff: blank(), prepareMode: "preserve", settingsSummary: null, preview: blank() }),
 }));
