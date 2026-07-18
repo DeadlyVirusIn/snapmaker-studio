@@ -120,14 +120,39 @@ def _action_reasons(report: dict) -> tuple[dict[str, str], set[str], set[str]]:
     return reasons, cleared, mapped
 
 
+def _strict_value_equal(a, b) -> bool:
+    """Compare settings values without Python's cross-type equality coercion."""
+    if type(a) is not type(b):
+        return False
+    if isinstance(a, list):
+        return len(a) == len(b) and all(_strict_value_equal(x, y) for x, y in zip(a, b))
+    if isinstance(a, dict):
+        if len(a) != len(b):
+            return False
+        unmatched = list(b)
+        for key, value in a.items():
+            for candidate in unmatched:
+                if _strict_value_equal(key, candidate):
+                    break
+            else:
+                return False
+            if not _strict_value_equal(value, b[candidate]):
+                return False
+            unmatched.remove(candidate)
+        return True
+    return a == b
+
+
 def _is_preserved_value_mapping(old, new) -> bool:
     """Whether a resize only retained values or repeated the final one."""
     values = old if isinstance(old, list) else [old]
     if not values or not isinstance(new, list):
         return False
     if len(new) >= len(values):
-        return new == values + [values[-1]] * (len(new) - len(values))
-    return new == values[:len(new)]
+        expected = values + [values[-1]] * (len(new) - len(values))
+    else:
+        expected = values[:len(new)]
+    return _strict_value_equal(new, expected)
 
 
 def _settings_summary(before: dict, after: dict, raw_config: bytes, outcome,
@@ -214,7 +239,7 @@ def _settings_summary(before: dict, after: dict, raw_config: bytes, outcome,
     return summary
 
 
-_U1_OUTPUT_SUFFIX = re.compile(r"(?:_SnapmakerU1(?:_\d+)?)+$")
+_U1_OUTPUT_SUFFIX = re.compile(r"(?:_SnapmakerU1(?:_\d+)?)+$", re.IGNORECASE)
 
 
 def _output_base_stem(stem: str) -> str:

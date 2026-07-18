@@ -253,6 +253,23 @@ def test_mapped_filament_value_substitution_stays_compat_changed():
     assert not summary["mapped_to_u1"]
 
 
+def test_mapped_filament_type_coercions_stay_compat_changed():
+    for old, new in (([220], [220.0, 220.0]), ([1], [True, True])):
+        before = {"filament_retraction_length": old}
+        after = {"filament_retraction_length": new}
+        outcome = SimpleNamespace(report={
+            "filament_array_changes": [{
+                "key": "filament_retraction_length", "old": old, "new": new,
+                "reason": "resized to match the filament count", "category": "mapped",
+            }],
+        })
+
+        summary = _settings_summary(before, after, b"test", outcome, "preserve")
+
+        assert [item["key"] for item in summary["compat_changed"]] == ["filament_retraction_length"]
+        assert not summary["mapped_to_u1"]
+
+
 def test_convert_existing_u1_suffix_does_not_double_output_marker(tmp_path):
     src, _ = _creator_project(tmp_path)
     marked = src.with_name("creator_SnapmakerU1.3mf")
@@ -261,6 +278,19 @@ def test_convert_existing_u1_suffix_does_not_double_output_marker(tmp_path):
     assert re.fullmatch(r"creator_SnapmakerU1(?:_\d+)?\.3mf", result.output_name)
     assert result.output_name == "creator_SnapmakerU1_2.3mf"
     assert result.output_name.count("_SnapmakerU1") == 1
+
+
+def test_convert_case_insensitive_u1_suffix_does_not_double_output_marker(tmp_path):
+    for stem in ("part_snapmakeru1", "part_SNAPMAKERU1_2"):
+        case_dir = tmp_path / stem
+        case_dir.mkdir()
+        src, _ = _creator_project(case_dir)
+        marked = src.with_name(f"{stem}.3mf")
+        src.rename(marked)
+
+        result = convert_to_u1(str(marked))
+
+        assert result.output_name.lower().count("snapmakeru1") == 1
 
 
 def test_preservation_invariant_rejects_unaccounted_mutation(tmp_path, monkeypatch):
