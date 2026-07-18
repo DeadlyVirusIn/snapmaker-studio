@@ -6,11 +6,11 @@ Docs must reference this file instead of duplicating hashes/sizes/versions. Upda
 
 | Field | Value |
 |---|---|
-| Version | v0.4.0-beta.21.1 |
-| Installer | `Snapmaker.Studio_0.4.0-beta.21.1_x64-setup.exe` |
-| Size (bytes) | 16,136,737 |
-| SHA256 | `53f5de884f5e39eba7843deeda119c44049043cb3cc5b8323cf6ce95ba22bf22` |
-| Release URL | https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.21.1 |
+| Version | v0.4.0-beta.21.2 |
+| Installer | `Snapmaker.Studio_0.4.0-beta.21.2_x64-setup.exe` |
+| Size (bytes) | 16,156,282 |
+| SHA256 | `febd9d1be9e3a96a9567cad987c5cf14352815868e3d29ca9ef030045d98aa4a` |
+| Release URL | https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.21.2 |
 | Trust status | PARTIAL / PENDING — see [docs/TRUST_STATUS.md](TRUST_STATUS.md) |
 
 Note: verify with `Get-FileHash -Algorithm SHA256 <installer>`.

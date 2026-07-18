@@ -43,7 +43,9 @@ print-quality problems.
 ## Download & verify
 
 - Installer: `Snapmaker.Studio_0.4.0-beta.21.2_x64-setup.exe` (attached below)
-- SHA256 and size: see [docs/RELEASE_METADATA.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/RELEASE_METADATA.md)
+- Size: 16,156,282 bytes
+- SHA256: `febd9d1be9e3a96a9567cad987c5cf14352815868e3d29ca9ef030045d98aa4a`
+- Also recorded in [docs/RELEASE_METADATA.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.21.2/docs/RELEASE_METADATA.md)
 - The installer is not code-signed yet, so Windows SmartScreen may show "Unknown publisher". Download only from this GitHub release page and verify the checksum first:
   `Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.21.2_x64-setup.exe`
 

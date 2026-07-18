@@ -26,7 +26,7 @@ conversion on any unreported change.
 | Frontend | **PASS** — tsc clean; vitest 150 passed (adds mode-chooser, summary, race-safety, copy-guard tests) |
 | Original-vs-prepared diff proof | **PASS** — creator-tuned fixture: all quality settings preserved byte-identical (temps, retraction, speed, accel, cooling, supports, layer height, tower, print order); zero unaccounted changes; recommended mode reproduces the old swap only when selected |
 | Independent code review | Two independent review passes (initial BLOCK verdicts; all CRITICAL/HIGH findings fixed: summary secret redaction, per-extruder value loss, scrub allowlist, invariant tautology, UI races, overclaim copy) — final re-review recorded in `docs/internal/` |
-| Installer integrity / SHA256 | **PENDING** — build not yet produced |
+| Installer integrity / SHA256 | **PASS** — `Snapmaker.Studio_0.4.0-beta.21.2_x64-setup.exe`, 16,156,282 bytes, SHA256 `febd9d1be9e3a96a9567cad987c5cf14352815868e3d29ca9ef030045d98aa4a` (see [RELEASE_METADATA.md](RELEASE_METADATA.md)) |
 | Scripted install smoke | **PENDING** |
 | Interactive GUI acceptance | **PENDING (manual installed-app acceptance)** |
 | Overall trust status | **PARTIAL / PENDING — not accepted** |
