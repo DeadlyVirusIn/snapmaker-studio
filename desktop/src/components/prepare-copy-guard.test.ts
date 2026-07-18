@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 
 const BANNED = ["optimized", "safe settings", "we fixed", "best", "ready", "clean"];
+const BANNED_PATTERNS = [/\bsafe\b/i, /print-ready/i, /guaranteed/i];
 const sources = import.meta.glob([
   "./PrepareModeChooser.tsx",
   "./PrepareSettingsSummary.tsx",
@@ -26,7 +27,10 @@ function sourceWithoutAllowlistedLines(path: string, source: string) {
 
 describe("prepare copy", () => {
   it("contains none of the disallowed wording", () => {
-    const text = Object.entries(sources).map(([path, source]) => sourceWithoutAllowlistedLines(path, source)).join("\n").toLowerCase();
-    expect(BANNED.filter((word) => text.includes(word))).toEqual([]);
+    const text = Object.entries(sources).map(([path, source]) => sourceWithoutAllowlistedLines(path, source)).join("\n");
+    expect([
+      ...BANNED.filter((word) => text.toLowerCase().includes(word)),
+      ...BANNED_PATTERNS.filter((pattern) => pattern.test(text)).map(String),
+    ]).toEqual([]);
   });
 });

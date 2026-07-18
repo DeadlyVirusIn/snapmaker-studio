@@ -157,7 +157,7 @@ export default function DesignInsights() {
             <div>
               <h2 className="text-xl font-semibold">{setupRisk ? "U1 copy created — review setup before slicing" : "U1 copy created"}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                We made a U1 copy of <b>{file.name}</b> and your original is kept safe.
+                We made a U1 copy of <b>{file.name}</b>. Your original file is not modified.
                 {setupRisk
                   ? " Print-setup risks remain (see the checks) — open in Snapmaker Orca, arrange plates and review supports/colours before slicing."
                   : " This is an advisory check, not a guarantee — slice in Snapmaker Orca to confirm."}
