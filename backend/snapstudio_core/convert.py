@@ -85,18 +85,20 @@ def _starter_summary(*, geometry_only: bool) -> dict:
         could_not_carry.append({"key": "foreign model/slicer metadata",
                                 "reason": "geometry only; foreign model/slicer metadata is not carried"})
     return {
-        "summary_schema": "settings-summary/1", "engine_version": _engine_version(),
+        "summary_schema": "settings-summary/2", "engine_version": _engine_version(),
         "profile_name": "Snapmaker U1 starter profile", "source_config_sha256": None,
         "source_has_creator_settings": False, "kept_count": 0,
-        "compat_changed": [], "could_not_carry": could_not_carry, "warnings": warnings,
+        "compat_changed": [], "mapped_to_u1": [], "could_not_carry": could_not_carry,
+        "warnings": warnings,
         "recommendations_available": False, "recommended_changes": [],
     }
 
 
-def _action_reasons(report: dict) -> tuple[dict[str, str], set[str]]:
+def _action_reasons(report: dict) -> tuple[dict[str, str], set[str], set[str]]:
     """Consume RepairOutcome detail while the independent diff remains authoritative."""
     reasons: dict[str, str] = {}
     cleared: set[str] = set()
+    mapped: set[str] = set()
     groups = [report.get("normalizations", []), report.get("profile_changes", []),
               report.get("filament_array_changes", []),
               report.get("value_normalizations", []), report.get("preserved_value_changes", []),
@@ -110,10 +112,47 @@ def _action_reasons(report: dict) -> tuple[dict[str, str], set[str]]:
             reason = item.get("reason")
             if isinstance(reason, str) and reason:
                 reasons[item["key"]] = reason
+            if item.get("category") == "mapped":
+                mapped.add(item["key"])
     for item in report.get("foreign_cleared", []):
         if isinstance(item, dict):
             cleared.add(item["key"])
-    return reasons, cleared
+    return reasons, cleared, mapped
+
+
+def _strict_value_equal(a, b) -> bool:
+    """Compare settings values without Python's cross-type equality coercion."""
+    if type(a) is not type(b):
+        return False
+    if isinstance(a, list):
+        return len(a) == len(b) and all(_strict_value_equal(x, y) for x, y in zip(a, b))
+    if isinstance(a, dict):
+        if len(a) != len(b):
+            return False
+        unmatched = list(b)
+        for key, value in a.items():
+            for candidate in unmatched:
+                if _strict_value_equal(key, candidate):
+                    break
+            else:
+                return False
+            if not _strict_value_equal(value, b[candidate]):
+                return False
+            unmatched.remove(candidate)
+        return True
+    return a == b
+
+
+def _is_preserved_value_mapping(old, new) -> bool:
+    """Whether a resize only retained values or repeated the final one."""
+    values = old if isinstance(old, list) else [old]
+    if not values or not isinstance(new, list):
+        return False
+    if len(new) >= len(values):
+        expected = values + [values[-1]] * (len(new) - len(values))
+    else:
+        expected = values[:len(new)]
+    return _strict_value_equal(new, expected)
 
 
 def _settings_summary(before: dict, after: dict, raw_config: bytes, outcome,
@@ -121,7 +160,7 @@ def _settings_summary(before: dict, after: dict, raw_config: bytes, outcome,
                       recommended_after: dict | None = None) -> dict:
     profile = load_profile(profile_name)
     diffs = config_diff(before, after)  # independent source of truth (A13)
-    reasons, cleared = _action_reasons(outcome.report)
+    reasons, cleared, mapped_keys = _action_reasons(outcome.report)
     allowlist = machine_compat_keys(profile)
     slice_info = {
         item["key"]: item["reason"]
@@ -129,7 +168,7 @@ def _settings_summary(before: dict, after: dict, raw_config: bytes, outcome,
         if isinstance(item, dict) and isinstance(item.get("key"), str)
         and isinstance(item.get("reason"), str) and item["reason"]
     }
-    compat, could_not_carry = [], []
+    compat, mapped_to_u1, could_not_carry = [], [], []
     unexplained = []
     for item in diffs:
         key = item["key"]
@@ -137,6 +176,12 @@ def _settings_summary(before: dict, after: dict, raw_config: bytes, outcome,
             # Values in this category were deliberately discarded.  They may
             # be credentials or arbitrary creator G-code, so never echo them.
             could_not_carry.append({"key": key, "reason": reasons[key]})
+        elif key in mapped_keys and _is_preserved_value_mapping(item["old"], item["new"]):
+            mapped_to_u1.append({
+                "key": key, "old": display_value(item["old"], key=key),
+                "new": display_value(item["new"], key=key),
+                "reason": "carried over to U1 toolheads (values preserved)",
+            })
         elif key in reasons:
             compat.append({"key": key, "old": display_value(item["old"], key=key),
                            "new": display_value(item["new"], key=key),
@@ -173,12 +218,13 @@ def _settings_summary(before: dict, after: dict, raw_config: bytes, outcome,
             })
 
     summary = {
-        "summary_schema": "settings-summary/1", "engine_version": _engine_version(),
+        "summary_schema": "settings-summary/2", "engine_version": _engine_version(),
         "profile_name": profile.get("name", profile_name),
         "source_config_sha256": hashlib.sha256(raw_config).hexdigest(),
         "source_has_creator_settings": True,
         "kept_count": sum(1 for key, value in before.items() if key in after and after[key] == value),
-        "compat_changed": compat, "could_not_carry": could_not_carry,
+        "compat_changed": compat, "mapped_to_u1": mapped_to_u1,
+        "could_not_carry": could_not_carry,
         "warnings": list(outcome.report.get("warnings", [])),
         "recommendations_available": prepare_mode == "preserve",
         "recommended_changes": recommended_changes if prepare_mode == "preserve" else [],
@@ -193,14 +239,22 @@ def _settings_summary(before: dict, after: dict, raw_config: bytes, outcome,
     return summary
 
 
+_U1_OUTPUT_SUFFIX = re.compile(r"(?:_SnapmakerU1(?:_\d+)?)+$", re.IGNORECASE)
+
+
+def _output_base_stem(stem: str) -> str:
+    return _U1_OUTPUT_SUFFIX.sub("", stem)
+
+
 def _unique_output(src: Path, out_dir: Path | None) -> Path:
     target_dir = out_dir if out_dir else src.parent
-    out = target_dir / f"{src.stem}_SnapmakerU1.3mf"
+    base_stem = _output_base_stem(src.stem)
+    out = target_dir / f"{base_stem}_SnapmakerU1.3mf"
     # Never collide with the source, and never silently overwrite a previous
     # conversion: bump a numeric suffix until the path is free.
     n = 2
     while out.resolve() == src.resolve() or out.exists():
-        out = target_dir / f"{src.stem}_SnapmakerU1_{n}.3mf"
+        out = target_dir / f"{_output_base_stem(src.stem)}_SnapmakerU1_{n}.3mf"
         n += 1
     return out
 

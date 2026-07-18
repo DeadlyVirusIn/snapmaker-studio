@@ -3,16 +3,18 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import shutil
 import struct
 import threading
 import urllib.error
 import urllib.request
+from types import SimpleNamespace
 from pathlib import Path
 
 from snapstudio_core.config_io import dump_project_settings, load_project_settings
 from snapstudio_core.container import ThreeMF
-from snapstudio_core.convert import convert_to_u1
+from snapstudio_core.convert import _settings_summary, convert_to_u1
 from snapstudio_core.filaments import PER_FILAMENT_KEYS
 from snapstudio_core.preserve import CATEGORY_A, config_diff, display_value
 from snapstudio_core import repair as repair_module
@@ -99,18 +101,22 @@ def test_preserve_keeps_creator_quality_and_accounts_for_every_change(tmp_path):
         else:
             assert after[key] == before[key], key
     compat_changed = result.settings_summary["compat_changed"]
+    mapped_to_u1 = result.settings_summary["mapped_to_u1"]
     changed = {item["key"] for item in compat_changed}
     assert {"printer_model", "printer_settings_id", "print_settings_id"} <= changed
     print_settings = next(item for item in compat_changed if item["key"] == "print_settings_id")
     assert print_settings["old"] == "0.20mm Standard @BBL X1C"
     assert print_settings["new"] == after["print_settings_id"]
     assert "@Snapmaker U1" in after["print_settings_id"]
-    resize = next(item for item in compat_changed if item["key"] == "filament_retraction_length")
+    resize = next(item for item in mapped_to_u1 if item["key"] == "filament_retraction_length")
     assert resize["old"] == before["filament_retraction_length"]
     assert resize["new"] == after["filament_retraction_length"]
-    assert all(d["key"] in changed | {x["key"] for x in result.settings_summary["could_not_carry"]}
+    assert "filament_retraction_length" not in changed
+    assert all(d["key"] in changed | {x["key"] for x in mapped_to_u1}
+               | {x["key"] for x in result.settings_summary["could_not_carry"]}
                for d in config_diff(before, after))
     assert result.settings_summary["source_has_creator_settings"] is True
+    assert result.settings_summary["summary_schema"] == "settings-summary/2"
     assert len(result.settings_summary["source_config_sha256"]) == 64
 
 
@@ -123,6 +129,7 @@ def test_recommended_is_opt_in_and_print_sequence_contract(tmp_path):
     assert _prepared(recommended)["print_sequence"] == "by layer"
     assert _prepared(recommended)["nozzle_temperature"] != before["nozzle_temperature"]
     assert any(x["key"] == "nozzle_temperature" for x in recommended.settings_summary["compat_changed"])
+    assert not any(x["key"] == "nozzle_temperature" for x in recommended.settings_summary["mapped_to_u1"])
     preview = preserve.settings_summary["recommended_changes"]
     assert preview
     # Preview is the complete real recommended pipeline delta, including the
@@ -221,9 +228,69 @@ def test_per_extruder_vector_unusual_size_is_accounted_for(tmp_path):
     result = convert_to_u1(str(src))
     after = _prepared(result)
     assert after["nozzle_temperature"] == ["210", "220", "230", "230"]
-    resize = next(x for x in result.settings_summary["compat_changed"] if x["key"] == "nozzle_temperature")
+    resize = next(x for x in result.settings_summary["mapped_to_u1"] if x["key"] == "nozzle_temperature")
     assert resize["old"] == ["210", "220", "230"] and resize["new"] == after["nozzle_temperature"]
+    assert "carried over" in resize["reason"] and "preserved" in resize["reason"]
+    assert "changed" not in resize["reason"]
+    assert not any(x["key"] == "nozzle_temperature" for x in result.settings_summary["compat_changed"])
     assert any("nozzle_temperature had 3 slots" in warning for warning in result.settings_summary["warnings"])
+
+
+def test_mapped_filament_value_substitution_stays_compat_changed():
+    before = {"filament_retraction_length": ["0.8", "0.9"]}
+    after = {"filament_retraction_length": ["0.8", "replacement"]}
+    outcome = SimpleNamespace(report={
+        "filament_array_changes": [{
+            "key": "filament_retraction_length", "old": before["filament_retraction_length"],
+            "new": after["filament_retraction_length"],
+            "reason": "resized to match the filament count", "category": "mapped",
+        }],
+    })
+
+    summary = _settings_summary(before, after, b"test", outcome, "preserve")
+
+    assert [item["key"] for item in summary["compat_changed"]] == ["filament_retraction_length"]
+    assert not summary["mapped_to_u1"]
+
+
+def test_mapped_filament_type_coercions_stay_compat_changed():
+    for old, new in (([220], [220.0, 220.0]), ([1], [True, True])):
+        before = {"filament_retraction_length": old}
+        after = {"filament_retraction_length": new}
+        outcome = SimpleNamespace(report={
+            "filament_array_changes": [{
+                "key": "filament_retraction_length", "old": old, "new": new,
+                "reason": "resized to match the filament count", "category": "mapped",
+            }],
+        })
+
+        summary = _settings_summary(before, after, b"test", outcome, "preserve")
+
+        assert [item["key"] for item in summary["compat_changed"]] == ["filament_retraction_length"]
+        assert not summary["mapped_to_u1"]
+
+
+def test_convert_existing_u1_suffix_does_not_double_output_marker(tmp_path):
+    src, _ = _creator_project(tmp_path)
+    marked = src.with_name("creator_SnapmakerU1.3mf")
+    src.rename(marked)
+    result = convert_to_u1(str(marked))
+    assert re.fullmatch(r"creator_SnapmakerU1(?:_\d+)?\.3mf", result.output_name)
+    assert result.output_name == "creator_SnapmakerU1_2.3mf"
+    assert result.output_name.count("_SnapmakerU1") == 1
+
+
+def test_convert_case_insensitive_u1_suffix_does_not_double_output_marker(tmp_path):
+    for stem in ("part_snapmakeru1", "part_SNAPMAKERU1_2"):
+        case_dir = tmp_path / stem
+        case_dir.mkdir()
+        src, _ = _creator_project(case_dir)
+        marked = src.with_name(f"{stem}.3mf")
+        src.rename(marked)
+
+        result = convert_to_u1(str(marked))
+
+        assert result.output_name.lower().count("snapmakeru1") == 1
 
 
 def test_preservation_invariant_rejects_unaccounted_mutation(tmp_path, monkeypatch):

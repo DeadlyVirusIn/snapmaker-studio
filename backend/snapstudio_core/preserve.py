@@ -57,7 +57,8 @@ def prepare_preserved_values(cfg: dict, filament_total: int) -> tuple[list[dict]
                     "mapped to four U1 toolheads.")
         cfg[key] = new
         changes.append({"key": key, "old": old, "new": new,
-                        "reason": "resized to 4 toolheads (values preserved)"})
+                        "reason": "resized to 4 toolheads (values preserved)",
+                        "category": "mapped"})
 
     key = "wipe_tower_filament"
     if key in cfg:
