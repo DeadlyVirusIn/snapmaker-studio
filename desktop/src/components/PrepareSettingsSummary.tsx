@@ -11,6 +11,36 @@ function Changes({ changes }: { changes: SettingsChange[] }) {
   return <ul className="space-y-1 text-xs text-muted-foreground">{changes.map((change) => <li key={change.key} className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-1"><span className="truncate font-mono">{change.key}</span><span>:</span><span className="truncate">{value(change.old)} → {value(change.new)}</span></li>)}</ul>;
 }
 
+function compatibilityBullets(changes: SettingsChange[]) {
+  const remaining = new Set(changes);
+  const take = (matches: (change: SettingsChange) => boolean) => {
+    let found = false;
+    for (const change of changes) {
+      if (remaining.has(change) && matches(change)) {
+        remaining.delete(change);
+        found = true;
+      }
+    }
+    return found;
+  };
+  const bullets: string[] = [];
+  if (take((change) => /(identity|printer|compatible_printers)/i.test(change.key))) bullets.push("Printer identity changed to Snapmaker U1");
+  if (take((change) => /gcode/i.test(change.key))) bullets.push("U1 machine start/end G-code applied");
+  if (take((change) => /(filament|toolhead)/i.test(change.key) && (Array.isArray(change.old) || Array.isArray(change.new)))) bullets.push("Toolhead / filament list mapped to U1 layout");
+  if (remaining.size > 0) bullets.push("Project wrapper fields updated for U1");
+  return bullets;
+}
+
+function recommendationSummary(changes: SettingsChange[]) {
+  const examples = new Set<string>();
+  for (const change of changes) {
+    if (/wipe_tower.*wall|tower.*wall/i.test(change.key)) examples.add("tower wall type");
+    else if (/wipe_tower.*(?:x|y|position|placement)|tower.*(?:x|y|position|placement)/i.test(change.key)) examples.add("tower placement");
+  }
+  const count = `${changes.length} optional recommendation${changes.length === 1 ? "" : "s"} available`;
+  return examples.size > 0 ? `${count}, including ${[...examples].join(" and ")}.` : `${count}.`;
+}
+
 export const STARTER_NOTICE = "This STL does not include creator slicer settings. Studio will use a U1 starter profile unless you choose another Orca profile.";
 
 interface Props {
@@ -27,14 +57,17 @@ export function PrepareSettingsSummary({ summary, mode, preview = false, onPrepa
     const notice = isStl ? STARTER_NOTICE : "This file does not include creator slicer settings. Studio will use a U1 starter profile unless you choose another Orca profile.";
     return <Card><CardContent className="space-y-2 p-4 text-sm text-muted-foreground"><p>{notice}</p>{summary.warnings.length > 0 && <section><h3 className="text-sm font-semibold">Warnings</h3><ul className="mt-1 space-y-1 text-xs">{summary.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul></section>}</CardContent></Card>;
   }
+  const mappedToU1 = summary.mapped_to_u1 ?? [];
+  const hasMappedTemperatures = mappedToU1.some((change) => change.key.startsWith("nozzle_temperature"));
+  const compatBullets = compatibilityBullets(summary.compat_changed);
   return (
     <Card>
       <CardContent className="space-y-4 p-4">
         {preview && <p className="text-sm font-medium">Settings preview</p>}
-        {summary.kept_count > 0 && <section><h3 className="text-sm font-semibold">Kept from the original file</h3><p className="text-xs text-muted-foreground">{summary.kept_count} creator settings kept</p><p className="mt-1 text-xs text-muted-foreground">These settings are kept from the original file.</p></section>}
-        {summary.compat_changed.length > 0 && <section><h3 className="text-sm font-semibold">Changed for U1 compatibility</h3><p className="mb-1 text-xs text-muted-foreground">These settings changed only for U1 compatibility.</p><Changes changes={summary.compat_changed} /></section>}
+        {(summary.kept_count > 0 || mappedToU1.length > 0) && <section><h3 className="text-sm font-semibold">Kept from the original file</h3><p className="text-xs text-muted-foreground">{summary.kept_count} creator settings kept</p><p className="mt-1 text-xs text-muted-foreground">These settings are kept from the original file.</p>{hasMappedTemperatures && <p className="mt-1 text-xs text-muted-foreground">Creator temperature values were preserved and mapped to the U1 toolhead layout.</p>}{mappedToU1.length > 0 && <>{!hasMappedTemperatures && <p className="mt-1 text-xs text-muted-foreground">Creator values preserved and mapped to the U1 toolhead layout.</p>}<details className="mt-2 text-xs text-muted-foreground"><summary className="cursor-pointer font-medium">Technical detail</summary><div className="mt-1"><Changes changes={mappedToU1} /></div></details></>}</section>}
+        {summary.compat_changed.length > 0 && <section><h3 className="text-sm font-semibold">Adjusted for U1 project compatibility</h3><p className="mb-1 text-xs text-muted-foreground">These settings changed only for U1 compatibility.</p><ul className="space-y-1 text-xs text-muted-foreground">{compatBullets.map((bullet) => <li key={bullet}>{bullet}</li>)}</ul><details className="mt-2 text-xs text-muted-foreground"><summary className="cursor-pointer font-medium">Technical detail</summary><div className="mt-1"><Changes changes={summary.compat_changed} /></div></details></section>}
         {summary.could_not_carry.length > 0 && <section><h3 className="text-sm font-semibold">Could not carry over</h3><ul className="space-y-1 text-xs text-muted-foreground">{summary.could_not_carry.map((item) => <li key={item.key}><span className="font-mono">{item.key}</span>: {item.reason}</li>)}</ul></section>}
-        {mode === "preserve" && summary.recommendations_available && summary.recommended_changes.length > 0 && <section className="space-y-2"><h3 className="text-sm font-semibold">Optional recommendations (not applied)</h3><p className="text-xs text-muted-foreground">These optional recommendations are not applied unless you choose them.</p><Changes changes={summary.recommended_changes} />{onPrepareRecommended && <Button size="sm" variant="secondary" onClick={onPrepareRecommended}>Prepare another copy with recommended settings</Button>}</section>}
+        {mode === "preserve" && summary.recommendations_available && summary.recommended_changes.length > 0 && <section className="space-y-2"><h3 className="text-sm font-semibold">Optional recommendations (not applied)</h3><p className="text-xs text-muted-foreground">These optional recommendations are not applied unless you choose them.</p><p className="text-xs text-muted-foreground">{recommendationSummary(summary.recommended_changes)}</p><details className="text-xs text-muted-foreground"><summary className="cursor-pointer font-medium">Technical detail</summary><div className="mt-1"><Changes changes={summary.recommended_changes} /></div></details>{onPrepareRecommended && <Button size="sm" variant="secondary" onClick={onPrepareRecommended}>Prepare another copy with recommended settings</Button>}</section>}
         {preview && <div className="flex flex-wrap gap-2">{onPreparePreserve && <Button size="sm" onClick={onPreparePreserve}>Prepare with preserved settings</Button>}{onPrepareRecommended && <Button size="sm" variant="secondary" onClick={onPrepareRecommended}>Prepare with recommended settings</Button>}</div>}
         {summary.warnings.length > 0 && <section><h3 className="text-sm font-semibold">Warnings</h3><ul className="mt-1 space-y-1 text-xs text-muted-foreground">{summary.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul></section>}
       </CardContent>

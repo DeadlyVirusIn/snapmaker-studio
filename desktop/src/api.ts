@@ -83,6 +83,7 @@ export interface SettingsChange {
 export interface SettingsSummary {
   source_has_creator_settings: boolean;
   kept_count: number;
+  mapped_to_u1?: SettingsChange[];
   compat_changed: SettingsChange[];
   could_not_carry: { key: string; reason: string }[];
   warnings: string[];
