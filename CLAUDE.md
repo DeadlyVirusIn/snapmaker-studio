@@ -26,6 +26,28 @@ to the U1 via Printer Hub.
   started yourself (track the PID); check a process's start time / owner before
   touching anything else.
 
+## Positioning & priorities
+
+Positioning: **"The Intelligence Layer for Open 3D Printing."**
+Priorities: Project Doctor, Printer Doctor, Cost Doctor, beginner clarity, judge-ready polish.
+UI work must be verified with real screenshots (anonymized per hard rules) — never claim UI works unseen.
+
+## Commands (verified against manifests 2026-07-05)
+
+```bash
+# desktop/ (Tauri 2 + React 18 + Vite 5 + TS)
+npm run dev              # vite dev server
+npm run build            # tsc && vite build
+npm run test             # vitest run
+npm run build:sidecar    # pwsh ./scripts/build-sidecar.ps1
+npm run release:windows  # build:sidecar && tauri build
+
+# backend/ (Python >=3.13, pytest, CLI: u1convert)
+pytest                   # testpaths: tests
+```
+
+Run `npm run test` (desktop) and `pytest` (backend) before declaring any change done.
+
 ## Layout
 
 - `desktop/` — Tauri + React app (UI, Printer Hub, Doctors).
