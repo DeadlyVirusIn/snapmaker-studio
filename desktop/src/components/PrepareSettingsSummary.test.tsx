@@ -57,30 +57,48 @@ describe("PrepareSettingsSummary", () => {
     expect(adjusted).not.toContain("nozzle_temperature");
   });
 
-  it("uses plain compatibility bullets and hides raw keys in closed technical detail", () => {
+  it("uses plain compatibility bullets and shows unmatched keys before technical detail", () => {
     const withRawChanges = {
       ...summary,
       compat_changed: [
         { key: "compatible_printers", old: ["other"], new: ["Snapmaker U1"] },
         { key: "machine_start_gcode", old: "old", new: "new" },
+        { key: "machine_end_gcode", old: "old", new: "new" },
         { key: "wipe_tower_x", old: 10, new: 20 },
       ],
     };
     const html = renderToStaticMarkup(<PrepareSettingsSummary summary={withRawChanges} mode="preserve" />);
     expect(html).toContain("Printer identity changed to Snapmaker U1");
     expect(html).toContain("U1 machine start/end G-code applied");
-    expect(html).toContain("Project wrapper fields updated for U1");
+    expect(html).not.toContain("Project wrapper fields updated for U1");
     const adjusted = html.slice(html.indexOf("Adjusted for U1 project compatibility"));
     const technicalAt = adjusted.indexOf("<details");
     const defaultView = adjusted.slice(0, technicalAt);
     const technicalDetail = adjusted.slice(technicalAt);
     expect(defaultView).not.toContain("machine_start_gcode");
+    expect(defaultView).not.toContain("machine_end_gcode");
     expect(defaultView).not.toContain("compatible_printers");
-    expect(defaultView).not.toContain("wipe_tower_x");
+    expect(defaultView).toContain("wipe_tower_x");
     expect(technicalDetail).toContain("machine_start_gcode");
+    expect(technicalDetail).toContain("machine_end_gcode");
     expect(technicalDetail).toContain("compatible_printers");
     expect(technicalDetail).toContain("wipe_tower_x");
     expect(html).not.toMatch(/<details[^>]*\sopen(?:=|\s|>)/);
+  });
+
+  it("shows only-start G-code and unmatched compatibility changes in the default view", () => {
+    const html = renderToStaticMarkup(<PrepareSettingsSummary summary={{
+      ...summary,
+      compat_changed: [
+        { key: "machine_start_gcode", old: "old", new: "new" },
+        { key: "pressure_advance", old: 0.02, new: 0.035 },
+      ],
+    }} mode="preserve" />);
+    expect(html).toContain("U1 machine start G-code applied");
+    expect(html).not.toContain("U1 machine start/end G-code applied");
+    const adjusted = html.slice(html.indexOf("Adjusted for U1 project compatibility"));
+    const defaultView = adjusted.slice(0, adjusted.indexOf("<details"));
+    expect(defaultView).toContain("pressure_advance");
   });
 
   it("accepts legacy summaries without mapped_to_u1", () => {
