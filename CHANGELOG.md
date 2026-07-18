@@ -6,6 +6,30 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.4.0-beta.21.3] - 2026-07-18
+
+### Fixed
+- **Preserved settings are no longer listed as "Changed".** Creator temperature,
+  retraction and other per-toolhead values that Studio only maps onto the U1's
+  four-toolhead layout (values preserved) now appear under "Kept from the original
+  file" with the note that they were mapped — never under "Changed for U1
+  compatibility". Genuine value changes (including type changes) still appear as
+  changed.
+- **No more doubled output name.** Preparing a file whose name already ends in
+  `_SnapmakerU1` (any letter case) no longer produces `..._SnapmakerU1_SnapmakerU1.3mf`;
+  Studio now appends a numeric copy suffix instead.
+- **Simpler summary by default.** The prepare summary now leads with plain
+  language (printer identity, U1 machine G-code, toolhead layout); raw setting
+  keys moved behind a "Technical detail" disclosure. Real print-affecting changes
+  stay visible in the default view. "Could not carry over" remains always visible.
+- **Copy accuracy.** Removed an overclaiming "safe" wording from the Dashboard
+  prepare step and the Design Insights page; the wording guard test now scans more
+  surfaces and stricter patterns.
+
+### Internal
+- Desktop test runner now collects `.test.tsx` files (previously eight UI tests,
+  including the prepare-summary tests, were never executed by `npm run test`).
+
 ## [0.4.0-beta.21.2] - 2026-07-17
 
 ### Fixed

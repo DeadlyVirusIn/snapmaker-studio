@@ -4,7 +4,37 @@ Honest, current verification state for the latest beta. This file does **not**
 mark a release "accepted" until the interactive install acceptance below is
 completed and recorded.
 
-## v0.4.0-beta.21.2 — PARTIAL / PENDING (not accepted)
+## v0.4.0-beta.21.3 — PARTIAL / PENDING (not accepted)
+
+**Preserve-settings summary cleanup.** Interactive GUI testing of beta.21.2 confirmed
+the preserve workflow works (U1 copy created, original untouched, recommended settings
+opt-in), but found three presentation problems: value-preserved temperature/retraction
+mappings were listed under "Changed for U1 compatibility" (reads as "Studio changed my
+temperatures"), a source file already named `..._SnapmakerU1` produced a doubled
+`..._SnapmakerU1_SnapmakerU1.3mf` output name, and the default summary exposed raw
+technical keys. This release reclassifies value-preserved toolhead mappings under
+"Kept" (with mapping note), fixes output naming, and moves raw keys behind a
+Technical detail disclosure while keeping real changes and "Could not carry over"
+visible.
+
+| Check | Status |
+|---|---|
+| Backend tests | **PASS** — 345 passed, 3 skipped (adds mapped-classification, type-coercion strictness, and suffix regression tests) |
+| Frontend | **PASS** — tsc clean; vitest 161 passed across 25 files (test runner now actually collects `.test.tsx` UI tests — previously eight UI tests were silently never run) |
+| Independent code review | Two independent review passes per area; all CRITICAL/HIGH findings fixed (type-coercing equality could hide a real value change as "mapped"; overclaim wording on Dashboard; test-collection gap). Remaining known non-blocking notes: wording-guard count-drift is silent, non-start/end G-code keys fold into the G-code bullet, guard test does not pin its own file list. |
+| Installer integrity / SHA256 | **PASS** — `Snapmaker.Studio_0.4.0-beta.21.3_x64-setup.exe`, 16,160,350 bytes, SHA256 `7f69f6716d9a042973bffb0468cc49d13cd17fa273d0a6d283f7f97d9b4cad92` (see [RELEASE_METADATA.md](RELEASE_METADATA.md)) |
+| Scripted install smoke | **PENDING** |
+| Interactive GUI acceptance | **PENDING (manual installed-app acceptance)** |
+| Overall trust status | **PARTIAL / PENDING — not accepted** |
+
+Acceptance checklist for beta.21.3 (on top of the beta.21.2 checklist):
+
+- [ ] A. Prepare a creator-tuned 3MF → temperatures/retraction that were only mapped to the U1 toolhead layout appear under "Kept from the original file" with the mapping note, NOT under "Adjusted/Changed"
+- [ ] B. Default summary shows plain language; raw keys only under "Technical detail"; "Could not carry over" visible
+- [ ] C. Prepare a file already named `..._SnapmakerU1.3mf` → output has a single `_SnapmakerU1` marker with a numeric copy suffix
+- [ ] D. Dashboard prepare step no longer says "safe"
+
+## v0.4.0-beta.21.2 — superseded by beta.21.3 (was PARTIAL / PENDING, not accepted; GUI flow verified, summary presentation fixes required)
 
 **P0 trust fix: preserve creator settings by default.** Multiple users reported that
 prepared U1 copies changed the original creator's slicer settings and caused print
