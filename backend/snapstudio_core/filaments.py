@@ -52,7 +52,8 @@ def conform_filament_arrays(cfg: dict, keep: int, *, changes: list[dict] | None 
                 cfg[k] = resized
                 if changes is not None:
                     changes.append({"key": k, "old": v, "new": resized,
-                                    "reason": "resized to match the filament count"})
+                                    "reason": "resized to match the filament count",
+                                    "category": "mapped"})
     m = cfg.get("flush_volumes_matrix")
     if isinstance(m, list) and m:
         side = int(round(len(m) ** 0.5))
@@ -73,7 +74,8 @@ def conform_filament_arrays(cfg: dict, keep: int, *, changes: list[dict] | None 
             cfg["flush_volumes_vector"] = resized
             if changes is not None:
                 changes.append({"key": "flush_volumes_vector", "old": fv, "new": resized,
-                                "reason": "resized to match the filament count"})
+                                "reason": "resized to match the filament count",
+                                "category": "mapped"})
     # wiping_volumes_extruders intentionally left as-is (stock keeps it length 10)
     return cfg
 
