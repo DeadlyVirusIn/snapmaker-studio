@@ -41,9 +41,28 @@ has physical evidence. Until then the Doctor states the open question, not an an
 
 ---
 
-## 3. Inputs — all already available
+## 3. Inputs
 
-No new capability is required for the MVP.
+**Almost everything the MVP needs is already computed.** One thing is not: the material-pair
+rules (F4, F5a/b/c, F7b) require a **small, officially-sourced material-pair classification
+table** bundled as data — the 8×8 Strong-Bonding / Bondable matrix transcribed in research
+§3.1.5, plus the flexible-type list.
+
+That is **new read-only advisory data, not new capability**, and the distinction matters:
+
+- It is a **lookup table of Snapmaker's published classifications**, maintained by hand and
+  cited to the official page — the same shape as the existing `community_knowledge.py`
+  curated set.
+- It is **not** an adhesion model, not physics, not a prediction. Studio looks up what
+  Snapmaker published for a pair and repeats it. Pairs absent from the table get F5c
+  ("not established"), never an inferred classification.
+- It carries a **provenance and review burden**: source URL, retrieval date, and a re-check
+  whenever Snapmaker updates the article (it already says more combinations are "under
+  testing"). A stale table would put wrong classifications in front of users, so it needs an
+  owner and a review cadence — that is a real, if small, ongoing cost.
+
+The earlier claim that "no new capability is required for the MVP" was too tidy and is
+corrected here.
 
 | Input | Source in the existing codebase | Available today? |
 |---|---|---|
@@ -56,6 +75,7 @@ No new capability is required for the MVP.
 | Multi-material tower clearance on the plate | `bed_fit.py` (`multi_material=True`) | **Yes** |
 | Support-interface filament assignment | — | **No** — would need reading the support keys from `project_settings.config`. Read-only, mechanical, no new physics. Phase 2. |
 | Beam Interlocking on/off + parameters | — | **No** — same: read the keys if present. Phase 2. |
+| **Material-pair classification (Strong Bonding / Bondable / unknown)** | — | **New bundled data required** — the official 8×8 table (research §3.1.5) as `data/material_pairs.json`, with source URL and retrieval date. Pure lookup; no inference for absent pairs. |
 | Shore hardness | — | **Not derivable.** `filament_type` says "TPU", not "95A". Must be asked or left unknown. **Never guessed.** |
 | Drying state | — | **Not derivable.** User-stated or unknown. |
 
@@ -79,7 +99,9 @@ the evidence level of its source.**
 | **F2** | Flexible present. | "Snapmaker documents drying TPU before use — check your spool's own drying spec." | **O** — §4.1 |
 | **F3** | Flexible present **and** hardness unknown. | "Snapmaker documents U1 compatibility for TPU **90A and harder**; softer grades are still under validation. Studio can't read hardness from the file — check your spool." | **O** — §2.5 |
 | **F4** | ≥ 2 distinct filament **types** in the project (any mix). | "This is a multi-**material** print, not just multi-colour. Different materials bond differently — and if they bond poorly, the **prime tower** can delaminate at the material boundary before the part does." + link to the U1 prime-tower guide | **O** — §4.6.3 |
-| **F5** | Flexible + rigid mix present. | "Snapmaker Orca has **Beam Interlocking** for rigid–flexible combinations, which mechanically stitches the two materials at the boundary. It's a slicer setting — turn it on in Orca if you need the join to hold." | **O** — §4.7.1 |
+| **F5a** | Rigid + flexible pair that the official table classifies **Bondable (–)** — e.g. PLA+TPU, ABS+TPU, ASA+TPU, PC+TPU, PA+TPU. | "Snapmaker classifies **PLA + TPU** as a weaker-chemical-adhesion pair, and documents **Beam Interlocking** in Snapmaker Orca as a way to mechanically strengthen that boundary. **Review it in Orca** if this join needs to hold. Studio doesn't set interlocking values." | **O** — §3.1.5, §3.1.2, §4.7.1 |
+| **F5b** | Rigid + flexible pair the table classifies **Strong Bonding (+)** — currently **PETG+TPU** and **PET+TPU**. | "Snapmaker classifies **PETG + TPU** as a strong-bonding pair — naturally compatible, printable as structural parts without extra bonding settings." **No Beam Interlocking suggestion.** | **O** — §3.1.5, §3.1.1 |
+| **F5c** | A rigid+flexible pair **not in the official table**, or either material unidentified. | "Studio doesn't have an official compatibility classification for this material pair, so it can't say how well they bond — and it won't suggest interlocking settings on a guess. Check your materials in Snapmaker Orca." | **O (absence)** — §3.1.5 |
 | **F6a** | **A flexible filament is present** in the project. | "Snapmaker's TPU guide says to turn **Dynamic Flow Calibration off** for TPU — TPU is soft and compressible, which makes the calibration unreliable. **Check that it's unticked in Print Preferences before you start this print.**" | **O** — §4.5.B |
 | **F6b** | **No flexible filament** in the project, and it is multi-material. | "Snapmaker recommends running **Dynamic Flow Calibration** after a filament change — the calibration resets when filament is unloaded." | **O** — §4.5.A |
 | **F6c** | Any multi-material project (independent of F6a/F6b). | "Re-run **multi-toolhead offset calibration** if you've moved the printer, replaced a toolhead or hot end, or you're seeing layer shifting in a multi-toolhead print." | **O** — §4.9.2 |
@@ -90,7 +112,7 @@ the evidence level of its source.**
 
 | ID | Trigger | Output | Blocked on |
 |---|---|---|---|
-| **F8** | Rigid + flexible mix. | "Whether Beam Interlocking meaningfully strengthens *this* pair isn't published — Snapmaker recommends it for weak-adhesion combinations. Studio doesn't have measured values." | T1–T4 |
+| **F8** | **Fires only alongside F5a** (a classified **Bondable (–)** rigid+flexible pair). | "**How much** Beam Interlocking strengthens this particular pair isn't published, and Studio has no measured values — so it can't tell you what depth to use or whether it's worth the extra time on your part." | T1–T4 |
 | **F9** | Flexible present, ≥ 2 toolheads in use. | "Filament handling during toolchanges is the most commonly reported problem with flexibles on toolchangers. Studio doesn't recommend a retraction value — check your Orca profile." | T7–T8 |
 | **F10** | Support interface uses a different material from the part *(needs the Phase-2 input)*. | "Snapmaker names **PLA with PETG** and **PLA with TPU** as common low-adhesion support combinations. The published settings recipe is for **PLA/PETG** — Snapmaker doesn't publish interface settings for a TPU interface, and Studio won't invent them." | T5–T6 |
 
@@ -98,8 +120,25 @@ the evidence level of its source.**
 
 Specific interlocking depth values · specific retraction-at-toolchange values · specific
 support-interface Z-distance/spacing for TPU · any per-pair "this will hold" statement ·
-any sub-90A TPU guidance · any ABS/ASA + TPU guidance.
+any sub-90A TPU guidance · any ABS/ASA + TPU **process** recommendation.
 
+> **F5a / F5b / F5c are mutually exclusive, and F8 is subordinate to F5a.** The branch is
+> chosen by looking the material pair up in the official classification table (§3 input
+> table), not by asking "is one of them flexible". Consequences that must hold:
+>
+> - **F5b must never suggest Beam Interlocking.** Snapmaker calls PETG+TPU naturally
+>   compatible and printable as structural parts *without* additional bonding settings;
+>   proposing interlocking there would contradict the source and cost the user time and
+>   material for no documented benefit.
+> - **F8 fires only with F5a.** On a strong-bonding pair there is no strengthening question
+>   to leave open, so pairing F8 with F5b would manufacture a doubt the evidence doesn't
+>   support. On an unclassified pair, F5c already says compatibility isn't established —
+>   F8 would be redundant and would imply interlocking is the answer.
+> - **F5a wording stays "review it in Orca"**, never "turn it on". Studio surfaces that the
+>   feature exists and why Snapmaker documents it for weak-adhesion pairs; the decision and
+>   the values are the user's, in Orca.
+> - **F5c must not guess.** No pattern-matching a pair onto a "similar" one.
+>
 > **F6a/F6b are mutually exclusive and must stay that way.** The Doctor decides which branch
 > applies from `filament_type` and then shows **one** of them. It must never show both, never
 > merge them into a single sentence, and never show the generic F6b line on a project that
@@ -206,6 +245,10 @@ above 90 mm/s; never touch `filament_colour` / `filament_type` / `filament_setti
 | `…::test_tier_b_states_question_not_answer` | Tier-B findings contain "hasn't been established"-class wording and no directive. |
 | `…::test_dfc_branches_are_mutually_exclusive` | A project containing TPU emits **F6a only**; a project with no flexible emits **F6b only**. Neither output ever contains both, and the F6b generic wording never appears alongside a flexible material. |
 | `…::test_dfc_wording_is_verification_not_action` | F6a copy contains a verify/check phrasing and does **not** contain "we turned", "turning off for you", or any first-person claim of changing a printer setting. |
+| `…::test_f5_branches_are_mutually_exclusive` | Exactly one of F5a/F5b/F5c fires per pair. A **Strong Bonding** pair (PETG+TPU, PET+TPU) emits **no** Beam Interlocking suggestion anywhere in its output. |
+| `…::test_f8_only_with_f5a` | F8 appears only when F5a fired; never alongside F5b or F5c. |
+| `…::test_unclassified_pair_is_not_inferred` | A pair absent from the bundled table yields F5c and never a Strong-Bonding or Bondable label. |
+| `…::test_material_pair_table_matches_source` | The bundled table matches the transcription in research §3.1.5 exactly, is symmetric, and carries a source URL plus retrieval date. |
 | `…::test_pure_and_read_only` | `assess()` does not mutate its inputs. |
 | `test_public_claims.py` (extend) | New copy contains no print-success guarantee and no "will hold"/"safe to print". |
 | `test_intelligence_report.py` (extend) | The new section appears in availability/status without disturbing existing Doctors. |
@@ -223,7 +266,12 @@ above 90 mm/s; never touch `filament_colour` / `filament_type` / `filament_setti
    about whether a bond holds — this proposal must not blur that.
 5. **No hardness inference. No drying inference. No brand inference.**
 6. **No sub-90A TPU support**, while Snapmaker lists it as under validation.
-7. **No ABS/ASA + TPU guidance**, with no official pairing source.
+7. **No ABS/ASA + TPU process recommendations.** The pairs **are** officially classified as
+   **Bondable (–)**, and Snapmaker separately states that high-temperature filaments such as
+   ABS/ASA **cannot be printed at the same time** as low-temperature filaments such as TPU.
+   But Studio has **no official combined workflow and no physical evidence**, and **must not
+   infer one**. Reporting the published classification is fine; recommending how to print
+   the pair is not.
 8. **No auto-fix.** Read-only advisory only; the user acts in Orca.
 9. **No new top-level Doctor** in the navigation.
 10. **Nothing built in this phase.**

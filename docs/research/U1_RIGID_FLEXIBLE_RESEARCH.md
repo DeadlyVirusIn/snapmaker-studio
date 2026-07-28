@@ -25,17 +25,25 @@
 ### 1.1 Source-access note — verification pass completed 2026-07-28
 
 The first research pass could not fetch `wiki.snapmaker.com` (client-side rendered) or
-`support.snapmaker.com` (HTTP 403) directly, and relied on search-engine extraction. **That
-debt has now been cleared: every source below was re-opened in a real browser on
-2026-07-28 and read on the live page.** Items are tagged **[verified 2026-07-28]**.
+`support.snapmaker.com` (HTTP 403) directly, and relied on search-engine extraction. **Those
+sources were re-opened in a real browser on 2026-07-28 and read on the live page**; rows
+confirmed that way are tagged **[verified 2026-07-28]**.
 
-Three outcomes from that pass changed the evidence base materially:
+**Exactly one source in this document has not been re-opened: the Snapmaker U1 specs page**,
+which is the sole basis for rows **2.2** and **2.4**. Those two rows carry an explicit
+not-re-opened marker instead of a verification date and remain listed in §8.2. **§1.1 and §8
+agree: everything else cited here was read live.** Nothing is marked verified to tidy up a
+flag.
+
+Four outcomes from the verification work changed the evidence base materially:
 
 1. **The adhesion classification table was read visually and transcribed** (§3.1.5).
 2. **A newer, TPU-specific Snapmaker guide was found** that overrides generic guidance on
    Dynamic Flow Calibration (§4.5) and supplies official answers to several questions the
    first pass had left as inferred.
 3. **One safety claim could not be substantiated and has been removed** (§4.8.2).
+4. **The Top Cover note settles ABS/ASA + TPU** — the pairs are classified, but
+   high- and low-temperature filaments cannot be printed in the same job (§3.4.3).
 
 ### 1.2 Conflict rule — newest and most material-specific wins
 
@@ -56,9 +64,9 @@ Where two official Snapmaker sources disagree, this project resolves as follows,
 | # | Finding | Level | Source |
 |---|---|---|---|
 | 2.1 | The U1 has **4 independent toolheads** (true multi-toolhead, not a single-nozzle MMU). Tool changes do not cause in-nozzle cross-contamination. | **O** | Already established in [`U1_PRINT_PROFILE_RESEARCH.md`](U1_PRINT_PROFILE_RESEARCH.md) |
-| 2.2 | Base material support: **PLA, PETG, TPU, PVA, PCTG**. | **O** ⚠ re-verify | [Snapmaker U1 specs](https://www.snapmaker.com/snapmaker-u1/specs) |
-| 2.3 | **With the top cover**: adds PET, ABS, ASA, PA, PC. | **O** ⚠ re-verify | [Snapmaker U1 specs](https://www.snapmaker.com/snapmaker-u1/specs) |
-| 2.4 | **With top cover + hardened-steel hot ends**: adds carbon-fibre and glass-fibre reinforced polymers. | **O** ⚠ re-verify | [Snapmaker U1 specs](https://www.snapmaker.com/snapmaker-u1/specs) |
+| 2.2 | Base material support: **PLA, PETG, TPU, PVA, PCTG**. | **O — specs page not re-opened in the 2026-07-28 pass; still outstanding (§8.2)** | [Snapmaker U1 specs](https://www.snapmaker.com/snapmaker-u1/specs) |
+| 2.3 | **With the top cover**, supported materials are **PLA, PETG, TPU, PVA, PET, ABS, ASA, PA, PC** — confirmed from a second official source. | **O** [verified 2026-07-28] | [Top Cover for Snapmaker U1](https://us.snapmaker.com/products/top-cover-for-snapmaker-u1), Specifications table |
+| 2.4 | **With top cover + hardened-steel hot ends**: adds carbon-fibre and glass-fibre reinforced polymers. | **O — specs page not re-opened in the 2026-07-28 pass; still outstanding (§8.2)** | [Snapmaker U1 specs](https://www.snapmaker.com/snapmaker-u1/specs) |
 | 2.5 | Verbatim: **"Currently compatible with TPU ≥ 90A Shore hardness."** / **"Softer grades (< 90A) are under active testing and validation."** | **O** [verified 2026-07-28] | [U1 Multi-material printing performance](https://support.snapmaker.com/hc/en-us/articles/34287488318615-Snapmaker-U1-Multi-material-printing-performance) (article dated 2025-12-16) |
 | 2.6 | The multi-material article's classification table covers **PLA, PETG, TPU, PET, ABS, ASA, PC, PA** (see §3.1.5). | **O** [verified 2026-07-28] | same |
 | 2.7 | Snapmaker sells **two** TPU filaments for the U1: **95A HF** and **90A**. "The 95A HF is stiffer, supports higher print speeds and is generally easier to work with. The 90A version is softer and more elastic, making it more challenging to print." Both are "thoroughly tested and tuned" with built-in Snapmaker Orca profiles. | **O** [verified 2026-07-28] | [Tips for Reliable TPU Printing](https://support.snapmaker.com/hc/en-us/articles/42075056736023-Tips-for-Reliable-TPU-Printing) (video transcript, 00:44–01:09) |
@@ -129,7 +137,7 @@ The matrix is fully symmetric, which was used as a read-back check on the transc
 | 3.2.1 | **TPU + PLA** is listed among the combinations for which Beam Interlocking is offered "for stronger bonds". | **O** [verified 2026-07-28] | [Snapmaker TPU 90A product page](https://us.snapmaker.com/products/tpu-90a-filament-1kg) |
 | 3.2.2 | Snapmaker TPU 90A supports "seamless multi-filament co-printing with **PLA, PETG, and TPU 95A**". | **O** [verified 2026-07-28] | same |
 | 3.2.2b | Snapmaker names **TPU & PLA** as its own worked example of materials that "don't adhere well to each other", in the context of wipe-tower stability. | **O** [verified 2026-07-28] | [Tips for Reliable TPU Printing](https://support.snapmaker.com/hc/en-us/articles/42075056736023-Tips-for-Reliable-TPU-Printing) (06:35–06:46) |
-| 3.2.3 | PLA and TPU do not form a permanent chemical bond — which is precisely why PLA works well as a *support* for TPU and separates cleanly. | **C** | [omni3d guide](https://omni3d.com/how-to-print-tpu-with-support-guide-for-easy-removal/); [Bambu forum thread](https://forum.bambulab.com/t/supporting-tpu-prints-with-pla-how-to-do-it/29300) |
+| 3.2.3 | **Secondary context only.** Community/third-party sources describe PLA and TPU as not forming a permanent chemical bond, and use that to explain why PLA separates cleanly from TPU. **The official classification in 3.2.0 is the primary basis for this project**; this row adds colour, not evidence, and its mechanism claim is not officially corroborated. | **C** | [omni3d guide](https://omni3d.com/how-to-print-tpu-with-support-guide-for-easy-removal/); [Bambu forum thread](https://forum.bambulab.com/t/supporting-tpu-prints-with-pla-how-to-do-it/29300) |
 | 3.2.4 | A Snapmaker blog reports combining TPU with PLA and with PETG in single U1 jobs, including one job with **"92 toolhead swaps without a single jam."** | **C** (Snapmaker marketing blog, not documentation) | [Snapmaker blog — TPU print ideas](https://www.snapmaker.com/blog/tpu-3d-print-ideas/) |
 | 3.2.5 | Flat PLA/TPU interface peel strength, and the delta from Beam Interlocking, on a U1. | **T** | **No published figure found. Test T1/T2.** |
 
@@ -141,6 +149,7 @@ The matrix is fully symmetric, which was used as a read-back check on the transc
 | 3.3.2 | **TPU + PETG** is nonetheless also listed among the Beam-Interlocking-capable combinations on the filament product page — an apparent redundancy, since the table already calls the pair strong. | **O** [verified 2026-07-28] | [TPU 90A product page](https://us.snapmaker.com/products/tpu-90a-filament-1kg) |
 | 3.3.3 | Whether Beam Interlocking measurably *adds* strength to an already-strong PETG/TPU bond, or only adds print time and risk. | **T** | **Unresolved in official sources. Test T3/T4 — this is the most interesting single question in the matrix.** |
 | 3.3.4 | PETG and TPU print at very different bed temperatures (§4), which constrains the shared first layer. | **T** | Deduced from official per-material ranges; not stated as a combined constraint anywhere we found. |
+| 3.3.5 | **PETG + TPU is explicitly co-printable**, verbatim from the Top Cover note: *"**PETG can be printed together with PLA or TPU**; in these cases, external circulation mode will be enabled to exhaust heat from the chamber."* This is stated for the top-cover configuration; it is the only official statement found that names a rigid+TPU pair as printable **in the same job**. | **O** [verified 2026-07-28] | [Top Cover for Snapmaker U1](https://us.snapmaker.com/products/top-cover-for-snapmaker-u1), Note [1] |
 
 ### 3.4 ABS/ASA + TPU
 
@@ -148,16 +157,25 @@ The matrix is fully symmetric, which was used as a read-back check on the transc
 |---|---|---|---|
 | 3.4.1 | ABS and ASA require the **top cover** on the U1. | **O** [verified 2026-07-28] | [U1 specs](https://www.snapmaker.com/snapmaker-u1/specs) |
 | 3.4.2 | **Correction to the first pass.** ABS + TPU and ASA + TPU **are** officially classified — both **"–" (Bondable)** in the adhesion table. The first pass recorded them as absent from official material; that was wrong and is retracted. | **O** [verified 2026-07-28] | §3.1.5 |
-| 3.4.3 | What genuinely remains absent is **process guidance**: Snapmaker's TPU co-printing list on the filament page (PLA, PETG, PA, PET, TPU 95A) does not include ABS or ASA, and no ABS/ASA-with-TPU workflow, temperature, or enclosure guidance was found. | **O (absence of process guidance)** [checked 2026-07-28] | [TPU 90A product page](https://us.snapmaker.com/products/tpu-90a-filament-1kg) |
-| 3.4.4 | ABS/ASA want a hot, enclosed, draught-free environment; Snapmaker TPU 90A specifies a **25–60 °C bed** and **cooling fan ON**, and the TPU guide calls for **increased part cooling** to control layer lines. These are opposing process requirements in one enclosed job. | **T** | Deduced from §4.1, §4.7b and 3.4.1. **Not tested by us.** |
-| 3.4.5 | Snapmaker's prime-tower guide separately advises an **enclosure and reduced cooling** when printing ABS/ASA/PA — the opposite of the TPU cooling requirement. | **O** [verified 2026-07-28] | [U1 Prime Tower Collapse](https://wiki.snapmaker.com/en/snapmaker_u1/troubleshooting/prime_tower_collapse), Strategy 3 Step 3 |
+| 3.4.3 | **They cannot be printed in the same job — officially, verbatim:** *"**High-temperature filaments, such as ABS, ASA, PC, and PA, cannot be printed at the same time as low-temperature filaments, such as PLA, TPU, and PVA.** PETG can be printed together with PLA or TPU; in these cases, external circulation mode will be enabled to exhaust heat from the chamber."* | **O** [verified 2026-07-28] | [Top Cover for Snapmaker U1](https://us.snapmaker.com/products/top-cover-for-snapmaker-u1), Note [1] |
+| 3.4.3b | The mechanism is the top cover's two mutually-exclusive thermal-management modes: **internal circulation** retains heat (chamber up to 50 °C) for ABS/ASA/PA/PC; **external circulation** actively exhausts heat for PLA/TPU/PVA. Snapmaker Orca matches each filament to a mode automatically. One print cannot run both modes. | **O** [verified 2026-07-28] | same, "Filament-Adaptive Thermal Management" / "Passive Heat Retention" / "Efficient Heat Exhaust Cooling" |
+| 3.4.4 | What genuinely remains absent is a **tested combined process workflow** — no ABS/ASA-with-TPU recipe, temperatures, or interface settings exist, and Snapmaker's TPU co-printing list (PLA, PETG, PA, PET, TPU 95A) does not include ABS or ASA. | **O (absence of a process recipe)** [checked 2026-07-28] | [TPU 90A product page](https://us.snapmaker.com/products/tpu-90a-filament-1kg) |
+| 3.4.5 | Consistent with 3.4.3b, the prime-tower guide advises an **enclosure and reduced cooling** for ABS/ASA/PA — the opposite of TPU's documented cooling-fan-ON requirement. | **O** [verified 2026-07-28] | [U1 Prime Tower Collapse](https://wiki.snapmaker.com/en/snapmaker_u1/troubleshooting/prime_tower_collapse), Strategy 3 Step 3 |
 
-> **Decision for this phase is unchanged, but the reason is now sharper.** ABS/ASA + TPU is
-> **OUT** of the eight-print matrix — not because the pair is unclassified (it is: weak
-> bonding), but because there is **no published process guidance** and there is a **direct,
-> officially-documented cooling/enclosure conflict** (3.4.4–3.4.5), with enclosure hardware
-> not assumed present. If Snapmaker wants it covered it becomes a separate phase with the
-> top cover fitted.
+> **Decision: ABS/ASA + TPU stays OUT of the eight-print matrix. The accurate reasons are:**
+>
+> 1. **The pairs ARE officially classified — both "–" (Bondable)** in the adhesion table.
+>    Any claim that they lack an official pairing classification is wrong and is retracted.
+> 2. **No published combined process recipe** exists for printing them together (3.4.4).
+> 3. **Their documented thermal/cooling requirements are incompatible**, and Snapmaker states
+>    plainly that high-temperature and low-temperature filaments **cannot be printed at the
+>    same time** (3.4.3, 3.4.3b).
+> 4. Covering them would require a **separately resourced top-cover phase** with the hardware
+>    fitted, which this project does not assume.
+>
+> Point 3 is not a scheduling inconvenience — it means an ABS/ASA + TPU job is outside the
+> machine's documented operating envelope, whatever the adhesion table says about the
+> interface.
 
 ### 3.5 TPU as / with support interfaces
 
@@ -195,7 +213,7 @@ The matrix is fully symmetric, which was used as a read-back check on the transc
 
 ### 4.1 Official TPU 90A parameters (Snapmaker)
 
-All from the [Snapmaker TPU 90A product page](https://us.snapmaker.com/products/tpu-90a-filament-1kg) — **O** ⚠ re-verify:
+All from the [Snapmaker TPU 90A product page](https://us.snapmaker.com/products/tpu-90a-filament-1kg) — **O** [verified 2026-07-28]:
 
 | Parameter | Official value |
 |---|---|
@@ -234,11 +252,11 @@ SnapDryer workflow. It also gives symptom-directed quality fixes, all **O**:
 
 | # | Finding | Level | Source |
 |---|---|---|---|
-| 4.2.1 | "For flexible filaments such as TPU, please follow the instructions for **Manual Loading**." | **O** ⚠ re-verify | [Manual Loading (Wiki)](https://wiki.snapmaker.com/en/snapmaker_u1/manual_loading) |
-| 4.2.2 | Trim the filament end at **~45°** with diagonal cutters — this "reduces feeding resistance, thus enhancing the success rate." | **O** ⚠ re-verify | same |
-| 4.2.3 | Auto Loading must be **disabled per toolhead**: Settings → Print Preferences → Auto Loading. | **O** ⚠ re-verify | same |
-| 4.2.4 | Press the circular latch at the end of the corresponding feeder and unplug the tube connected to the target toolhead. Then: Loading Mode → Filament Loading Guide → Switch to Manual Loading. | **O** ⚠ re-verify | same |
-| 4.2.5 | "It is recommended to unplug the tube from the top of the toolhead, expose part of filament, and push it downward manually to ensure proper contact with the extrusion gears." | **O** ⚠ re-verify | same |
+| 4.2.1 | "For flexible filaments such as TPU, please follow the instructions for **Manual Loading**." | **O** [verified 2026-07-28] | [Manual Loading (Wiki)](https://wiki.snapmaker.com/en/snapmaker_u1/manual_loading) |
+| 4.2.2 | Trim the filament end at **~45°** with diagonal cutters — this "reduces feeding resistance, thus enhancing the success rate." | **O** [verified 2026-07-28] | same |
+| 4.2.3 | Auto Loading must be **disabled per toolhead**: Settings → Print Preferences → Auto Loading. | **O** [verified 2026-07-28] | same |
+| 4.2.4 | Press the circular latch at the end of the corresponding feeder and unplug the tube connected to the target toolhead. Then: Loading Mode → Filament Loading Guide → Switch to Manual Loading. | **O** [verified 2026-07-28] | same |
+| 4.2.5 | "It is recommended to unplug the tube from the top of the toolhead, expose part of filament, and push it downward manually to ensure proper contact with the extrusion gears." | **O** [verified 2026-07-28] | same |
 | 4.2.6 | Flexible filaments also require **Manual Unloading**: Filament page → Unloading Mode → select toolheads → Unload → Confirm; once at temperature, "manually pull the filament outward to assist with unloading". | **O** [verified 2026-07-28] | [Manual Unloading (Wiki)](https://wiki.snapmaker.com/en/snapmaker_u1/flexible_filament_unloading) (last edited 2026-07-27) |
 | 4.2.6b | **New on re-verification, and unambiguous:** "**TPU filament cannot be used with the filament feeder. Please pull the filament out directly from the filament tube.**" The on-screen unloading guide is noted as "for illustrative purposes only". | **O** [verified 2026-07-28] | same |
 | 4.2.6c | Filament identity: Snapmaker filament with RFID is recognised automatically; **third-party filament or Snapmaker filament without RFID must be entered manually**. When feeding from the SnapDryer the filament information is likewise "won't be detected automatically so you'll need to enter it manually". | **O** [verified 2026-07-28] | [Manual Loading](https://wiki.snapmaker.com/en/snapmaker_u1/manual_loading); [Tips for Reliable TPU Printing](https://support.snapmaker.com/hc/en-us/articles/42075056736023-Tips-for-Reliable-TPU-Printing) (01:50) |
@@ -253,7 +271,7 @@ SnapDryer workflow. It also gives symptom-directed quality fixes, all **O**:
 
 | # | Finding | Level | Source |
 |---|---|---|---|
-| 4.3.1 | The 45° cut is officially justified as **reducing feeding resistance** (4.2.2) — Snapmaker names path resistance as the failure mechanism. | **O** ⚠ re-verify | [Manual Loading](https://wiki.snapmaker.com/en/snapmaker_u1/manual_loading) |
+| 4.3.1 | The 45° cut is officially justified as **reducing feeding resistance** (4.2.2) — Snapmaker names path resistance as the failure mechanism. | **O** [verified 2026-07-28] | [Manual Loading](https://wiki.snapmaker.com/en/snapmaker_u1/manual_loading) |
 | 4.3.2 | A vendor states the U1's PTFE tubing has a larger-than-standard internal diameter, "which significantly reduces friction", letting flexibles slide from the back of the machine to the extruder "without binding". | **C** (vendor claim, no dimension given) | [Siraya Tech](https://siraya.tech/blogs/news/fixing-tpu-jams-on-snapmaker-u1-professional-settings-for-stable-24h-flexible-printing) |
 | 4.3.3 | **Upgraded C → O.** Snapmaker's own TPU guide instructs: "slightly loosen the screws on the side of the toolhead to reduce feeding resistance", alongside reducing print speed and lowering toolchange retraction length. The first pass carried this as a vendor-only claim and advised against repeating it — **that framing is retracted**; it is official Snapmaker guidance. | **O** [verified 2026-07-28] | [Tips for Reliable TPU Printing](https://support.snapmaker.com/hc/en-us/articles/42075056736023-Tips-for-Reliable-TPU-Printing) (05:11–05:17) |
 | 4.3.4 | **Upgraded T → O.** "TPU is highly sensitive to resistance along the extrusion path and even small changes can cause pressure fluctuations inside the nozzle. When the resistance becomes too high and extrusion drops you may see gaps or dents. Once the pressure builds up the filament may suddenly surge out creating bumps on the surface." Named checks: "whether the filament tube is bent or loose, whether the outlet of the dryer box is too tight, and whether the spool holder rotates smoothly." | **O** [verified 2026-07-28] | same (07:06–07:39) |
@@ -359,7 +377,7 @@ Applying §1.2 (newest + most material-specific wins):
 
 | # | Finding | Level | Source |
 |---|---|---|---|
-| 4.7.1 | Beam Interlocking is available in Snapmaker Orca and mechanically stitches two materials at their boundary, strengthening weak chemical adhesion — explicitly named for **rigid–flexible** combinations. | **O** ⚠ re-verify | [Multi-material printing performance](https://support.snapmaker.com/hc/en-us/articles/34287488318615-Snapmaker-U1-Multi-material-printing-performance) |
+| 4.7.1 | Beam Interlocking is available in Snapmaker Orca and mechanically stitches two materials at their boundary, strengthening weak chemical adhesion — explicitly named for **rigid–flexible** combinations. | **O** [verified 2026-07-28] | [Multi-material printing performance](https://support.snapmaker.com/hc/en-us/articles/34287488318615-Snapmaker-U1-Multi-material-printing-performance) |
 | 4.7.2 | Parameter set (upstream OrcaSlicer documentation): **interlocking beam width**, **interlocking direction**, **interlocking beam layers**, **interlocking depth** (in cells), **interlocking boundary avoidance** (in cells). | **O** (OrcaSlicer docs — upstream, not Snapmaker) | [OrcaSlicer — multimaterial advanced](https://www.orcaslicer.com/wiki/print_settings/multimaterial/multimaterial_settings_advanced) |
 | 4.7.3 | Interlocking depth is "the distance from the boundary between filaments to generate interlocking structure, measured in cells"; **"too few cells will result in poor adhesion."** Boundary avoidance is the distance from the model's outside where interlocking is not generated. | **O** (OrcaSlicer docs) | same |
 | 4.7.4 | **Recommended Beam Interlocking values for PLA/TPU or PETG/TPU on a U1.** | **T** | **No published values found from Snapmaker or upstream.** Tests T2/T4 use the shipped Orca defaults **unchanged** and record them verbatim. We do not invent a tuned recipe. |
@@ -383,8 +401,9 @@ Applying §1.2 (newest + most material-specific wins):
 |---|---|---|---|
 | 4.9.1 | Verbatim: "The calibration will take about **15 to 20 minutes**. Once calibration is done, there's no need to repeat it before every print." | **O** [verified 2026-07-28] | [U1 FAQ](https://wiki.snapmaker.com/en/FAQ/u1) |
 | 4.9.2 | Triggers listed for multi-toolhead offset calibration include: **the hot end has been replaced**; **the nozzle scrapes or collides with components such as the heated bed**; **layer shifting occurs during multi-toolhead printing**. | **O** [verified 2026-07-28] | same |
-| 4.9.3 | The misalignment guide's steps were confirmed present: **Step 3 — check the gap between the hotend copper plate and calibration sensor**; **Step 4 — check the lubrication of the steel balls**, "take the white lithium grease from the included tool kit and apply an even layer of appropriate amount". | **O** [verified 2026-07-28, section-level] | [U1 multi-color misalignment](https://wiki.snapmaker.com/en/snapmaker_u1/troubleshooting/multi-color_misalignment) |
-| 4.9.3b | The specific **0.1–0.4 mm** gap figure and the H2.0 hex-key procedure sit inside Step 3. The section was confirmed; **the numeric value was not re-read character-by-character** in this pass. | **O (section confirmed, number not re-read)** | same — **re-read the number on the page before publishing it.** |
+| 4.9.3 | Misalignment guide steps: **Step 1** check nozzles for residual filament; **Step 2** check whether the hotend is loose; **Step 3** check the copper-plate ↔ sensor gap; **Step 4** check steel-ball lubrication — "take the white lithium grease from the included tool kit and apply an even layer of appropriate amount onto the steel balls". | **O** [verified 2026-07-28] | [U1 multi-color misalignment](https://wiki.snapmaker.com/en/snapmaker_u1/troubleshooting/multi-color_misalignment) (last edited 2026-02-25) |
+| 4.9.3b | **Numeric value now confirmed verbatim**, closing the outstanding item: "Under normal conditions, the distance between the hotend copper plate and the calibration sensor **should be within 0.1–0.4 mm**. You can use a sheet of standard A4 paper for a quick approximation. If the gap is too large, use a **H2.0 hex key** to loosen the two screws securing the hotend, push the hotend upwards, and then re-tighten the screws." | **O** [verified 2026-07-28] | same |
+| 4.9.3c | Recalibration cadence, verbatim: "Perform calibration whenever you **move the printer, replace the toolhead or hotend, or carry out major maintenance**." Guide also advises cleaning nozzles before calibration and lubricating moving parts quarterly. | **O** [verified 2026-07-28] | same |
 | 4.9.4 | Snapmaker's TPU guide routes layer shifting to the same place: "If layer shifting occurs, follow the multi-toolhead offset calibration tutorial to recalibrate." | **O** [verified 2026-07-28] | [Tips for Reliable TPU Printing](https://support.snapmaker.com/hc/en-us/articles/42075056736023-Tips-for-Reliable-TPU-Printing) (08:18) |
 | 4.9.5 | If the first layer is rough or material builds up and automatic levelling does not help, run **manual levelling**. | **O** [verified 2026-07-28] | same (08:26) |
 | 4.9.6 | Offset error appears **differently on a soft material**: a misaligned rigid/flexible seam may look like "bad adhesion" rather than "misalignment", because TPU deforms instead of showing a crisp step. | **T** | Untested hypothesis. Matrix requires a calibration-state record per test precisely so this cannot silently contaminate a result. |
@@ -462,7 +481,10 @@ prime/wipe-tower strategy for review in Orca."* Nothing about material compatibi
   10 mm³/s) as **validated for TPU**. It is published for PLA/PETG (§3.5.2).
 - ❌ Blog-sourced TPU speeds (270/200/500 mm/s) as recommended settings — the product page's 30–50 mm/s is the documented figure (§4.1).
 - ❌ TPU below 90A as supported.
-- ❌ ABS/ASA + TPU **process** guidance. (Their adhesion classification "–" *is* official — §3.4.2.)
+- ❌ ABS/ASA + TPU **process** recommendations. Their adhesion classification "–" *is*
+  official (§3.4.2), and Snapmaker states high-temperature filaments **cannot be printed at
+  the same time** as TPU (§3.4.3). Never write that the pairing is unclassified, and never
+  infer a workflow for it.
 - ❌ **That flame/thermal burnout is officially prohibited on the U1** — that claim was
   withdrawn on re-verification (§4.8.2). Do not republish it as a Snapmaker statement.
 - ❌ That Studio's structural/metadata validation predicts physical success. It does not, and this document does not change that.
@@ -484,14 +506,15 @@ prime/wipe-tower strategy for review in Orca."* Nothing about material compatibi
 | [U1 FAQ](https://wiki.snapmaker.com/en/FAQ/u1) | Confirmed the generic DFC guidance verbatim (§4.5.A) and offset-calibration timing (§4.9.1–4.9.2). |
 | [U1 filament not extruding](https://wiki.snapmaker.com/en/snapmaker_u1/troubleshooting/filament_not_extruding) | Confirmed Heat-Creep/Flow-Check and Needle/Cold Pull. **Flame-prohibition claim not found → withdrawn** (§4.8.2). |
 | [U1 hot end replacement guide](https://wiki.snapmaker.com/en/snapmaker_u1/troubleshooting/hot_end_replacement_guide) | Checked as a second location for the flame claim — **not present**. |
-| [U1 multi-color misalignment](https://wiki.snapmaker.com/en/snapmaker_u1/troubleshooting/multi-color_misalignment) | Steps confirmed at section level (§4.9.3). |
+| [U1 multi-color misalignment](https://wiki.snapmaker.com/en/snapmaker_u1/troubleshooting/multi-color_misalignment) | **Fully confirmed, including the 0.1–0.4 mm gap and H2.0 procedure verbatim** (§4.9.3–4.9.3c). Previously outstanding — now closed. |
+| [Top Cover for Snapmaker U1](https://us.snapmaker.com/products/top-cover-for-snapmaker-u1) | **Newly read.** Source of the high/low-temperature simultaneous-printing rule (§3.4.3), the two circulation modes (§3.4.3b), the PETG-with-PLA-or-TPU allowance (§3.3.5), and the with-cover material list (§2.3). |
 | [TPU 90A product page](https://us.snapmaker.com/products/tpu-90a-filament-1kg) | Confirmed (§4.1). |
 
 ### 8.2 Still outstanding
 
 | Item | Action | Blocks |
 |---|---|---|
-| §4.9.3b — the **0.1–0.4 mm** sensor-gap figure | Re-read the number on the misalignment page character-by-character. | Publishing that number. |
+| §2.2 and §2.4 — base and hardened-steel material lists | **The Snapmaker U1 specs page was not re-opened.** Re-read it and date both rows, or re-source them. §2.3 is already independently confirmed from the Top Cover page. | Publishing the base / CF-GF material lists. |
 | §4.4.3 — shipped toolchange-retraction values for **TPU 95A HF** and **TPU 90A** | Read out of Snapmaker Orca; record verbatim per filament. | Tests T7/T8 **and** the T8 pre-registration gate. |
 | §4.7.4 — Beam Interlocking defaults | Read out of Snapmaker Orca; record verbatim. | Tests T2, T4. |
 | §3.5.6 — support-interface behaviour on the Orca build under test | Reproduce or fail to reproduce. | Tests T5, T6. |
