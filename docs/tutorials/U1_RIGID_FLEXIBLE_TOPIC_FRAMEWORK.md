@@ -41,7 +41,9 @@ Each is sourced. Each is the kind of thing a reader remembers.
 | **2** | **Weak adhesion is a defect when you want a join and a feature when you want a support.** | Reframes the whole topic. Explains why Snapmaker both discourages mixing dissimilar materials *and* publishes a dissimilar-material support recipe. Turns confusion into a decision rule. | Research §3.1.2–3.1.4 — **O**, with the synthesis flagged as our reading |
 | **3** | **Beam Interlocking is the answer to weak adhesion — but it is a tool with a job, not a switch you leave on.** | Officially named for rigid-flexible combinations; upstream docs warn that too little depth gives poor adhesion. Whether it helps an already-strong pair is genuinely open. | Research §4.7 — **O** for existence and parameters, **T** for values |
 | **4** | **The prime tower is a miniature of your part's interface — if the materials do not bond, the tower delaminates first.** | Officially documented failure mode, and it converts "my tower collapsed" from bad luck into a material-choice consequence the reader can predict. | Research §4.6.3 — **O** |
-| **5** | **Snapmaker's own TPU speed and drying figures differ between its product page and its blog — follow the documentation.** | Nobody has written this down. It is immediately actionable, demonstrably true from two Snapmaker URLs, and it models the honesty the whole piece is built on. | Research §4.1 — **O** vs **C** conflict |
+| **5** | **Dynamic Flow Calibration: on for rigid, off for TPU.** | The single most consequential material exception in the whole topic, officially stated in Snapmaker's TPU guide, and easy to miss because the general guidance points the other way. Costs the reader nothing and prevents a bad print. | Research §4.5 — **O** (material-specific rule) |
+| **6** | **Snapmaker's own TPU speed and drying figures differ between its product page and its blog — follow the documentation.** | Immediately actionable, demonstrably true from two Snapmaker URLs, and it models the honesty the whole piece is built on. | Research §4.1 — **O** vs **C** conflict |
+| **7** | **The wipe tower is printed in all your materials by default — and you can change that.** | Snapmaker documents that TPU towers have weak layer adhesion and low rigidity, that mixing poorly-adhering materials (its example: TPU & PLA) makes it worse, and that you can assign a **single spool** to the tower under "Filament for Features". Concrete, official, and almost unknown. | Research §4.6.6–4.6.7 — **O** |
 
 ---
 
@@ -62,10 +64,27 @@ guaranteed settings, because the evidence for them does not exist publicly.*
 2. **Drying** — TPU is "extremely hygroscopic and must be dried before use"; use your
    spool's own spec, and here is where the Snapmaker figures disagree with each other.
    *(Research §4.1)*
-3. **Calibration is a prerequisite, not a maintenance task** — offset calibration after any
-   machine move/toolhead/hot-end change; Dynamic Flow Calibration after every filament
-   change; both automatic, both cheap; and note the 0.2 mm nozzle exception. *(Research
-   §4.5, §4.9)*
+3. **Calibration — and the one place where TPU works differently.**
+   - **Multi-toolhead offset calibration** is a prerequisite, not a maintenance task: run it
+     after moving the printer, replacing a toolhead or hot end, or if layer shifting appears
+     in a multi-toolhead print. About 15–20 minutes, and not needed before every print.
+     *(Research §4.9)*
+   - **Dynamic Flow Calibration works differently for flexibles.** For rigid filaments,
+     Snapmaker recommends running it after a filament change — the calibration value resets
+     to a default K value when filament is unloaded. **For TPU, Snapmaker's TPU guide says to
+     turn it off**, because TPU is soft and compressible, expands and contracts during
+     extrusion, and that makes the calibration unreliable and can hurt print quality.
+     **So: rigid job → run it. TPU anywhere in the job → leave the box unticked.**
+     *(Research §4.5)*
+
+   **Tone note for the writer.** This is a **material exception**, not a mistake to expose.
+   The correct framing is: *"The U1 calibrates flow dynamically, which helps most filaments.
+   Flexibles are the exception, and Snapmaker's TPU guide says so — turn it off for TPU."*
+   Both instructions are Snapmaker's, both are correct in their own scope, and the TPU guide
+   is the newer and more specific one. **Do not** write it as a contradiction, an oversight,
+   or a "gotcha". **Do** show readers where the tick-box is, since it lives in the same
+   Print Preferences screen either way. If the reader takes away one sentence, it should be
+   the rule, not the disagreement.
 4. **A misaligned seam on a soft material looks like bad adhesion.** *(Research §4.9.6 —
    flagged as our hypothesis, not fact.)*
 
@@ -88,8 +107,11 @@ guaranteed settings, because the evidence for them does not exist publicly.*
    never enable skip-empty-tower-layers automatically. *(§4.6.1, §4.6.5)*
 
 ### Part 4 — Using weak adhesion on purpose (supports)
-1. Snapmaker's published dissimilar-material support recipe, quoted with its actual numbers
-   and clearly labelled as published for **PLA/PETG**. *(§3.5.2)*
+1. **Snapmaker names PLA+PETG and PLA+TPU as the two common, practical low-adhesion support
+   combinations.** *(§3.5.0)* Quote the published recipe with its actual numbers — and label
+   it clearly as published **for PLA/PETG**. Snapmaker gives no TPU interface settings,
+   temperatures, Z-distance or spacing, and the article must not supply invented ones.
+   *(§3.5.0b, §3.5.2)*
 2. The base-vs-interface split and why bed temperature drives it. *(§3.5.1)*
 3. Community-reported: PLA supports release cleanly from TPU; TPU-on-TPU can fuse. *(§3.5.4
    — labelled as a vendor report.)*
@@ -99,9 +121,14 @@ guaranteed settings, because the evidence for them does not exist publicly.*
 ### Part 5 — When it goes wrong
 1. Toolchange jams and gear bird-nesting; the retraction-at-switch discussion **presented as
    an open question with a vendor recommendation, not as a setting**. *(§4.4)*
-2. Clogs: the **official** U1 procedure — 10–20 °C above normal print temp, supplied needle,
-   repeat until extrusion is straight. **And the prohibition: no flame, because the U1's
-   integrated hot end is an interference fit.** *(§4.8)*
+2. Clogs and TPU residue: Snapmaker's published options are **Heat Creep/Flow Check** then
+   **Needle/Cold Pull**, repeating until extrusion is straight; and TPU specifically "tends
+   to build up inside the nozzle", with increased **purge volume** and more **skirt loops**
+   as the published mitigations. *(§4.3.5, §4.8)*
+   > **Correction carried from the research pass:** an earlier draft asserted that Snapmaker
+   > prohibits flame/thermal burnout on the U1's interference-fit hot end. That statement
+   > could not be found on the U1 pages and has been withdrawn — **do not publish it**. The
+   > article may state that *we* do not use torch methods, as our own position. *(§4.8.2)*
 3. Tower collapse and delamination. *(§4.6)*
 4. Multi-colour misalignment → the calibration checklist. *(§4.9)*
 
@@ -172,7 +199,9 @@ levels intact."*
 | **Sub-90A TPU or ABS/ASA+TPU content is expected.** | Low–medium | Both are declared out of scope with the official reason. Offer them as a separately-resourced later phase (enclosure required for ABS/ASA). |
 | **Physical results are unflattering** (e.g. interlocking does little; a tower collapses). | Medium | Negative results are published with the same weight as positive ones — that is stated in the application up front so it is not a surprise later. |
 | **Orca version drift invalidates content.** | Medium | Every published setting carries the Orca version it was recorded on; Part 6 teaches readers to re-check rather than trust. |
-| **Verification debt leaks into publication** (§8 of the research doc — official pages read via search extraction, not fetched directly). | **High if ignored** | **Blocking gate:** every ⚠ re-verify item is re-read on the live page and dated before anything is published or submitted. |
+| **Verification debt leaks into publication.** | **Was high — now largely cleared** | All official sources were re-opened in a browser on 2026-07-28 and dated (research §8.1). Three residual items remain in §8.2 and are still blocking for the values they cover. |
+| **Publishing generic calibration advice as TPU advice, or vice versa.** | **High if unmanaged** | The research doc now separates §4.5.A (generic) from §4.5.B (TPU) and states the resolution rule explicitly. The article's Part 1 carries the same split with a neutral tone note. Never merge the two sentences. |
+| **Re-publishing a withdrawn claim** (the flame prohibition). | Medium | Recorded as retracted in research §4.8.2, in the must-not-claim list, and in Part 5 of this framework. |
 
 ---
 

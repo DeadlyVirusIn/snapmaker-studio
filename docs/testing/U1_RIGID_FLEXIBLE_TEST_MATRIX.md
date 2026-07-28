@@ -21,9 +21,11 @@ an unrecorded pre-condition makes every result in that run uninterpretable.
 |---|---|---|---|
 | P1 | Multi-toolhead offset calibration completed on this machine, in this position, since the last toolhead/hot-end change or machine move. Record the date. | Misalignment presents as bad adhesion on a soft material and would silently contaminate every bond result. | Research §4.9.2 |
 | P2 | Hot-end copper plate ↔ calibration sensor gap within **0.1–0.4 mm**; pogo pins and steel balls cleaned and greased. | Official prerequisite for trustworthy offset calibration. | Research §4.9.3 |
-| P3 | **Dynamic Flow Calibration run after every filament change**, for every toolhead in the job. Held constant across all eight tests — it is never a variable here. | Official instruction; keeping it constant stops it becoming a hidden variable. | Research §4.5.3 |
+| **P3** | **Dynamic Flow Calibration is OFF for every test in this matrix.** Before starting each print, confirm the **"Dynamic Flow Calibration" box is unticked** in the touchscreen Print Preferences step (Start → Next → Print Preferences), and record that state in the run header **and** as a screenshot (E9). **REPLACES the earlier precondition, which wrongly required DFC after every filament change.** | Snapmaker's TPU-specific guide states: *"Because TPU is soft and compressible it tends to expand and contract during extrusion. This makes dynamic flow calibration unreliable and can negatively affect print quality. Make sure this feature is turned off when starting a print job."* **Every test T1–T8 has TPU loaded**, so the TPU-specific rule governs all of them. Holding it **constant OFF** means DFC can never become a hidden variable, and it keeps every run inside current official TPU guidance. | Research §4.5.B, §4.5.D |
+| P3b | Do **not** apply the generic "run DFC after every filament change" guidance anywhere in this matrix, and do not treat DFC-off as general calibration advice outside TPU jobs. | The generic guidance remains correct for non-TPU work; conflating the two in either direction is the error this matrix was corrected to remove. | Research §4.5.A, §4.5.D |
 | P4 | Snapmaker Orca version recorded (**must be ≥ V2.3.1** for Dynamic Flow Calibration). | Version-specific slicer behaviour is a known confounder (support-interface bug, §3.5.6). | Research §4.5.2 |
-| P5 | **The shipped retraction-at-toolchange value is read out of the Orca profile and written down verbatim, per filament.** No test changes it unless the test says so. | The widely-circulated "0–4 mm" figure is a vendor recommendation, not a verified default. | Research §4.4 |
+| P5 | **The shipped toolchange-retraction values are read out of the Orca profiles and written down verbatim — separately for TPU 95A HF and for TPU 90A, and for each rigid filament used.** Location: filament profile → **Setting Overrides**. No test changes them unless the test says so. | Snapmaker gives the **direction only** ("lower the toolchange retraction length under 'Setting Overrides'") and publishes **no value**; the circulated "0–4 mm" is a vendor figure. The shipped numbers must be facts on paper before T8 can be designed. | Research §4.4.0, §4.4.3 |
+| **P5b** | **T8's experimental value is pre-registered and frozen before either T7 or T8 is sliced** — see §8/T8 and the pre-registration block there. No value may be chosen during a print session. | Choosing the value after seeing T7 turns a controlled comparison into an unrecorded search. | §1 rule 8 |
 | P6 | **The shipped Beam Interlocking defaults are read out of Orca and written down verbatim** (beam width, direction, beam layers, depth, boundary avoidance). | No published values exist for TPU pairs; we use defaults and record them rather than inventing a recipe. | Research §4.7.4 |
 | P7 | Support-interface behaviour check: confirm on this Orca build whether the interface material is applied to supports **growing from the model**, not only plate-touching supports. | If it reproduces, T5/T6 are invalid unless all supports start on the plate. | Research §3.5.6 |
 | P8 | No nozzle is shared between two different materials within the matrix. Toolhead↔material assignment is fixed at the start (§2) and never reassigned mid-matrix. | Prevents cross-material residue being mistaken for a bond result. | Research §4.8.4 |
@@ -58,6 +60,13 @@ This is the rule that makes the matrix worth running. It is not advisory.
    same rigour as a success. Nothing is quietly re-run until it looks good.
 7. **Every recorded value is transcribed from the slicer/printer UI**, never remembered,
    never inferred, never copied from this document.
+8. **Pre-registration.** Where a test changes a numeric value, that value is **written down
+   and frozen before the first run of the pair is sliced**, together with its rationale and
+   the date it was fixed. Values are never chosen mid-session, and never chosen after seeing
+   the baseline result. A value picked at run time makes the pair **VOID**.
+
+> Snapmaker's own prime-tower guide gives the same instruction in its own words: **"Apply
+> one corrective action at a time to accurately identify the root cause."** (Research §4.6.3b)
 
 ---
 
@@ -135,7 +144,9 @@ RUN HEADER
   Studio version used to inspect/prepare:
   Offset calibration last run (date):
   Copper-plate ↔ sensor gap checked?       yes / no    measured:
-  Dynamic Flow Calibration run this session, per toolhead?   T0 / T1 / T2 / T3
+  Dynamic Flow Calibration state at print start:   OFF (required)  /  ON (=> VOID run)
+    "Dynamic Flow Calibration" box confirmed unticked in Print Preferences?  yes / no
+    Screenshot/photo of that screen captured (E9)?                           yes / no
   Spool IDs in use, per toolhead:          T0:  T1:  T2:  T3:
   Loading mode per TPU toolhead:           manual / auto   Auto Loading disabled? yes/no
   First-time load success per TPU toolhead: yes / no  (retries: )
@@ -185,6 +196,19 @@ are captured so the result is reproducible and so a reader can see what was actu
 > rails. The tower is **not** a variable in this matrix — but its outcome **is** a recorded
 > result in every test, because a rigid/flexible tower is the same bonded interface as the
 > part (Research §4.6.3).
+>
+> **Two officially-documented tower facts that apply to every run here:** TPU wipe towers
+> "have weak layer-to-layer support and low rigidity, making them more likely to collapse
+> when pulled or bumped"; and by default the wipe tower is printed with **all** involved
+> materials, which further reduces vertical stability when those materials adhere poorly —
+> Snapmaker's own example being **TPU & PLA** (Research §4.6.6–4.6.7).
+>
+> **Wipe-tower shell filament: hold at the Orca default (all involved materials) for the
+> whole matrix, and record it.** Snapmaker's official mitigation — assigning a single spool
+> to the wipe tower under **"Filament for Features"** — is deliberately **not** applied here.
+> If a tower failure (S1) occurs, that mitigation may only be explored as a **new, separately
+> pre-registered pair**, never by editing a run mid-pair. Record the shell assignment in
+> every run so it is visibly constant.
 
 ---
 
@@ -202,6 +226,7 @@ Minimum evidence set. A test with missing evidence is **incomplete**, not passed
 | E6 | Screenshot: Studio's read-only report for the same file (Project Doctor + Multi-Material Doctor verdicts). | Establishes what Studio *did* and *did not* see — direct input to the Doctor proposal. |
 | E7 | Written note of anything unusual during the run: audible clicks, toolchange hesitation, tower contact, stringing between tower and part. | Free-text, timestamped where possible. |
 | E8 | If failed: photo of the failure mode itself (delaminated seam, collapsed tower, jammed filament in gears, torn support surface). | Failures are results. |
+| **E9** | **Photo or screenshot of the touchscreen Print Preferences screen showing the "Dynamic Flow Calibration" box unticked**, captured for every run. | P3 is the correction this matrix exists to enforce; an unphotographed DFC state is an unverifiable run. |
 
 **Anonymisation (project hard rule):** no real IP addresses, hostnames, local file paths,
 usernames, machine serials, or private/copyrighted model names in any published photo or
@@ -217,7 +242,7 @@ Applies to all eight tests. **Aborting is the correct outcome; a supervised abor
 |---|---|---|
 | S1 | The prime/wipe tower tips, detaches, or is dragged by the nozzle. | Abort. Photograph in place before clearing. Record as FAIL with the tower as cause. |
 | S2 | Filament visibly bird-nests around the extruder gears, or a toolchange stalls/repeats. | Abort. Do **not** force-feed. Manual unload per the official procedure. Record as FAIL (loading/toolchange). |
-| S3 | Extrusion stops or goes intermittent on any toolhead. | Abort. Follow the **official** unclog procedure: heat 10–20 °C above that filament's normal print temp and use the supplied needle. **Never apply a flame — prohibited on the U1's interference-fit hot end** (Research §4.8.2). |
+| S3 | Extrusion stops or goes intermittent on any toolhead. | Abort. Follow Snapmaker's published options in order: **Heat Creep/Flow Check** (raise the nozzle slightly above the filament's standard print temp and check the purge line falls straight), then **Needle/Cold Pull** with the supplied nozzle cleaning needle, repeating until extrusion is straight and stable (Research §4.8.1, §4.8.3). **This project uses no flame or torch method on any hot end** — our protocol rule, not a quoted Snapmaker prohibition (Research §4.8.2b). |
 | S4 | The part detaches from the plate or a layer shift is visible. | Abort. Record; do not resume. |
 | S5 | Any smell of burning, smoke, unusual noise, or a component visibly out of position. | **Abort and power down at the switch.** Do not restart until inspected. Escalate before any further run. |
 | S6 | A toolhead fails to park/pick up, or the machine reports a calibration/firmware error. | Abort. Re-run pre-conditions P1–P2 before any further test. Do not "just retry". |
@@ -362,12 +387,17 @@ one-variable rule.
 
 ### T5 — PLA part with **TPU support interface**, baseline
 
-- **Hypothesis.** TPU used as the **support interface** under a PLA part releases more
-  cleanly than PLA-on-PLA supports and leaves a better surface, because weak inter-material
-  adhesion is officially framed as a *feature* for supports with zero Z-distance
-  (Research §3.5.3). The inverse direction (PLA supporting TPU) is community-reported to
-  work well (Research §3.5.4); **this direction is unsourced** (Research §3.5.5) and is
-  exactly why it is being tested.
+- **Hypothesis (revised after re-verification).** **PLA + TPU is now officially named by
+  Snapmaker as one of "two common and practical combinations" of low-adhesion materials for
+  easy-removal supports** (Research §3.5.0) — so the *pairing* is no longer speculative.
+  What remains genuinely unestablished is the **direction and the settings**: the guide does
+  not say which material is the part and which is the support, and every numeric value it
+  publishes is for **PLA/PETG** (Research §3.5.0b, §3.5.2). The hypothesis under test is
+  therefore narrower and more honest than the first pass's: *with TPU as the support
+  interface under a PLA part, at Orca's shipped support defaults, the interface releases
+  cleanly and leaves an acceptable downward surface.* The opposite direction (PLA supporting
+  TPU) is the one with vendor evidence behind it (Research §3.5.4, **C**); if T5/T6 shows
+  our direction behaves poorly, that is a publishable result, not a failed test.
 - **Model requirements.** A PLA part with a **plate-borne overhang** — e.g. a bridge or
   cantilever ~40 mm wide with a 30–40 mm unsupported span, supported from the plate only.
   **No model-borne supports** (pre-condition P7 — if the Orca build applies interface
@@ -401,13 +431,20 @@ one-variable rule.
 
 ### T6 — PLA part with **TPU support interface**, optimized
 
-- **Hypothesis.** Applying Snapmaker's **officially published dissimilar-material support
-  recipe** — top Z distance **0**, top interface layers **3**, interface pattern
-  **Rectilinear Interlaced**, top and bottom interface spacing **0**, support base pattern
-  **Rectilinear** (Research §3.5.2) — improves both release and downward-surface quality
-  versus the T5 defaults. Note that the recipe is published for **PLA/PETG**, not for TPU
-  interfaces; applying it here is a **deliberate, declared extrapolation**, and if it does
-  not transfer, that is a publishable finding in its own right.
+- **Hypothesis.** Applying Snapmaker's published dissimilar-material support recipe — top Z
+  distance **0**, top interface layers **3**, interface pattern **Rectilinear Interlaced**,
+  top and bottom interface spacing **0**, support base pattern **Rectilinear**
+  (Research §3.5.2) — improves both release and downward-surface quality versus the T5
+  defaults.
+  > **Evidence label, stated precisely.** That recipe is **published for PLA/PETG only**.
+  > Snapmaker names PLA+TPU as a valid low-adhesion *pairing* but publishes **no** TPU
+  > interface settings, temperatures, Z-distance or spacing (Research §3.5.0b). Applying the
+  > PLA/PETG numbers to a TPU interface is a **declared extrapolation by us**, tagged **T**.
+  > **Nothing in T6 may be written up as "Snapmaker's recommended TPU support settings."**
+  > If the recipe does not transfer, that is a publishable finding in its own right.
+- **Temperature caveat.** The guide's PLA 230 °C / PETG 265 °C / bed 65 °C values are
+  PLA/PETG-specific and are **not** carried over. TPU temperatures follow that spool's own
+  manufacturer spec, held identical to T5.
 - **Model requirements.** **Identical file to T5.**
 - **Filaments & drying.** Same spools as T5.
 - **Toolheads.** Identical to T5.
@@ -476,14 +513,77 @@ one-variable rule.
 - **Model requirements.** **Identical file to T7.**
 - **Filaments & drying.** Same spools as T7, same drying state, same session where possible.
 - **Toolheads.** Identical to T7.
-- **Orca settings to record.** All of §5, with **exactly one change from T7**: the
-  **retraction-at-toolchange / material-switch value** for both TPU filaments, moved from the
-  shipped default (recorded in P5) to a **single stated lower value chosen at run time and
-  written down before slicing**. Do not also change retraction length, retraction speed,
-  purge volumes, temperatures, or speeds. Beam Interlocking stays OFF.
-  > The vendor-suggested range is 0–4 mm (Research §4.4.1). We are testing *a* lower value,
-  > recorded verbatim — we are **not** endorsing that range, and the tutorial must not
-  > present it as a Snapmaker setting.
+- **Orca settings to record.** All of §5, with **exactly one factor changed from T7**: the
+  **toolchange retraction length** (filament profile → **Setting Overrides**) for the TPU
+  filaments, moved from the shipped defaults to the **pre-registered** value or rule below.
+  Do not also change retraction length, retraction speed, purge volumes, temperatures, or
+  speeds. Beam Interlocking stays OFF. Dynamic Flow Calibration stays OFF (P3).
+
+#### T8 pre-registration gate — complete and sign **before T7 is sliced**
+
+No value may be selected during a print session, and none is invented in this
+documentation phase. The gate below is filled in once, on paper, and frozen.
+
+```
+T8 PRE-REGISTRATION  (complete BEFORE slicing T7 — not after seeing T7's result)
+
+  Step 1 — Read the shipped values (pre-condition P5). Transcribe from Orca:
+    Toolchange retraction length, Snapmaker TPU 95A HF profile:  ______ mm
+    Toolchange retraction length, Snapmaker TPU 90A profile:     ______ mm
+    Orca version these were read from:                           ______
+    Read on (date):                                              ______
+    Are the two shipped values equal?                            yes / no
+
+  Step 2 — Fix the experimental factor. Choose EXACTLY ONE form:
+    [ ] Form A — absolute value:   set BOTH TPU profiles to ______ mm
+    [ ] Form B — reduction rule:   set each TPU profile to its shipped value
+                                   reduced by ______ mm  (or × ______)
+    Chosen form and exact numbers:  ______________________________________
+
+  Step 3 — Rationale (why this value/rule, in one paragraph, citing sources):
+    ______________________________________________________________________
+    Note: Snapmaker publishes the DIRECTION only ("lower the toolchange
+    retraction length"), no value (Research §4.4.0b). The circulated 0–4 mm
+    range is a VENDOR figure (Research §4.4.1). State plainly which of these
+    informed the choice — and that neither makes the number official.
+
+  Step 4 — Freeze.
+    Value fixed on (date):        ______
+    Fixed by:                     ______
+    T7 sliced on (date):          ______   (must be AFTER the date above)
+    Confirmed unchanged at T8 slicing?   yes / no
+```
+
+**If the pre-registered value is changed after T7 has been sliced or run, the T7/T8 pair is
+VOID.** Re-register and re-run both halves.
+
+#### Does changing two profile values break the one-variable rule?
+
+**Examined explicitly, because it is a real threat to the design.**
+
+- If Step 1 finds the **two shipped values are equal**, then Form A sets one number in two
+  places. That is **one factor**, and the pair is clean.
+- If the shipped values **differ**, then Form A (one absolute value for both) changes the
+  two profiles by **different amounts** — two different numeric deltas. Calling that "one
+  measurement" would be dishonest.
+
+**Resolution — and it is a choice, not a fudge:**
+
+- **Preferred: Form B, a proportional or fixed-offset reduction rule** applied identically
+  to both profiles. This is a genuine **single policy-level factor** — "toolchange
+  retraction, reduced by the same rule for every flexible filament in the job" — and it is
+  described that way in the write-up. It is explicitly **not** claimed to be a measurement
+  of one number.
+- **Alternative, if a specific absolute value is what matters:** split the experiment.
+  **T8a** changes the TPU 95A profile only; **T8b** changes the TPU 90A profile only; each
+  is its own pair against T7. This costs two extra prints and buys per-filament
+  attribution.
+- **Not permitted:** setting two different numbers and reporting the result as though a
+  single variable had moved.
+
+Whichever route is taken, the write-up must state: *"the factor under test was
+[absolute value X applied to both profiles / reduction rule R applied to both profiles /
+a single profile], pre-registered on [date]."*
 - **Tower settings.** Identical to T7, re-recorded.
 - **Evidence.** E1–E8 as T7, plus an explicit toolchange-behaviour log: number of
   toolchanges completed, any hesitation, any audible gear slip, any visible filament
@@ -494,8 +594,14 @@ one-variable rule.
   whether this run behaved differently. Say exactly that in any write-up.
 - **Safety.** S1–S8. A **lower** retraction at toolchange can increase oozing and
   tower/part contamination — watch for strings being dragged (S1 precursor).
-- **One-variable rule.** The retraction-at-toolchange value is the only difference from T7.
-  Any further tuning becomes T8a/T8b.
+- **One-variable rule.** The pre-registered toolchange-retraction factor is the only
+  difference from T7. Any further tuning is a **new pre-registered pair**, never an edit to
+  T8.
+- **Hypothesis status.** Snapmaker officially endorses the **direction** — "lower the
+  toolchange retraction length under 'Setting Overrides'" — as a remedy for TPU building up
+  in the print head (Research §4.4.0). It publishes **no value**, and frames it as remedial
+  rather than routine. T8 therefore tests *a pre-registered magnitude of an officially
+  endorsed direction*. It cannot establish that any number is "correct".
 
 ---
 
@@ -510,7 +616,12 @@ one-variable rule.
 | T5 | C | PLA part | TPU 95A interface | *(baseline, Orca defaults)* | Does TPU release cleanly as a support interface? |
 | T6 | C | PLA part | TPU 95A interface | Official dissimilar-support recipe applied | Does the PLA/PETG support recipe transfer to TPU? |
 | T7 | D | TPU 95A | TPU 90A | *(baseline)* | Does an all-flexible job hold — especially the tower? |
-| T8 | D | TPU 95A | TPU 90A | Retraction at toolchange lowered | Is toolchange retraction the real flexible failure mode? |
+| T8 | D | TPU 95A | TPU 90A | Toolchange retraction lowered (**pre-registered**) | Is toolchange retraction the real flexible failure mode? |
+
+**Held constant across all eight tests (never variables):** Dynamic Flow Calibration **OFF**
+(P3) · wipe-tower shell = Orca default, all involved materials (§5) · `no_sparse_layers` OFF
+· max purge speed ≤ 90 mm/s · Rib wall type · fixed toolhead↔material assignment (§2) ·
+manual load/unload for every TPU toolhead with Auto Loading disabled.
 
 **Cross-matrix comparisons that are valid:** within a pair (T1↔T2, T3↔T4, T5↔T6, T7↔T8).
 **Cross-matrix comparisons that are weaker and must be labelled as such:** T1↔T3 (rigid

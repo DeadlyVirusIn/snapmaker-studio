@@ -80,7 +80,10 @@ the evidence level of its source.**
 | **F3** | Flexible present **and** hardness unknown. | "Snapmaker documents U1 compatibility for TPU **90A and harder**; softer grades are still under validation. Studio can't read hardness from the file — check your spool." | **O** — §2.5 |
 | **F4** | ≥ 2 distinct filament **types** in the project (any mix). | "This is a multi-**material** print, not just multi-colour. Different materials bond differently — and if they bond poorly, the **prime tower** can delaminate at the material boundary before the part does." + link to the U1 prime-tower guide | **O** — §4.6.3 |
 | **F5** | Flexible + rigid mix present. | "Snapmaker Orca has **Beam Interlocking** for rigid–flexible combinations, which mechanically stitches the two materials at the boundary. It's a slicer setting — turn it on in Orca if you need the join to hold." | **O** — §4.7.1 |
-| **F6** | Any multi-material project. | "Run **Dynamic Flow Calibration** after every filament change, and re-run multi-toolhead offset calibration if you've moved the printer or changed a toolhead or hot end." | **O** — §4.5.3, §4.9.2 |
+| **F6a** | **A flexible filament is present** in the project. | "Snapmaker's TPU guide says to turn **Dynamic Flow Calibration off** for TPU — TPU is soft and compressible, which makes the calibration unreliable. **Check that it's unticked in Print Preferences before you start this print.**" | **O** — §4.5.B |
+| **F6b** | **No flexible filament** in the project, and it is multi-material. | "Snapmaker recommends running **Dynamic Flow Calibration** after a filament change — the calibration resets when filament is unloaded." | **O** — §4.5.A |
+| **F6c** | Any multi-material project (independent of F6a/F6b). | "Re-run **multi-toolhead offset calibration** if you've moved the printer, replaced a toolhead or hot end, or you're seeing layer shifting in a multi-toolhead print." | **O** — §4.9.2 |
+| **F7b** | Flexible + a poorly-bonding rigid material in the same project. | "Snapmaker notes that the wipe tower is printed in **all** the job's materials by default, and that TPU towers have weak layer adhesion. If your tower keeps failing, Orca lets you assign a **single spool** to the tower under 'Filament for Features'." | **O** — §4.6.6–4.6.7 |
 | **F7** | Flexible present + existing tower-clearance warning from `bed_fit`. | Escalate the existing tower message: material mismatch adds a second, independent tower failure mode on top of the geometric one. | **O** — §4.6.3 + existing code |
 
 ### Tier B — states the open question only (no answer until the matrix runs)
@@ -89,13 +92,29 @@ the evidence level of its source.**
 |---|---|---|---|
 | **F8** | Rigid + flexible mix. | "Whether Beam Interlocking meaningfully strengthens *this* pair isn't published — Snapmaker recommends it for weak-adhesion combinations. Studio doesn't have measured values." | T1–T4 |
 | **F9** | Flexible present, ≥ 2 toolheads in use. | "Filament handling during toolchanges is the most commonly reported problem with flexibles on toolchangers. Studio doesn't recommend a retraction value — check your Orca profile." | T7–T8 |
-| **F10** | Support interface uses a different material from the part *(needs the Phase-2 input)*. | "Snapmaker publishes a dissimilar-material support recipe for **PLA and PETG**. Whether it transfers to a TPU interface hasn't been established." | T5–T6 |
+| **F10** | Support interface uses a different material from the part *(needs the Phase-2 input)*. | "Snapmaker names **PLA with PETG** and **PLA with TPU** as common low-adhesion support combinations. The published settings recipe is for **PLA/PETG** — Snapmaker doesn't publish interface settings for a TPU interface, and Studio won't invent them." | T5–T6 |
 
 ### Tier C — never ships without physical evidence
 
 Specific interlocking depth values · specific retraction-at-toolchange values · specific
 support-interface Z-distance/spacing for TPU · any per-pair "this will hold" statement ·
 any sub-90A TPU guidance · any ABS/ASA + TPU guidance.
+
+> **F6a/F6b are mutually exclusive and must stay that way.** The Doctor decides which branch
+> applies from `filament_type` and then shows **one** of them. It must never show both, never
+> merge them into a single sentence, and never show the generic F6b line on a project that
+> contains TPU. Getting this wrong would push a user into calibrating against Snapmaker's
+> current TPU guidance — the exact failure this proposal was corrected to prevent.
+>
+> **F6a is a verification prompt, not an action Studio takes.** Studio has no ability to
+> change a printer setting and must not imply otherwise: the tick-box lives in the printer's
+> Print Preferences screen and the user owns it. Wording stays "check that it's unticked",
+> never "we've turned it off" or "turn it off for you".
+>
+> **Mixed jobs are a known gap.** Dynamic Flow Calibration is one per-print tick-box, so it
+> cannot be set per toolhead. For a project where only some toolheads carry TPU, F6a fires
+> (TPU anywhere → prompt to verify it is off). That is **our conservative policy**, labelled
+> as such in the UI copy's evidence tag — not a Snapmaker instruction (§4.5.D).
 
 ### Rule the Doctor must enforce on itself
 
@@ -185,6 +204,8 @@ above 90 mm/s; never touch `filament_colour` / `filament_type` / `filament_setti
 | `…::test_no_numeric_settings_emitted` | Findings/fixes contain **no** temperature, speed, retraction, or interlocking-depth numbers. Regex guard — this is the anti-slicer test. |
 | `…::test_evidence_level_present_on_every_finding` | Every finding carries a source tag. |
 | `…::test_tier_b_states_question_not_answer` | Tier-B findings contain "hasn't been established"-class wording and no directive. |
+| `…::test_dfc_branches_are_mutually_exclusive` | A project containing TPU emits **F6a only**; a project with no flexible emits **F6b only**. Neither output ever contains both, and the F6b generic wording never appears alongside a flexible material. |
+| `…::test_dfc_wording_is_verification_not_action` | F6a copy contains a verify/check phrasing and does **not** contain "we turned", "turning off for you", or any first-person claim of changing a printer setting. |
 | `…::test_pure_and_read_only` | `assess()` does not mutate its inputs. |
 | `test_public_claims.py` (extend) | New copy contains no print-success guarantee and no "will hold"/"safe to print". |
 | `test_intelligence_report.py` (extend) | The new section appears in availability/status without disturbing existing Doctors. |
