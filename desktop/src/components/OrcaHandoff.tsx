@@ -7,6 +7,7 @@ import { detectOrca, openInOrca } from "@/api";
 import { ORCA_RELEASES_URL, ORCA_HANDOFF_LINE, orcaErrorMessage } from "@/lib/orca";
 import { EcosystemPanel } from "@/components/EcosystemPanel";
 import { FidelityCard } from "@/components/FidelityCard";
+import { FixLedgerCard } from "@/components/FixLedgerCard";
 
 /**
  * One-way Snapmaker Orca handoff. Shows "Open in Snapmaker Orca" when an install
@@ -79,8 +80,10 @@ export function OrcaHandoff({ outputPath, originalPath }:
           original is known, because there is nothing to compare against
           otherwise. */}
       {originalPath && originalPath !== outputPath && (
-        <div className="mt-1 w-full">
+        <div className="mt-1 w-full space-y-3">
           <FidelityCard original={originalPath} prepared={outputPath} />
+          {/* What Studio did, and the way back to the untouched original. */}
+          <FixLedgerCard source={originalPath} output={outputPath} />
         </div>
       )}
       {/* What this specific project might also want. Reads the prepared file and

@@ -177,6 +177,31 @@ def _make_handler(token: str):
                     self._send(400, {"error": str(e)})
                 except Exception:
                     self._send(500, {"error": "internal error"})
+            elif self.path == "/fix_history":
+                try:
+                    self._send(200, service.fix_history(
+                        source=rv.optional_str(data, "source", "") or None,
+                        limit=rv.optional_int(data, "limit", 50)))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
+            elif self.path == "/fix_original":
+                try:
+                    self._send(200, service.fix_original(
+                        rv.require_path_string(data, "output")))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
+            elif self.path == "/fix_history_export":
+                try:
+                    self._send(200, service.fix_history_export(
+                        limit=rv.optional_int(data, "limit", 50)))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
             elif self.path == "/fidelity":
                 try:
                     self._send(200, service.fidelity_audit(

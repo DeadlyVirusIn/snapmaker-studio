@@ -40,6 +40,8 @@ _CONTRACT = {
     "/preflight": ({"path": "none"}, ["schema_version", "checks", "counts", "summary"]),
     "/fidelity": ({"original": "none", "prepared": "none"},
         ["schema_version", "available", "rows", "claims", "summary"]),
+    "/fix_history": ({}, ["schema_version", "entries"]),
+    "/fix_original": ({"output": "none"}, ["available"]),
 }
 
 

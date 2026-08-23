@@ -13,6 +13,7 @@ from snapstudio_core.convert import convert_to_u1
 from snapstudio_core.diff import diff_projects
 from snapstudio_core.container import ThreeMF
 from snapstudio_core import library
+from snapstudio_core import fix_ledger
 from snapstudio_core.batch import run_batch
 from snapstudio_core import compatibility
 from snapstudio_core import model_search
@@ -45,6 +46,37 @@ def _conn():
     # One connection per request: ThreadingHTTPServer hands each request its own
     # thread, and SQLite connections must not be shared across threads.
     return library.connect(_db_path())
+
+
+def _record_fix(operation: str, source: str, output: str, *, changes=None,
+                findings=None, validated=None, notes=None) -> None:
+    """Write one ledger entry for a file Studio just produced.
+
+    Never raises: a bookkeeping failure must not fail the fix the user asked for.
+    """
+    try:
+        fix_ledger.record(_data_dir(), fix_ledger.build_entry(
+            operation=operation, source=source, output=output, timestamp=_now(),
+            changes=changes, findings=findings, validated=validated,
+            engine_version=API_VERSION, notes=notes))
+    except Exception:
+        pass
+
+
+def fix_history(source: str | None = None, limit: int = 50) -> dict:
+    """What Studio changed, newest first. With `source`, only for that project."""
+    return {"schema_version": fix_ledger.SCHEMA_VERSION,
+            "entries": fix_ledger.entries(_data_dir(), source=source, limit=limit)}
+
+
+def fix_original(output: str) -> dict:
+    """Where to go back to for a Studio-generated file, and whether it is still there."""
+    return fix_ledger.original_for(_data_dir(), output)
+
+
+def fix_history_export(limit: int = 50) -> dict:
+    """The same history with file locations removed, for a bug report."""
+    return fix_ledger.export_all(_data_dir(), limit=limit)
 
 
 def health() -> dict:
@@ -129,13 +161,29 @@ def first_layer_check(symptom: str) -> dict:
 def convert(path: str, out_dir: str | None = None, prepare_mode: str = "preserve",
             dry_run: bool = False) -> dict:
     """Make a file U1-ready and save it next to the source. Returns the result."""
-    return convert_to_u1(path, out_dir, prepare_mode=prepare_mode, dry_run=dry_run).to_dict()
+    result = convert_to_u1(path, out_dir, prepare_mode=prepare_mode, dry_run=dry_run).to_dict()
+    if not dry_run and result.get("output_path"):
+        summary = result.get("settings_summary") or {}
+        _record_fix(
+            fix_ledger.PREPARE, path, result["output_path"],
+            changes=(summary.get("compat_changed") or []) + (summary.get("mapped_to_u1") or []),
+            findings=[{"title": item.get("key"), "detail": item.get("reason")}
+                      for item in (summary.get("could_not_carry") or [])],
+            validated=result.get("validated_ok"),
+            notes=list(summary.get("warnings") or []))
+    return result
 
 
 def prepare_scaled(path: str, scale_percent: float, out_dir: str | None = None) -> dict:
     """Create a new uniformly-scaled U1 copy (STL input). Original never modified."""
     from snapstudio_core.convert import prepare_scaled_copy
-    return prepare_scaled_copy(path, scale_percent, out_dir).to_dict()
+    result = prepare_scaled_copy(path, scale_percent, out_dir).to_dict()
+    if result.get("output_path"):
+        _record_fix(fix_ledger.SCALE, path, result["output_path"],
+                    changes=[{"key": "scale", "old": "100%", "new": f"{scale_percent:g}%",
+                              "reason": "you chose this size"}],
+                    validated=result.get("validated_ok"))
+    return result
 
 
 def diff(a: str, b: str) -> dict:
@@ -225,7 +273,19 @@ def prepare_placed(path: str, out_dir: str | None = None) -> dict:
     original is never modified.
     """
     from snapstudio_core import plate_placement
-    return plate_placement.prepare_placed_copy(path, out_dir=out_dir)
+    result = plate_placement.prepare_placed_copy(path, out_dir=out_dir)
+    if result.get("ok") and result.get("output_path"):
+        before = result.get("before") or {}
+        _record_fix(
+            fix_ledger.PLACEMENT, path, result["output_path"],
+            changes=[{"key": "object placement", "old": "off the U1 plate",
+                      "new": change.get("detail"), "reason": change.get("kept")}
+                     for change in (result.get("changes") or [])],
+            findings=[{"title": f"Object {item.get('object_id')} outside the plate",
+                       "detail": item.get("edges") and f"past the {item['edges']} edge"}
+                      for item in (before.get("off_plate") or [])],
+            validated=not ((result.get("after") or {}).get("off_plate")))
+    return result
 
 
 def printer_facts(host: str | None = None, port: int = 7125) -> dict:

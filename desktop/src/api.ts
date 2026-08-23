@@ -1278,3 +1278,66 @@ export async function fidelityAudit(original: string, prepared: string): Promise
   if (!r.ok) throw new Error(`fidelity audit failed (${r.status})`);
   return r.json();
 }
+
+// ---- Fix ledger -------------------------------------------------------------
+// One record per file Studio produced: what it did, what triggered it, every
+// change with its old and new value, and where to go back to. Originals are
+// never written to, so "return to original" points the workflow at an untouched
+// file rather than trying to reverse the copy.
+
+export interface FixChange {
+  key?: string;
+  old?: unknown;
+  new?: unknown;
+  reason?: string;
+}
+
+export interface FixEntry {
+  schema_version: string;
+  operation: string;
+  title: string;
+  timestamp: string;
+  source_name: string | null;
+  output_name: string | null;
+  changes: FixChange[];
+  findings: { title?: string; detail?: string }[];
+  validated: boolean | null;
+  notes: string[];
+  local?: { source_path: string; output_path: string };
+}
+
+export interface FixHistory {
+  schema_version: string;
+  entries: FixEntry[];
+}
+
+export interface FixOriginal {
+  available: boolean;
+  source_path?: string | null;
+  source_name?: string | null;
+  title?: string;
+  reason?: string | null;
+  note?: string;
+}
+
+export async function fixHistory(source?: string, limit = 50): Promise<FixHistory> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/fix_history`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ source: source ?? "", limit }),
+  });
+  if (!r.ok) throw new Error(`fix history failed (${r.status})`);
+  return r.json();
+}
+
+export async function fixOriginal(output: string): Promise<FixOriginal> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/fix_original`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ output }),
+  });
+  if (!r.ok) throw new Error(`fix original failed (${r.status})`);
+  return r.json();
+}

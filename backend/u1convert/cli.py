@@ -262,5 +262,25 @@ def fidelity_cmd(original, prepared):
     click.echo(json.dumps(fidelity.audit(original, prepared), indent=2))
 
 
+@cli.command("history")
+@click.option("--source", type=click.Path(), default=None,
+              help="Only entries produced from this project file.")
+@click.option("--limit", type=int, default=20, show_default=True)
+@click.option("--share", is_flag=True,
+              help="Omit file locations so the output is safe to paste into a bug report.")
+def history_cmd(source, limit, share):
+    """What Studio changed, newest first, and where to go back to.
+
+    Each entry records the operation, what triggered it, every change with its old
+    and new value, and whether the result validated. Your originals are never
+    modified, so going back means opening the untouched file again.
+    """
+    from snapstudio_api import service
+    if share:
+        click.echo(json.dumps(service.fix_history_export(limit=limit), indent=2))
+    else:
+        click.echo(json.dumps(service.fix_history(source=source, limit=limit), indent=2))
+
+
 if __name__ == "__main__":  # `python -m u1convert.cli` without installing the package
     cli()
