@@ -198,9 +198,6 @@ def ecosystem_cmd(path, installed):
     click.echo(json.dumps(ecosystem.advise(path, installed=found), indent=2))
 
 
-if __name__ == "__main__":  # `python -m u1convert.cli` without installing the package
-    cli()
-
 
 @cli.command("cost")
 @click.argument("path", type=click.Path(exists=True))
@@ -234,3 +231,6 @@ def placement_cmd(path, fix, out_dir):
         click.echo(json.dumps(plate_placement.prepare_placed_copy(path, out_dir=out_dir), indent=2))
     else:
         click.echo(json.dumps(plate_placement.assess(path), indent=2))
+
+if __name__ == "__main__":  # `python -m u1convert.cli` without installing the package
+    cli()

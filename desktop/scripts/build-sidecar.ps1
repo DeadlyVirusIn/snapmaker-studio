@@ -11,13 +11,29 @@ $backend = (Resolve-Path "$PSScriptRoot\..\..\backend").Path
 $triple  = "x86_64-pc-windows-msvc"
 $name    = "snapstudio-api-$triple"
 
+# Resolve an interpreter rather than assuming a bare `python` is on PATH: a
+# release build must not depend on which shell it happens to run from.
+$python = $null
+$pythonArgs = @()
+foreach ($candidate in @(@("python", @()), @("python3", @()), @("py", @("-3.13")))) {
+    $found = (Get-Command $candidate[0] -ErrorAction SilentlyContinue)?.Source
+    if (-not $found) { continue }
+    # An interpreter only counts if it can actually import the build dependencies.
+    & $found @($candidate[1]) -c "import PyInstaller, lxml" 2>$null
+    if ($LASTEXITCODE -eq 0) { $python = $found; $pythonArgs = $candidate[1]; break }
+}
+if (-not $python) {
+    throw "No Python with pyinstaller + lxml found. Run: pip install -r backend/requirements-build.txt"
+}
+Write-Host "Using interpreter: $python $pythonArgs"
+
 Write-Host "Freezing sidecar from $backend ..."
 Push-Location $backend
 try {
     # --collect-data snapstudio_core : bundle data/*.json loaded via importlib.resources
     # --collect-submodules lxml      : ensure the lxml C-extension parts are included
     # --noupx                        : skip UPX packing (reduces Windows AV false-positives)
-    python -m PyInstaller --noconfirm --clean --onefile --noupx --name $name `
+    & $python @pythonArgs -m PyInstaller --noconfirm --clean --onefile --noupx --name $name `
         --collect-data snapstudio_core `
         --collect-submodules lxml `
         sidecar_main.py

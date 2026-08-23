@@ -1,46 +1,98 @@
-# Snapmaker Studio v0.4.0-beta.21.3 — Preserve Settings Summary Cleanup
+# Snapmaker Studio v0.4.0-beta.22 — Object placement, and the right tool for your file
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-This release cleans up how the Prepare summary reports preserved creator settings,
-based on feedback from testing v0.4.0-beta.21.2.
+Two new things Studio can tell you about a project, plus a set of fixes that make
+a downloaded project open cleanly in Snapmaker Orca.
 
-## What changed
+## Where your objects actually sit
 
-- **Preserved settings are no longer listed as "Changed".** Creator temperature and
-  retraction values that Studio only maps onto the U1's four-toolhead layout — with
-  the creator's values preserved — now appear under **Kept from the original file**,
-  with the note: *"Creator temperature values were preserved and mapped to the U1
-  toolhead layout."* They no longer appear under "Changed for U1 compatibility".
-  A setting appears as changed only when its actual value changed.
-- **Clearer summary by default.** The "Adjusted for U1 project compatibility"
-  section now uses plain language (printer identity changed to Snapmaker U1, U1
-  machine G-code applied, toolhead layout mapped). Raw setting keys and exact
-  old/new values moved behind a **Technical detail** disclosure you can expand.
-  Any real print-affecting change stays visible in the default view, and
-  **Could not carry over** is always shown.
-- **No more doubled output name.** Preparing a file whose name already ends in
-  `_SnapmakerU1` no longer produces `..._SnapmakerU1_SnapmakerU1.3mf` — Studio now
-  numbers the copy instead (for example `..._SnapmakerU1_2.3mf`).
-- **Wording cleanup.** Removed overclaiming wording from the Dashboard prepare step
-  and the Design Insights page.
+A project made for a bigger printer carries that printer's coordinates. A small
+part can be well inside the U1's size limits and still land off the plate — every
+size check passes, and Snapmaker Orca's only word for it is "out of bounds".
 
-## Honest limits (unchanged)
+Studio now names the object, its size, which edge it hangs past and by how many
+millimetres. When one move fixes it, there is a button that writes a **new copy**
+with the whole arrangement moved onto the plate. Your original file is not
+changed, and the creator's layout, rotation, scale and height are kept exactly.
 
-- Studio prepares **U1 profile copies for review in Snapmaker Orca** — it does not slice.
-- **Originals are never modified** — preparing a model writes a new copy.
-- **No print-success guarantees.**
-- Object placement, spacing and bed-boundary fit remain **advisory / not verified by
-  Studio** and must be checked in Snapmaker Orca before slicing.
+For projects with several plates, Studio measures the plate layout the file
+actually uses and moves every plate onto the U1's own grid, keeping the spacing
+the creator had between them. It moves every plate or none — and when it cannot
+work out the layout safely, or an object is not listed on any plate, or a plate
+will not fit, it says which of those is the reason instead of half-fixing your
+project.
 
-## Download & verify
+## Best tool for this project
 
-- Installer: `Snapmaker.Studio_0.4.0-beta.21.3_x64-setup.exe` (attached below)
-- Size: 16,160,350 bytes
-- SHA256: `7f69f6716d9a042973bffb0468cc49d13cd17fa273d0a6d283f7f97d9b4cad92`
-- Also recorded in [docs/RELEASE_METADATA.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.4.0-beta.21.3/docs/RELEASE_METADATA.md)
-- The installer is not code-signed yet, so Windows SmartScreen may show "Unknown publisher". Download only from this GitHub release page and verify the checksum first:
-  `Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.21.3_x64-setup.exe`
+The U1 has a large open-source ecosystem, and the hard part for a beginner is
+having to know all of it before any of it can help. Studio now reads what your
+project actually contains and names the tool that fits, with the reason drawn
+from your file, its licence, and a warning if it is an experimental community
+project.
 
-Local-first · open source (MIT).
+Mixed nozzle sizes, image-texture data, an already-sliced project, a project
+downloaded for another printer — each points somewhere different. When there is
+nothing special about your file, Studio says so and sends you to Snapmaker Orca.
+
+Studio never installs anything and never opens a tool on its own, and it only
+says a tool is installed when it actually found it on your computer.
+
+## Opening a downloaded project cleanly
+
+When Studio prepares a U1 copy it now also corrects the things that stop
+Snapmaker Orca behaving properly on a U1 — and only those things. Your print
+settings are still yours.
+
+- **Exclude Object is switched on**, so the U1 can cancel one failed object
+  without losing the whole plate, and adaptive bed mesh has object outlines to
+  work from.
+- **An automatic brim is switched off.** Snapmaker Orca decides differently from
+  the slicer your project was made in and can add a brim it never had. A brim you
+  chose yourself is left alone.
+- **Tree supports combined with variable layer height** are switched to the
+  hybrid style — the correction the original slicer makes but never saves into
+  the file.
+- **Filament lists are repaired** where an empty or missing entry would make the
+  slicer warn or refuse to open the project.
+- **The original printer's sliced output is removed**, so Snapmaker Orca slices
+  fresh for your U1 instead of showing a preview of a print that would never
+  happen. Your plate pictures are kept.
+
+Every change shows what it was before and why it changed.
+
+## What a print costs, when the file knows
+
+If a project has already been sliced, it records what that slicer worked out: the
+time and material per plate, and the grams of each filament. Studio now costs
+from those real figures and tells you that is where they came from, including
+different prices per material.
+
+If the project has not been sliced, Studio says so and tells you what to do —
+it does not invent a number.
+
+## Also in this release
+
+- Studio finds your printer more reliably: it now checks both addresses a U1
+  answers on. When nothing answers, it tells you to turn on Advanced Mode on the
+  printer's touchscreen, which is the usual reason.
+- Files downloaded from model sites are opened with a size limit, so a corrupt or
+  deliberately malformed project is refused with a clear message instead of
+  freezing the app.
+- Printer addresses are checked before Studio uses them.
+- New command-line tools for people who want the data without the app:
+  `u1convert traits`, `ecosystem`, `cost` and `placement --fix`.
+
+## Unchanged
+
+Local-first: no cloud, no account, nothing uploaded. Studio does not slice —
+Snapmaker Orca does. Your originals are never modified. Studio never starts a
+print on its own, and it gives advisory checks, not a guarantee of print success.
+
+## Install
+
+See [RELEASE_METADATA.md](RELEASE_METADATA.md) for the installer name, size and
+SHA256, and [windows-install.md](windows-install.md) for the full instructions.
+The installer is not code-signed yet, so Windows SmartScreen will show an unknown
+publisher — verify the SHA256 before running it.

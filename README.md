@@ -40,12 +40,34 @@ monitor your U1 and, with an explicit confirmation each time, control a print
 (pause/resume/cancel/start/emergency-stop) — it never auto-starts and does not
 control Orca.
 
+### Why isn't this just another slicer?
+
+Because it doesn't slice, and won't. Snapmaker Orca slices; Studio is the step
+before that. When Orca says `out of bounds`, Studio says *which object, which
+edge, how many millimetres, and why* — then offers to fix it in a new copy.
+
+### Why isn't this U1Hub, OctoPrint or Fluidd?
+
+Those start when a file is ready to print. Studio finishes there. Fluidd already
+ships on your U1 and Studio does not try to replace it — Printer Hub answers a
+different question: *is this printer ready for this specific project?*
+
+### What makes it different?
+
+It explains, and it says how sure it is. Every fact carries the part of the file
+that proved it and one of four confidence levels. When Studio can't know
+something, it says so instead of guessing — no invented cost, no fabricated
+readiness. And it reads your file to tell you which of the community's tools
+suits it, so you don't have to know all of them first.
+
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > Internal validation corpus: **112/112 files produced structurally valid U1 profile copies
 > in the internal validation gate — this is not a print-success guarantee** (see [PROOF.md](PROOF.md)). More context:
 > [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) ·
 > [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md) ·
 > [`docs/INNOVATION_FUND.md`](docs/INNOVATION_FUND.md) ·
+> [`docs/innovation-fund/`](docs/innovation-fund/) (judge walkthrough, competitor matrix, technical depth) ·
+> [`docs/EXTENDING.md`](docs/EXTENDING.md) ·
 > landing [`docs/landing/index.html`](docs/landing/index.html).
 
 ## Download
@@ -57,15 +79,35 @@ Open the downloaded `…_x64-setup.exe`, install, and launch **Snapmaker Studio*
 No account, no cloud, nothing leaves your computer. Older builds and checksums are
 on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
-## What's new in beta.20 — page-by-page product-truth audit
+## What's new in beta.22 — object placement, and the right tool for your file
 
-beta.20 sweeps every route so readiness wording is honest: "U1-ready / ready to slice / clean /
-safe / fixed / validated / passed" no longer appear from a profile verdict or structure
-validation alone. A converted copy reads "U1 profile copy saved · open in Orca and review
-before slicing". Studio does not slice; originals are never modified; no print-success
-guarantees. See [RELEASE_NOTES.md](docs/RELEASE_NOTES.md).
+**Where your objects actually sit.** A project made for a bigger printer carries
+that printer's coordinates, so a small part can be well inside the U1's limits
+and still land off the plate. Studio names the object, the edge and the
+millimetres, and can move the whole arrangement onto the plate in a **new copy** —
+your original is untouched and the creator's layout, rotation and scale are kept.
+Multi-plate projects are measured and moved onto the U1's own plate grid, all
+plates or none.
 
-Point releases beta.20.1–beta.20.4 add Printer Hub honesty, manual cost entry, collision honesty, STL Project Doctor consistency, and a release-acceptance/trust cleanup. beta.21 simplifies Simple mode to five nav items and adds a beginner Fix Plan — see [RELEASE_NOTES.md](docs/RELEASE_NOTES.md) and [TRUST_STATUS.md](docs/TRUST_STATUS.md).
+**Best tool for this project.** Studio reads what your project contains and names
+the open-source tool that fits it — mixed nozzle sizes, texture data, an
+already-sliced file each point somewhere different — with the reason from your
+file, its licence, and a warning for experimental community projects. Nothing
+special detected? It says so and sends you to Snapmaker Orca.
+
+**Downloaded projects open cleanly.** Preparing a U1 copy now also corrects what
+stops Snapmaker Orca behaving properly on a U1 — Exclude Object, an *automatic*
+brim, tree supports with variable layer height, invalid filament lists, and the
+original printer's leftover sliced output — and nothing else. Your settings stay
+yours, and every change shows its old value and reason.
+
+**Real costs when the file knows them.** A sliced project records what its slicer
+computed. Studio costs from those figures, per material, and says where they came
+from. If the project isn't sliced, it says so rather than inventing a number.
+
+See [RELEASE_NOTES.md](docs/RELEASE_NOTES.md) ·
+[docs/innovation-fund/](docs/innovation-fund/) ·
+[docs/EXTENDING.md](docs/EXTENDING.md).
 
 ### Earlier betas
 
@@ -97,10 +139,10 @@ Carried forward: hardware-verified **Printer Hub**, **Print Quality** evidence g
 your own file, **Plate Color Remap**, **Source Check**, Model Browser. All local, advisory
 — no cloud, no account, no guarantees. Studio does not slice; Orca does.
 
-- Release: [v0.4.0-beta.21.1](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.21.1)
-- Installer: `Snapmaker.Studio_0.4.0-beta.21.1_x64-setup.exe`
-- Size: 16,136,737 bytes
-- SHA256: `53f5de884f5e39eba7843deeda119c44049043cb3cc5b8323cf6ce95ba22bf22`
+- Release: [v0.4.0-beta.22](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.22)
+- Installer: `Snapmaker.Studio_0.4.0-beta.22_x64-setup.exe`
+- Size: 16,214,207 bytes
+- SHA256: `ad870d6587de34aa3d5e50f3070b76d4878cacde17548e4fe0a84ad8415f6994`
 - Canonical release metadata: [docs/RELEASE_METADATA.md](docs/RELEASE_METADATA.md)
 - Unsigned beta: the installer is not code-signed yet, so Windows SmartScreen may show “Unknown publisher.” That is expected for this beta. Download only from the release link above and verify the SHA256 before installing.
 
@@ -110,7 +152,7 @@ Install:
 2. Verify the checksum. It must match the SHA256 published on the release:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.21.1_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.22_x64-setup.exe
 ```
 
 3. Run it. On the SmartScreen prompt choose **More info → Run anyway** only after verifying the hash.
