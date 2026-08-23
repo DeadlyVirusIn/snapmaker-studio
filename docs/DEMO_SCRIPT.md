@@ -13,7 +13,7 @@ for the U1 — and flags likely print risks before slicing."
 |---|---|---|---|
 | **0–10s** | A Bambu/Orca file opened in Snapmaker Orca showing the "Customized Preset" / "newer version" warnings (the failure). | "3D printing workflows are fragmented. Your files get trapped between slicers and printers." | Screen-record Orca loading a foreign file with warnings (the before-state). |
 | **10–25s** | Open Snapmaker Studio. Drag **example.3mf** onto the drop zone. Doctor auto-runs; shows verdict + issues. | "Open Snapmaker Studio. Drop in any file. The Doctor checks it instantly — and tells you exactly what's wrong." | Studio: Dashboard -> drag-drop -> LiveWorkspace Doctor result. |
-| **25–45s** | Click **Prepare U1 copy**. Loading -> green "U1 profile copy saved" with output path + "Structure validated". | "One click. Studio prepares a U1 profile copy — your geometry and colors preserved, nothing lost." | Studio: convert action -> success state. |
+| **25–45s** | Click **Prepare U1 copy**. Loading -> green "U1 profile copy saved" with output path + "Structure validated". | "One click. Studio prepares a U1 profile copy — then shows exactly what stayed the same, what it changed, and what it could not check." | Studio: convert action -> success state. |
 | **45–60s** | Open the prepared `example_SnapmakerU1.3mf` in Snapmaker Orca; review layout, supports & colours. | "Open the prepared copy in Snapmaker Orca — review layout, supports and colours before slicing." | Screen-record Orca loading the prepared copy (the after-state). |
 | **60–90s** | Slow pan over roadmap cards: Understand . Validate . Prepare . Monitor -> "more ecosystems, more printers, plugins." End on logo + tagline. | "This is the start. We're building the workflow platform for modern 3D printing — understand, validate, and prepare any design for slicing." | Title cards from ROADMAP.md pillars + logo. |
 
@@ -50,8 +50,8 @@ For a judge/Innovation-Fund cut, add two short beats after the convert success:
    slicers and printers."
 2. (10–25) "Open Snapmaker Studio. Drop in any file. The Doctor checks it
    instantly — and tells you exactly what's wrong."
-3. (25–45) "One click. Studio prepares a U1 profile copy — your
-   geometry and colors preserved, nothing lost."
+3. (25–45) "One click. Studio prepares a U1 profile copy — then shows you exactly
+   what stayed the same, what it changed, and what it couldn't check."
 4. (45–60) "Open it in Snapmaker Orca — review layout, supports and colours before slicing."
 5. (60–90) "This is the start. We're building the unified platform for 3D
    printing workflows — the operating system for multi-material printing."

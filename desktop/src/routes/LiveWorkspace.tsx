@@ -228,7 +228,7 @@ export default function LiveWorkspace() {
                   </p>
                 )}
                 <div className="pt-1">
-                  <OrcaHandoff outputPath={convert.data.output_path} />
+                  <OrcaHandoff outputPath={convert.data.output_path} originalPath={file?.path} />
                 </div>
                 {convert.data.settings_summary && <PrepareSettingsSummary summary={convert.data.settings_summary} mode={convert.data.prepare_mode} isStl={file.ext === "stl"} onPrepareRecommended={() => runConvert("recommended")} />}
               </CardContent>

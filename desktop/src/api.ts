@@ -1223,3 +1223,58 @@ export async function preflight(path: string, host?: string, port = 7125): Promi
   if (!r.ok) throw new Error(`preflight failed (${r.status})`);
   return r.json();
 }
+
+// ---- Fidelity audit ---------------------------------------------------------
+// What survived preparing a copy. The categories that matter are `unverified`
+// and `unsupported`: a report that can only say preserved-or-changed has to lie
+// about the parts it does not understand.
+
+export type FidelityStatus =
+  | "preserved_exact"
+  | "preserved_semantic"
+  | "changed"
+  | "added"
+  | "removed"
+  | "unsupported"
+  | "unverified";
+
+export interface FidelityRow {
+  element: string;
+  status: FidelityStatus;
+  detail: string;
+  reason: string | null;
+  part: string | null;
+}
+
+export interface FidelityReport {
+  schema_version: string;
+  available: boolean;
+  reason?: string;
+  original?: string;
+  prepared?: string;
+  rows: FidelityRow[];
+  counts: Partial<Record<FidelityStatus, number>>;
+  kept: FidelityRow[];
+  changed: FidelityRow[];
+  not_carried: FidelityRow[];
+  unverified: FidelityRow[];
+  claims: {
+    geometry_unchanged: boolean;
+    nothing_removed: boolean;
+    fully_accounted: boolean;
+    may_claim_nothing_lost: boolean;
+  };
+  summary: string;
+  disclaimer?: string;
+}
+
+export async function fidelityAudit(original: string, prepared: string): Promise<FidelityReport> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/fidelity`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ original, prepared }),
+  });
+  if (!r.ok) throw new Error(`fidelity audit failed (${r.status})`);
+  return r.json();
+}

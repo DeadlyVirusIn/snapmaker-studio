@@ -45,7 +45,8 @@ Snapmaker Studio operates in, and it widens as the ecosystem fragments.
 1. **Local-first.** No account, no cloud, no telemetry required. Files never
    leave the machine. Privacy and offline reliability are features, not promises.
 2. **Preserve, never destroy.** Geometry, painting, and color are sacred. The
-   engine fails safe and never silently reduces colors or mutates meshes. Inputs
+   engine fails safe: a conversion is rejected on any change it cannot account for,
+and a fidelity report states per project what was preserved, changed or unverified. Inputs
    are never overwritten.
 3. **Cross-ecosystem by default.** Bambu, Orca, and raw STL are first-class today;
    PrusaSlicer is detected/read in limited form, with Cura, Creality, and broader

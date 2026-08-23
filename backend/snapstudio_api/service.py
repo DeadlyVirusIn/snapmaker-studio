@@ -265,6 +265,14 @@ def printer_facts(host: str | None = None, port: int = 7125) -> dict:
     return facts
 
 
+def fidelity_audit(original: str, prepared: str) -> dict:
+    """What survived preparing a copy, element by element, with the reason for
+    anything changed or dropped — and an explicit list of what Studio could not
+    verify."""
+    from snapstudio_core import fidelity
+    return fidelity.audit(original, prepared)
+
+
 def preflight(path: str, host: str | None = None, port: int = 7125) -> dict:
     """Join what this project needs to what this printer reports.
 

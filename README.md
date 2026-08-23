@@ -180,8 +180,9 @@ Designs from popular slicers and model sites don't always open cleanly on a give
 printer — and novices often can't tell *why*, or whether a file will even print.
 Snapmaker Studio closes that gap: open any design and get a plain-language read on
 what's in it, a readiness check, and a prepared U1 profile copy (review in Orca
-before slicing) — without losing detail, painted regions, or multi-color assignments. The Snapmaker U1 is the first
-printer target; the workflow is built to grow across ecosystems.
+before slicing) — with a fidelity report that shows, element by element, what stayed
+identical, what Studio changed and why, and what it could not check. The Snapmaker U1
+is the first printer target; the workflow is built to grow across ecosystems.
 
 ## What's inside
 
@@ -217,9 +218,11 @@ printer target; the workflow is built to grow across ecosystems.
 - **Multi-ecosystem foundation.** Bambu, OrcaSlicer, and plain STL are first-class
   today; PrusaSlicer files are *detected* (full preservation is on the roadmap). The
   engine is built around a source-neutral model so more ecosystems can follow.
-- **Preservation-first.** Geometry, painting, and color are kept faithfully. Studio
-  never silently drops colors or detail — and when it can't guarantee a faithful
-  result, it stops and tells you why.
+- **Preservation, proved per project.** Preparing a copy is followed by a fidelity
+  report: what is byte-identical, what changed and why, what was not carried over,
+  and what Studio could not verify. Studio only says nothing was lost when that
+  audit proves it for *your* file — and a conversion fails outright on any change
+  the engine cannot account for.
 - **Open printer opportunity.** The U1 runs open, LAN-trusted firmware, which lets Studio
   provide local Printer Hub monitoring and user-confirmed control/send without cloud accounts.
 

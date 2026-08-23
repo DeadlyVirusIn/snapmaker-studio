@@ -166,7 +166,7 @@ export default function Compatibility() {
                 </ul>
               )}
               <div className="flex flex-wrap items-center gap-2">
-                {prep.output_path && <OrcaHandoff outputPath={prep.output_path} />}
+                {prep.output_path && <OrcaHandoff outputPath={prep.output_path} originalPath={path ?? undefined} />}
                 <Button size="sm" variant="secondary" onClick={() => copyPath(prep.output_path)}>
                   <Copy className="h-4 w-4" /> Copy path
                 </Button>

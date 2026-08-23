@@ -247,5 +247,20 @@ def preflight_cmd(path, host, port):
     click.echo(json.dumps(service.preflight(path, host=host, port=port), indent=2))
 
 
+@cli.command("fidelity")
+@click.argument("original", type=click.Path(exists=True))
+@click.argument("prepared", type=click.Path(exists=True))
+def fidelity_cmd(original, prepared):
+    """Report exactly what survived preparing a copy.
+
+    Every element Studio can identify is classified as preserved (exactly or
+    semantically), deliberately changed, deliberately removed, added, unsupported
+    or unverified — with the reason. `claims` states what Studio is allowed to say
+    about this pair; "nothing was lost" is only true when the audit proves it.
+    """
+    from snapstudio_core import fidelity
+    click.echo(json.dumps(fidelity.audit(original, prepared), indent=2))
+
+
 if __name__ == "__main__":  # `python -m u1convert.cli` without installing the package
     cli()

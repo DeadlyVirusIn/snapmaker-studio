@@ -172,7 +172,7 @@ export default function DesignInsights() {
               <p>1. Open it in Snapmaker Orca to slice and print (one click below)</p>
               <p>2. Or copy the file path and open it in Snapmaker Orca yourself</p>
             </div>
-            <OrcaHandoff outputPath={convert.data.output_path} />
+            <OrcaHandoff outputPath={convert.data.output_path} originalPath={file?.path} />
             <div className="flex flex-wrap justify-center gap-2">
               <Button variant="secondary" onClick={() => copyPath(convert.data!.output_path)}>
                 <Copy className="h-4 w-4" /> Copy path

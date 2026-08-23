@@ -38,6 +38,8 @@ _CONTRACT = {
     "/project_cost": ({"path": "none"}, ["schema_version", "available", "basis"]),
     "/placement_check": ({"path": "none"}, ["schema_version", "available", "items"]),
     "/preflight": ({"path": "none"}, ["schema_version", "checks", "counts", "summary"]),
+    "/fidelity": ({"original": "none", "prepared": "none"},
+        ["schema_version", "available", "rows", "claims", "summary"]),
 }
 
 

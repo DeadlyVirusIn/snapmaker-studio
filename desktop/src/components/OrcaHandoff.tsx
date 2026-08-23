@@ -6,6 +6,7 @@ import { useToast } from "@/store/toast";
 import { detectOrca, openInOrca } from "@/api";
 import { ORCA_RELEASES_URL, ORCA_HANDOFF_LINE, orcaErrorMessage } from "@/lib/orca";
 import { EcosystemPanel } from "@/components/EcosystemPanel";
+import { FidelityCard } from "@/components/FidelityCard";
 
 /**
  * One-way Snapmaker Orca handoff. Shows "Open in Snapmaker Orca" when an install
@@ -13,7 +14,8 @@ import { EcosystemPanel } from "@/components/EcosystemPanel";
  * appears when a prepared/safe-copy file exists. Studio never slices and never
  * controls Orca; the install path is never displayed in the UI.
  */
-export function OrcaHandoff({ outputPath }: { outputPath: string }) {
+export function OrcaHandoff({ outputPath, originalPath }:
+  { outputPath: string; originalPath?: string }) {
   const showToast = useToast((s) => s.show);
   // undefined = still detecting, string = installed, null = not installed
   const [orca, setOrca] = useState<string | null | undefined>(undefined);
@@ -72,6 +74,15 @@ export function OrcaHandoff({ outputPath }: { outputPath: string }) {
           and upload it. (Studio doesn't slice — Snapmaker Orca does.)
         </p>
       </div>
+      {/* Proof rather than a promise: what actually survived the preparation,
+          including anything Studio could not check. Only rendered when the
+          original is known, because there is nothing to compare against
+          otherwise. */}
+      {originalPath && originalPath !== outputPath && (
+        <div className="mt-1 w-full">
+          <FidelityCard original={originalPath} prepared={outputPath} />
+        </div>
+      )}
       {/* What this specific project might also want. Reads the prepared file and
           names the community tool that fits, with the reason from the file. */}
       <div className="mt-1 w-full">

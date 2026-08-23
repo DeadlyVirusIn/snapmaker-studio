@@ -177,6 +177,15 @@ def _make_handler(token: str):
                     self._send(400, {"error": str(e)})
                 except Exception:
                     self._send(500, {"error": "internal error"})
+            elif self.path == "/fidelity":
+                try:
+                    self._send(200, service.fidelity_audit(
+                        rv.require_path_string(data, "original"),
+                        rv.require_path_string(data, "prepared")))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
             elif self.path == "/preflight":
                 try:
                     self._send(200, service.preflight(
