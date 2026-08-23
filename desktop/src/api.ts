@@ -1119,3 +1119,66 @@ export async function ecosystemAdvice(
   if (!r.ok) throw new Error(`ecosystem advice failed (${r.status})`);
   return r.json();
 }
+
+// ---- Plate placement --------------------------------------------------------
+// A small object placed at another printer's coordinates lands off the U1 plate
+// while passing every size check. These read where each object sits and, when a
+// single honest move fixes it, write a NEW copy — the original is never touched.
+
+export interface PlacementItem {
+  object_id: string;
+  dimensions: { x: number; y: number; z: number };
+  position: { x: number; y: number };
+  off_plate: boolean;
+  overhang_mm: { left: number; right: number; front: number; back: number };
+  edges: string | null;
+}
+
+export interface PlacementCheck {
+  schema_version: string;
+  available: boolean;
+  reason?: string;
+  source_printer?: string | null;
+  plate_count?: number;
+  item_count?: number;
+  items: PlacementItem[];
+  off_plate: PlacementItem[];
+  skipped_plates?: { plate: number; reason: string }[];
+  unresolved_objects?: { object_id: string }[];
+  fixable: boolean;
+  summary?: string;
+}
+
+export interface PlacementFix {
+  schema_version: string;
+  ok: boolean;
+  reason?: string;
+  output_path?: string;
+  output_name?: string;
+  objects_moved?: number;
+  changes?: { what: string; detail: string; kept: string }[];
+  summary?: string;
+  after?: PlacementCheck;
+}
+
+export async function placementCheck(path: string): Promise<PlacementCheck> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/placement_check`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ path }),
+  });
+  if (!r.ok) throw new Error(`placement check failed (${r.status})`);
+  return r.json();
+}
+
+export async function preparePlaced(path: string, outDir?: string): Promise<PlacementFix> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/prepare_placed`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ path, out_dir: outDir ?? null }),
+  });
+  if (!r.ok) throw new Error(`placement fix failed (${r.status})`);
+  return r.json();
+}

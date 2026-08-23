@@ -15,6 +15,7 @@ import { Copy, Stethoscope } from "lucide-react";
 import { COMPAT_COPY, sortFindings, severityLabel, severityToken, countFindings } from "@/lib/compatibility";
 import { useModelPath } from "@/hooks/useModelPath";
 import { isExt } from "@/lib/modelPath";
+import { PlacementCard } from "@/components/PlacementCard";
 
 export default function Compatibility() {
   const { path, fromSession, override } = useModelPath(isExt("3mf"));
@@ -79,6 +80,11 @@ export default function Compatibility() {
       </CardContent></Card>
 
       {!path && <p className="text-sm text-muted-foreground">{COMPAT_COPY.intro}</p>}
+
+      {/* Where the objects actually sit. A project made for a bigger bed can be
+          well within the U1's size limits and still land off the plate — the
+          settings check above cannot see that, because it is not a setting. */}
+      {path && <PlacementCard path={path} />}
       {checkM.isError && <p className="text-sm text-risk">Couldn't read that file: {(checkM.error as Error).message}</p>}
 
       {result && (
