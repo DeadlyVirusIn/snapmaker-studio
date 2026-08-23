@@ -5,6 +5,7 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 ![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)
 ![Release](https://img.shields.io/github/v/release/DeadlyVirusIn/snapmaker-studio?display_name=tag&include_prereleases)
+[![CI](https://github.com/DeadlyVirusIn/snapmaker-studio/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DeadlyVirusIn/snapmaker-studio/actions/workflows/ci.yml)
 ![Status: beta](https://img.shields.io/badge/status-beta-orange.svg)
 
 **The Intelligence Layer for Open 3D Printing.**
