@@ -52,8 +52,13 @@ reach one: *"Studio can't tell"*, and what to do about it.
 
 ## Download
 
-**[⬇ Download for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/latest)**
+**[⬇ Download Snapmaker Studio v0.4.0-beta.24 for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.24)**
 — one click, no Python, runs offline. Windows 10/11 x64.
+
+This is a beta and is published as a pre-release, so it deliberately links the
+version by name rather than "latest" — GitHub's "latest" points at the newest
+*stable* release, which is older. Every build ever published is on the
+[Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
 Verify it before you run it:
 

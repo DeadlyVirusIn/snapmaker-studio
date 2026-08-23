@@ -137,4 +137,4 @@ SHA256 before running it. Why, and what is being done:
 | Technical depth | [TECHNICAL_DEPTH.md](TECHNICAL_DEPTH.md) |
 | Where Studio sits in the field | [COMPETITOR_MATRIX.md](COMPETITOR_MATRIX.md) · [DIFFERENTIATION_STRATEGY.md](DIFFERENTIATION_STRATEGY.md) |
 | The ecosystem story | [OPEN_ECOSYSTEM.md](OPEN_ECOSYSTEM.md) |
-| Download | [Releases](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/latest) · hash in [../RELEASE_METADATA.md](../RELEASE_METADATA.md) |
+| Download | [Releases](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.24) · hash in [../RELEASE_METADATA.md](../RELEASE_METADATA.md) |
