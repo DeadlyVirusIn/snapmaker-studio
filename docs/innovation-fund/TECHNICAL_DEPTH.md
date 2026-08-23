@@ -44,58 +44,50 @@ extraction on a large project is a constant-time read, not a full XML parse.
 
 ---
 
-## 2. Measuring a plate grid instead of assuming one
+## 2. Knowing when not to ship the clever thing
 
 **Problem.** A multi-plate project lays every plate's objects out on a single
-coordinate grid: plate 1 near the bed centre, plate 2 a fixed stride further along
-X. The stride is the source printer's bed width plus a gap the authoring slicer
-chose. Move that project to a printer with a different bed and every plate past
-the first lands somewhere wrong — which is why objects from multi-plate projects
-turn up on the wrong plate after a naive conversion.
+coordinate grid, and the stride between plates is not recorded anywhere in the
+file. Studio derived it — from each plate's object-cluster centre — and used it to
+reposition every plate onto a U1 grid.
 
-The stride is not recorded anywhere in the file.
+**What happened.** An independent adversarial review reproduced the failure: for
+two plates whose parts sat off-centre, a true 370 mm stride was measured as
+690 mm and the second plate was placed 745 mm along X, entirely off the bed, while
+the result reported success. Two compounding mistakes: the measurement was of the
+*parts*, not of the grid; and the "does this stride explain every plate" guard is
+a tautology when there are only two plates, so the commonest case had no
+validation at all. The derived gap was also unbounded, so a negative gap could put
+two plates on the same physical plate.
 
-**Approach.** `snapstudio_core/plate_placement.py` derives it:
+**What was done.** The feature was withdrawn rather than patched. Studio cannot
+observe the plate spacing, and a number it cannot observe should not drive a file
+rewrite. `git log` carries the removal; `docs/innovation-fund/CHANGE_SUMMARY.md`
+records it as withdrawn rather than shipped.
 
-1. Map objects to plates from the project's own `<plate>` / `<model_instance>`
-   records.
-2. Compute each plate's cluster centre from real placed geometry — build-item
-   transforms composed through nested components.
-3. Take the median per-plate step as the candidate stride.
-4. **Verify** that the candidate explains *every* plate's position within a 5 mm
-   tolerance. If it does not, refuse and say why.
-5. Derive the gap as `stride − source bed width`, then build the U1 grid as
-   `U1 bed width + that same gap`, so the creator's plate-to-plate spacing
-   survives while the bed-width difference is compensated.
+**What survived, because it never depended on the grid.** Each plate is judged on
+whether its *own contents* fit a U1 plate — a size question, not a position one.
+A plate's absolute coordinates on a multi-plate grid are an artefact of the
+authoring slicer, so an object at X=900 on plate 3 is no longer reported as "off
+the plate", which it never was. Multi-plate projects get a clear refusal that says
+why, and Snapmaker Orca's Arrange is the right answer.
 
-**The refusals matter more than the maths.** Studio declines to move anything
-when an object belongs to no plate (it cannot know where it goes), when the grid
-is uneven (the measurement does not describe this project), or when any single
-plate will not fit a U1 plate (it moves every plate or none). Tests:
-`test_unevenly_spaced_plates_are_refused_rather_than_guessed`,
-`test_an_object_on_no_plate_stops_the_whole_fix`,
-`test_multi_plate_fix_is_all_or_nothing`.
+This is the most useful thing in this document. Every project can list what it
+built; a project's judgement shows in what it took back out.
 
-**Surgical rewriting.** The fix edits only the translation entries of build-item
-transform matrices. Rotation, scale and shear are copied through untouched, and
-an item with no transform is *given* one so it travels with its plate rather than
-being left behind. `test_fix_only_touches_the_model_part` byte-diffs input against
-output and asserts `3D/3dmodel.model` is the only entry that differs.
+## 3. Placement, for the case that is decidable
 
-**Self-validation.** After writing, the fix re-runs the same assessment against
-the file it actually produced and reports failure if the promise was not kept.
+For a single plate the question is fully determined by the file: where each object
+sits, where the bed is, and whether one translation brings the whole arrangement
+on. Studio reports the object, the edge and the millimetres, writes a
+translation-only copy, and re-runs the same assessment against the file it
+actually wrote — not against what the code intended to write — reporting failure
+if the promise was not kept.
 
----
-
-## 3. Reading a project against the plate it is really on
-
-A subtlety that falls out of §2: on a multi-plate grid, plate 2 legitimately sits
-a whole bed-width along X. Judging it against plate 1's rectangle would report
-every multi-plate project as broken. Studio builds a per-item target rectangle
-from the measured grid, so each object is judged against *its own* plate slot —
-before and after the fix, using the same code path.
-
----
+Rotation, scale and shear are copied through untouched; an item with no transform
+is *given* one so it travels with the plate rather than being left behind.
+`test_fix_only_touches_the_model_part` byte-diffs input against output and asserts
+`3D/3dmodel.model` is the only entry that differs.
 
 ## 4. Costing from a measurement instead of a model
 

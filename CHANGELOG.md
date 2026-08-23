@@ -11,10 +11,9 @@ All notable changes to this project are documented here. The format is based on
 ### Added
 - **Object placement check and fix.** Reports which objects sit outside the U1's
   printable area, on which edge and by how many millimetres, and can write a new
-  copy with the whole arrangement moved onto the plate. Multi-plate projects have
-  their plate grid measured from the file and every plate repositioned onto the
-  U1's grid, keeping the creator's plate-to-plate spacing. All-or-nothing per
-  plate; refuses when the layout cannot be read safely. Originals are never
+  copy with the whole arrangement moved onto the plate. Multi-plate projects are
+  checked but never repositioned — the plate spacing is not in the file — and each
+  plate is judged on whether its own contents fit a U1 plate. Originals are never
   modified and only build-item translations are rewritten.
 - **Best tool for this project.** A data-driven registry of the open U1 ecosystem
   matched against facts read from the file, with the reason, licence and a

@@ -130,8 +130,9 @@ that printer's coordinates, so a small part can be well inside the U1's limits
 and still land off the plate. Studio names the object, the edge and the
 millimetres, and can move the whole arrangement onto the plate in a **new copy** —
 your original is untouched and the creator's layout, rotation and scale are kept.
-Multi-plate projects are measured and moved onto the U1's own plate grid, all
-plates or none.
+Multi-plate projects are checked but never moved: the spacing between plates
+isn't recorded in the file, so any move would be a guess. Each plate is judged on
+whether its own contents fit a U1 plate.
 
 **Best tool for this project.** Studio reads what your project contains and names
 the open-source tool that fits it — mixed nozzle sizes, texture data, an

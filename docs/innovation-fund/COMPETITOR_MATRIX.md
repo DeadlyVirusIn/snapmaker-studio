@@ -189,7 +189,7 @@ data was copied, which matters because its internals are PolyForm-Noncommercial.
 | Bambu-only key filter + speed/acceleration clamp from the reference profile | **Already present** | `rules.py`, `preserve.py` |
 | Filament slot order preserved, slot N stays slot N | **Already present** — Studio never auto-caps colours | `repair.py`, `filaments.py` |
 | Per-filament override preservation (max volumetric speed, temps, cooling) | **Already present** via the per-filament key policy | `preserve.py`, `u1_filament_arrays.json` |
-| Multi-plate coordinate remap: plate-centre and grid-spacing compensation, arrangement/rotation/scale/Z preserved, all-or-nothing per plate | **Implemented** — and Studio *measures* the grid from the file and refuses when the measurement does not explain every plate, rather than assuming a stride | `plate_placement.py` |
+| Multi-plate coordinate remap | **Deliberately not implemented.** Studio built it, an independent review reproduced a case where the derived stride was wrong by 79% and a plate landed off the bed, and it was withdrawn rather than patched — the plate spacing is not in the file. Multi-plate projects are still *checked* per plate. | `plate_placement.py` |
 | Print-profile matching by layer height | **Not implemented** — Studio uses one U1 base profile. Tracked as remaining work |
 | Stock-OrcaSlicer output target toggle | **Not implemented** — deliberately out of scope; Studio targets Snapmaker Orca |
 

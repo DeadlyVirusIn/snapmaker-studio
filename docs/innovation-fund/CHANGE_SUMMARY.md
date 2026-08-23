@@ -80,11 +80,12 @@ need to exist when forty other projects do".
 - **Plate placement (`plate_placement.py`)** closes a gap no size check can see: a
   small object at another printer's coordinates lands off the U1 plate. Studio
   names the object, the edge and the millimetres, and can write a new copy with
-  the arrangement translated on. For multi-plate projects it **measures** the
-  plate grid the file uses, verifies the measurement explains every plate, and
-  repositions each plate onto the U1's grid keeping the creator's plate-to-plate
-  spacing. All-or-nothing per plate; it refuses outright when an object belongs to
-  no plate, when the grid is uneven, or when any plate will not fit.
+  the arrangement translated on — for single-plate projects. Multi-plate
+  repositioning was built, then **withdrawn** after an adversarial review
+  reproduced a plate landing off the bed: the plate spacing is not recorded in the
+  file, so the derived stride was measuring where the parts sat rather than where
+  the plates were. Multi-plate projects are still checked, on whether each plate's
+  own contents fit a U1 plate, which does not depend on the grid.
 - Only build-item translations are rewritten. A byte-diff test proves no other
   archive entry changes, and the fix re-validates the file it actually wrote.
 - **Project cost (`project_cost.py`)** costs from the slicing result the project

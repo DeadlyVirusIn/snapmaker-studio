@@ -18,11 +18,10 @@ with the whole arrangement moved onto the plate. Your original file is not
 changed, and the creator's layout, rotation, scale and height are kept exactly.
 
 For projects with several plates, Studio measures the plate layout the file
-actually uses and moves every plate onto the U1's own grid, keeping the spacing
-the creator had between them. It moves every plate or none — and when it cannot
-work out the layout safely, or an object is not listed on any plate, or a plate
-will not fit, it says which of those is the reason instead of half-fixing your
-project.
+checks each plate on whether its own contents fit a U1 plate — but it never moves
+them. The spacing between plates isn't recorded in the file, so any move would be
+a guess, and Studio says so and points you at Snapmaker Orca's Arrange instead of
+half-fixing your project.
 
 ## Best tool for this project
 

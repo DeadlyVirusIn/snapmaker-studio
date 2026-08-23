@@ -97,9 +97,11 @@ After writing, it re-runs the same check against the file it actually produced �
 not against what the code intended to produce — and reports failure if the result
 is not what was promised.
 
-For multi-plate projects it *measures* the plate grid the file uses, verifies the
-measurement explains every plate, and refuses outright when it does not. A
-half-moved plate is worse than an honest "open this in Orca and use Arrange".
+Multi-plate projects are checked but never moved. Studio built that feature,
+an adversarial review reproduced a plate landing off the bed, and it was withdrawn
+rather than patched — the plate spacing is not in the file, so any move is a
+guess. A half-moved plate is worse than an honest "open this in Orca and use
+Arrange".
 
 ### 3.4 Local-first, with nothing to trust
 
@@ -126,7 +128,7 @@ Studio never takes autonomous control of a printer and never starts a print.
 ## 5. Against the Fund's own criteria
 
 **Innovation & Technical Depth.** Independent 3MF forensics with graded
-confidence; measuring a multi-plate grid from the file rather than assuming it;
+confidence; withdrawing a feature whose maths could not be justified;
 a data-driven ecosystem recommender; costing from the slicing result the project
 already carries. The hard problems here are about *correctness under uncertainty*,
 which is a harder class of problem than adding a feature to a slicer.
