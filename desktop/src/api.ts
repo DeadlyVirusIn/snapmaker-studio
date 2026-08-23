@@ -1390,3 +1390,15 @@ export async function colorPlan(path: string, toolheads?: number): Promise<Color
   if (!r.ok) throw new Error(`colour plan failed (${r.status})`);
   return r.json();
 }
+
+/**
+ * A model passed on the command line, if any — file association, "Open with", or
+ * an automated run. Null is the ordinary case. Never throws outside Tauri.
+ */
+export async function launchFile(): Promise<string | null> {
+  try {
+    return await invoke<string | null>("get_launch_file");
+  } catch {
+    return null;
+  }
+}

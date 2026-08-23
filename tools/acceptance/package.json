@@ -1,0 +1,9 @@
+{
+  "name": "snapstudio-acceptance",
+  "private": true,
+  "type": "module",
+  "description": "Installed-build acceptance harness. Drives the shipped Snapmaker Studio over CDP.",
+  "dependencies": {
+    "playwright-core": "^1.62.1"
+  }
+}

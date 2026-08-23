@@ -22,6 +22,8 @@ import BeginnerWorkflow from "@/routes/BeginnerWorkflow";
 import Help from "@/routes/Help";
 import NotFound from "@/routes/NotFound";
 import { useTheme } from "@/store/theme";
+import { useSession } from "@/store/session";
+import { launchFile } from "@/api";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +34,20 @@ export default function App() {
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
+
+  // A model handed to Studio on the command line — a file association, "Open
+  // with", or an automated run — should be open when the window appears, rather
+  // than making the user find it again through the picker.
+  const setFile = useSession((s) => s.setFile);
+  useEffect(() => {
+    let alive = true;
+    launchFile().then((path) => {
+      if (alive && path) setFile(path);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [setFile]);
 
   return (
     <QueryClientProvider client={queryClient}>

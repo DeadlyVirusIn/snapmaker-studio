@@ -1,0 +1,193 @@
+// Installed-build acceptance checks, driven over the Chrome DevTools Protocol
+// against the *installed* Snapmaker Studio — not the dev server.
+//
+// Tauri renders the UI in WebView2, and WebView2 accepts browser arguments via
+// WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS. Launching the installed app with
+// `--remote-debugging-port` therefore exposes the real, shipped webview to a
+// standard CDP client. That is what makes this a genuine installed-build test
+// rather than pixel-poking: every assertion reads the DOM the user sees, and the
+// API calls run inside the app's own origin against the frozen sidecar.
+//
+// Run one phase per invocation so the PowerShell driver can interleave native
+// steps (the file dialog) that CDP cannot reach.
+//
+// Usage: node checks.mjs <phase> <cdpUrl> <outDir> [samplePath]
+
+import { chromium } from "playwright-core";
+import { writeFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+
+const [, , phase, cdpUrl, outDir, samplePath] = process.argv;
+mkdirSync(outDir, { recursive: true });
+
+const results = [];
+const record = (name, ok, detail = "") => {
+  results.push({ name, ok, detail });
+  console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? `  — ${detail}` : ""}`);
+};
+
+async function appPage(browser) {
+  const ctx = browser.contexts()[0];
+  for (const page of ctx.pages()) {
+    if (page.url().startsWith("http://tauri.localhost")) return page;
+  }
+  throw new Error("the app window was not found over CDP");
+}
+
+/** Call a documented route from inside the app's own origin. */
+async function callRoute(page, route, body) {
+  return page.evaluate(
+    async ([route, body]) => {
+      const info = await window.__TAURI_INTERNALS__.invoke("get_api_info");
+      const res = await fetch(`http://127.0.0.1:${info.port}${route}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Auth-Token": info.token },
+        body: JSON.stringify(body),
+      });
+      return { status: res.status, body: await res.json() };
+    },
+    [route, body],
+  );
+}
+
+const shot = async (page, name) => {
+  await page.screenshot({ path: join(outDir, `${name}.png`) });
+};
+
+async function phaseStartup(page) {
+  record("App window present", (await page.title()) === "Snapmaker Studio", await page.title());
+
+  const info = await page.evaluate(() =>
+    window.__TAURI_INTERNALS__.invoke("get_api_info"));
+  record("Sidecar handshake", Boolean(info?.port && info?.token),
+    `port ${info?.port}`);
+
+  const health = await page.evaluate(async () => {
+    const i = await window.__TAURI_INTERNALS__.invoke("get_api_info");
+    const r = await fetch(`http://127.0.0.1:${i.port}/health`);
+    return { status: r.status, body: await r.json() };
+  });
+  record("Engine /health from the app origin", health.status === 200,
+    JSON.stringify(health.body).slice(0, 90));
+
+  // The shipped Rust command table, exercised against the real machine.
+  const tools = await page.evaluate(() =>
+    window.__TAURI_INTERNALS__.invoke("detect_tools"));
+  record("Ecosystem tool detection (shell)", typeof tools === "object",
+    `${Object.keys(tools || {}).length} installed tool(s) found: ${Object.keys(tools || {}).join(", ") || "none"}`);
+
+  const orca = await page.evaluate(() =>
+    window.__TAURI_INTERNALS__.invoke("detect_orca"));
+  record("Snapmaker Orca detection", orca === null || typeof orca === "string",
+    orca ? "installed" : "not installed on this machine");
+
+  await shot(page, "01-dashboard");
+}
+
+async function phaseRoutes(page) {
+  const routes = [
+    ["/project_traits", { path: samplePath }, (b) => b.readable === true],
+    ["/placement_check", { path: samplePath }, (b) => b.available === true && b.off_plate.length === 1],
+    ["/color_plan", { path: samplePath }, (b) => b.color_count === 6 && b.verdict === "possible_with_swaps"],
+    ["/project_cost", { path: samplePath }, (b) => b.available === false && Boolean(b.reason)],
+    ["/ecosystem_advice", { path: samplePath }, (b) => Boolean(b.primary?.why?.length)],
+    ["/preflight", { path: samplePath, host: "", port: 7125 }, (b) => Array.isArray(b.checks) && b.checks.length > 0],
+    ["/fix_history", {}, (b) => Array.isArray(b.entries)],
+  ];
+  for (const [route, body, verify] of routes) {
+    try {
+      const { status, body: payload } = await callRoute(page, route, body);
+      record(`Engine route ${route}`, status === 200 && verify(payload),
+        status === 200 ? "" : `HTTP ${status}`);
+    } catch (e) {
+      record(`Engine route ${route}`, false, String(e).slice(0, 90));
+    }
+  }
+}
+
+async function phaseUi(page) {
+  // The placement finding, read from the DOM the user sees.
+  const body = await page.locator("body").innerText();
+  const has = (s) => body.includes(s);
+
+  record("Placement finding rendered", has("Object placement") && has("outside the U1"),
+    (body.match(/Hangs [\d.]+ mm past the \w+ edge/) || ["no overhang line"])[0]);
+  record("Preflight card rendered", has("Before you slice"), "");
+  record("Preflight reports an honest unknown", has("Studio can’t tell") || has("Studio can't tell"),
+    "");
+  record("Not-detected is never called unsupported",
+    !/not supported|unsupported/i.test(body), "");
+  await shot(page, "02-project-open");
+}
+
+async function phasePrepared(page) {
+  const body = await page.locator("body").innerText();
+  const has = (s) => body.includes(s);
+  record("Prepared copy reported", has("Saved as") || has("U1 profile copy"), "");
+  record("Fidelity report rendered", has("What survived preparing this copy"), "");
+  record("Fidelity lists what was not carried over",
+    has("What Studio could not carry over"), "");
+  record("Fix ledger rendered", has("Changes Studio made"), "");
+  record("Return-to-original offered", has("Return to the original"), "");
+  record("Original-untouched wording present",
+    has("never modified") || has("was not changed"), "");
+  record("Best-tool panel rendered", has("Best tool for this project"), "");
+  record("No print-success promise in the prepared view",
+    !/guaranteed|will print successfully|100% success/i.test(body), "");
+  await shot(page, "03-prepared");
+}
+
+const browser = await chromium.connectOverCDP(cdpUrl);
+try {
+  const page = await appPage(browser);
+  if (phase === "startup") await phaseStartup(page);
+  else if (phase === "routes") await phaseRoutes(page);
+  else if (phase === "ui") await phaseUi(page);
+  else if (phase === "prepared") await phasePrepared(page);
+  else if (phase === "launch-file") {
+    // The app was started with the project as an argument; the shell reports it
+    // through get_launch_file and the session opens it at startup. The native
+    // picker is deliberately not used — see run.ps1 for why it is unreachable.
+    const launched = await page.evaluate(() =>
+      window.__TAURI_INTERNALS__.invoke("get_launch_file"));
+    record("Shell reports the launch file", typeof launched === "string",
+      String(launched).split(/[\/]/).pop());
+    await page.waitForTimeout(4000);
+    const body = await page.locator("body").innerText();
+    record("Session opened the launch file", body.includes("demo_u1_showcase"), "");
+  } else if (phase === "colours") {
+    await page.evaluate(() => {
+      window.history.pushState({}, "", "/colors");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    await page.waitForTimeout(4000);
+    const body = await page.locator("body").innerText();
+    record("Colour plan rendered", body.includes("Colours and toolheads"), "");
+    const verdictLine = body
+      .split(/\r?\n/)
+      .find((line) => /\d+ colours?, \d+ toolheads?/.test(line));
+    record("Colour verdict stated", Boolean(verdictLine), (verdictLine || "").slice(0, 70));
+    record("Toolhead count says where it came from",
+      body.includes("did not read this from a printer") || body.includes("your printer reported"),
+      "");
+    await shot(page, "04-colours");
+  } else if (phase === "goto-compatibility") {
+    await page.evaluate(() => {
+      window.history.pushState({}, "", "/compatibility");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    await page.waitForTimeout(2500);
+    console.log("navigated");
+  } else if (phase === "prepare") {
+    await page.getByRole("button", { name: /Prepare U1 copy/i }).first().click();
+    await page.waitForTimeout(6000);
+    console.log("prepared");
+  } else {
+    throw new Error(`unknown phase ${phase}`);
+  }
+} finally {
+  writeFileSync(join(outDir, `results-${phase}.json`), JSON.stringify(results, null, 2));
+  await browser.close();
+}
+
+if (results.some((r) => !r.ok)) process.exit(1);

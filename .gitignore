@@ -40,3 +40,7 @@ cversions*.db
 .claude-flow/
 .code-review-graph/
 CLAUDE.md.bak-*
+
+# Acceptance harness deps (installed on demand, never committed)
+tools/acceptance/node_modules/
+tools/acceptance/package-lock.json

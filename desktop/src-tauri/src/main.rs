@@ -317,6 +317,43 @@ fn focus_model_browser(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+// ---- Open a model passed on the command line --------------------------------
+//
+// Two things want this. A user who has associated .3mf with Studio, or who picks
+// "Open with", expects the file to be there when the window appears. And an
+// automated acceptance run needs a way to get a project into the app: the native
+// picker is a Win32 common dialog with no DOM, and on this stack invoking it
+// without real user input blocks without ever creating a window, so no
+// UI-automation client can reach it.
+//
+// Only a path that exists on disk and carries a model extension is accepted, so
+// a stray argument cannot make the app try to open something arbitrary.
+fn launch_file_from_args() -> Option<String> {
+    std::env::args().skip(1).find_map(|arg| {
+        if arg.starts_with('-') {
+            return None;
+        }
+        let path = Path::new(&arg);
+        let ext = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|e| e.to_ascii_lowercase());
+        match ext.as_deref() {
+            Some("stl") | Some("3mf") if path.is_file() => {
+                Some(path.to_string_lossy().into_owned())
+            }
+            _ => None,
+        }
+    })
+}
+
+/// The model this launch was asked to open, if any. The frontend calls this once
+/// at startup; returning null is the ordinary case.
+#[tauri::command]
+fn get_launch_file() -> Option<String> {
+    launch_file_from_args()
+}
+
 #[derive(Default, Clone, Serialize, Deserialize)]
 struct ApiInfo {
     port: u16,
@@ -437,7 +474,8 @@ fn main() {
             detect_orca,
             open_in_orca,
             detect_tools,
-            open_with_tool
+            open_with_tool,
+            get_launch_file
         ])
         .setup(|app| {
             let (info, child) = spawn_sidecar();
