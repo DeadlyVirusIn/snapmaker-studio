@@ -13,6 +13,33 @@ _Project Doctor. Printer Hub. Cost Doctor — Studio checks every model, surface
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.** "Snapmaker" is a trademark of its respective owner.
 
+## In 30 seconds
+
+**What is it?** A local desktop app that reads a 3D project file and explains what
+will go wrong before you slice it.
+
+**What problem does it solve?** You download a model and your slicer says
+`out of bounds`. Studio says *which object, which edge, how many millimetres,
+why* — then fixes it in a new copy and shows you exactly what survived.
+
+**Why isn't it another slicer?** It doesn't slice and won't. Snapmaker Orca
+slices; Studio is the step before, and hands the file over.
+
+**What does it actually do?** Reads a project's real contents; checks it against
+the printer it can see; corrects only what stops Snapmaker Orca working properly
+on a U1; proves what was preserved; costs the print from figures the file already
+carries; and names the community tool that fits your file.
+
+**Why does Snapmaker's openness make this possible?** The U1 runs Klipper and
+Moonraker and publishes what it can do — so Studio can ask the machine itself
+rather than guessing from a model name. And because the ecosystem is open, Studio
+can point you at the right community tool instead of rebuilding it.
+
+**And when it can't know something, it says so.** Stock firmware doesn't report
+which nozzle is fitted, so Studio says *"check this yourself"* — never
+*"unsupported"*.
+
+
 Snapmaker Studio is a friendly, local-first desktop app (plus a scriptable engine
 and CLI) that **reads the real geometry** of 3D designs from common STL/3MF sources and
 walks it through the whole pre-print workflow:
@@ -78,6 +105,25 @@ suits it, so you don't have to know all of them first.
 Open the downloaded `…_x64-setup.exe`, install, and launch **Snapmaker Studio**.
 No account, no cloud, nothing leaves your computer. Older builds and checksums are
 on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
+
+## Screenshots
+
+The desktop app — local-first, dark-first. The whole workflow in one place:
+**Understand → Validate → Prepare → Monitor**.
+
+| Object placement — the check no size test can do | The fix, in a new copy |
+|---|---|
+| ![Object placement and Before you slice](docs/screenshots/beta22/placement_and_preflight.jpg) | ![Moved onto the plate](docs/screenshots/beta22/placement_fixed.jpg) |
+| **What survived preparing the copy, and the way back** | **6 colours, 4 toolheads — and what that actually means** |
+| ![Fidelity report and fix ledger](docs/screenshots/beta22/fidelity_and_ledger.jpg) | ![Colour plan](docs/screenshots/beta22/colour_plan.jpg) |
+
+Studio says *"Studio can't tell"* where it genuinely cannot read something from
+your printer — and says so in as many words, rather than turning "not detected"
+into "not supported":
+
+![Preflight unknowns](docs/screenshots/beta22/preflight_unknowns.jpg)
+
+Captured from the running beta.22 build on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission index: [docs/SUBMISSION_STATUS.md](docs/SUBMISSION_STATUS.md).
 
 ## What's new in beta.22 — object placement, and the right tool for your file
 
@@ -161,24 +207,32 @@ Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.22_x64-setup.exe
 Full guidance and uninstall: [docs/windows-install.md](docs/windows-install.md). New here? See [docs/JUDGE_OVERVIEW.md](docs/JUDGE_OVERVIEW.md) and [docs/WHAT_TO_TEST_FIRST.md](docs/WHAT_TO_TEST_FIRST.md).
 
 
-## Screenshots
+## Works with the open U1 ecosystem
 
-The desktop app — local-first, dark-first. The whole workflow in one place:
-**Understand → Validate → Prepare → Monitor**.
+Studio does not replace Snapmaker Orca, FOrcaSlicer, OrcaSlicer ImageMap, U1 Print
+Hub, the Snapmaker U1 Toolkit, the MakerWorld converters or Fluidd. It works out
+**when they are the right tool for the file in front of you**, which is the part
+nobody can do for themselves before they have already learned all of them.
 
-| Object placement — the check no size test can do | The fix, in a new copy |
+| What Studio read in your file | What it says |
 |---|---|
-| ![Object placement and Before you slice](docs/screenshots/beta22/placement_and_preflight.jpg) | ![Moved onto the plate](docs/screenshots/beta22/placement_fixed.jpg) |
-| **What survived preparing the copy, and the way back** | **6 colours, 4 toolheads — and what that actually means** |
-| ![Fidelity report and fix ledger](docs/screenshots/beta22/fidelity_and_ledger.jpg) | ![Colour plan](docs/screenshots/beta22/colour_plan.jpg) |
+| More than one nozzle diameter | **FOrcaSlicer** — this project already uses mixed nozzle sizes, which is what that fork is built for |
+| Image-texture parts | **OrcaSlicer ImageMap** — most slicers throw this data away; that fork can print it |
+| Toolpaths already inside the project | **U1 Print Hub** — the next step is a printer, not a slicer |
+| Bambu-family settings from a model site, for another printer | **MakerWorld to Snapmaker U1** — converting at download time keeps the creator's profile intact |
+| Nothing unusual | **Snapmaker Orca.** Studio says so plainly rather than manufacturing a reason |
 
-Studio says *"Studio can't tell"* where it genuinely cannot read something from
-your printer — and says so in as many words, rather than turning "not detected"
-into "not supported":
+Each suggestion shows the reason Studio read from your file, the tool's licence,
+and a caution when the project describes itself as experimental. Studio never
+installs anything, never launches a tool on its own, and only calls a tool
+installed when it found the executable on your computer.
 
-![Preflight unknowns](docs/screenshots/beta22/preflight_unknowns.jpg)
-
-Captured from the running beta.22 build on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission index: [docs/SUBMISSION_STATUS.md](docs/SUBMISSION_STATUS.md).
+**Maintain one of these tools?** Studio's description of your project is one JSON
+object in
+[`backend/snapstudio_core/data/ecosystem.json`](backend/snapstudio_core/data/ecosystem.json).
+Correcting it — or asking to be removed — is a small pull request; the schema and
+the rules are in [docs/EXTENDING.md](docs/EXTENDING.md). None of these projects
+has endorsed Studio, and Studio does not claim otherwise.
 
 ## Why
 

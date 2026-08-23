@@ -104,16 +104,17 @@ check renders nothing rather than breaking the page around it.
 
 ## Competitive position, before and after
 
-**Before:** Studio was the only pre-print validation entry in the Fund's Phase 1
-field, but it overlapped visibly with the converter projects on the *prepare*
-step and had nothing to say about the rest of the ecosystem.
+**Before:** in the Phase 1 field as surveyed on 2026-08-22, Studio was the sole
+entry doing pre-print validation, but it overlapped visibly with the converter
+projects on the *prepare* step and had nothing to say about the rest of the
+ecosystem.
 
 **After:**
 
 - **Conversion parity.** Every documented rule of the closest converter is
   implemented independently, plus self-validation and multi-source input, which
   that converter's own documentation says it does not do.
-- **A capability nobody else has.** Reading a file to recommend the right
+- **A capability no other surveyed entry has.** Reading a file to recommend the right
   *community* tool makes Studio complementary to the rest of the field rather
   than competing with it — the one position that gets more valuable as the
   ecosystem grows.

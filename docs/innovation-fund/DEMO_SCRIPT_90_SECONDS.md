@@ -1,110 +1,162 @@
 # 90-second demo script
 
-One idea, shown once, with no narration of features. Every frame is the real
-application on the real sample file shipped in this repository
-(`examples/demo_offplate_foreign.3mf`). Nothing is staged.
+**Verified against the beta.22 build on 2026-08-23.** Every frame below was
+produced by the click path in §2 on the sample project committed at
+[`examples/demo_u1_showcase.3mf`](../../examples/demo_u1_showcase.3mf). The
+screenshots in `docs/screenshots/beta22/` are those exact frames. Nothing here is
+staged, and nothing is a mock-up.
 
 **The single idea:** *Snapmaker Orca says "out of bounds". Studio says which
-object, which edge, how many millimetres, why — and fixes it without touching
-your file.*
+object, which edge, how many millimetres, why — fixes it in a new copy, proves
+what survived, and checks it against your actual printer.*
 
 ---
 
-## 0:00 – 0:10 · The problem, not the product
+## 1. The beats
 
-**Screen:** Snapmaker Orca with the sample project loaded, showing its error.
+### 0:00 – 0:10 · The problem, in the user's words
+**On screen:** the sample project open in Snapmaker Orca, showing its error.
 
-**Voice / caption:**
-> You downloaded a model. Your slicer says: out of bounds.
-> Which object? Why? It doesn't say.
+> I downloaded a model. I don't know if it's right for my U1 — and my slicer just
+> says out of bounds.
 
----
+### 0:10 – 0:25 · Studio reads the file
+**On screen:** Studio → Compatibility, project open, the Object placement card.
 
-## 0:10 – 0:25 · Studio answers it
+**Real output:**
+> **Object placement** — 1 object is outside the U1's printable area.
+> Object 1 · 10 × 10 × 10 mm — Hangs 45.0 mm past the right edge.
 
-**Screen:** Studio → Compatibility → open the same file. The Object placement
-card fills in.
+> The part is tiny. It isn't too big — it's in the wrong place, because this
+> project was made for a 350 millimetre bed and still carries that printer's
+> coordinates.
 
-**On screen, real output:**
-> **1 object is outside the U1's printable area.**
-> Object 2 · 10 × 10 × 10 mm — Hangs 55.0 mm past the right edge.
+### 0:25 – 0:40 · The fix, and what it protects
+**On screen:** click **Move onto the plate (saves a copy)**.
 
-**Voice:**
-> Studio reads the file. The part is tiny — it isn't too big. It's in the wrong
-> place, because this project was made for a 350 millimetre bed and it still
-> carries that printer's coordinates.
-
----
-
-## 0:25 – 0:40 · The fix, and what it protects
-
-**Screen:** click **Move onto the plate (saves a copy)**. Result appears.
-
-**On screen, real output:**
-> 1 object(s) moved onto the U1 plate in a new copy — `..._placed_U1.3mf`.
+**Real output:**
+> 1 object(s) moved onto the U1 plate in a new copy — `demo_u1_showcase_placed_U1.3mf`.
 > Your original file was not changed.
-> Layout, rotation, scale and height are unchanged.
+> Every object shifted by X −174.5 mm, Y −44.0 mm. Layout, rotation, scale and
+> height are unchanged.
 
-**Voice:**
-> One click. Studio writes a new file, leaves your original alone, and keeps the
-> creator's arrangement exactly as it was.
+### 0:40 – 0:52 · Prepare, and every change accounted for
+**On screen:** **Prepare U1 copy** → the change list.
 
----
+> Studio corrects only what stops Snapmaker Orca behaving properly on a U1 — and
+> shows every change with its old value.
 
-## 0:40 – 0:55 · It only says what it can prove
+**Real output, visible in the list:**
+> `brim_type: auto_brim → no_brim` · `exclude_object: 0 → 1` ·
+> `default_print_profile: → 0.12 Standard @Snapmaker U1 (0.4 nozzle)`
 
-**Screen:** the Cost & Pricing Doctor on the same, unsliced project.
+### 0:52 – 1:05 · Proof, not a promise
+**On screen:** the **What survived preparing this copy** card.
 
-**On screen, real output:**
-> This project has not been sliced yet, so no real material figure exists in the
-> file. Slice it in Snapmaker Orca and open the saved project again, or enter
-> your own estimate.
+**Real output:**
+> 13 kept · 2 changed · 1 not carried over
+> **What Studio could not carry over (1)** — Sliced output from the original
+> printer. Why: these toolpaths were generated for the original printer, so
+> Snapmaker Orca must slice again for the U1.
 
-**Voice:**
-> And where Studio can't know something, it says so. No invented number.
-> On a sliced project, this shows the time, weight and cost your own slicer
-> already computed — and tells you that's where it came from.
+> Every other converter says "converted". This says what that cost — and lists
+> anything it could not check, instead of assuming it was fine.
 
----
+### 1:05 – 1:15 · The way back
+**On screen:** **Changes Studio made**, both entries, and the return control.
 
-## 0:55 – 1:15 · The part nobody else does
+**Real output:**
+> 1. Prepared a U1 copy — 63 changes · structure validated
+> 2. Moved the objects onto the plate — 1 change · structure validated
+> **Return to the original** — your original was never modified. Going back to it
+> just points Studio at the untouched file; the copy stays on disk.
 
-**Screen:** the **Best tool for this project** panel under the Orca handoff,
-showing a community tool with its reason, licence and caution.
+### 1:15 – 1:25 · This project, on this printer
+**On screen:** the **Before you slice** card, scrolled to the nozzle check.
 
-**Voice:**
-> The U1 has a whole open-source ecosystem — slicer forks, converters,
-> dashboards. The hard part is knowing which one your file needs.
-> Studio reads your project and tells you. Mixed nozzle sizes? There's a fork
-> for that. Texture data most slicers throw away? There's a fork for that too.
-> Nothing special? It says so, and sends you to Snapmaker Orca.
+**Real output:**
+> **Nozzle size — check this yourself** · STUDIO CAN'T TELL
+> Printing with a different nozzle than the project was made for changes line
+> width and can ruin fine detail — and Studio has no way to see which one is
+> installed.
+> *"Studio can't tell" means Studio has no way to read that from your printer —
+> not that your printer can't do it.*
 
----
+> That last line is the whole product in one sentence.
 
-## 1:15 – 1:30 · The close
-
-**Screen:** the terminal, one command, real output.
+### 1:25 – 1:30 · The close
+**On screen:** the **Best tool for this project** panel, then the terminal.
 
 ```
-$ u1convert placement model.3mf --fix
-{ "ok": true, "objects_moved": 1, "after": { "off_plate": [] } }
+$ u1convert selfcheck
+15/15 checks passed
 ```
 
-**Voice:**
-> Everything the app does is a documented local API and a CLI, MIT licensed,
-> entirely offline. Nothing uploaded, no account.
+> **Snapmaker Studio**
+> The Intelligence Layer for Open 3D Printing
+> Understand → Diagnose → Fix → Validate → Print
 >
-> **Orca slices. Fluidd monitors. Studio decides.**
+> Studio doesn't slice. Snapmaker Orca does.
 
 ---
 
-## Production notes
+## 2. The exact click path
 
-- Shoot at 1920 × 1080, light theme, system UI scaling at 100%.
-- Anonymise everything on screen: no real IP addresses, hostnames, usernames or
-  local paths. Use a demo folder path.
-- Do not cut between takes inside a single claim — a viewer must be able to see
-  that the result followed the click.
-- Do not speed up the fix. It is fast; showing it at real time is the point.
-- No music over the 0:40 segment. The refusal is the strongest moment in the
-  video and should land in silence.
+Recorded and verified. Total: one file open, three clicks, two scrolls.
+
+1. Launch Studio. Sidebar → **More tools** → **Compatibility**.
+2. **Open a 3MF project** → choose `examples/demo_u1_showcase.3mf`.
+   *Frame: `placement_and_preflight.jpg`.*
+3. Click **Move onto the plate (saves a copy)**.
+   *Frame: `placement_fixed.jpg`.*
+4. Scroll down to the preparation panel (about 10 wheel ticks).
+   *Frame: `preflight_unknowns.jpg` — the nozzle unknown and the footnote.*
+5. Leave **Preserve creator settings** selected. Click **Prepare U1 copy**.
+6. Scroll down about 20 ticks to the fidelity and ledger cards.
+   *Frame: `fidelity_and_ledger.jpg`.*
+7. Sidebar → **Colors & Materials** for the colour beat.
+   *Frame: `colour_plan.jpg`.*
+8. Terminal: `cd backend && u1convert selfcheck`.
+
+**Reset between takes:** delete `examples/demo_u1_showcase_placed_U1.3mf`,
+`examples/demo_u1_showcase_SnapmakerU1.3mf` and `examples/demo_u1_showcase.orig.3mf`.
+The sample itself is never modified, so nothing else needs restoring.
+
+---
+
+## 3. Recording setup
+
+- **Display:** 1920 × 1200, 100% scaling, single monitor.
+- **Theme:** either. Dark is Studio's default and matches the brand; light reads
+  better on a projector. Do not switch mid-take.
+- **Window:** maximised. The sidebar must be visible — it carries the product's
+  information architecture.
+- **Privacy, per the project's own rules:** the app shows file *names*, not paths,
+  so a clean recording needs only that no other window, no real printer IP and no
+  personal folder appears. Clear the Recent list if it holds private model names.
+- **Capture:** OBS Studio, Display Capture, 1920 × 1200 at 60 fps, MP4. No cursor
+  highlighting effects.
+
+## 4. Rules for the edit
+
+- **Do not cut inside a claim.** The viewer has to see the result follow the
+  click, or the demo is just assertions with pictures.
+- **Do not speed up the fix.** It is genuinely fast; real time is the point.
+- **Silence over the 1:15 beat.** The refusal is the strongest moment in the
+  video and should land without music.
+- **Never add a frame the app cannot produce.** If a beat does not exist on
+  screen, cut the beat, not the honesty.
+
+---
+
+## 5. Final caption card
+
+```
+Snapmaker Studio
+The Intelligence Layer for Open 3D Printing
+
+Understand → Diagnose → Fix → Validate → Print
+
+Local-first · MIT · Studio doesn't slice — Snapmaker Orca does
+github.com/DeadlyVirusIn/snapmaker-studio
+```
