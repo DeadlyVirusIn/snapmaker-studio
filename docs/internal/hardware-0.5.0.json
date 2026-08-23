@@ -129,7 +129,7 @@
       "speed_factor": 1,
       "extrude_factor": 1,
       "bed": {
-        "temperature": 26,
+        "temperature": 25,
         "target": 0
       },
       "toolheads": [
@@ -147,7 +147,7 @@
         },
         {
           "index": 2,
-          "temperature": 28,
+          "temperature": 27,
           "target": 0,
           "active": false
         },

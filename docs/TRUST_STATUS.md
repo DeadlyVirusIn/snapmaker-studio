@@ -16,7 +16,7 @@ exact asset on the release page, verified by SHA256. Canonical values:
 | Check | Command | Result |
 |---|---|---|
 | Backend tests | `pytest` | **PASS** — 773 passed, 3 skipped |
-| Desktop tests | `npm run test` | **PASS** — 277 passed |
+| Desktop tests | `npm run test` | **PASS** — 282 passed |
 | End-to-end pipeline | `u1convert selfcheck` | **PASS** — 21/21 over 13 documented routes |
 | TypeScript | `npx tsc --noEmit` | **PASS** — clean |
 | Production frontend build | `npm run build` | **PASS** |

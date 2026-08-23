@@ -143,7 +143,7 @@ builds real decompression bombs and asserts the reader refuses them.
 ```bash
 cd backend  && pytest          # 773 passed, 3 skipped
 cd backend  && u1convert selfcheck   # 21/21 over production code paths
-cd desktop  && npm run test    # 277 passed
+cd desktop  && npm run test    # 282 passed
 cd desktop  && npm run build   # tsc + vite
 ```
 

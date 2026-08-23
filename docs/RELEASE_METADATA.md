@@ -19,8 +19,8 @@ Every *other* document must link here rather than restate these values.
 |---|---|
 | Version | v0.5.0 |
 | Installer | `Snapmaker.Studio_0.5.0_x64-setup.exe` |
-| Size (bytes) | 16,873,584 |
-| SHA256 | `53e5358698e51df8aaf0a8697068c5793d5dda842ebe09907b239f2588089f2b` |
+| Size (bytes) | 16,871,622 |
+| SHA256 | `73124b2162ea3581db3237b4e9400d3cb4b9a339bc3bdafb9e5a793c336cf12c` |
 | Release URL | https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.5.0 |
 | Trust status | ACCEPTED — see [docs/TRUST_STATUS.md](TRUST_STATUS.md) |
 

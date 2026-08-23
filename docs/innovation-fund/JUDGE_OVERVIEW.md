@@ -97,7 +97,7 @@ server, not the source tree.
 | End-to-end pipeline self-check | **21/21** | `u1convert selfcheck` |
 | Genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **36 tests** | `pytest tests/test_real_world_3mf.py` |
 | Backend | 773 passed, 3 skipped | `pytest` |
-| Desktop | 277 passed | `npm run test` |
+| Desktop | 282 passed | `npm run test` |
 | TypeScript · production build · Rust | clean | `tsc --noEmit` · `npm run build` · `cargo check` |
 
 Full records, including the raw evidence files:

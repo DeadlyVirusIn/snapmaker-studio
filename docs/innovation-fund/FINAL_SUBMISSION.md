@@ -79,7 +79,7 @@ Verified against the published v0.5.0 installer, not a development build.
 | Regression tests against genuine Orca/Bambu/Prusa projects | 36 tests |
 | End-to-end pipeline self-check | 21/21 |
 | Backend tests | 773 passed, 3 skipped |
-| Desktop tests | 277 passed |
+| Desktop tests | 282 passed |
 | TypeScript · production build · Rust | clean |
 
 Reproduce any of it: [JUDGE_WALKTHROUGH.md](JUDGE_WALKTHROUGH.md).

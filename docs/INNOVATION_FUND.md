@@ -217,7 +217,7 @@ development build. Commands, counts and full reports:
 | Regression tests against genuine Orca/Bambu/Prusa projects | 36 tests |
 | End-to-end pipeline self-check | 21/21 |
 | Backend tests | 773 passed, 3 skipped |
-| Desktop tests | 277 passed |
+| Desktop tests | 282 passed |
 | TypeScript, Rust, production build | clean |
 
 Demo: [`docs/media/snapmaker-studio-demo.mp4`](media/snapmaker-studio-demo.mp4) —

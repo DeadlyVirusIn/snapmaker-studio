@@ -76,8 +76,8 @@ Verify it before you run it:
 
 - Release: [v0.5.0](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.5.0)
 - Installer: `Snapmaker.Studio_0.5.0_x64-setup.exe`
-- Size: 16,873,584 bytes
-- SHA256: `53e5358698e51df8aaf0a8697068c5793d5dda842ebe09907b239f2588089f2b`
+- Size: 16,871,622 bytes
+- SHA256: `73124b2162ea3581db3237b4e9400d3cb4b9a339bc3bdafb9e5a793c336cf12c`
 
 ```powershell
 Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.5.0_x64-setup.exe
@@ -158,7 +158,7 @@ against a development build. Commands, counts and full reports:
 | Read-only verification against a real Snapmaker U1 | **20/20** |
 | Regression tests against genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **36 tests** |
 | End-to-end pipeline self-check (`u1convert selfcheck`) | **21/21** |
-| Backend / desktop / TypeScript / Rust | 773 · 277 · clean · clean |
+| Backend / desktop / TypeScript / Rust | 773 · 282 · clean · clean |
 
 Reproduce any of it yourself:
 [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md).
