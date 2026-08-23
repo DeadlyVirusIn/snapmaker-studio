@@ -38,6 +38,13 @@ jobs:
       - name: Test
         run: python -m pytest -q
 
+      # The same command a reviewer runs to see the pipeline work end to end.
+      # It exercises production code paths on a generated project and exits
+      # non-zero on any failure, so a broken pipeline fails the build even if
+      # every unit test still passes.
+      - name: Self-check (end-to-end pipeline)
+        run: python -m u1convert.cli selfcheck
+
   frontend:
     name: Frontend (vitest + tsc + build)
     # Windows runner matches the product target (Windows-only desktop app) and

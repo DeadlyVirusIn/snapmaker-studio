@@ -146,7 +146,19 @@ the library index, writing files — belong in `backend/snapstudio_api/service.p
 ### Tests
 
 `pytest` in `backend/`, `npm run test` in `desktop/`. Both must pass before a
-change is done.
+change is done, and both run in CI on every pull request
+(`.github/workflows/ci.yml`) along with `tsc --noEmit`, a production Vite build,
+and the end-to-end self-check.
+
+To see the whole pipeline work without installing the app:
+
+```bash
+cd backend && u1convert selfcheck
+```
+
+It builds a real project archive, runs the production code paths over it, and
+prints a pass/fail table. It exits non-zero on any failure, which is why it runs
+in CI: a broken pipeline fails the build even when every unit test still passes.
 
 Write tests that assert what Studio *refuses* to say, not only what it says. The
 tests that matter most in this codebase are the ones named like
