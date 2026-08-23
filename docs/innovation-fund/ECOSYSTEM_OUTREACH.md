@@ -7,6 +7,29 @@ people best placed to correct how Studio describes them.
 These are short, factual notes for that purpose. They are **drafts for a human to
 post**, from their own account, when they judge it appropriate.
 
+## Status — checked 2026-08-23, not posted
+
+Whether each repository can receive a note was checked through the GitHub API:
+
+| Project | Issues | Note |
+|---|---|---|
+| FOrcaSlicer | enabled (discussions too) | A discussion is the better fit than an issue |
+| U1 Print Hub | enabled | |
+| MakerWorld to Snapmaker U1 | enabled | |
+| Snapmaker U1 Toolkit | enabled | |
+| OrcaSlicer ImageMap | **disabled** | Do not post. There is no channel, and finding another route round that would be exactly the behaviour these rules forbid |
+
+The four reachable repositories have between zero and three open issues each,
+which means an unsolicited note would be highly visible and would set the tone for
+a first contact with that maintainer.
+
+These drafts are therefore left unposted. Not because it is technically
+impossible — the tooling and the authenticated account are both there — but
+because outreach carries the maintainer's name and reputation, and the judgement
+of when and in what tone to introduce yourself to a peer is theirs. Everything up
+to that point is done: the text is written, the recipients are verified, and the
+one repository that must be skipped is identified.
+
 ## Rules these follow, and must keep following
 
 - **No promotion.** Each note exists to say "here is how your project is
