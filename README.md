@@ -166,13 +166,19 @@ Full guidance and uninstall: [docs/windows-install.md](docs/windows-install.md).
 The desktop app — local-first, dark-first. The whole workflow in one place:
 **Understand → Validate → Prepare → Monitor**.
 
-| Dashboard | Source Check |
+| Object placement — the check no size test can do | The fix, in a new copy |
 |---|---|
-| ![Dashboard](docs/screenshots/beta16/dashboard.png) | ![Source Check](docs/screenshots/beta16/source_check.png) |
-| **Studio Model Browser (Printables)** | **Find Models control center** |
-| ![Studio Model Browser](docs/screenshots/beta16/model_browser.png) | ![Find Models control center](docs/screenshots/beta16/find_models.png) |
+| ![Object placement and Before you slice](docs/screenshots/beta22/placement_and_preflight.jpg) | ![Moved onto the plate](docs/screenshots/beta22/placement_fixed.jpg) |
+| **What survived preparing the copy, and the way back** | **6 colours, 4 toolheads — and what that actually means** |
+| ![Fidelity report and fix ledger](docs/screenshots/beta22/fidelity_and_ledger.jpg) | ![Colour plan](docs/screenshots/beta22/colour_plan.jpg) |
 
-Proof captures + manual shot list: [docs/SCREENSHOTS_BETA16.md](docs/SCREENSHOTS_BETA16.md). Submission index: [docs/SUBMISSION_STATUS.md](docs/SUBMISSION_STATUS.md).
+Studio says *"Studio can't tell"* where it genuinely cannot read something from
+your printer — and says so in as many words, rather than turning "not detected"
+into "not supported":
+
+![Preflight unknowns](docs/screenshots/beta22/preflight_unknowns.jpg)
+
+Captured from the running beta.22 build on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission index: [docs/SUBMISSION_STATUS.md](docs/SUBMISSION_STATUS.md).
 
 ## Why
 
