@@ -1,74 +1,106 @@
-# Snapmaker Studio v0.4.0-beta.24 — Verified against a real U1
+# Snapmaker Studio v0.4.0 — the loop closes, and the beta ends
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-This is the first Snapmaker Studio build checked against an actual Snapmaker U1
-rather than only against tests. The printer immediately found a bug.
+This is the first stable release of Snapmaker Studio, and it finishes the job the
+project set out to do.
 
-## Your printer already knew which filaments are loaded
+## Studio can now see the other half
 
-Studio was telling U1 owners *"this printer does not report which filaments are
-loaded"*. The printer was reporting all four, in a shape Studio was not looking
-for: stock U1 firmware publishes loaded filament as parallel lists — the types in
-one, the colours in another, the sub-types and vendors in others, and a
-`filament_exist` flag that is the printer's own answer to "is there a spool in
-this slot".
+Until today Studio stopped at the slicer. It read your project, explained the
+risks, compared the project against your printer, prepared a corrected copy, and
+handed that copy to Snapmaker Orca. What Orca produced was somebody else's
+problem — which meant the most expensive failures were the ones Studio could not
+see:
 
-Studio now reads all four slots, colour and sub-type included, and **Before you
-slice** compares the materials your project needs against what is actually on the
-machine.
+* the job prints from slot 3, and slot 3 is empty;
+* the job was sliced for PETG, and PLA is loaded;
+* the job was sliced for a different printer entirely.
 
-The same session confirmed something Studio has always claimed but had never
-proved on hardware: stock firmware genuinely does not report which nozzle is
-fitted. That check still reads *"Nozzle size — check this yourself"*, and it is
-now known to be honest rather than assumed to be.
+None of those are visible in the project file. None are visible on the printer
+alone. **Open the `.gcode` your slicer produced and Studio now reads it**, then
+compares it to the printer as it is right now.
 
-## Every message that names a problem now says what to do about it
+Drag it onto the window, or hand it to Studio on the command line — a sliced job
+is not treated as a project, and goes straight to the new **After Slicing** page.
 
-- When the fidelity report cannot account for something, it now tells you to open
-  the prepared copy in Snapmaker Orca, compare it against your original, and
-  report it — because Studio failing to explain its own change is a bug worth
-  hearing about.
-- Something Studio cannot read is labelled *"Not checked — Studio can't read it"*,
-  which is a different statement from "this is fine".
-- The printer check pointed at a field that did not exist. It now names Printer
-  Hub.
-- **Toolhead** — the word all the colour planning rests on — is explained before
-  it is used.
+Studio still does not slice. Snapmaker Orca does.
 
-## Open a project by handing it to Studio
+## What it reads, and what it refuses to
 
-Studio now accepts an `.stl` or `.3mf` path on its command line and opens it on
-launch, so a file can be sent to Studio from a shell, a script, or a shortcut.
+From the file itself: which machine it was sliced for, the slicer and version,
+layer count and height, estimated time, filament per slot, which tools it
+actually prints from, the nozzle it expects, whether it defines excludable
+objects.
 
-## How this build was checked
+Against your printer: every tool it needs exists; every slot it uses has a spool;
+the loaded material matches, compared by family so "PLA Matte" is not a false
+alarm against "PLA"; the sliced bed fits the real bed; the firmware supports the
+object exclusion the job assumes; the printer is free.
 
-Every check below ran against **this installer**, not against the source tree:
-installed into a clean directory, launched, driven through the real application
-window, then uninstalled.
+And the refusals, which matter just as much. **Purge is never split out of a
+total the slicer did not split.** Snapmaker Orca reports one filament figure per
+slot and does not separate purged filament from printed filament, so Studio
+reports the total, says the split is not available from this file, and leaves it
+there. The nozzle check is still an honest unknown, because stock firmware does
+not report which nozzle is fitted.
 
-- 21 installed-application checks passed — the project loads, the placement,
-  preflight, fidelity, ledger, colour-plan and cost results all appear in the real
-  UI, the input file is byte-identical afterwards, and uninstalling leaves nothing
-  behind.
-- The real U1 verification above was performed read-only. Studio never heats,
-  moves, homes, uploads to, or configures a printer on its own.
-- Full software suites, the end-to-end self-check, and the real-slicer regression
-  fixtures all pass.
+## Costing from measurements instead of estimates
 
-The exact commands, counts and evidence are in
-[TRUST_STATUS.md](TRUST_STATUS.md).
+Once a file is sliced, guessing stops being necessary. Filament by slot and print
+time are read from the file. Every line says where its number came from —
+measured by the slicer, derived from your prices, an assumption you can change,
+or not stated at all. A figure the file does not contain reads as unknown, never
+as zero.
+
+## A bug report worth sending
+
+Studio asks people to tell it when it gets an analysis wrong. That report needs
+facts behind it, and gathering those by hand is exactly what nobody does. **Help →
+Reporting something Studio got wrong** now assembles them: your project's traits,
+the Doctor's findings, the sliced job, what your printer reported, and the fix
+ledger.
+
+Your username, home folder, file paths, machine name and printer address are
+replaced *before* the bundle is assembled, and you can read the entire thing
+before it is written to disk. Studio never sends it anywhere.
+
+## Upgrading from a beta
+
+Install over the top. Your settings and library are kept, and the upgrade is
+checked as part of the release: a beta.24 installation is created, used, then
+upgraded, and the resulting state is verified.
+
+## What was fixed
+
+- `u1convert selfcheck` crashed at the very end on a default Windows console —
+  the results table contained a character `cp1252` cannot encode. The one command
+  Studio tells strangers to run now prints its own results on a stock console.
+- The support bundle leaked a model's file name: redacting a username inside a
+  path inserted characters that stopped the path redaction dead. Paths are
+  redacted first now. Caught by its own test before the feature ever shipped.
+- A slicer that reports filament per slot without a total now has the total added
+  up rather than left blank.
 
 ## Unchanged
 
-Local-first: no cloud, no account, nothing uploaded. Studio does not slice —
-Snapmaker Orca does. Your originals are never modified. Studio never starts a
-print on its own, and it gives advisory checks, not a guarantee of print success.
+Local-first: no cloud, no account, no telemetry, nothing uploaded. Studio does not
+slice. Your originals are never modified. Studio never starts a print on its own.
+Every check is advisory — it does not promise a successful print.
+
+## Known limitations
+
+- **Windows only.** macOS and Linux builds are not built or tested.
+- **The installer is not code-signed.** SmartScreen will show an unknown
+  publisher; verify the SHA256 below before running it.
+- **Purge cannot be separated** from printed filament in Snapmaker Orca output.
+- **The fitted nozzle cannot be read** from stock firmware.
+- **Painted colour cannot be classified** without slicing, and is reported as
+  unclassified rather than guessed.
 
 ## Install
 
-See [RELEASE_METADATA.md](RELEASE_METADATA.md) for the installer name, size and
-SHA256, and [windows-install.md](windows-install.md) for the full instructions.
-The installer is not code-signed yet, so Windows SmartScreen will show an unknown
-publisher — verify the SHA256 before running it.
+Installer name, size and SHA256: [RELEASE_METADATA.md](RELEASE_METADATA.md).
+Full instructions and uninstall: [windows-install.md](windows-install.md).
+What was verified and how: [TRUST_STATUS.md](TRUST_STATUS.md).

@@ -1,58 +1,64 @@
-# Change freeze — 2026-08-23 until Phase 1 evaluation closes
+# Convergence policy — replaces the change freeze
 
-beta.24 is the build being judged. From today, **no runtime change lands because
-it is interesting.** A stable build accumulating real-world evidence is worth more
-than beta.25, .26 and .27 shipped into silence.
+**The freeze this file used to describe is cancelled.** It was the wrong call.
 
-## What still gets in
+It read the Innovation Fund period as something to survive: hold beta.24 still,
+spend the remaining weeks on documentation and presentation, and hope the
+committee reads carefully. The other 40 projects were shipping the whole time. A
+project that stops developing while its field develops does not look careful; it
+looks finished in the wrong sense.
 
-A change needs to fit one of these, and the commit message must say which.
+The correct reading: being one of 41 projects in the running is an opportunity to
+make Studio genuinely complete — and then to stop calling it a beta.
 
-| Gate | Meaning |
+## What replaces it
+
+**Controlled convergence toward stable.** Development continues. It is aimed at
+one thing: a product whose workflow is finished end to end, released as a stable
+version rather than the twenty-fifth beta.
+
+A runtime change ships when it satisfies at least one of these:
+
+1. it materially improves the complete Studio workflow;
+2. it closes a usability gap another project has already shown matters;
+3. it increases Studio's own advantage — being right about a file and a printer;
+4. it removes a novice dead end;
+5. it strengthens real-printer integration;
+6. it improves interoperability with the rest of the ecosystem;
+7. it removes beta-quality behaviour;
+8. it increases reliability or correctness.
+
+No feature count. No arbitrary freeze. "Interesting" is still not a reason.
+
+## What that produced
+
+`v0.4.0` — the first stable release, and the closed loop:
+
+| Was | Now |
 |---|---|
-| **P0** | Data loss or corruption, a dangerous action, or a failure of a trust claim — Studio asserting something false about a file or a printer, or modifying an original |
-| **P1** | A common workflow is broken: the app will not start, a project will not open, preparing a copy fails |
-| **P1 Evidence** | A claim made to a judge, in the demo, or in the reproducibility docs is shown to be false. Fixing the claim counts; so does fixing the code behind it |
-| **User-driven** | A real tester reports a meaningful failure. This is the gate we most want to use, and the one that has never yet fired |
+| Studio checked the *project* and stopped at the slicer | It reads the **sliced G-code** and reports what the printer will actually execute |
+| Printer comparison happened before slicing only | The sliced job is joined to the **live printer**: tools against loaded slots, materials against what is loaded, bed against the real bed |
+| Cost estimated from whatever the project carried | Costed from the **grams and time the slicer measured** — and refuses to split purge out of a total the slicer did not split |
+| Bug reports needed a user to gather facts by hand | A **support bundle** that redacts identity before it is written, and shows the user the contents first |
+| `.stl` and `.3mf` on the command line | `.gcode` too, so a sliced job opens straight into the Post-Slice Doctor |
 
-Everything else is deferred to the post-Phase-1 backlog in
-[NEXT_MOVES.md](NEXT_MOVES.md).
+## What is still true
 
-## What is explicitly deferred
+The rules that made Studio worth trusting did not move:
 
-Painted-colour enumeration · a second printer · OBJ/GLB input · a plugin framework
-· any additional Doctor · macOS and Linux builds · diagnostic packs as data ·
-cost-from-sliced-project · the reproducibility manifest · code signing.
+- **Studio does not slice.** Snapmaker Orca does. Reading a G-code file is not
+  producing one.
+- **Originals are never modified.**
+- **Unknown stays unknown.** Every new check can return "Studio can't tell", and
+  several usually do.
+- **No autonomous printer control.** Nothing added here sends, starts, heats or
+  moves anything.
+- **Nothing leaves the machine.** The support bundle writes a file; sending it is
+  the user's decision, made elsewhere.
 
-**Code signing is deferred deliberately.** It is prepared to the last legal step
-and it remains useful, but it will not land inside the evaluation window and it
-does not affect judging. It is not the next action and should not be treated as
-one.
+## After stable
 
-## Releases
-
-**Do not cut beta.25 unless a P0 or P1 forces it.** If one does:
-
-- fix only that,
-- re-run the installed-build acceptance harness and the read-only hardware
-  verification against the new installer,
-- update `RELEASE_METADATA.md`, `TRUST_STATUS.md` and the changelog in the same
-  commit as the release,
-- and leave the demo alone unless the fix changes what the demo shows.
-
-Documentation, evidence and presentation changes are **not** frozen. Those are the
-work of this period.
-
-## Priorities for the remaining window
-
-1. Official listing accuracy — the card the committee reads
-2. Community visibility — the project has never been posted about
-3. External feedback — one real report is worth more than any feature
-4. Judge comprehension — the first screen, the demo, the walkthrough
-5. Reliability fixes that arise from 3
-
-## How to tell this freeze is working
-
-The repository should show, at the end of the window: few or no runtime commits,
-several evidence and documentation commits, and — if the community work lands —
-at least one issue opened by somebody other than the author.
+Patch releases for defects. Features go through the same eight tests above. The
+deferred list — painted-colour enumeration, a second printer, OBJ/GLB input,
+macOS and Linux builds — is in [NEXT_MOVES.md](NEXT_MOVES.md), and none of it is
+required for the workflow to be complete.

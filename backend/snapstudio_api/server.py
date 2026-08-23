@@ -230,6 +230,59 @@ def _make_handler(token: str):
                     self._send(400, {"error": str(e)})
                 except Exception:
                     self._send(500, {"error": "internal error"})
+            elif self.path == "/diagnostics_preview":
+                try:
+                    from snapstudio_core import diagnostics as diag
+                    self._send(200, diag.preview(
+                        project_path=rv.optional_str(data, "project_path", "") or None,
+                        gcode_path=rv.optional_str(data, "gcode_path", "") or None,
+                        host=rv.optional_str(data, "host", "") or None,
+                        port=rv.require_port(data)))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
+            elif self.path == "/diagnostics_build":
+                try:
+                    from snapstudio_core import diagnostics as diag
+                    self._send(200, diag.build(
+                        out_dir=rv.optional_str(data, "out_dir", "") or None,
+                        project_path=rv.optional_str(data, "project_path", "") or None,
+                        gcode_path=rv.optional_str(data, "gcode_path", "") or None,
+                        host=rv.optional_str(data, "host", "") or None,
+                        port=rv.require_port(data)))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
+            elif self.path == "/gcode_facts":
+                try:
+                    self._send(200, service.gcode_facts(rv.require_path_string(data)))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
+            elif self.path == "/post_slice":
+                try:
+                    self._send(200, service.post_slice(
+                        rv.require_path_string(data),
+                        host=rv.optional_str(data, "host", "") or None,
+                        port=rv.require_port(data),
+                        project_path=rv.optional_str(data, "project_path", "") or None))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
+            elif self.path == "/sliced_cost":
+                try:
+                    self._send(200, service.sliced_cost(
+                        rv.require_path_string(data),
+                        price_per_kg=rv.optional_float(data, "price_per_kg", 20.0),
+                        currency=rv.optional_str(data, "currency", "$") or "$"))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
             elif self.path == "/placement_check":
                 try:
                     self._send(200, service.placement_check(rv.require_path_string(data)))

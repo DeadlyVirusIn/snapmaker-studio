@@ -1,0 +1,233 @@
+"""A support bundle a user can actually send, and read before sending.
+
+Studio asks people to report when it gets an analysis wrong. That report is only
+useful with the facts behind it — which slicer wrote the file, what Studio
+concluded, what the printer said. Asking a beginner to gather those by hand means
+they will not.
+
+Three rules make this safe to hand to a stranger:
+
+1. **Nothing leaves the machine.** This builds a file; sending it is the user's
+   choice, made outside Studio.
+2. **Everything is redacted before it is written**, not after. Usernames, home
+   directories, IP addresses, hostnames and anything that looks like a token are
+   replaced with placeholders on the way in.
+3. **The user sees it first.** ``preview`` returns exactly what ``build`` would
+   write, so nobody is asked to trust a black box.
+
+Secrets are never *read* in order to be scrubbed: no environment sweep, no
+credential store, no reading of files Studio was not already using.
+"""
+from __future__ import annotations
+
+import json
+import os
+import platform
+import re
+import socket
+from datetime import datetime, timezone
+from pathlib import Path
+
+SCHEMA_VERSION = "diagnostics/1"
+
+_IPV4 = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+_TOKENISH = re.compile(r"\b[A-Za-z0-9_-]{24,}\b")
+_WIN_PATH = re.compile(r"[A-Za-z]:\\\\[^\"'<>|\r\n]*|[A-Za-z]:\\[^\"'<>|\r\n]*")
+_POSIX_HOME = re.compile(r"/(?:home|Users)/[^/\s\"']+")
+
+
+def _placeholders() -> list[tuple[re.Pattern, str]]:
+    """Literal values worth replacing first, longest first so a home directory
+    is replaced before the username inside it."""
+    pairs: list[tuple[str, str]] = []
+    home = str(Path.home())
+    if home:
+        pairs.append((home, "<home>"))
+    user = os.environ.get("USERNAME") or os.environ.get("USER") or ""
+    if user and len(user) > 2:
+        pairs.append((user, "<user>"))
+    try:
+        host = socket.gethostname()
+        if host and len(host) > 2:
+            pairs.append((host, "<machine>"))
+    except OSError:
+        pass
+    pairs.sort(key=lambda p: -len(p[0]))
+    return [(re.compile(re.escape(value), re.I), token) for value, token in pairs]
+
+
+def redact(value):
+    """Scrub a JSON-ish structure. Returns a new structure; never mutates."""
+    subs = _placeholders()
+
+    def scrub_text(text: str) -> str:
+        # Paths first. Replacing a username inside a path would insert angle
+        # brackets that then stop the path pattern dead, leaving the rest of the
+        # path — including the model's name — in the bundle.
+        text = _WIN_PATH.sub("<path>", text)
+        text = _POSIX_HOME.sub("<home>", text)
+        text = _IPV4.sub("<ip>", text)
+        for pattern, token in subs:
+            text = pattern.sub(token, text)
+        # A long opaque run is more likely a token than prose. Hashes are kept:
+        # they are useful and not secret.
+        text = _TOKENISH.sub(lambda m: m.group(0) if _looks_like_hash(m.group(0)) else "<redacted>", text)
+        return text
+
+    def walk(node):
+        if isinstance(node, str):
+            return scrub_text(node)
+        if isinstance(node, dict):
+            return {scrub_text(str(k)): walk(v) for k, v in node.items()}
+        if isinstance(node, (list, tuple)):
+            return [walk(v) for v in node]
+        return node
+
+    return walk(value)
+
+
+def _looks_like_hash(text: str) -> bool:
+    return bool(re.fullmatch(r"[0-9a-f]{32,64}", text, re.I))
+
+
+def _version() -> str:
+    try:
+        from importlib.metadata import version
+        return version("snapmaker-studio")
+    except Exception:
+        return "unknown"
+
+
+def collect(project_path: str | None = None,
+            gcode_path: str | None = None,
+            host: str | None = None,
+            port: int = 7125,
+            include_printer: bool = True,
+            data_dir: str | None = None) -> dict:
+    """Gather the bundle. Every section is optional and failure is reported, not raised."""
+    bundle: dict = {
+        "schema_version": SCHEMA_VERSION,
+        "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "studio": {
+            "engine_version": _version(),
+            "python": platform.python_version(),
+            "os": f"{platform.system()} {platform.release()}",
+            "machine": platform.machine(),
+        },
+        "sections": [],
+        "errors": [],
+    }
+
+    if project_path:
+        bundle["project"] = _section(bundle, "project", lambda: _project(project_path))
+    if gcode_path:
+        bundle["sliced_job"] = _section(bundle, "sliced_job", lambda: _sliced(gcode_path))
+    if include_printer and host:
+        bundle["printer"] = _section(bundle, "printer", lambda: _printer(host, port))
+    bundle["fix_ledger"] = _section(bundle, "fix_ledger", lambda: _ledger(data_dir))
+
+    return redact(bundle)
+
+
+def _section(bundle: dict, name: str, fn):
+    try:
+        value = fn()
+        bundle["sections"].append(name)
+        return value
+    except Exception as exc:  # noqa: BLE001 — a failed section must not lose the rest
+        bundle["errors"].append(f"{name}: {type(exc).__name__}: {exc}")
+        return None
+
+
+def _project(path: str) -> dict:
+    from . import doctor, project_traits
+    traits = project_traits.extract(path)
+    findings = None
+    try:
+        findings = doctor.diagnose(path)
+    except Exception:
+        pass
+    return {
+        # The file name is the user's model name and is deliberately not carried.
+        "extension": Path(path).suffix.lower(),
+        "size_bytes": Path(path).stat().st_size if Path(path).exists() else None,
+        "traits": traits,
+        "doctor": findings,
+    }
+
+
+def _sliced(path: str) -> dict:
+    from . import gcode, post_slice, sliced_cost
+    facts = gcode.read_facts(path)
+    trimmed = {k: v for k, v in facts.items() if k != "config"}
+    return {
+        "facts": trimmed,
+        "checks": post_slice.analyse(facts, {"reachable": False}),
+        "cost": sliced_cost.estimate(facts),
+    }
+
+
+def _printer(host: str, port: int) -> dict:
+    from . import moonraker
+    caps = moonraker.capabilities(host, port)
+    out = {
+        "reachable": True,
+        "toolhead_count": caps.get("toolhead_count"),
+        "bed_mm": caps.get("bed_mm"),
+        "klipper_object_count": len(caps.get("klipper_objects") or []),
+        "loaded_filaments": moonraker.loaded_filaments(host, port),
+    }
+    try:
+        out["print_state"] = moonraker.status(host, port).get("print_state")
+    except Exception:
+        out["print_state"] = None
+    try:
+        out["firmware"] = moonraker.diagnostics(host, port).get("firmware")
+    except Exception:
+        pass
+    return out
+
+
+def _ledger(data_dir: str | None = None) -> dict:
+    """The fix ledger's exportable form, which already strips local paths."""
+    import os
+
+    from . import fix_ledger
+
+    # The engine's own data directory, resolved the same way the service does —
+    # without importing the service, which would drag the whole API into the core.
+    base = data_dir or os.environ.get("SNAPSTUDIO_DATA_DIR") or os.path.join(
+        os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"), "SnapmakerStudio")
+    return fix_ledger.export_all(base, limit=20)
+
+
+def preview(**kwargs) -> dict:
+    """Exactly what ``build`` would write, so the user can read it first."""
+    bundle = collect(**kwargs)
+    text = json.dumps(bundle, indent=2, sort_keys=True, default=str)
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "bundle": bundle,
+        "text": text,
+        "bytes": len(text.encode("utf-8")),
+        "sections": bundle.get("sections", []),
+        "note": ("Nothing has been sent anywhere. Usernames, home directories, file paths, "
+                 "machine names and addresses were replaced before this was assembled."),
+    }
+
+
+def build(out_dir: str | None = None, **kwargs) -> dict:
+    """Write the bundle next to the user's other Studio files and return its path."""
+    result = preview(**kwargs)
+    directory = Path(out_dir) if out_dir else Path.home() / "Documents"
+    directory.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    target = directory / f"snapmaker-studio-diagnostics-{stamp}.json"
+    target.write_text(result["text"], encoding="utf-8")
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "path": str(target),
+        "bytes": result["bytes"],
+        "sections": result["sections"],
+        "note": result["note"],
+    }

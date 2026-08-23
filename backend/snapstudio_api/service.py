@@ -372,6 +372,56 @@ def preflight(path: str, host: str | None = None, port: int = 7125) -> dict:
     return out
 
 
+def gcode_facts(path: str) -> dict:
+    """Read what a sliced G-code file states about itself."""
+    from snapstudio_core import gcode
+    return gcode.read_facts(path)
+
+
+def post_slice(path: str, host: str | None = None, port: int = 7125,
+               project_path: str | None = None) -> dict:
+    """Join a sliced job to the printer it will run on.
+
+    This is the second half of the preflight. The first half asks whether a
+    *project* suits a printer; this asks whether the *job the slicer produced*
+    suits the printer as it is right now — which is where the interesting
+    failures live: a tool the job needs with an empty slot, a material that does
+    not match, a job sliced for another machine.
+    """
+    from snapstudio_core import gcode, post_slice as ps
+
+    facts = gcode.read_facts(path)
+    printer = printer_facts(host, port) if host else {"reachable": False}
+
+    project = None
+    if project_path:
+        from snapstudio_core import project_traits
+        try:
+            traits = project_traits.extract(project_path)
+            project = {"filament_slots": _trait_value(traits, "filament_count")}
+        except Exception:
+            project = None
+
+    out = ps.analyse(facts, printer, project)
+    out["printer"] = {k: v for k, v in printer.items() if k != "klipper_objects"}
+    return out
+
+
+def _trait_value(traits: dict, key: str):
+    entry = (traits or {}).get(key)
+    if isinstance(entry, dict):
+        return entry.get("value")
+    return entry
+
+
+def sliced_cost(path: str, price_per_kg: float = 20.0, currency: str = "$",
+                prices: dict | None = None) -> dict:
+    """Cost a job from the figures the slicer measured."""
+    from snapstudio_core import gcode, sliced_cost as sc
+    return sc.estimate(gcode.read_facts(path), price_per_kg=price_per_kg,
+                       currency=currency, prices=prices)
+
+
 def ecosystem_advice(path: str, installed: dict | None = None) -> dict:
     """Read a project and say which open tool is the right next step for it.
 

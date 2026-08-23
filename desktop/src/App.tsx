@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppShell } from "@/components/shell/AppShell";
+import AfterSlicing from "@/routes/AfterSlicing";
 import Dashboard from "@/routes/Dashboard";
 import Projects from "@/routes/Projects";
 import Batch from "@/routes/Batch";
@@ -24,6 +25,7 @@ import NotFound from "@/routes/NotFound";
 import { useTheme } from "@/store/theme";
 import { useSession } from "@/store/session";
 import { launchFile } from "@/api";
+import { useSliced } from "@/store/sliced";
 
 const queryClient = new QueryClient();
 
@@ -42,7 +44,14 @@ export default function App() {
   useEffect(() => {
     let alive = true;
     launchFile().then((path) => {
-      if (alive && path) setFile(path);
+      if (!alive || !path) return;
+      // A sliced job is not a project. Studio now accepts .gcode on the command
+      // line too, and that has to land in the Post-Slice Doctor.
+      if (/\.gcode$/i.test(path)) {
+        useSliced.getState().setSliced(path);
+        return;
+      }
+      setFile(path);
     });
     return () => {
       alive = false;
@@ -64,6 +73,7 @@ export default function App() {
             <Route path="/help" element={<Help />} />
             <Route path="/plate-remap" element={<PlateRemap />} />
             <Route path="/compatibility" element={<CompatibilityHub />} />
+            <Route path="/after-slicing" element={<AfterSlicing />} />
             <Route path="/find-models" element={<FindModels />} />
             <Route path="/source" element={<SourceCompatibility />} />
             <Route path="/scale" element={<ScaleDoctor />} />

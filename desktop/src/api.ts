@@ -1224,6 +1224,146 @@ export async function preflight(path: string, host?: string, port = 7125): Promi
   return r.json();
 }
 
+// ---- Support bundle ---------------------------------------------------------
+// Studio asks people to report when it gets an analysis wrong. This gathers the
+// facts behind that report — and shows the user exactly what it contains before
+// anything is written. Nothing is ever sent from Studio.
+
+export interface DiagnosticsPreview {
+  schema_version: string;
+  text: string;
+  bytes: number;
+  sections: string[];
+  note: string;
+}
+
+export interface DiagnosticsBuilt {
+  schema_version: string;
+  path: string;
+  bytes: number;
+  sections: string[];
+  note: string;
+}
+
+export async function diagnosticsPreview(opts: {
+  projectPath?: string; gcodePath?: string; host?: string;
+} = {}): Promise<DiagnosticsPreview> {
+  const { port: apiPort, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${apiPort}/diagnostics_preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({
+      project_path: opts.projectPath ?? "", gcode_path: opts.gcodePath ?? "",
+      host: opts.host ?? "", port: 7125,
+    }),
+  });
+  if (!r.ok) throw new Error(`diagnostics preview failed (${r.status})`);
+  return r.json();
+}
+
+export async function diagnosticsBuild(opts: {
+  projectPath?: string; gcodePath?: string; host?: string;
+} = {}): Promise<DiagnosticsBuilt> {
+  const { port: apiPort, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${apiPort}/diagnostics_build`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({
+      project_path: opts.projectPath ?? "", gcode_path: opts.gcodePath ?? "",
+      host: opts.host ?? "", port: 7125,
+    }),
+  });
+  if (!r.ok) throw new Error(`diagnostics build failed (${r.status})`);
+  return r.json();
+}
+
+// ---- Post-Slice Doctor ------------------------------------------------------
+// The other half of the preflight. Everything above asks whether a *project*
+// suits a printer; this asks whether the job the slicer actually produced suits
+// the printer as it is right now. Studio still does not slice.
+
+export interface SlicedJob {
+  slicer: string | null;
+  slicer_version: string | null;
+  printer_model: string | null;
+  layer_count: number | null;
+  layer_height_mm: number | null;
+  max_z_mm: number | null;
+  estimated_seconds: number | null;
+  tools_used: number[] | null;
+  total_g: number | null;
+  size_bytes: number | null;
+  purge: {
+    separable: boolean;
+    expected: boolean;
+    prime_tower?: boolean;
+    detail: string;
+  } | null;
+}
+
+export interface PostSlice {
+  schema_version: string;
+  available: boolean;
+  printer_reachable?: boolean;
+  job?: SlicedJob;
+  checks: PreflightCheck[];
+  counts: Record<string, number>;
+  needs_attention?: PreflightCheck[];
+  unknowns?: PreflightCheck[];
+  summary: string;
+  disclaimer: string;
+  printer?: Record<string, unknown>;
+}
+
+export async function postSlice(
+  path: string, host?: string, port = 7125, projectPath?: string,
+): Promise<PostSlice> {
+  const { port: apiPort, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${apiPort}/post_slice`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ path, host: host ?? "", port, project_path: projectPath ?? "" }),
+  });
+  if (!r.ok) throw new Error(`post-slice check failed (${r.status})`);
+  return r.json();
+}
+
+export interface SlicedCostLine {
+  label: string;
+  amount: number | null;
+  evidence: string;
+  source: "measured" | "derived" | "assumption" | "unknown" | string;
+  detail: string | null;
+}
+
+export interface SlicedCost {
+  schema_version: string;
+  available: boolean;
+  currency?: string;
+  per_slot?: Array<{
+    tool: number; material: string | null; name: string | null;
+    grams: number; mm: number | null; price_per_kg: number; cost: number;
+  }>;
+  total_grams?: number | null;
+  print_seconds?: number | null;
+  lines?: SlicedCostLine[];
+  total?: number | null;
+  incomplete?: string[];
+  waste?: { separable: boolean; expected: boolean; detail: string; source: string };
+  summary: string;
+}
+
+export async function slicedCost(path: string, pricePerKg = 20, currency = "$"): Promise<SlicedCost> {
+  const { port: apiPort, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${apiPort}/sliced_cost`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ path, price_per_kg: pricePerKg, currency }),
+  });
+  if (!r.ok) throw new Error(`sliced cost failed (${r.status})`);
+  return r.json();
+}
+
 // ---- Fidelity audit ---------------------------------------------------------
 // What survived preparing a copy. The categories that matter are `unverified`
 // and `unsupported`: a report that can only say preserved-or-changed has to lie

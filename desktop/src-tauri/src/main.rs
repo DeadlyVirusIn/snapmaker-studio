@@ -339,7 +339,10 @@ fn launch_file_from_args() -> Option<String> {
             .and_then(|e| e.to_str())
             .map(|e| e.to_ascii_lowercase());
         match ext.as_deref() {
-            Some("stl") | Some("3mf") if path.is_file() => {
+            // `.gcode` joins the list because Studio can now read a sliced job:
+            // the Post-Slice Doctor checks what the printer will actually
+            // execute. Studio still never slices one.
+            Some("stl") | Some("3mf") | Some("gcode") if path.is_file() => {
                 Some(path.to_string_lossy().into_owned())
             }
             _ => None,

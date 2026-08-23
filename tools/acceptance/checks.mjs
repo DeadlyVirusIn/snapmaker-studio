@@ -17,7 +17,7 @@ import { chromium } from "playwright-core";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 
-const [, , phase, cdpUrl, outDir, samplePath] = process.argv;
+const [, , phase, cdpUrl, outDir, samplePath, gcodePath] = process.argv;
 mkdirSync(outDir, { recursive: true });
 
 const results = [];
@@ -93,6 +93,18 @@ async function phaseRoutes(page) {
     ["/ecosystem_advice", { path: samplePath }, (b) => Boolean(b.primary?.why?.length)],
     ["/preflight", { path: samplePath, host: "", port: 7125 }, (b) => Array.isArray(b.checks) && b.checks.length > 0],
     ["/fix_history", {}, (b) => Array.isArray(b.entries)],
+    // The post-slice half. gcodePath is written by the PowerShell driver next to
+    // the sample, because a sliced job is the one input the installed build
+    // cannot produce for itself — Studio does not slice.
+    ["/gcode_facts", { path: gcodePath },
+      (b) => b.available === true && b.printer_model === "Snapmaker U1" && b.layer_count === 12],
+    ["/post_slice", { path: gcodePath, host: "", port: 7125 },
+      (b) => b.available === true && Array.isArray(b.checks) && b.checks.length > 0
+             && !b.checks.some((c) => c.result === "blocked" || c.result === "attention")],
+    ["/sliced_cost", { path: gcodePath },
+      (b) => b.available === true && b.total_grams === 0.36 && b.waste.separable === false],
+    ["/diagnostics_preview", {},
+      (b) => typeof b.text === "string" && b.text.length > 0 && /Nothing has been sent/.test(b.note)],
   ];
   for (const [route, body, verify] of routes) {
     try {
@@ -103,6 +115,43 @@ async function phaseRoutes(page) {
       record(`Engine route ${route}`, false, String(e).slice(0, 90));
     }
   }
+}
+
+async function phasePostSlice(page) {
+  await page.evaluate(() => {
+    window.history.pushState({}, "", "/after-slicing");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
+  await page.waitForTimeout(1500);
+
+  let body = await page.locator("body").innerText();
+  record("After Slicing page renders", body.includes("After slicing"), "");
+
+  // Type the sliced job's path in, the way a user without a file association would.
+  const field = page.locator('input[aria-label="Path to a sliced G-code file"]').first();
+  if (await field.count()) {
+    await field.fill(gcodePath);
+    await page.getByRole("button", { name: /Check this job/i }).first().click();
+    await page.waitForTimeout(3000);
+  }
+  body = await page.locator("body").innerText();
+  const has = (s) => body.includes(s);
+
+  record("Sliced job read in the installed app",
+    has("What the printer will actually do") && has("Snapmaker Orca"), "");
+  // The labels are uppercased by CSS, and innerText returns the transformed
+  // text, so this compares case-insensitively rather than against the source.
+  const lower = body.toLowerCase();
+  record("Job facts rendered from the file",
+    lower.includes("prints from") && lower.includes("layers")
+    && lower.includes("estimated time"), "");
+  record("Post-slice honest unknown present",
+    has("Studio can’t tell") || has("Studio can't tell"), "");
+  record("Purge is not split when the file does not split it",
+    /not separate|will not split|no tool-change purge/i.test(body), "");
+  record("No print-success promise after slicing",
+    !/will print successfully|guaranteed/i.test(body), "");
+  await shot(page, "05-after-slicing");
 }
 
 async function phaseUi(page) {
@@ -143,6 +192,7 @@ try {
   if (phase === "startup") await phaseStartup(page);
   else if (phase === "routes") await phaseRoutes(page);
   else if (phase === "ui") await phaseUi(page);
+else if (phase === "post-slice") await phasePostSlice(page);
   else if (phase === "prepared") await phasePrepared(page);
   else if (phase === "launch-file") {
     // The app was started with the project as an argument; the shell reports it
@@ -152,9 +202,18 @@ try {
       window.__TAURI_INTERNALS__.invoke("get_launch_file"));
     record("Shell reports the launch file", typeof launched === "string",
       String(launched).split(/[\/]/).pop());
-    await page.waitForTimeout(4000);
+    await page.waitForTimeout(2000);
+    // Assert against a surface that names the *open* file, not the dashboard's
+    // recent list — a recent list can be populated by an earlier run, so it was
+    // proving the wrong thing on a machine that had one.
+    await page.evaluate(() => {
+      window.history.pushState({}, "", "/compatibility");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    await page.waitForTimeout(3500);
     const body = await page.locator("body").innerText();
-    record("Session opened the launch file", body.includes("demo_u1_showcase"), "");
+    record("Session opened the launch file",
+      body.includes("demo_u1_showcase") && /using your open 3mf/i.test(body), "");
   } else if (phase === "colours") {
     await page.evaluate(() => {
       window.history.pushState({}, "", "/colors");

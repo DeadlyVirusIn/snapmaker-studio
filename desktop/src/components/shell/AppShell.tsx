@@ -6,6 +6,7 @@ import { TopBar } from "./TopBar";
 import { StatusBar } from "./StatusBar";
 import { Toaster } from "@/components/ui/Toaster";
 import { useSession } from "@/store/session";
+import { useSliced } from "@/store/sliced";
 
 function titleFor(path: string): string {
   if (path === "/") return "Dashboard";
@@ -21,6 +22,7 @@ export function AppShell() {
   const { pathname } = useLocation();
   const nav = useNavigate();
   const setFile = useSession((s) => s.setFile);
+  const setSliced = useSliced((s) => s.setSliced);
 
   // Native drag-and-drop: a dropped .stl/.3mf loads into the live workspace.
   // Guarded so the app still renders outside Tauri (e.g. a plain browser for
@@ -30,6 +32,14 @@ export function AppShell() {
     try {
       const un = getCurrentWebview().onDragDropEvent((e) => {
         if (e.payload.type !== "drop" || !e.payload.paths.length) return;
+        // A sliced job is not a project. Dropping one opens the Post-Slice
+        // Doctor rather than trying to read it as a model.
+        const sliced = e.payload.paths.find((p) => /\.gcode$/i.test(p));
+        if (sliced) {
+          setSliced(sliced);
+          nav("/after-slicing");
+          return;
+        }
         const model = e.payload.paths.find((p) => /\.(stl|3mf)$/i.test(p));
         if (!model) return;
         setFile(model);
@@ -40,7 +50,7 @@ export function AppShell() {
       /* not running inside Tauri — drag-drop disabled */
     }
     return () => cleanup?.();
-  }, [nav, setFile]);
+  }, [nav, setFile, setSliced]);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">

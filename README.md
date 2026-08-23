@@ -6,7 +6,7 @@
 ![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)
 ![Release](https://img.shields.io/github/v/release/DeadlyVirusIn/snapmaker-studio?display_name=tag&include_prereleases)
 [![CI](https://github.com/DeadlyVirusIn/snapmaker-studio/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DeadlyVirusIn/snapmaker-studio/actions/workflows/ci.yml)
-![Status: beta](https://img.shields.io/badge/status-beta-orange.svg)
+![Status: stable](https://img.shields.io/badge/status-stable-brightgreen.svg)
 
 ### You downloaded a model. Will it actually print on your U1?
 
@@ -17,7 +17,7 @@ changed. Snapmaker Orca still does the slicing.**
 Free, open source, and entirely on your computer. No account, no cloud, nothing
 uploaded. Your original file is never modified.
 
-### [▶ Watch it work — 52 seconds](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4) · [⬇ Download for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.24) · [What it is, in 5 minutes](docs/innovation-fund/JUDGE_OVERVIEW.md)
+### [▶ Watch it work — 52 seconds](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4) · [⬇ Download for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0) · [What it is, in 5 minutes](docs/innovation-fund/JUDGE_OVERVIEW.md)
 
 [![Watch the Snapmaker Studio demo](docs/media/demo-poster.jpg)](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4)
 
@@ -62,27 +62,27 @@ recording, so it also shows what Studio says when it cannot reach one:
 
 ## Download
 
-**[⬇ Download Snapmaker Studio v0.4.0-beta.24 for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.24)**
+**[⬇ Download Snapmaker Studio v0.4.0 for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0)**
 — one click, no Python, runs offline. Windows 10/11 x64.
 
-This is a beta and is published as a pre-release, so it deliberately links the
-version by name rather than "latest" — GitHub's "latest" points at the newest
-*stable* release, which is older. Every build ever published is on the
+**v0.4.0 is the first stable release** — not a prerelease, so this is also what
+GitHub's [latest release](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/latest)
+points at. Every build ever published is on the
 [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
 Verify it before you run it:
 
-- Release: [v0.4.0-beta.24](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.24)
-- Installer: `Snapmaker.Studio_0.4.0-beta.24_x64-setup.exe`
-- Size: 16,263,985 bytes
-- SHA256: `50fc5434e266f0b8c025336410534d019f8d41c0ec5190290024c702126cbf26`
+- Release: [v0.4.0](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0)
+- Installer: `Snapmaker.Studio_0.4.0_x64-setup.exe`
+- Size: 16,297,246 bytes
+- SHA256: `a6a28de6a539170746671d3f4d2e73fdd594c00e3487caf60c028fed3f182f5b`
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.24_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0_x64-setup.exe
 ```
 
 The installer is not code-signed yet, so Windows SmartScreen will show "Unknown
-publisher". That is expected for this beta — verify the hash above, then choose
+publisher" until it builds reputation — verify the hash above, then choose
 **More info → Run anyway**. Why it is unsigned, and what is being done about it:
 [docs/CODE_SIGNING_POLICY.md](docs/CODE_SIGNING_POLICY.md). Full instructions and
 uninstall: [docs/windows-install.md](docs/windows-install.md).
@@ -146,7 +146,7 @@ its licence in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Evidence
 
-Everything below was verified against the published beta.24 installer, not
+Everything below was verified against the published v0.4.0 installer, not
 against a development build. Commands, counts and full reports:
 [docs/TRUST_STATUS.md](docs/TRUST_STATUS.md).
 
@@ -167,39 +167,52 @@ files produced structurally valid U1 profile copies ([PROOF.md](PROOF.md)); that
 number measures structure, not print success, and the checks above are the
 stronger evidence.
 
-## What's new in beta.24 — verified against a real U1
+## What's new in v0.4.0 — the loop closes
 
-**Your printer already knew which filaments are loaded.** Studio was telling U1
-owners *"this printer does not report which filaments are loaded"* while the
-printer was reporting all four, in a shape Studio was not looking for. The first
-session against real hardware found it. Studio now reads every loaded slot,
-colour and sub-type included, and **Before you slice** compares the materials your
-project needs against what is actually on the machine.
+**Studio can see what happens after the slicer.** Until now it read your project,
+explained the risks, compared the project against your printer, prepared a
+corrected copy, and handed that copy to Snapmaker Orca — and stopped. The most
+expensive failures live on the other side of that handoff: the job prints from
+slot 3 and slot 3 is empty; it was sliced for PETG and PLA is loaded; it was
+sliced for a different printer entirely. None of those are visible in the project
+file, and none are visible on the printer alone.
 
-**And it confirmed the honest unknown is honest.** Stock firmware really does not
-report which nozzle is fitted. That check still reads *"Nozzle size — check this
-yourself"*, and that is now known rather than assumed.
+Open the `.gcode` your slicer produced — drag it onto the window, or hand it to
+Studio on the command line — and the new **After Slicing** page reads it and
+compares it to your printer as it is right now.
 
-**Every message that names a problem says what to do about it.** When the fidelity
-report cannot account for something it tells you to compare the copy against your
-original in Snapmaker Orca and report it — Studio failing to explain its own
-change is a bug. Something Studio cannot read is labelled *"Not checked — Studio
-can't read it"*, which is not the same as "this is fine". **Toolhead**, the word
-all the colour planning rests on, is explained before it is used.
+**It costs the job from what the slicer measured**, not from an estimate: filament
+by slot and print time come out of the file, and every line says whether its
+number was measured, derived from your prices, an assumption, or simply not
+stated.
 
-**Open a project by handing it to Studio.** Studio accepts an `.stl` or `.3mf`
-path on its command line, so a file can be sent to it from a shell, a script, or
-a shortcut.
+**And it still refuses to guess.** Snapmaker Orca reports one filament figure per
+slot and does not separate purged filament from printed filament, so Studio
+reports the total and says the split is not available from this file. The nozzle
+check remains an honest unknown, because stock firmware does not report which
+nozzle is fitted.
 
-**This build was checked as an installer, not as source.** Twenty-one checks run
-against the installed application through its real window; thirteen more against
-a real U1, read-only. See [docs/TRUST_STATUS.md](docs/TRUST_STATUS.md).
+**A bug report worth sending.** Help → *Reporting something Studio got wrong* now
+gathers the facts behind a report — project traits, Doctor findings, the sliced
+job, what your printer reported, the fix ledger. Your username, home folder, file
+paths, machine name and printer address are replaced before the bundle is
+assembled, and you can read all of it before it is written. Studio never sends it
+anywhere.
+
+**It is no longer a beta.** The workflow is complete end to end, so this is
+`v0.4.0` rather than `beta.25`, and it is a normal release rather than a
+prerelease.
 
 See [RELEASE_NOTES.md](docs/RELEASE_NOTES.md) ·
 [docs/innovation-fund/](docs/innovation-fund/) ·
 [docs/EXTENDING.md](docs/EXTENDING.md).
 
 ### Earlier releases
+
+**beta.24** was the first build verified against a real Snapmaker U1, which found
+a genuine bug: stock firmware publishes loaded filament as parallel arrays, and
+Studio had been reading it as a list of objects — so it told owners their printer
+does not report loaded filament while the printer was reporting all four spools.
 
 **beta.23** added the project-to-printer preflight, the fidelity audit, the fix
 ledger with a way back to your original, colour planning for more than four

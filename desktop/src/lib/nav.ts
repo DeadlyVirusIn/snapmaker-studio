@@ -36,6 +36,9 @@ export const PRIMARY_NAV: NavItem[] = [
   // Compatibility merges the old Source Check + Compatibility Doctor (two tabs).
   // /source still resolves on its own for deep links.
   { to: "/compatibility", label: "Compatibility", icon: ShieldCheck },
+  // The other half of the loop: Orca slices, and the G-code comes back here so
+  // Studio can check what the printer will actually execute.
+  { to: "/after-slicing", label: "After Slicing", icon: FileCheck2 },
   { to: "/scale", label: "Scale Doctor", icon: Maximize2 },
   // Print Quality merges the old First Layer + Print Quality Doctors (two tabs).
   // /first-layer still resolves on its own for deep links.
@@ -81,6 +84,7 @@ export const SIMPLE_SECONDARY_NAV: NavItem[] =
 export const STATIC_ROUTES = new Set<string>([
   "/", "/projects", "/batch", "/workspace", "/printers", "/settings",
   "/why", "/plate-remap", "/compatibility", "/colors", "/scale", "/print-quality", "/first-layer", "/find-models", "/start", "/help", "/source",
+  "/after-slicing",
 ]);
 
 /** True when a nav `to` resolves to a real route — guards against blank pages. */

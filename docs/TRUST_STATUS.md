@@ -1,11 +1,107 @@
 # Trust Status — Snapmaker Studio
 
-Honest, current verification state for the latest beta. A release is only marked
+Honest, current verification state for the current release. A release is only marked
 **ACCEPTED** once the automated suites, the acceptance harness running against the
 published installer, and — from beta.24 onward — read-only verification against a
 real Snapmaker U1 have all passed and are recorded here.
 
-## v0.4.0-beta.24 — ACCEPTED
+## v0.4.0 — ACCEPTED (first stable release)
+
+**The workflow is complete end to end, and this is the build that says so.**
+Every check below ran against *this installer* — the exact asset published on the
+release page, verified by SHA256 — not against the source tree or a development
+server. Canonical hash, size and installer name: [RELEASE_METADATA.md](RELEASE_METADATA.md).
+
+### CI / software
+
+| Check | Command | Result |
+|---|---|---|
+| Backend tests | `pytest` | **PASS** — 716 passed, 3 skipped |
+| Desktop tests | `npm run test` | **PASS** — 263 passed |
+| End-to-end pipeline | `u1convert selfcheck` | **PASS** — 18/18, now including the sliced-job reader, the post-slice join and the refusal to invent a purge split |
+| TypeScript | `npx tsc --noEmit` | **PASS** — clean |
+| Production frontend build | `npm run build` | **PASS** |
+| Rust shell | `cargo check` | **PASS** — and green in CI, which it was not before beta.24 |
+| Installer builds | `npm run release:windows` | **PASS** |
+| Release-document consistency | `pytest tests/test_release_docs.py` | **PASS** |
+| Project-state consistency | `pytest tests/test_project_state.py` | **PASS** — no current-state document describes a superseded state |
+
+### Installed application — 27/27
+
+`pwsh -File tools/acceptance/run.ps1 -Installer <published installer> -UpgradeFrom <beta.24 installer>`
+Full report: [internal/acceptance-0.4.0.json](internal/acceptance-0.4.0.json).
+
+Six checks are new in this release:
+
+- **Upgrade from beta.24.** The previous version is installed, run so it creates
+  real state, then upgraded in place. The user's data survives and only one
+  installation is registered afterwards.
+- **The sliced job is read in the installed app** — the After Slicing page opens
+  a `.gcode`, and the job's own facts render from the file.
+- **The purge split is refused** in the shipped UI, not just in tests.
+- **The sliced job is byte-identical afterwards**, the same invariant the project
+  file has always had.
+- Three new engine routes answer from the frozen sidecar, plus the diagnostics
+  preview.
+
+Everything from beta.24 still passes: install, launch, sidecar from the install
+directory, CDP, `/health` from the app origin, tool and Orca detection, all engine
+routes, the launch file, placement, preflight, an honest unknown, "unsupported"
+never appearing, prepare, fidelity, not-carried-over, ledger, return-to-original,
+best tool, no print-success promise, colour plan with its source, the input file
+byte-identical, no orphan sidecar, reopen, uninstall, cleanup, and the
+pre-existing installation restored.
+
+**Fixed while running it:** the harness had been reusing a WebView2 profile from
+earlier runs, which put a real model name into a screenshot and made one check
+pass on stale state rather than on the launch it was meant to prove. It now
+starts from nothing, and that check reads the surface that names the open file.
+
+### Real Snapmaker U1 — read-only, 20/20
+
+`pwsh -File tools/hardware/verify.ps1 -PrinterHost <printer>`
+Full report: [internal/hardware-0.4.0.json](internal/hardware-0.4.0.json), with the
+printer's address replaced before anything reached disk.
+
+| What was proved | Observed |
+|---|---|
+| Printer discovered | Moonraker on 7125, print state `standby` |
+| Firmware object list | 196 Klipper objects |
+| The printer's own bed | 271 × 335 × 281 mm, used by the checks |
+| Toolhead count | 4 |
+| Loaded filament | `#000000 PLA Matte`, `#2D9E59 PLA Silk`, `#F8F81C PLA Basic`, `#FFFFFF PLA Matte` |
+| Fitted nozzle | unknown, before *and* after slicing |
+| Project vs machine | 6 filament slots against 4 toolheads; 4 loaded against 6 needed |
+| **Sliced job vs machine** | the job prints from slot 2 — that toolhead exists, that slot is loaded, and its material matches at family level |
+| **Sliced bed vs real bed** | 270 × 270 mm sliced against 271 × 335 mm reported |
+| "unsupported" | does not appear anywhere, before or after slicing |
+
+**Read-only by construction.** The route allow-list is asserted before the first
+request. No print started, nothing uploaded or queued, no temperature, motion,
+homing, pause, resume, cancel, emergency-stop or configuration call.
+
+The same code path was also run by hand against a **real 350 KB Snapmaker Orca
+job taken from the printer's own storage**, which read correctly: Snapmaker Orca
+2.3.4, Snapmaker U1, 45 layers, 6m 31s, 0.91 g, printing from slot 2. That file is
+the maintainer's own model and is not committed.
+
+### Known limitations — stated plainly
+
+- **Windows only.** macOS and Linux are not built or tested.
+- **The installer is not code-signed.** SmartScreen shows an unknown publisher
+  until reputation accumulates; verify the SHA256. See
+  [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md).
+- **Purge cannot be separated from printed filament** in Snapmaker Orca output.
+  Studio reports the total and says why it will not split it.
+- **The fitted nozzle cannot be read** from stock firmware — confirmed against
+  hardware, not assumed.
+- **Painted colour cannot be classified** without slicing.
+- **The Post-Slice Doctor reads; it does not simulate.** It reports what the file
+  says the printer will do, which is not the same as predicting the print.
+- **No print-success guarantee**, and no autonomous printer control.
+- **Multi-plate repositioning remains withdrawn.**
+
+## v0.4.0-beta.24 — superseded by v0.4.0 (was ACCEPTED)
 
 **The first build verified against a real Snapmaker U1.** Everything below was
 checked against *this installer* — the exact asset published on the release page,

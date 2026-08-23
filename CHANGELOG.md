@@ -6,6 +6,72 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-23
+
+**The first stable release, and the second half of the workflow.**
+
+Studio has always stopped at the slicer. It read a project, explained the risks,
+compared the project against the printer, prepared a corrected copy, and handed
+that copy to Snapmaker Orca. What happened after Orca sliced it was somebody
+else's problem — which meant the most consequential failures were invisible: the
+job prints from slot 3 and slot 3 is empty; the job was sliced for PETG and PLA
+is loaded; the job was sliced for another machine entirely. None of those can be
+seen in the project file, and none can be seen on the printer alone.
+
+This release closes the loop. Studio still does not slice.
+
+### Added
+- **Post-Slice Doctor.** Open the `.gcode` your slicer produced and Studio reads
+  what the printer will actually execute: which machine it was sliced for, how
+  many layers, the estimated time, which tools it prints from, the filament per
+  slot, the nozzle it expects, and whether it defines excludable objects. Every
+  figure comes from the file; nothing is inferred.
+- **The sliced job, joined to the live printer.** Tools the job needs against
+  toolheads the printer reports; the slots it prints from against the spools
+  actually loaded; the job's materials against the loaded materials, compared by
+  family so "PLA Matte" is not a false alarm against "PLA"; the sliced bed against
+  the printer's own reported bed; object exclusion against the firmware's own
+  object list; and whether the printer is busy right now.
+- **Cost from what the slicer measured.** Filament by slot and print time come
+  from the file rather than an estimate. Where the file states nothing, the line
+  reads unknown rather than zero. **Purge is never split out of a total the
+  slicer did not split** — Snapmaker Orca reports one figure per slot, so Studio
+  reports that and says why it will not divide it.
+- **`.gcode` opens Studio.** A sliced job passed on the command line, dropped on
+  the window, or opened from a shell goes straight to the Post-Slice Doctor. It
+  is deliberately not treated as a project.
+- **A support bundle worth sending.** Studio asks people to report when it gets an
+  analysis wrong; this gathers the facts behind that report — project traits,
+  Doctor findings, the sliced job, the printer's capabilities, the fix ledger.
+  Usernames, home directories, file paths, machine names and addresses are
+  replaced **before the bundle is assembled**, and the whole thing can be read
+  before it is written. Studio never sends it anywhere.
+- Three new engine routes — `/gcode_facts`, `/post_slice`, `/sliced_cost` — plus
+  `/diagnostics_preview` and `/diagnostics_build`, all documented and covered by
+  the self-check.
+
+### Fixed
+- **`u1convert selfcheck` crashed at the end on a default Windows console.** The
+  results table contained a character `cp1252` cannot encode, so the one command
+  Studio tells strangers to run failed while printing its own success. It now
+  prints on a stock console.
+- **The support bundle leaked a model's file name.** Replacing a username inside
+  a path inserted angle brackets that stopped the path pattern dead, leaving the
+  rest of the path — file name included — in the bundle. Paths are now redacted
+  before anything else. Found by its own test, before the feature shipped.
+- A slicer that reports filament per slot without a total, PrusaSlicer among
+  them, now has the total added up rather than left missing.
+
+### Changed
+- **Version is `0.4.0`, not `beta.25`.** The workflow is complete end to end and
+  the release is no longer a prerelease, so GitHub's "latest release" finally
+  points at the build people should actually download.
+- The development freeze that was in force before this release is cancelled and
+  replaced with a convergence policy — see
+  `docs/innovation-fund/CHANGE_FREEZE.md`.
+- The self-check grew from 15 checks to 18, covering the sliced-job reader, the
+  post-slice join, and the refusal to invent a purge split.
+
 ## [0.4.0-beta.24] - 2026-08-23
 
 The first build verified against a real Snapmaker U1. Hardware found a bug no
