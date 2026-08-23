@@ -1,6 +1,6 @@
 # User evidence
 
-**Gathered 2026-08-23** from the GitHub API against the repository itself. Every
+**Gathered 2026-08-23**, refreshed immediately before the beta.24 release, from the GitHub API against the repository itself. Every
 number here is a measurement, not an estimate. Nothing on this page is a
 testimonial, because there are no testimonials to report.
 
@@ -11,7 +11,7 @@ closer to *thin, real, and anonymous*.
 
 | Signal | Value | Source |
 |---|---|---|
-| Installer downloads, all releases | **42** | `repos/…/releases` asset download counts |
+| Installer downloads, all releases | **43** | `repos/…/releases` asset download counts |
 | Unique cloners, last 14 days | **57** (75 clones) | `repos/…/traffic/clones` |
 | Unique visitors, last 14 days | **11** (15 views) | `repos/…/traffic/views` |
 | Stars | 1 | repository metadata |
@@ -21,12 +21,12 @@ closer to *thin, real, and anonymous*.
 | Repository age | Created 2026-06-17 | repository metadata |
 
 Downloads by release, highest first: beta.20.4 — 10, beta.20.2 — 6, beta.20 — 5,
-others 0–3 each. beta.22 and beta.23 were published within the last day and have
-none yet.
+others 0–3 each, across 39 published releases. beta.22, beta.23 and beta.24 were
+published within a day of this measurement and have none yet.
 
 ## What that does and does not support
 
-**It supports:** people have downloaded and installed Studio 42 times, and 57
+**It supports:** people have downloaded Studio's installer 43 times, and 57
 distinct machines cloned the repository in a fortnight. That is not nothing, and
 it is more than a project with one star would suggest.
 
@@ -37,6 +37,15 @@ value, and this page will not pretend otherwise.
 
 **The honest summary:** there is evidence of *interest* and no evidence of
 *outcome*.
+
+## Where feedback could now come from
+
+Until 2026-08-23 there was no channel with anything in it. Four factual notes have
+since been posted to the maintainers of projects Studio names, asking them to
+correct how their work is described — see
+[ECOSYSTEM_OUTREACH.md](ECOSYSTEM_OUTREACH.md) for the exact posts. Any reply is
+the project's first external feedback of any kind, and will be recorded here as
+what it is: a maintainer's correction, not a user outcome.
 
 ## The underlying problems, separately
 

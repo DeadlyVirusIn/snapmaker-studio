@@ -1,7 +1,7 @@
 # Next moves — what would make Studio elite
 
-Updated **2026-08-23**, after the judge-readiness sprint. Phase 1 submissions
-close **7 September 2026**.
+Updated **2026-08-23**, after the beta.24 release sprint. Phase 1 submissions
+close **7 September 2026** — fifteen days from this update.
 
 Items completed since the previous version of this document are listed first, so
 this file never reads as if shipped work were still pending.
@@ -22,59 +22,57 @@ refusal-to-guess enforced by tests rather than by convention.
 **Weak, and it is now one weakness rather than two.** Visibility. 20% of the Fund
 score is community, weighted partly on GitHub stars, and Studio sits at the bottom
 of the measured field. The product no longer has a "nothing to see" problem —
-there are current screenshots from the running build and a verified demo script —
-but nobody has watched it work, and the installer is still unsigned.
+there are current screenshots, a recorded demo of the running application, and a
+release verified against real hardware. What is still missing is people: one star,
+no issues, and an unsigned installer.
 
 ---
 
-## Done in this sprint
+## Done since the last update
 
 | Was | Now |
 |---|---|
-| Current screenshots | Captured from the beta.22 build; README leads with them |
-| One-command self-check | `u1convert selfcheck`, 15 checks, real code paths, exits non-zero on failure |
-| Project ↔ printer readiness | `preflight.py` — materials vs toolheads, nozzle, real bed, capabilities, state; unknowns stay unknown |
-| Fidelity audit | `fidelity.py` — per element, including `unsupported` and `unverified`; overclaims in public copy corrected |
-| Reversible fix ledger | `fix_ledger.py` — every produced file recorded; return-to-original; shareable export with paths stripped |
-| Multi-colour beyond four toolheads | `color_plan.py` — shares-layers vs arrives-higher-up vs cannot-classify, with heights and estimated layers |
-| Print-profile matching | `process_preset.py` — the preset label now describes the project's actual layer height |
-| Release governance | `test_release_docs.py` — duplicate changelog entries, hash drift and a stale trust file are now build failures |
-| Demo script | Re-verified beat by beat against the current build, with the exact click path |
-| Ecosystem outreach | [ECOSYSTEM_OUTREACH.md](ECOSYSTEM_OUTREACH.md) — factual, non-promotional drafts for a human to post |
+| Record and publish the demo | Recorded from the installed beta.24 build — `docs/media/snapmaker-studio-demo.mp4`, 71 seconds, surfaced at the top of the README |
+| Post the ecosystem notes | Four posted 2026-08-23; see [ECOSYSTEM_OUTREACH.md](ECOSYSTEM_OUTREACH.md) for the URLs. ImageMap skipped — issues disabled |
+| Installed-build acceptance | `tools/acceptance/run.ps1` — 21 checks against the shipped installer, not a dev server |
+| Real hardware verification | `tools/hardware/verify.ps1` — 13 read-only checks against a real U1; it found and fixed a genuine bug in how loaded filament was read |
+| Release acceptance | beta.24 is the first build marked **ACCEPTED** with software, installed-application and hardware evidence all recorded |
+| Code signing | Prepared to the last legal step — [CODE_SIGNING_POLICY.md](../CODE_SIGNING_POLICY.md) answers every SignPath eligibility criterion; only the form and MFA remain |
+| Submission text | [INNOVATION_FUND.md](../INNOVATION_FUND.md) rewritten from the current product, against the fund's rules as re-read on 2026-08-23 |
 
 ---
 
 ## Tier 1 — before the deadline
 
-### 1. Record and publish the 90-second demo
-**P4 D4 J5 N4 T1 E2 R0 C5 · cx1 rr0**
+### 1. Submit the entry
+**P5 D0 J5 N0 T0 E5 R0 C5 · cx0 rr0**
 
-[DEMO_SCRIPT_90_SECONDS.md](DEMO_SCRIPT_90_SECONDS.md) is verified against the
-current build with the exact click path and the frames already captured. This
-needs a screen recorder and one take, not engineering. It is the single highest
-remaining item and it cannot be done from an autonomous environment.
+Everything the form asks for is written in
+[INNOVATION_FUND.md](../INNOVATION_FUND.md). The form itself asks for the
+maintainer's name and email and represents them personally. Phase 1 closes
+7 September 2026 and there is no published way to revise a submission afterwards,
+so it is worth sending once and sending it late rather than early.
 
-### 2. Post the ecosystem notes
-**P2 D5 J3 N1 T0 E5 R0 C4 · cx1 rr0**
+### 2. Share the project in a Snapmaker community channel
+**P3 D1 J4 N2 T0 E4 R0 C4 · cx1 rr0**
 
-The drafts exist and are deliberately not automated — posting to other people's
-issue trackers is a human decision. This is the most credible route to community
-visibility that does not involve asking for stars.
+This is a stated entry requirement, separate from the form, and it is also the
+only route to the 20% community component that does not involve asking for votes.
 
-### 3. Windows code signing
-**P4 D2 J4 N5 T1 E1 R3 C2 · cx2 rr1**
+### 3. Apply to SignPath Foundation
+**P4 D1 J3 N5 T1 E1 R1 C2 · cx1 rr0**
 
-Every competing project ships unsigned and documents the SmartScreen workaround.
-Being the one that does not removes the largest first-run drop-off. Blocked on
-purchasing a certificate and identity verification, both human gates.
+Free for qualifying open-source projects; the earlier plan to fund an EV
+certificate was wrong, because EV no longer bypasses SmartScreen. The application
+accepts terms on the maintainer's behalf, which is why it is not automated.
 
-### 4. Complete the beta.22 GUI acceptance
-**P3 D1 J4 N3 T1 E1 R5 C4 · cx1 rr0**
+### 4. Get one real user report
+**P5 D5 J5 N5 T0 E5 R0 C5 · cx2 rr0**
 
-[TRUST_STATUS.md](../TRUST_STATUS.md) lists eighteen automated checks as passing
-and twelve GUI/hardware items as pending, each with the smallest exact check.
-Working through that list on an installed build is what moves beta.22 from
-PARTIAL to accepted.
+43 downloads and zero issues is the weakest part of the submission, and no amount
+of engineering fixes it. The outreach notes are the first channel that exists; a
+maintainer's correction would be the project's first external feedback of any
+kind.
 
 ---
 

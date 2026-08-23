@@ -1,10 +1,12 @@
 # 90-second demo script
 
-**Verified against the beta.22 build on 2026-08-23.** Every frame below was
-produced by the click path in §2 on the sample project committed at
-[`examples/demo_u1_showcase.3mf`](../../examples/demo_u1_showcase.3mf). The
-screenshots in `docs/screenshots/beta22/` are those exact frames. Nothing here is
-staged, and nothing is a mock-up.
+**Recorded from the installed beta.24 build on 2026-08-23.** The recording is
+[`docs/media/snapmaker-studio-demo.mp4`](../media/snapmaker-studio-demo.mp4) — 71
+seconds, 1578×944, every frame the running application. It was produced by driving
+the beats below through the real window (`tools/demo/record.ps1`), on the sample
+project committed at
+[`examples/demo_u1_showcase.3mf`](../../examples/demo_u1_showcase.3mf). Nothing
+here is staged, and nothing is a mock-up.
 
 **The single idea:** *Snapmaker Orca says "out of bounds". Studio says which
 object, which edge, how many millimetres, why — fixes it in a new copy, proves

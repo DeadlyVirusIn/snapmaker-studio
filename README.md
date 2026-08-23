@@ -79,17 +79,13 @@ is in [docs/TRUST_STATUS.md](docs/TRUST_STATUS.md).
 The desktop app — local-first, dark-first. The whole workflow in one place:
 **Understand → Validate → Prepare → Monitor**.
 
-| Object placement — the check no size test can do | The fix, in a new copy |
+| The problem, named exactly | The fix, in a new copy — and where Studio says it can't tell |
 |---|---|
-| ![Object placement and Before you slice](docs/screenshots/beta22/placement_and_preflight.jpg) | ![Moved onto the plate](docs/screenshots/beta22/placement_fixed.jpg) |
-| **What survived preparing the copy, and the way back** | **Where Studio says "I can't tell"** |
-| ![Fidelity report and fix ledger](docs/screenshots/beta22/fidelity_and_ledger.jpg) | ![Preflight unknowns](docs/screenshots/beta22/preflight_unknowns.jpg) |
+| ![One object hangs 45 mm past the right edge](docs/screenshots/beta24/placement.jpg) | ![Moved onto the plate, original untouched, printer unknowns kept unknown](docs/screenshots/beta24/placement_fixed_and_unknowns.jpg) |
+| **What survived preparing the copy** | **Six colours, four toolheads** |
+| ![Fidelity report: 13 kept, 2 changed, 1 not carried over](docs/screenshots/beta24/fidelity_and_ledger.jpg) | ![Colours and toolheads, with what a toolhead is](docs/screenshots/beta24/colour_plan.jpg) |
 
-Six colours on four toolheads is not one problem but two, and Studio says which:
-
-![Colours and toolheads](docs/screenshots/beta22/colour_plan.jpg)
-
-Captured from the running build on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission index: [docs/SUBMISSION_STATUS.md](docs/SUBMISSION_STATUS.md).
+Frames from the beta.24 recording above, on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission package: [docs/innovation-fund/FINAL_SUBMISSION.md](docs/innovation-fund/FINAL_SUBMISSION.md).
 
 ## Why this isn't a slicer, a dashboard, or a converter
 
@@ -184,35 +180,11 @@ multi-plate repositioning: a review reproduced a case where it placed a plate of
 the bed while reporting success, and plate spacing is not recorded in the file, so
 the feature was removed rather than patched.
 
-beta.18 is a polish pass: less crowded pages, shorter beginner copy. Find Models leads with
-"Browse approved model sites inside Studio" (policy details collapse into a note); the cost
-calculator is a simple form — enter your spool price, advanced costs (electricity, machine,
-labour, fees, shipping) tuck under "Advanced." Plus a print-hours field and material-type
-density. Safety/technical detail moved into expandable notes — no change to local-first,
-no-cloud, no-slicing, no-guarantee principles.
+Everything before that — the Doctors, Printer Hub, the model browser, the cost
+tools, and the wording passes that made them readable by a beginner — is in
+[CHANGELOG.md](CHANGELOG.md), release by release.
 
-beta.17.1 makes the business tools ask for *your* numbers — an editable **Material &
-business assumptions** panel (filament price, electricity, machine, labour, fees, markup;
-saved locally) — gives the **First Layer Doctor** real per-file evidence, and states the
-Scale Doctor's STL-only export limit up front. Estimates are rough and depend on your
-inputs — not financial advice.
-
-beta.17 turned two Doctors from advice into action — they create a real file you can
-open in Snapmaker Orca, and your original is never changed:
-
-- **Scale Doctor — Prepare scaled copy.** Pick a recommended (or custom) scale and Studio
-  writes a new scaled copy, e.g. `model_scaled_128_U1.3mf`, with the scaled dimensions,
-  U1 fit, validation, and Open-in-Orca / Copy path / Run Project Doctor. STL input is
-  supported now; for 3MF, preview here and resize in Orca (verified 3MF export is coming).
-- **Compatibility Doctor — Prepare U1 copy.** When a project carries another printer's
-  settings, one click makes a clean Snapmaker U1 copy so Orca opens it with U1-safe
-  settings — no more dead end at "here's what's wrong."
-
-Carried forward: hardware-verified **Printer Hub**, **Print Quality** evidence grounded in
-your own file, **Plate Color Remap**, **Source Check**, Model Browser. All local, advisory
-— no cloud, no account, no guarantees. Studio does not slice; Orca does.
-
-New here? See [docs/JUDGE_OVERVIEW.md](docs/JUDGE_OVERVIEW.md) and [docs/WHAT_TO_TEST_FIRST.md](docs/WHAT_TO_TEST_FIRST.md).
+New here? See [docs/innovation-fund/JUDGE_OVERVIEW.md](docs/innovation-fund/JUDGE_OVERVIEW.md) and [docs/WHAT_TO_TEST_FIRST.md](docs/WHAT_TO_TEST_FIRST.md).
 
 
 ## Works with the open U1 ecosystem

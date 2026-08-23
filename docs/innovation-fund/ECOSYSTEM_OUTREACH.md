@@ -1,34 +1,34 @@
-# Ecosystem outreach — factual notes, ready to post
+# Ecosystem outreach — the notes that were posted
 
 Studio's registry names other people's projects and explains to users when those
 projects are the right tool. Those maintainers do not know that, and they are the
 people best placed to correct how Studio describes them.
 
-These are short, factual notes for that purpose. They are **drafts for a human to
-post**, from their own account, when they judge it appropriate.
+These are the notes sent for that purpose, kept here verbatim so the wording is
+auditable.
 
-## Status — checked 2026-08-23, not posted
+## Status — posted 2026-08-23
 
-Whether each repository can receive a note was checked through the GitHub API:
+Each repository's ability to receive a note was re-checked through the GitHub API
+immediately before posting, and each note was tailored to that project.
 
-| Project | Issues | Note |
+| Project | Posted | Reply |
 |---|---|---|
-| FOrcaSlicer | enabled (discussions too) | A discussion is the better fit than an issue |
-| U1 Print Hub | enabled | |
-| MakerWorld to Snapmaker U1 | enabled | |
-| Snapmaker U1 Toolkit | enabled | |
-| OrcaSlicer ImageMap | **disabled** | Do not post. There is no channel, and finding another route round that would be exactly the behaviour these rules forbid |
+| FOrcaSlicer | [jiyang1018/FOrcaSlicer#11](https://github.com/jiyang1018/FOrcaSlicer/issues/11) | — |
+| U1 Print Hub | [dlgambill/u1hub#2](https://github.com/dlgambill/u1hub/issues/2) | — |
+| MakerWorld to Snapmaker U1 | [Dragon2203/makerworld-to-snapmaker-u1#2](https://github.com/Dragon2203/makerworld-to-snapmaker-u1/issues/2) | — |
+| Snapmaker U1 Toolkit | [bbolinger/snapmaker-u1-toolkit#33](https://github.com/bbolinger/snapmaker-u1-toolkit/issues/33) | — |
+| OrcaSlicer ImageMap | **not posted** — issues are disabled on that repository | n/a |
 
-The four reachable repositories have between zero and three open issues each,
-which means an unsolicited note would be highly visible and would set the tone for
-a first contact with that maintainer.
+ImageMap is deliberately skipped. There is no channel, and routing around a
+maintainer who has closed one would be exactly the behaviour these rules forbid.
+If its entry is wrong, it stays wrong until they open a channel or contact the
+project.
 
-These drafts are therefore left unposted. Not because it is technically
-impossible — the tooling and the authenticated account are both there — but
-because outreach carries the maintainer's name and reputation, and the judgement
-of when and in what tone to introduce yourself to a peer is theirs. Everything up
-to that point is done: the text is written, the recipients are verified, and the
-one repository that must be skipped is identified.
+Each note says the same thing: here is how Studio describes your project, here is
+the exact rule that triggers it, correct it or ask to be removed. None asks for a
+star, a vote, an endorsement or a link back. The "Reply" column is filled in if
+and when a maintainer responds.
 
 ## Rules these follow, and must keep following
 
@@ -49,8 +49,9 @@ and contribution rules are in [../EXTENDING.md](../EXTENDING.md).
 
 ## FOrcaSlicer — `jiyang1018/FOrcaSlicer`
 
-> **Subject:** Snapmaker Studio points users here when a project uses mixed nozzle sizes
->
+Posted as [issue #11](https://github.com/jiyang1018/FOrcaSlicer/issues/11), titled
+*"How Snapmaker Studio describes FOrcaSlicer (correction welcome)"*.
+
 > Hi — I maintain Snapmaker Studio, an MIT-licensed local tool that reads a 3MF
 > and explains what it needs before slicing. It has a small registry of
 > open-source tools and suggests one when a project's contents call for it.
@@ -63,36 +64,22 @@ and contribution rules are in [../EXTENDING.md](../EXTENDING.md).
 >
 > It also shows your licence (AGPL-3.0) and, because the README describes the
 > project as a research preview, a caution to review output before a long print.
-> Studio never installs anything and never launches a tool on its own.
+> Studio never installs anything and never launches a tool on its own, and no code
+> or data from this project is used.
 >
-> If any of that is wrong or out of date, the entry is one JSON object —
-> a PR against `backend/snapstudio_core/data/ecosystem.json` is welcome, and so is
-> "please remove it".
-
-## OrcaSlicer ImageMap — `sentientstardust-dev/OrcaSlicer-ImageMap`
-
-> **Subject:** Studio points users here when a model carries texture data
->
-> Hi — Snapmaker Studio (MIT, local-only) reads a 3MF before slicing and suggests
-> the tool that fits what it found. When it finds texture parts in a project it
-> names ImageMap, with this reason:
->
-> > This model carries image-texture data, which most slicers throw away and this
-> > fork can actually print.
->
-> It shows AGPL-3.0 and a beta caution taken from your own README. Nothing is
-> installed or launched by Studio.
->
-> Corrections welcome as a one-object PR against
-> `backend/snapstudio_core/data/ecosystem.json`, including removal if you prefer.
+> I am opening this so the description is yours to correct rather than mine to
+> guess at. If anything above is wrong or out of date, the entry is a single JSON
+> object in `backend/snapstudio_core/data/ecosystem.json` — a PR is welcome, and so
+> is "please remove it", which is a one-line change.
 
 ## U1 Print Hub — `dlgambill/u1hub`
 
-> **Subject:** Studio sends users to the Hub once a project is sliced
->
-> Hi — Snapmaker Studio is a local pre-print checker for the U1. It stops where
-> the Hub starts, and says so: when a project already contains toolpaths, Studio
-> names U1 Print Hub with the reason
+Posted as [issue #2](https://github.com/dlgambill/u1hub/issues/2), titled *"How
+Snapmaker Studio describes U1 Print Hub (correction welcome)"*.
+
+> Hi — Snapmaker Studio is an MIT-licensed local pre-print checker for the U1. It
+> stops where the Hub starts, and says so: when a project already contains
+> toolpaths, Studio names U1 Print Hub with the reason
 >
 > > This project is already sliced, so the next step is getting it onto a printer
 > > rather than back into a slicer.
@@ -100,45 +87,70 @@ and contribution rules are in [../EXTENDING.md](../EXTENDING.md).
 > Your README's protocol notes were genuinely useful while building Studio's
 > read-only Printer Hub — in particular that the U1 answers Moonraker on port 80
 > as well as 7125. Studio now probes both, which fixed real "printer not found"
-> reports.
+> reports. No code from this project is used.
 >
-> If the description or the trigger is wrong, a PR against
-> `backend/snapstudio_core/data/ecosystem.json` is the whole change.
+> I am opening this so you can correct how your project is described rather than
+> find out later. If the description or the trigger is wrong, the entry is a single
+> JSON object in `backend/snapstudio_core/data/ecosystem.json` — a PR is welcome,
+> and removal is a one-line change if you would rather not be listed.
 
 ## MakerWorld to Snapmaker U1 — `Dragon2203/makerworld-to-snapmaker-u1`
 
-> **Subject:** How Snapmaker Studio describes this extension
+Posted as [issue #2](https://github.com/Dragon2203/makerworld-to-snapmaker-u1/issues/2),
+titled *"How Snapmaker Studio describes this extension (correction welcome)"*.
+
+> Hi — Snapmaker Studio is an MIT-licensed desktop pre-print checker for the U1.
+> When it opens a project that looks like a MakerWorld download authored for
+> another printer, it names this extension with the reason
 >
-> Hi — Snapmaker Studio is a desktop pre-print checker for the U1. When it opens a
-> project that looks like a MakerWorld download authored for another printer, it
-> names this extension with the reason
+> > This looks like a MakerWorld download authored for another printer. Converting
+> > it in the browser next time keeps the creator's profile intact from the start.
 >
-> > Converting in the browser next time keeps the creator's profile intact from
-> > the start.
+> The registry entry records your licence as MIT, and carries this note: your own
+> notices state that some conversion logic and reference data derive from a
+> PolyForm-Noncommercial project. Studio implements several of the same
+> compatibility corrections in its own engine, written independently from the
+> published symptoms and the 3MF schema — it uses no code, profile data or
+> reference data from this project. If you think anything in Studio's engine reads
+> as derived rather than independent, tell me and I will change it.
 >
-> Studio implements several of the same compatibility corrections in its own
-> engine, written independently from the published symptoms and the 3MF schema —
-> no code or profile data from this project is used, because of the PolyForm
-> notices. If you think anything in Studio's engine reads as derived rather than
-> independent, tell me and I will change it.
->
-> Corrections to the registry entry are a one-object PR.
+> I am opening this so the description is yours to correct. Corrections to the
+> registry entry are a one-object PR against
+> `backend/snapstudio_core/data/ecosystem.json`, and removal is a one-line change.
 
 ## Snapmaker U1 Toolkit — `bbolinger/snapmaker-u1-toolkit`
 
-> **Subject:** Studio lists the Toolkit, and shares its stance on print starts
->
-> Hi — Snapmaker Studio is an MIT local pre-print checker for the U1. When a
-> project already contains toolpaths, Studio names the Toolkit as one way to send
-> it to the printer without opening a slicer again, alongside your own caution
-> that it is command-line and young.
+Posted as [issue #33](https://github.com/bbolinger/snapmaker-u1-toolkit/issues/33),
+titled *"How Snapmaker Studio describes the Toolkit (correction welcome)"*.
+
+> Hi — Snapmaker Studio is an MIT-licensed local pre-print checker for the U1.
+> When a project already contains toolpaths, Studio names the Toolkit as one way
+> to send it to the printer without opening a slicer again, alongside your own
+> caution that it is command-line and young.
 >
 > Studio holds the same line your README does: it can prepare, explain and
-> preview, but it never starts a print on its own — every printer action is behind
-> an explicit confirmation.
+> preview, but it never starts a print on its own — every printer action sits
+> behind an explicit confirmation. No code from this project is used.
 >
-> If the description is wrong, the registry entry is one JSON object and a PR is
-> welcome.
+> I am opening this so you can correct how your project is described rather than
+> find out later. The entry is a single JSON object in
+> `backend/snapstudio_core/data/ecosystem.json` — a PR is welcome, and removal is a
+> one-line change if you would rather not be listed.
+
+## OrcaSlicer ImageMap — `sentientstardust-dev/OrcaSlicer-ImageMap`
+
+**Not posted.** Issues are disabled on that repository. The note that would have
+been sent is kept here so the entry's description is still auditable:
+
+> Snapmaker Studio (MIT, local-only) reads a 3MF before slicing and suggests the
+> tool that fits what it found. When it finds texture parts in a project it names
+> ImageMap, with this reason:
+>
+> > This model carries image-texture data, which most slicers throw away and this
+> > fork can actually print.
+>
+> It shows AGPL-3.0 and a beta caution taken from the project's own README.
+> Nothing is installed or launched by Studio.
 
 ## Snapmaker Orca — `Snapmaker/OrcaSlicer`
 

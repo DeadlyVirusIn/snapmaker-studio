@@ -26,8 +26,13 @@ downloading an installer should be able to see how it was produced.
 | Approver | Kunal Khurana (@DeadlyVirusIn) | Approves a signing request for a release |
 
 This is a single-maintainer project; the same person holds all three roles.
-Multi-factor authentication is enabled on the GitHub account and on any signing
-service account.
+
+SignPath Foundation requires that "all team members must use multi-factor
+authentication for both SignPath and source code repository access". No signing
+service account exists yet, so this page does not claim one is protected. **The
+maintainer must confirm MFA is enabled on the GitHub account and enable it on the
+SignPath account at creation**; this sentence is replaced with a statement of fact
+once both are true.
 
 ## How a release is produced
 
@@ -90,3 +95,64 @@ It does not remove the warning immediately —
 [Microsoft's own documentation](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/smartscreen-reputation)
 states that EV certificates no longer bypass SmartScreen either. Reputation builds
 over clean installs. This project will not claim otherwise.
+
+## Application to SignPath Foundation — prepared
+
+Everything the Foundation asks for is written down. What remains is a form
+submission that legally represents the maintainer, which is theirs to send.
+
+**Apply at:** <https://signpath.org/apply>
+**Terms (the eligibility list below is taken from them):** <https://signpath.org/terms>
+
+### Eligibility, answered
+
+| Criterion | This project |
+|---|---|
+| No malware | A local-first pre-print checker. No network egress in the pipeline, no telemetry, no account. |
+| OSI-approved licence | MIT. |
+| No proprietary code | None. Dependencies are declared in `desktop/package.json`, `desktop/src-tauri/Cargo.toml` and `backend/pyproject.toml`, and listed in [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). |
+| Maintained | Active; see the commit history and [CHANGELOG.md](../CHANGELOG.md). |
+| Released in signable form | Windows NSIS installer, published on GitHub Releases with a SHA256. |
+| Documented | [README.md](../README.md), [docs/windows-install.md](windows-install.md), [docs/ARCHITECTURE.md](ARCHITECTURE.md), and the verification record in [TRUST_STATUS.md](TRUST_STATUS.md). |
+| Sign your own project only | Single maintainer; signing team and maintenance owner are the same person. |
+| Sign your own binaries only | Built from this repository by `npm run release:windows`. |
+| No hacking tools | Nothing in the product exploits or circumvents anything. The printer interface is read-only except for actions the user explicitly confirms. |
+| Respect user privacy | No data transfer occurs except read-only requests to a printer address the user enters. See the Privacy section above and [SECURITY.md](SECURITY.md). |
+| Announce system changes | The installer creates its own program directory and Start-menu entry, and nothing else. |
+| Provide uninstallation | `uninstall.exe` and Windows Settings → Apps; removal is asserted by the acceptance harness. |
+| Code signing policy published | This page. |
+| Team roles listed | Above. |
+| Attribution | Above; it will be displayed on the README and the release page once signing is active. |
+| MFA on all accounts | **Outstanding — the one thing not yet true.** See the note under Team and roles. |
+
+### Prepared form answers
+
+- **Project name:** Snapmaker Studio
+- **Project URL:** <https://github.com/DeadlyVirusIn/snapmaker-studio>
+- **Licence:** MIT
+- **Description:** A local-first desktop application that reads a 3D project file,
+  explains the print risks it can prove, compares the project against the user's
+  own Snapmaker U1 over the local network, prepares a corrected copy without
+  modifying the original, and hands that copy to a slicer. No account, no cloud,
+  no telemetry.
+- **Artifacts to be signed:** the Windows NSIS installer
+  (`Snapmaker.Studio_<version>_x64-setup.exe`) and the two executables it
+  contains, `snapmaker-studio-desktop.exe` and `snapstudio-api.exe`.
+- **Build system:** GitHub, built from `main`; release build is
+  `npm run release:windows` (PyInstaller + Tauri + NSIS).
+- **Code signing policy URL:** this page.
+
+### CI integration, once approved
+
+Signing runs as a step in a release workflow, after the existing CI checks and the
+installer build, using SignPath's GitHub Action with the project's signing policy
+and an API token held as a repository secret. The token is never written to the
+repository, and the workflow signs only the artifact produced by the build in the
+same run.
+
+### The irreducible step
+
+Submitting the application at <https://signpath.org/apply> accepts terms on the
+maintainer's behalf and requires their name and email. Enabling MFA on the
+resulting account is the same kind of act. Nothing else about signing is
+outstanding.
