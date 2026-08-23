@@ -121,34 +121,41 @@ Six colours on four toolheads is not one problem but two, and Studio says which:
 
 ![Colours and toolheads](docs/screenshots/beta22/colour_plan.jpg)
 
-Captured from the running beta.22 build on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission index: [docs/SUBMISSION_STATUS.md](docs/SUBMISSION_STATUS.md).
+Captured from the running build on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission index: [docs/SUBMISSION_STATUS.md](docs/SUBMISSION_STATUS.md).
 
-## What's new in beta.22 — object placement, and the right tool for your file
+## What's new in beta.23 — this project, on your printer
 
-**Where your objects actually sit.** A project made for a bigger printer carries
-that printer's coordinates, so a small part can be well inside the U1's limits
-and still land off the plate. Studio names the object, the edge and the
-millimetres, and can move the whole arrangement onto the plate in a **new copy** —
-your original is untouched and the creator's layout, rotation and scale are kept.
-Multi-plate projects are checked but never moved: the spacing between plates
-isn't recorded in the file, so any move would be a guess. Each plate is judged on
-whether its own contents fit a U1 plate.
+**Before you slice.** Studio now compares what your project needs against the
+printer it can actually see: materials against toolheads, the project's nozzle
+against your printer's, the objects against your printer's real bed, and the
+features a prepared copy relies on against your firmware's own list. Where Studio
+genuinely cannot read something — stock firmware doesn't report which nozzle is
+fitted — it says *"check this yourself"*, never *"unsupported"*.
 
-**Best tool for this project.** Studio reads what your project contains and names
-the open-source tool that fits it — mixed nozzle sizes, texture data, an
-already-sliced file each point somewhere different — with the reason from your
-file, its licence, and a warning for experimental community projects. Nothing
-special detected? It says so and sends you to Snapmaker Orca.
+**What survived preparing this copy.** Every other converter says "converted".
+Studio lists what stayed identical, what it changed and why, what it could not
+carry over — and, separately, what it could not check at all. It only says nothing
+was lost when that audit proves it for your file.
 
-**Downloaded projects open cleanly.** Preparing a U1 copy now also corrects what
-stops Snapmaker Orca behaving properly on a U1 — Exclude Object, an *automatic*
-brim, tree supports with variable layer height, invalid filament lists, and the
-original printer's leftover sliced output — and nothing else. Your settings stay
-yours, and every change shows its old value and reason.
+**Changes Studio made, and the way back.** Every file Studio produces is recorded
+with its changes, their old values and the reason. One button returns you to your
+original — which was never modified, so going back just reopens the untouched file.
 
-**Real costs when the file knows them.** A sliced project records what its slicer
-computed. Studio costs from those figures, per material, and says where they came
-from. If the project isn't sliced, it says so rather than inventing a number.
+**Six colours, four toolheads.** Not one problem but two. Studio separates colours
+that share layers (each needs a toolhead) from colours introduced part-way up
+(which may be planned swaps, at the height shown) — and says plainly when it
+cannot tell, because painted colour can't be read without slicing.
+
+**A prepared copy is now labelled correctly.** A 0.12 mm project used to come out
+stamped "0.20 Standard" — right settings, wrong label.
+
+**One command for anyone evaluating Studio.** `u1convert selfcheck` runs the real
+pipeline end to end and prints a pass/fail table. It runs in CI too.
+
+**Removed:** multi-plate repositioning. A review reproduced a case where it placed
+a plate off the bed while reporting success, so it was withdrawn rather than
+patched — the spacing between plates isn't in the file. Multi-plate projects are
+still checked, and Studio points you at Snapmaker Orca's Arrange.
 
 See [RELEASE_NOTES.md](docs/RELEASE_NOTES.md) ·
 [docs/innovation-fund/](docs/innovation-fund/) ·
@@ -184,10 +191,10 @@ Carried forward: hardware-verified **Printer Hub**, **Print Quality** evidence g
 your own file, **Plate Color Remap**, **Source Check**, Model Browser. All local, advisory
 — no cloud, no account, no guarantees. Studio does not slice; Orca does.
 
-- Release: [v0.4.0-beta.22](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.22)
-- Installer: `Snapmaker.Studio_0.4.0-beta.22_x64-setup.exe`
-- Size: 16,214,207 bytes
-- SHA256: `ad870d6587de34aa3d5e50f3070b76d4878cacde17548e4fe0a84ad8415f6994`
+- Release: [v0.4.0-beta.23](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.23)
+- Installer: `Snapmaker.Studio_0.4.0-beta.23_x64-setup.exe`
+- Size: 16,261,551 bytes
+- SHA256: `30c8895175e37ccf61b9f61cc9996b2b37553e490e00cbccfc60ba508aa1ac47`
 - Canonical release metadata: [docs/RELEASE_METADATA.md](docs/RELEASE_METADATA.md)
 - Unsigned beta: the installer is not code-signed yet, so Windows SmartScreen may show “Unknown publisher.” That is expected for this beta. Download only from the release link above and verify the SHA256 before installing.
 
@@ -197,7 +204,7 @@ Install:
 2. Verify the checksum. It must match the SHA256 published on the release:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.22_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.23_x64-setup.exe
 ```
 
 3. Run it. On the SmartScreen prompt choose **More info → Run anyway** only after verifying the hash.

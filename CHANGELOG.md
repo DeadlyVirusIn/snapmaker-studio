@@ -6,6 +6,75 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.4.0-beta.23] - 2026-08-23
+
+### Added
+- **Before you slice** — a project↔printer preflight. Materials against toolheads,
+  the project's nozzle against the printer's, the objects against the printer's
+  real bed, the capabilities a prepared project relies on against the firmware's
+  own list, and whether the machine is busy. Every check carries its evidence, a
+  confidence and what to do. Unknowns stay unknown: stock firmware does not report
+  the fitted nozzle, so Studio says "check this yourself" and never "unsupported".
+- **What survived preparing this copy** — a fidelity audit classifying every
+  element as preserved exactly or semantically, deliberately changed or removed,
+  added, unsupported, or unverified. The last two exist because a report that can
+  only say preserved-or-changed has to lie about the parts it does not understand.
+  Studio may only claim nothing was lost when the audit proves it for that file.
+- **Changes Studio made** — a fix ledger recording every file Studio produced with
+  its changes, old values and reasons, plus "return to the original". The original
+  was never written to, so going back points the workflow at an untouched file.
+  A shared export strips file locations.
+- **Colours and toolheads** — a >4-colour project is classified into colours that
+  share layers, colours introduced at a height (with that height, and a layer
+  number only ever as a labelled estimate), and colours Studio cannot classify.
+  Painted colour cannot be read without slicing and is never put in the optimistic
+  bucket.
+- `u1convert selfcheck` — runs the real pipeline end to end over a generated
+  project and prints a pass/fail table. Exits non-zero on failure and runs in CI.
+- CLI: `preflight`, `fidelity`, `colors`, `history`. API: `/preflight`,
+  `/fidelity`, `/color_plan`, `/fix_history`, `/fix_original`,
+  `/fix_history_export`.
+- Current screenshots from the running build, and `examples/demo_u1_showcase.3mf`.
+- `THIRD_PARTY_NOTICES.md`; "Run from source" in CONTRIBUTING.md.
+
+### Changed
+- A prepared copy is now labelled with the U1 process preset that matches its
+  actual layer height. A 0.12 mm project was being stamped "0.20 Standard" —
+  correct settings under a wrong label, which Snapmaker Orca then reported as a
+  customised preset with no explanation.
+- Placement, colour planning and preflight appear on "Check my model", the route a
+  beginner actually lands on, instead of only under More tools.
+- The prepare-mode choice marks Preserve as Recommended and describes both options
+  by outcome rather than by setting name.
+- Colours & Materials answers its own page-title question instead of linking away,
+  and shares the model-path hook every other tool page uses.
+
+### Removed
+- **Multi-plate repositioning.** An independent review reproduced a derived plate
+  stride wrong by 79%, placing a plate entirely off the bed while reporting
+  success; the guard meant to catch it was a tautology for two-plate projects. The
+  plate spacing is not recorded in the file, so the feature was withdrawn rather
+  than patched. Multi-plate projects are still checked — each plate on whether its
+  own contents fit a U1 plate — and Studio points at Snapmaker Orca's Arrange.
+
+### Fixed
+- **`snapstudio_api` was excluded from the installed package**, so on a clean
+  install the loopback service could not be imported and `selfcheck` failed. Tests
+  masked it because pytest puts `backend/` on the path.
+- Two ecosystem registry entries could never be recommended while the docs said
+  they were listed; a test now asserts every entry is reachable.
+- `color_plan` read object `extruder` values as 0-based while `plate_remap` — the
+  module validated against a real nine-plate U1 project — reads them 1-based.
+- The colour card defaulted to four toolheads and implied it had read the printer.
+- Moonraker responses are read through a byte cap, like the 3MF reader.
+- A model part that is not valid UTF-8 no longer raises out of a function
+  documented as always returning a result.
+- `docs/INNOVATION_FUND.md` claimed a signed installer. It is unsigned.
+
+### Security
+- CI runs `cargo check`; the Rust shell owns the security boundary and nothing was
+  verifying it.
+
 ## [0.4.0-beta.22] - 2026-08-22
 
 ### Added

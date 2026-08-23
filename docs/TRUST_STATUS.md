@@ -4,6 +4,66 @@ Honest, current verification state for the latest beta. This file does **not**
 mark a release "accepted" until the interactive install acceptance below is
 completed and recorded.
 
+## v0.4.0-beta.23 — PARTIAL / PENDING (not accepted)
+
+**Project to printer preflight, fidelity audit, fix ledger, colour planning,
+preset labelling, one-command self-check.** This release also removes a feature —
+see "Withdrawn" below — and fixes two defects an independent review found in
+beta.22, one of which broke the engine package on a clean install.
+
+### Automated — verified in this environment
+
+| Check | Status | Evidence |
+|---|---|---|
+| Backend tests | **PASS** | `pytest` — 621 passed, 3 skipped |
+| End-to-end pipeline | **PASS** | `u1convert selfcheck` — 15/15 over production code paths, also run in CI |
+| Desktop tests | **PASS** | `npm run test` — 247 passed across 31 files |
+| TypeScript | **PASS** | `npx tsc --noEmit` clean |
+| Production frontend build | **PASS** | `npm run build` |
+| Rust shell | **PASS** | `cargo check` clean — and now enforced in CI, which it was not before |
+| Installer builds | **PASS** | `build:sidecar` + `tauri build` produced the NSIS installer |
+| Installer integrity / SHA256 | **PASS** | See [RELEASE_METADATA.md](RELEASE_METADATA.md) |
+| Release-document consistency | **PASS** | `test_release_docs.py` — it failed against this tree until the notes and this file were updated, which is what it is for |
+| Clean-install package contents | **PASS** | `snapstudio_api` is now included. On beta.22 it was not, so the loopback service could not be imported and `selfcheck` scored 13/15 |
+| Preflight honesty | **PASS** | `test_preflight.py` — every unknown stays unknown, asserted on the wording of every unknown the module can produce |
+| Fidelity audit | **PASS** | `test_fidelity.py` — 22 cases, most building a deliberately wrong copy and asserting Studio reports it as unverified |
+| Fix ledger | **PASS** | `test_fix_ledger.py` — the original is never written to; a shared export cannot carry a directory layout |
+| Colour planning | **PASS** | `test_color_plan.py` — painted colour never classified as swappable; layer numbers only ever estimates |
+| Ecosystem registry | **PASS** | `test_ecosystem.py` — every entry is reachable; licences are bare identifiers |
+| Preset labelling | **PASS** | `test_process_preset.py` — a 0.12 mm project is no longer labelled 0.20 Standard, and an unmatched height gets no invented name |
+
+### Withdrawn in this release
+
+| Item | Why |
+|---|---|
+| Multi-plate repositioning | An independent review reproduced a derived plate stride wrong by 79%, placing a plate off the bed while reporting success, and the guard meant to catch it was a tautology for two-plate projects. The plate spacing is not in the file, so it was removed rather than patched. Multi-plate projects are still checked per plate. |
+
+### Requires the installed application or real hardware — PENDING
+
+Observed in the **development build** on 2026-08-23 and evidenced by
+`docs/screenshots/beta22/`: the placement card and its fix, the preflight card and
+its unknowns, the fidelity report, the fix ledger, the colour plan and the
+best-tool panel. That proves the features work; it does not prove the installer
+ships them.
+
+| Check | Status | Exact manual check |
+|---|---|---|
+| Scripted install smoke | **PENDING** | Run the published installer on a clean Windows 10/11 x64 profile; it completes and appears in the Start menu |
+| Launch | **PENDING** | Launch from the Start menu; the main window appears with no error dialog |
+| Sidecar boot | **PENDING** | One `snapstudio-api.exe` runs and the app shows live data |
+| Close / no orphan | **PENDING** | Close the window; no `snapstudio-api.exe` remains |
+| Reopen | **PENDING** | Launch again; previously used files still open |
+| Uninstall | **PENDING** | Uninstall; the install directory is removed and no sidecar remains |
+| Beginner path (GUI) | **PENDING** | Open a 3MF via "Check my model" and confirm placement, colours and preflight all render there |
+| Fix Ledger return (GUI) | **PENDING** | Press "Return to the original" and confirm the workflow reopens the untouched original |
+| Open in Snapmaker Orca | **PENDING** | With Orca installed, the handoff opens the prepared file and Studio issues no further commands |
+| Printer discovery (real U1) | **PENDING** | With a U1 on the LAN and Advanced Mode on, discovery finds it; with it off, the message names Advanced Mode |
+| Preflight against real hardware | **PENDING** | Confirm `loaded_filaments()` recognises this firmware's object, or correctly reports "not reported" |
+| Interactive GUI acceptance | **PENDING** | Full beginner walkthrough on the installed build |
+
+| Overall trust status | **PARTIAL / PENDING — not accepted** |
+|---|---|
+
 ## v0.4.0-beta.22 — PARTIAL / PENDING (not accepted)
 
 **Object placement, project ↔ printer preflight, fidelity audit, fix ledger, colour
