@@ -109,7 +109,7 @@
       "official": false,
       "role": "A browser extension that converts a MakerWorld project to a U1 project at the moment you download it, keeping the creator's own print profile.",
       "url": "https://github.com/Dragon2203/makerworld-to-snapmaker-u1",
-      "license": "MIT (parts derived from a PolyForm-Noncommercial project — see its notices)",
+      "license": "MIT",
       "platforms": [
         "windows",
         "macos",
@@ -126,7 +126,8 @@
           "reason": "This looks like a MakerWorld download authored for another printer. Converting it in the browser next time keeps the creator's profile intact from the start."
         }
       ],
-      "maturity": "stable"
+      "maturity": "stable",
+      "notes": "Its own notices state that some conversion logic and reference data derive from a PolyForm-Noncommercial project. Studio implements the same compatibility behaviours independently and uses no code or data from it."
     },
     {
       "id": "u1hub",
@@ -172,7 +173,14 @@
       "base_score": 0,
       "handoff": "link",
       "stage": "after-slicing",
-      "recommend_when": [],
+      "recommend_when": [
+        {
+          "trait": "is_sliced",
+          "op": "is_true",
+          "weight": 8,
+          "reason": "This project is already sliced, so a command-line toolkit can send it to the printer without opening a slicer again."
+        }
+      ],
       "maturity": "preview",
       "caution": "Command-line only, and young. Its safety gate asks a human to approve every print start — read its README first."
     },
@@ -193,7 +201,14 @@
       "base_score": 0,
       "handoff": "link",
       "stage": "after-slicing",
-      "recommend_when": [],
+      "recommend_when": [
+        {
+          "trait": "is_sliced",
+          "op": "is_true",
+          "weight": 6,
+          "reason": "Once a project is sliced, the printer's own web interface is the simplest place to send it — nothing to install."
+        }
+      ],
       "maturity": "stable"
     },
     {

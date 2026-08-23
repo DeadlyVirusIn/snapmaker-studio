@@ -53,11 +53,21 @@ def _url(host: str, port: int, path: str) -> str:
     return f"http://{validate_host(host)}:{int(port)}{path}"
 
 
+# A printer status response is a few kilobytes; the largest thing Moonraker
+# returns here is a Klipper object list. A LAN host that streams more than this is
+# either broken or hostile, and the 3MF reader is already careful about exactly
+# this, so the network path should be too.
+MAX_RESPONSE_BYTES = 8 * 1024 * 1024
+
+
 def _get(host: str, port: int, path: str, timeout: float) -> dict:
     """Read-only HTTP GET against Moonraker. Raises on failure."""
     req = urllib.request.Request(_url(host, port, path), method="GET")  # explicit: never anything but GET
     with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read())
+        raw = r.read(MAX_RESPONSE_BYTES + 1)
+    if len(raw) > MAX_RESPONSE_BYTES:
+        raise ValueError("the printer sent more data than Studio will read")
+    return json.loads(raw)
 
 
 def probe(host: str, port: int = DEFAULT_PORT, timeout: float = 2.0) -> dict:
@@ -78,6 +88,11 @@ def probe(host: str, port: int = DEFAULT_PORT, timeout: float = 2.0) -> dict:
 # the on-device nginx proxy on 80 (the same address the built-in Fluidd UI uses).
 # Which one is open varies with firmware build and whether the owner has turned on
 # Advanced Mode, so discovery tries both rather than assuming one.
+#
+# The :80 behaviour is documented in the README of U1 Print Hub
+# (https://github.com/dlgambill/u1hub, MIT) — a fact about the printer rather than
+# any of its code, but worth crediting where it was learned. See
+# THIRD_PARTY_NOTICES.md.
 CANDIDATE_PORTS = (DEFAULT_PORT, 80)
 
 # What to tell someone when nothing answers. The U1's web/Moonraker interface is

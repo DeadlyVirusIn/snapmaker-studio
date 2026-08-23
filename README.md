@@ -114,14 +114,12 @@ The desktop app — local-first, dark-first. The whole workflow in one place:
 | Object placement — the check no size test can do | The fix, in a new copy |
 |---|---|
 | ![Object placement and Before you slice](docs/screenshots/beta22/placement_and_preflight.jpg) | ![Moved onto the plate](docs/screenshots/beta22/placement_fixed.jpg) |
-| **What survived preparing the copy, and the way back** | **6 colours, 4 toolheads — and what that actually means** |
-| ![Fidelity report and fix ledger](docs/screenshots/beta22/fidelity_and_ledger.jpg) | ![Colour plan](docs/screenshots/beta22/colour_plan.jpg) |
+| **What survived preparing the copy, and the way back** | **Where Studio says "I can't tell"** |
+| ![Fidelity report and fix ledger](docs/screenshots/beta22/fidelity_and_ledger.jpg) | ![Preflight unknowns](docs/screenshots/beta22/preflight_unknowns.jpg) |
 
-Studio says *"Studio can't tell"* where it genuinely cannot read something from
-your printer — and says so in as many words, rather than turning "not detected"
-into "not supported":
+Six colours on four toolheads is not one problem but two, and Studio says which:
 
-![Preflight unknowns](docs/screenshots/beta22/preflight_unknowns.jpg)
+![Colours and toolheads](docs/screenshots/beta22/colour_plan.jpg)
 
 Captured from the running beta.22 build on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission index: [docs/SUBMISSION_STATUS.md](docs/SUBMISSION_STATUS.md).
 

@@ -206,7 +206,7 @@ def _make_handler(token: str):
                 try:
                     self._send(200, service.color_plan(
                         rv.require_path_string(data),
-                        toolheads=rv.optional_int(data, "toolheads", 4)))
+                        toolheads=(rv.optional_int(data, "toolheads", 0) or None)))
                 except ValidationError as e:
                     self._send(400, {"error": str(e)})
                 except Exception:

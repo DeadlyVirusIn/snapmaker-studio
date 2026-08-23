@@ -65,7 +65,7 @@ manage -> optimize, across the whole ecosystem.
 | # | Milestone | Outcome | Evidence |
 |---|---|---|---|
 | M1 | Reliable U1 conversion (DONE) | Bambu/Orca/Prusa/geometry/STL -> U1 profile copy | 112-file corpus, 100% passed the internal structural gate (not print success); review in Orca |
-| M2 | Public beta installer | Signed, branded one-click Windows app | Signed `0.3.0` installer; icon/branding shipped |
+| M2 | Public beta installer | Signed, branded one-click Windows app | `0.3.0` installer (unsigned — see docs/windows-code-signing.md); icon/branding shipped |
 | M3 | Project library + batch | Manage + convert a whole backlog | library UI + batch report |
 | M4 | Ecosystem breadth | PrusaSlicer/Cura/Creality adapters | corpus expanded across families |
 | M5 | Plugin SDK + certified U1 pack | Community profile packs; certified U1 | public SDK + first external pack |

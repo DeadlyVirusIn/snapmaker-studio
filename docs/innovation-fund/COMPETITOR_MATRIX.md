@@ -101,7 +101,7 @@ for code. Every entry below was inspected for behaviour and interface only.
 | Licence | **MIT shell, but** `LICENSE-POLYFORM` + `THIRD_PARTY_NOTICES.md` state that conversion logic *and bundled reference profiles* derive from a **PolyForm-Noncommercial-1.0.0** project — **treat as copy-unsafe** |
 | Activity | 12 releases, 21★, last push 2026-08-06 |
 | Killer feature | It converts at the point of choice, in the page, before a file exists locally — and reads the creator's selected profile from the page, which a desktop app never sees |
-| Weakness | Couples to the MakerWorld DOM: three of the last four releases fixed MakerWorld UI regressions. One domain pair only. No Chrome Web Store listing. It cannot verify its own output — its standing advice is "always review in Snapmaker Orca before printing" |
+| Weakness | Couples to the MakerWorld DOM: three of the last four releases fixed MakerWorld UI regressions. One domain pair only. No Chrome Web Store listing. It has no mechanism to check its own output; like Studio, it asks users to review the result in Snapmaker Orca before printing |
 | **Parity status** | Its documented conversion rules are implemented independently in Studio — see §3 |
 
 ### U1 Print Hub (u1hub) — the closest Printer Hub competitor
@@ -193,12 +193,14 @@ data was copied, which matters because its internals are PolyForm-Noncommercial.
 | Print-profile matching by layer height | **Not implemented** — Studio uses one U1 base profile. Tracked as remaining work |
 | Stock-OrcaSlicer output target toggle | **Not implemented** — deliberately out of scope; Studio targets Snapmaker Orca |
 
-Two things Studio does that the converter's documentation says it does not:
+Two things Studio adds on top of the same rule set:
 
-- **It verifies its own output.** Every prepared file is validated against the
-  source fingerprint, and a preservation guard rejects any changed setting that
-  the pipeline did not explain. The converter's own standing advice is to review
-  the result manually because it cannot check itself.
+- **It checks its own output.** Every prepared file is validated against the
+  source fingerprint, a preservation guard rejects any changed setting the
+  pipeline did not explain, and a fidelity report lists what survived — including
+  what it could not verify. Reviewing the result in Snapmaker Orca is still the
+  right advice, and Studio gives it too; the difference is that Studio also
+  arrives with a report.
 - **It works on any local file.** No browser, no single site, no DOM coupling.
 
 ---
@@ -223,7 +225,7 @@ Item 4 is new in this cycle and is the subject of
 | u1hub, snapmaker-u1-toolkit | MIT | read, reference, reuse with attribution |
 | Snapmaker Orca, upstream OrcaSlicer, PrusaSlicer, FOrcaSlicer, ImageMap, OctoPrint | AGPL-3.0 | interoperate over documented interfaces; **never read for code** |
 | Klipper, Moonraker, Fluidd, Mainsail, Extended Firmware | GPL-3.0 | speak their documented HTTP/JSON-RPC APIs; **never vendor code** |
-| makerworld-to-snapmaker-u1 | MIT shell over PolyForm-Noncommercial internals | learn documented behaviour; **never copy code or profile data** |
+| makerworld-to-snapmaker-u1 | MIT shell over PolyForm-Noncommercial-derived internals | learn documented behaviour; **never copy code or profile data** |
 | Snapmaker-U1-Config | none declared | **nothing** — no licence means all rights reserved |
 
 Every rule Studio implements from an external project's *behaviour* is written

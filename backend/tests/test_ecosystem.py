@@ -187,6 +187,45 @@ def test_shipped_registry_rules_reference_real_traits():
                 f"{tool['id']} matches on unknown trait {rule['trait']}"
 
 
+def test_every_shipped_tool_can_actually_be_recommended():
+    """A registry entry with no base score and no rules can never be returned, so
+    listing it advertises something the code cannot surface. Every entry has to be
+    reachable for at least one project."""
+    from snapstudio_core import project_traits as pt
+
+    unreachable = []
+    for tool in ecosystem.load_registry()["tools"]:
+        if tool.get("base_score"):
+            continue
+        rules = tool.get("recommend_when") or []
+        if not rules:
+            unreachable.append(tool["id"])
+            continue
+        # Build the trait vector this tool's own rules ask for and check it fires.
+        traits = {}
+        for rule in rules:
+            op, value = rule["op"], rule.get("value")
+            traits[rule["trait"]] = {
+                "is_true": True, "is_false": False,
+                "equals": value, "at_least": value,
+            }[op]
+        out = ecosystem.recommend(traits)
+        found = [e["id"] for e in [out["primary"], *out["alternatives"]] if e]
+        if tool["id"] not in found:
+            unreachable.append(tool["id"])
+    assert not unreachable, f"these tools can never be recommended: {unreachable}"
+
+
+def test_licences_are_bare_identifiers_not_commentary():
+    """Every entry gets the same treatment: an SPDX-style string. Nuance about a
+    project's provenance belongs in `notes`, not in a licence field shown to users
+    inside a competing product."""
+    for tool in ecosystem.load_registry()["tools"]:
+        licence = tool["license"]
+        assert len(licence) <= 40, f"{tool['id']} has commentary in its licence field"
+        assert "(" not in licence, f"{tool['id']} has a parenthetical in its licence field"
+
+
 def test_shipped_registry_declares_a_license_for_every_tool():
     """Licence is shown in the UI so nobody installs an AGPL fork unaware."""
     for tool in ecosystem.load_registry()["tools"]:

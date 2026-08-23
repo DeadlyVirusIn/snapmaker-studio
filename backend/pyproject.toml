@@ -31,4 +31,4 @@ testpaths = ["tests"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["snapstudio_core*", "u1convert*"]
+include = ["snapstudio_core*", "snapstudio_api*", "u1convert*"]

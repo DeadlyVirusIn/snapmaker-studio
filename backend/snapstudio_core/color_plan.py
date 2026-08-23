@@ -131,8 +131,14 @@ def _colour_entry(index: int, colour: str | None, material: str | None,
     return entry
 
 
-def analyse(path: str, toolheads: int = DEFAULT_TOOLHEADS) -> dict:
-    """Classify a project's colours against the number of toolheads available."""
+def analyse(path: str, toolheads: int | None = None) -> dict:
+    """Classify a project's colours against the number of toolheads available.
+
+    ``toolheads`` should be the count a printer actually reported. When it is
+    None, the U1's published four are used and the result says so — the caller
+    must not present a default as a reading from the machine.
+    """
+    measured = toolheads is not None
     try:
         tm = ThreeMF.open(path)
     except UnsafeArchive as e:
@@ -150,8 +156,10 @@ def analyse(path: str, toolheads: int = DEFAULT_TOOLHEADS) -> dict:
     tools = max(1, int(toolheads or DEFAULT_TOOLHEADS))
 
     model_settings = _text(tm, MODEL_SETTINGS)
-    # Object/part assignments are 0-based in the file and 1-based in the UI.
-    assigned = {int(v) + 1 for v in _EXTRUDER_RE.findall(model_settings)}
+    # Object/part `extruder` values are 1-based, the same convention plate_remap
+    # uses — that module's mapping was validated against a real nine-plate U1
+    # project, so the two must agree or one of them is wrong on real files.
+    assigned = {int(v) for v in _EXTRUDER_RE.findall(model_settings)}
     assigned = {i for i in assigned if 1 <= i <= total}
 
     painted_triangles = 0
@@ -212,6 +220,10 @@ def analyse(path: str, toolheads: int = DEFAULT_TOOLHEADS) -> dict:
         "available": True,
         "color_count": total,
         "toolheads": tools,
+        "toolheads_measured": measured,
+        "toolheads_source": ("your printer reported this many toolheads" if measured
+                             else "the Snapmaker U1's published four toolheads — "
+                                  "Studio did not read this from a printer"),
         "painted_regions": painted,
         "painted_marker_count": painted_triangles,
         "simultaneous": simultaneous,

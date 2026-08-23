@@ -131,14 +131,6 @@ def test_arrangement_too_wide_is_not_called_fixable(tmp_path):
     assert "wider than the plate" in out["summary"]
 
 
-def test_multi_plate_project_is_refused_rather_than_guessed(tmp_path):
-    p = _write(tmp_path, "multi.3mf", [(1, _translate(400, 100))], plates=3)
-    out = pp.assess(p)
-    assert out["plate_count"] == 3
-    assert out["fixable"] is False
-    assert "Arrange" in out["summary"]
-
-
 def test_unreadable_file_is_unavailable_not_an_exception(tmp_path):
     p = tmp_path / "junk.3mf"
     p.write_bytes(b"not a zip")
@@ -256,7 +248,14 @@ def test_fix_result_explains_what_was_kept(tmp_path):
     assert res["changes"][0]["kept"].startswith("Layout, rotation, scale")
 
 
-# --- multi-plate grids ------------------------------------------------------
+# --- multi-plate projects ---------------------------------------------------
+#
+# Studio does not reposition these. An independent review reproduced a case where
+# the derived plate stride was 690 mm against a true 370 mm and the second plate
+# was placed entirely off the bed while the result reported success. The spacing
+# between plates is not in the file, so the feature was withdrawn rather than
+# patched. What remains is the part that does not depend on the grid: whether
+# each plate's own contents fit a U1 plate.
 
 def _multi_plate_project(tmp_path, name, plates: dict, *, printable_area=None,
                          printer="Bambu Lab X1 Carbon"):
@@ -282,41 +281,66 @@ def _multi_plate_project(tmp_path, name, plates: dict, *, printable_area=None,
     return str(p)
 
 
-# A 350 mm source bed with a 20 mm gap between plates: stride 370.
 SOURCE_350 = ["0x0", "350x0", "350x350", "0x350"]
 
 
-def test_plate_grid_spacing_is_measured_from_the_file(tmp_path):
+def test_a_plate_far_along_the_grid_is_not_called_off_the_plate(tmp_path):
+    """Plate 3 legitimately sits hundreds of millimetres along X. That is the
+    authoring slicer's grid, not a fault in the project."""
     p = _multi_plate_project(tmp_path, "grid.3mf", {
         1: [(1, 170, 170)],
         2: [(2, 540, 170)],
         3: [(3, 910, 170)],
     }, printable_area=SOURCE_350)
-    grid = pp.assess(p)["plate_grid"]
-    assert grid["ok"] is True
-    assert grid["stride"] == 370.0
-    assert grid["gap"] == 20.0    # 370 stride minus the 350 mm source bed
+    out = pp.assess(p)
+    assert out["available"] is True
+    assert out["off_plate"] == []
+    assert len(out["plate_fit"]) == 3
+    assert all(row["fits"] for row in out["plate_fit"])
 
 
-def test_unevenly_spaced_plates_are_refused_rather_than_guessed(tmp_path):
-    p = _multi_plate_project(tmp_path, "uneven.3mf", {
+def test_multi_plate_projects_are_never_repositioned(tmp_path):
+    out_dir = tmp_path / "out"
+    p = _multi_plate_project(tmp_path, "multi.3mf", {
         1: [(1, 170, 170)],
         2: [(2, 540, 170)],
-        3: [(3, 1500, 170)],   # nowhere near the fitted grid
     }, printable_area=SOURCE_350)
     out = pp.assess(p)
-    assert out["plate_grid"]["ok"] is False
+    assert out["fixable"] is False
+    assert "does not reposition" in out["summary"]
+    res = pp.prepare_placed_copy(p, out_dir=str(out_dir))
+    assert res["ok"] is False
+    assert not out_dir.exists() or list(out_dir.iterdir()) == []
+
+
+def test_the_refusal_explains_why_rather_than_just_declining(tmp_path):
+    p = _multi_plate_project(tmp_path, "why.3mf", {
+        1: [(1, 170, 170)], 2: [(2, 540, 170)],
+    }, printable_area=SOURCE_350)
+    summary = pp.assess(p)["summary"]
+    assert "not recorded in the file" in summary or "does not reposition" in summary
+
+
+def test_a_plate_whose_contents_are_too_big_is_reported(tmp_path):
+    """This check does not depend on the grid, so Studio can still make it."""
+    p = _multi_plate_project(tmp_path, "big.3mf", {
+        1: [(1, 170, 170)],
+        2: [(2, 400, 170), (3, 900, 170)],   # spans 510 mm — wider than a U1 plate
+    }, printable_area=SOURCE_350)
+    out = pp.assess(p)
+    oversized = out["oversized_plates"]
+    assert [row["plate"] for row in oversized] == [2]
+    assert "larger than the U1" in oversized[0]["reason"]
+    # The objects on that plate are flagged, the ones on plate 1 are not.
+    flagged = {row["object_id"] for row in out["off_plate"]}
+    assert flagged == {"2", "3"}
     assert out["fixable"] is False
 
 
-def test_an_object_on_no_plate_stops_the_whole_fix(tmp_path):
-    """Studio cannot know which plate an unlisted object belongs to, so it moves
-    nothing rather than stranding it."""
+def test_an_object_on_no_plate_is_reported(tmp_path):
     p = _multi_plate_project(tmp_path, "orphan.3mf", {
-        1: [(1, 170, 170)],
-        2: [(2, 540, 170)],
+        1: [(1, 170, 170)], 2: [(2, 540, 170)],
     }, printable_area=SOURCE_350)
-    # Add a build item for an object no plate lists.
     with zipfile.ZipFile(p) as z:
         parts = {n: z.read(n) for n in z.namelist()}
     parts["3D/3dmodel.model"] = _model(
@@ -328,74 +352,29 @@ def test_an_object_on_no_plate_stops_the_whole_fix(tmp_path):
     out = pp.assess(str(p2))
     assert [u["object_id"] for u in out["unresolved_objects"]] == ["3"]
     assert out["fixable"] is False
-    assert "not listed on any plate" in out["summary"]
 
 
-def test_each_plate_is_judged_against_its_own_slot(tmp_path):
-    """Plate 2 sits a bed-width along X by design; that is not "off the plate"."""
-    p = _multi_plate_project(tmp_path, "slots.3mf", {
-        1: [(1, 130, 130)],
-        2: [(2, 500, 130)],
-    }, printable_area=SOURCE_350)
-    assert pp.assess(p)["off_plate"] == []
-
-
-def test_multi_plate_objects_beyond_the_u1_plate_are_caught_and_fixable(tmp_path):
-    p = _multi_plate_project(tmp_path, "wide2.3mf", {
-        1: [(1, 300, 130)],     # 300 mm along a 350 bed: off a 270 U1 plate
-        2: [(2, 670, 130)],
-    }, printable_area=SOURCE_350)
-    out = pp.assess(p)
-    assert len(out["off_plate"]) == 2
-    assert out["fixable"] is True
-    assert set(out["plate_offsets"]) == {"1", "2"}
-
-
-def test_multi_plate_fix_moves_every_plate_and_keeps_their_spacing(tmp_path):
-    p = _multi_plate_project(tmp_path, "fixmulti.3mf", {
-        1: [(1, 300, 130)],
-        2: [(2, 670, 130)],
-    }, printable_area=SOURCE_350)
-    res = pp.prepare_placed_copy(p, out_dir=str(tmp_path / "out"))
-    assert res["ok"] is True
-    assert res["objects_moved"] == 2
-    assert res["after"]["off_plate"] == []
-    # The gap the creator had between plates survives: the U1 grid stride is the
-    # U1 bed width plus that same 20 mm gap.
-    after_grid = res["after"]["plate_grid"]
-    assert abs(after_grid["stride"] - (pp.u1_bed_rect()["max_x"]
-                                       - pp.u1_bed_rect()["min_x"] + 20.0)) < 0.5
-
-
-def test_multi_plate_fix_is_all_or_nothing(tmp_path):
-    """One plate that cannot fit a U1 plate stops the whole operation."""
-    out_dir = tmp_path / "out"
-    p = _multi_plate_project(tmp_path, "onebad.3mf", {
-        1: [(1, 300, 130)],
-        2: [(2, 400, 130), (3, 940, 130)],   # spans far more than a U1 plate
-    }, printable_area=SOURCE_350)
-    out = pp.assess(p)
-    assert out["skipped_plates"]
-    assert out["fixable"] is False
-    res = pp.prepare_placed_copy(p, out_dir=str(out_dir))
-    assert res["ok"] is False
-    assert not out_dir.exists() or list(out_dir.iterdir()) == []
-
-
-def test_multi_plate_fix_keeps_relative_layout_inside_a_plate(tmp_path):
-    p = _multi_plate_project(tmp_path, "pairplate.3mf", {
-        1: [(1, 280, 130), (2, 320, 130)],
-        2: [(3, 650, 130)],
-    }, printable_area=SOURCE_350)
-    res = pp.prepare_placed_copy(p, out_dir=str(tmp_path / "out"))
-    assert res["ok"] is True
-    positions = {i["object_id"]: i["position"]["x"] for i in res["after"]["items"]}
-    assert round(positions["2"] - positions["1"], 2) == 40.0
-
-
-def test_single_plate_project_still_uses_the_simple_path(tmp_path):
+def test_single_plate_projects_are_unaffected(tmp_path):
     p = _write(tmp_path, "one.3mf", [(1, _translate(320, 100))],
                printable_area=["0x0", "350x0", "350x350", "0x350"])
     out = pp.assess(p)
-    assert out["plate_grid"] is None
+    assert out["plate_fit"] == []
     assert out["suggested_offset"] is not None
+    assert out["fixable"] is True
+
+
+def test_a_model_part_that_is_not_text_does_not_raise(tmp_path):
+    """prepare_placed_copy is documented as always returning a result dict."""
+    p = _write(tmp_path, "bin.3mf", [(1, _translate(320, 100))],
+               printable_area=["0x0", "350x0", "350x350", "0x350"])
+    with zipfile.ZipFile(p) as z:
+        parts = {n: z.read(n) for n in z.namelist()}
+    good = pp.assess(p)
+    assert good["fixable"] is True
+    parts["3D/3dmodel.model"] = bytes([0xff, 0xfe]) + b" not text at all"
+    p2 = tmp_path / "bin2.3mf"
+    with zipfile.ZipFile(p2, "w") as z:
+        for n, d in parts.items():
+            z.writestr(n, d)
+    res = pp.prepare_placed_copy(str(p2), out_dir=str(tmp_path / "o"))
+    assert res["ok"] is False

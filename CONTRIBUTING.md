@@ -42,3 +42,49 @@ Use the bug-report or feature-request template. For bugs, include your OS, Pytho
 ## License
 
 By contributing, you agree that your contributions are released under the project's [MIT License](LICENSE).
+
+## Run from source
+
+The desktop app is a Tauri shell (Rust) around a React front end, talking to a
+Python engine over loopback. All three have to be present to run it.
+
+**Prerequisites**
+
+| | |
+|---|---|
+| Python | 3.13 or newer |
+| Node | 22 |
+| Rust | stable toolchain (`rustup`) |
+| Windows | WebView2 runtime (preinstalled on Windows 11) and MSVC build tools |
+
+**The engine only** — enough for every backend test and the whole CLI:
+
+```bash
+cd backend
+pip install -e ".[dev]"
+pytest
+u1convert selfcheck        # runs the real pipeline end to end
+```
+
+**The desktop app**
+
+```bash
+cd desktop
+npm ci
+npm run build:sidecar      # freezes the Python engine (needs pyinstaller + lxml)
+npm run tauri dev          # launches the app against the live engine
+```
+
+`npm run tauri dev` uses the engine from `backend/` directly, so you do not need
+to rebuild the sidecar while working on Python. Rebuild it before
+`npm run release:windows`.
+
+**Checks before opening a PR**
+
+```bash
+cd backend  && pytest && u1convert selfcheck
+cd desktop  && npm run test && npx tsc --noEmit && npx vite build
+cd desktop/src-tauri && cargo check
+```
+
+CI runs all of these on every pull request (`.github/workflows/ci.yml`).

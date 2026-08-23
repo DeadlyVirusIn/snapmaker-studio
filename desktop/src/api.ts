@@ -1367,6 +1367,8 @@ export interface ColorPlan {
   reason?: string;
   color_count: number;
   toolheads: number;
+  toolheads_measured: boolean;
+  toolheads_source: string;
   painted_regions: boolean;
   simultaneous: ColorUse[];
   layer_based: ColorUse[];
@@ -1378,12 +1380,12 @@ export interface ColorPlan {
   disclaimer?: string;
 }
 
-export async function colorPlan(path: string, toolheads = 4): Promise<ColorPlan> {
+export async function colorPlan(path: string, toolheads?: number): Promise<ColorPlan> {
   const { port, token } = await apiInfo();
   const r = await fetch(`http://127.0.0.1:${port}/color_plan`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Auth-Token": token },
-    body: JSON.stringify({ path, toolheads }),
+    body: JSON.stringify({ path, toolheads: toolheads ?? 0 }),
   });
   if (!r.ok) throw new Error(`colour plan failed (${r.status})`);
   return r.json();

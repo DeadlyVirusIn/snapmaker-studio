@@ -17,7 +17,10 @@ from snapstudio_core import color_plan as cp
 def _project(tmp_path, name="p.3mf", *, colours, materials=None, objects=(),
              layer_changes=(), painted=False, layer_height="0.2",
              first_layer="0.2"):
-    """objects: iterable of 1-based slot numbers assigned to objects on the plate."""
+    """objects: iterable of 1-based slot numbers assigned to objects on the plate.
+
+    The file records these 1-based, matching plate_remap's convention.
+    """
     settings = {
         "printer_model": "Snapmaker U1",
         "filament_colour": list(colours),
@@ -26,7 +29,7 @@ def _project(tmp_path, name="p.3mf", *, colours, materials=None, objects=(),
         "initial_layer_print_height": first_layer,
     }
     object_xml = "".join(
-        f'<object id="{i + 1}"><metadata key="extruder" value="{slot - 1}"/></object>'
+        f'<object id="{i + 1}"><metadata key="extruder" value="{slot}"/></object>'
         for i, slot in enumerate(objects))
     model = ('<model unit="millimeter"><resources/><build><item objectid="1"/></build></model>')
     if painted:

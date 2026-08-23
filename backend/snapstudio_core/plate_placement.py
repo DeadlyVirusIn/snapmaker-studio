@@ -19,8 +19,10 @@ Discipline, in order of importance:
   settings, no other archive entry. Rotation and scale are carried through
   untouched, so the creator's arrangement survives.
 * **It refuses rather than guesses.** If one translation cannot bring everything
-  on-plate, or the project has several plates laid out on a grid this module
-  cannot read, it says so and stops. A half-moved plate is worse than an honest
+  on-plate, it says so and stops. Multi-plate projects are never repositioned at
+  all: the spacing between plates is not recorded in the file, so any move would
+  be a guess. They are still *checked* — each plate is judged on whether its own
+  contents fit a U1 plate, which does not depend on the grid — and the answer is
   "open this in Orca and use Arrange".
 """
 from __future__ import annotations
@@ -139,22 +141,34 @@ def _unavailable(reason: str) -> dict:
             "items": [], "off_plate": [], "fixable": False}
 
 
-# --- multi-plate grids ------------------------------------------------------
+# --- multi-plate projects ----------------------------------------------------
 #
-# A slicer lays several build plates out on one coordinate grid: plate 1 around
-# the bed centre, plate 2 a fixed stride further along X, and so on. The stride
-# is the source printer's bed width plus a gap the slicer chose. Move a project
-# to a printer with a different bed and every plate past the first lands in the
-# wrong place — which is why objects from multi-plate projects turn up on the
-# wrong plate after a naive conversion.
+# A slicer lays several build plates out on one coordinate grid, and the stride
+# between them is not recorded in the file.
 #
-# Studio does not assume a stride. It measures the spacing the file actually
-# uses, checks that the measurement explains every plate's position, and refuses
-# if it does not. Guessing here puts an object on the wrong plate silently.
+# Studio used to derive that stride from where each plate's objects happened to
+# sit. An independent review reproduced the consequence: for two plates whose
+# parts were off-centre, a true 370 mm stride was measured as 690 mm and the
+# second plate was placed 745 mm along X — entirely off the bed — while the
+# result reported success. The measurement was of the parts, not of the grid, and
+# with only two plates the "does this stride explain every plate" check is a
+# tautology.
+#
+# Rather than patch a number Studio cannot actually observe, the repositioning is
+# withdrawn for multi-plate projects. What remains is the part that is sound: each
+# plate is judged on whether its own contents *fit* a U1 plate, which does not
+# depend on the grid at all. A plate's absolute coordinates on a multi-plate grid
+# are an artefact of the authoring slicer, not a fault in the project — so an
+# object at X=900 on plate 3 is not "off the plate", and Studio no longer says it
+# is.
+#
+# Moving them is Snapmaker Orca's Arrange, and Studio says so.
 
-# How far a plate's measured centre may sit from the fitted grid before the grid
-# is judged not to describe this project.
-GRID_TOLERANCE_MM = 5.0
+MULTI_PLATE_REFUSAL = (
+    "Studio does not reposition multi-plate projects. The spacing between plates "
+    "is not recorded in the file, so any move would be a guess — open the project "
+    "in Snapmaker Orca and use Arrange."
+)
 
 
 def _plates_from_model_settings(tm: ThreeMF) -> list[dict]:
@@ -173,8 +187,8 @@ def _plates_from_model_settings(tm: ThreeMF) -> list[dict]:
 def _group_items_by_plate(items: list[dict], plates: list[dict]):
     """Split build items across plates. Returns (grouped, unresolved).
 
-    An item whose object is on no plate record is 'unresolved': Studio cannot
-    know which plate it belongs to, so it must not be moved.
+    An item whose object is on no plate record is 'unresolved': Studio cannot say
+    which plate it belongs to, and therefore cannot judge it.
     """
     owner: dict[str, int] = {}
     for plate in plates:
@@ -191,79 +205,27 @@ def _group_items_by_plate(items: list[dict], plates: list[dict]):
     return grouped, unresolved
 
 
-def _derive_grid(grouped: dict[int, list[dict]], source_bed: dict | None) -> dict:
-    """Measure the plate grid this project actually uses.
-
-    Returns ``{"ok": bool, "stride": float, "gap": float, "reason": str}``. The
-    gap is what the source slicer left between plates; it is carried over so the
-    converted project keeps the same separation.
-    """
-    numbers = sorted(grouped)
-    if len(numbers) < 2:
-        return {"ok": False, "reason": "only one plate has objects on it"}
-
-    centres = {n: (_cluster_bounds(grouped[n])["min_x"]
-                   + _cluster_bounds(grouped[n])["max_x"]) / 2.0 for n in numbers}
-    steps = []
-    for a, b in zip(numbers, numbers[1:]):
-        span = b - a
-        if span <= 0:
-            continue
-        steps.append((centres[b] - centres[a]) / span)
-    if not steps:
-        return {"ok": False, "reason": "plate positions do not form a sequence"}
-    stride = sorted(steps)[len(steps) // 2]
-    if stride <= 1.0:
-        return {"ok": False,
-                "reason": "the plates are not laid out on a grid Studio can read"}
-
-    # The measured stride has to explain every plate, not just the pair it came
-    # from. A project that fails this check is one Studio must not touch.
-    base = centres[numbers[0]]
-    for n in numbers:
-        expected = base + (n - numbers[0]) * stride
-        if abs(centres[n] - expected) > GRID_TOLERANCE_MM:
-            return {"ok": False,
-                    "reason": ("the plates are not evenly spaced, so Studio cannot "
-                               "work out the layout safely")}
-
-    gap = None
-    if source_bed:
-        gap = stride - (source_bed["max_x"] - source_bed["min_x"])
-    return {"ok": True, "stride": round(stride, 2),
-            "gap": round(gap, 2) if gap is not None else None,
-            "first_plate": numbers[0], "reason": ""}
-
-
-def _multi_plate_plan(grouped: dict[int, list[dict]], grid: dict, bed: dict) -> dict:
-    """Per-plate translations onto the U1's own grid, and which plates cannot go.
-
-    The U1 grid keeps the source project's plate-to-plate gap and swaps in the
-    U1's bed width, so the plates stay as far apart as the creator had them while
-    each one lands centred on a U1 plate.
-    """
-    bed_w = bed["max_x"] - bed["min_x"]
-    gap = grid.get("gap")
-    u1_stride = bed_w + gap if gap is not None else grid["stride"]
-    first = grid["first_plate"]
-
-    offsets: dict[int, dict] = {}
-    skipped: list[dict] = []
+def _plate_fit(grouped: dict[int, list[dict]], bed: dict) -> list[dict]:
+    """Does each plate's own content fit a U1 plate? Position-independent."""
+    usable_x = bed["max_x"] - bed["min_x"] - 2 * EDGE_MARGIN_MM
+    usable_y = bed["max_y"] - bed["min_y"] - 2 * EDGE_MARGIN_MM
+    out = []
     for number in sorted(grouped):
         cluster = _cluster_bounds(grouped[number])
-        shift = (number - first) * u1_stride
-        target = {"min_x": bed["min_x"] + shift, "max_x": bed["max_x"] + shift,
-                  "min_y": bed["min_y"], "max_y": bed["max_y"]}
-        offset = _centering_offset(cluster, target)
-        if _fits_after(cluster, target, offset):
-            offsets[number] = offset
-        else:
-            skipped.append({
-                "plate": number,
-                "reason": ("the objects on this plate do not fit the U1 plate, so "
-                           "Studio left the whole plate where it was"),
-            })
-    return {"offsets": offsets, "skipped": skipped, "u1_stride": round(u1_stride, 2)}
+        width = cluster["max_x"] - cluster["min_x"]
+        depth = cluster["max_y"] - cluster["min_y"]
+        fits = width <= usable_x and depth <= usable_y
+        out.append({
+            "plate": number,
+            "fits": fits,
+            "width": round(width, 2),
+            "depth": round(depth, 2),
+            "object_ids": [i["object_id"] for i in grouped[number]],
+            "reason": None if fits else (
+                f"the objects on this plate span {width:.0f} × {depth:.0f} mm, which is "
+                f"larger than the U1's {usable_x:.0f} × {usable_y:.0f} mm plate"),
+        })
+    return out
 
 
 def assess(path: str, bed: dict | None = None) -> dict:
@@ -289,34 +251,26 @@ def assess(path: str, bed: dict | None = None) -> dict:
     source_bed = _source_bed(tm)
 
     multi_plate = bool(plate_count and plate_count > 1)
-    grid: dict = {}
-    plan: dict = {}
     unresolved: list[dict] = []
     grouped: dict[int, list[dict]] = {}
-    # Each item is judged against the plate it is actually on. On a multi-plate
-    # grid, plate 2 legitimately sits a whole bed-width along X, so measuring it
-    # against plate 1's rectangle would call every project broken.
-    rect_for: dict[str, dict] = {}
+    plate_fit: list[dict] = []
     if multi_plate:
         plates = _plates_from_model_settings(tm)
         grouped, unresolved_items = _group_items_by_plate(items, plates)
         unresolved = [{"object_id": i["object_id"]} for i in unresolved_items]
-        grid = _derive_grid(grouped, source_bed)
-        if grid.get("ok") and not unresolved:
-            first = grid["first_plate"]
-            for number, plate_items in grouped.items():
-                shift = (number - first) * grid["stride"]
-                slot = {"min_x": target["min_x"] + shift, "max_x": target["max_x"] + shift,
-                        "min_y": target["min_y"], "max_y": target["max_y"]}
-                for item in plate_items:
-                    rect_for[str(item["object_id"])] = slot
-            plan = _multi_plate_plan(grouped, grid, target)
+        plate_fit = _plate_fit(grouped, target)
 
     reported = []
     for item in items:
-        over = _overhang(item["bounds"], rect_for.get(str(item["object_id"]), target))
-        off = any(mm > 0 for mm in over.values())
         lo, hi = item["bounds"]["min"], item["bounds"]["max"]
+        if multi_plate:
+            # A plate's absolute coordinates on a multi-plate grid are an artefact
+            # of the authoring slicer, not a fault. Judge the plate's *size*.
+            over = {"left": 0.0, "right": 0.0, "front": 0.0, "back": 0.0}
+            off = False
+        else:
+            over = _overhang(item["bounds"], target)
+            off = any(mm > 0 for mm in over.values())
         reported.append({
             "object_id": item["object_id"],
             "dimensions": item["dimensions"],
@@ -326,6 +280,13 @@ def assess(path: str, bed: dict | None = None) -> dict:
             "overhang_mm": over,
             "edges": _edges_text(over) or None,
         })
+
+    oversized_plates = [p for p in plate_fit if not p["fits"]]
+    if multi_plate:
+        oversized_ids = {oid for p in oversized_plates for oid in p["object_ids"]}
+        for row in reported:
+            if row["object_id"] in oversized_ids:
+                row["off_plate"] = True
 
     off_plate = [r for r in reported if r["off_plate"]]
     cluster = _cluster_bounds(items)
@@ -337,39 +298,25 @@ def assess(path: str, bed: dict | None = None) -> dict:
     too_wide = span_x > bed_x or span_y > bed_y
     would_fit = (not too_wide) and _fits_after(cluster, target, offset)
 
-    if multi_plate:
-        # All-or-nothing per plate: a plate is either moved as a whole or left
-        # exactly where it was. A half-moved plate is worse than an unmoved one.
-        fixable = bool(off_plate) and bool(plan.get("offsets")) and not plan.get("skipped")
-    else:
-        fixable = bool(off_plate) and would_fit
+    # Studio never repositions a multi-plate project: the plate spacing is not in
+    # the file, so any move would be a guess.
+    fixable = (not multi_plate) and bool(off_plate) and would_fit
 
-    if not off_plate:
+    if multi_plate and not off_plate:
+        summary = (f"All {len(plate_fit)} plates fit the U1's printable area. Studio does "
+                   "not reposition multi-plate projects — open the project in Snapmaker "
+                   "Orca to arrange the plates.")
+    elif multi_plate and oversized_plates:
+        names = ", ".join(str(p["plate"]) for p in oversized_plates)
+        summary = (f"Plate {names} does not fit the U1's printable area: "
+                   f"{oversized_plates[0]['reason']}. Scale it down or split it. "
+                   + MULTI_PLATE_REFUSAL)
+    elif multi_plate:
+        summary = MULTI_PLATE_REFUSAL
+    elif not off_plate:
         summary = ("Every object sits inside the U1's printable area."
                    if len(reported) > 1 else
                    "The object sits inside the U1's printable area.")
-    elif multi_plate and unresolved:
-        summary = (f"{len(off_plate)} object(s) fall outside the U1's plates, and "
-                   f"{len(unresolved)} object(s) are not listed on any plate, so Studio "
-                   "cannot tell where they belong. It will not move anything — open the "
-                   "project in Snapmaker Orca and use Arrange.")
-    elif multi_plate and not grid.get("ok"):
-        summary = (f"{len(off_plate)} object(s) fall outside the U1's plates. Studio "
-                   f"could not read this project's plate layout ({grid.get('reason')}), "
-                   "so it will not move them for you — open it in Snapmaker Orca and use "
-                   "Arrange.")
-    elif multi_plate and plan.get("skipped"):
-        moved = len(plan.get("offsets") or {})
-        summary = (f"{len(off_plate)} object(s) fall outside the U1's plates. Studio can "
-                   f"reposition {moved} plate(s), but "
-                   f"{len(plan['skipped'])} will not fit a U1 plate — it moves all plates "
-                   "or none, so nothing is changed. Open it in Snapmaker Orca and use "
-                   "Arrange.")
-    elif multi_plate:
-        summary = (f"{len(off_plate)} object(s) fall outside the U1's plates. Studio can "
-                   f"move all {len(plan['offsets'])} plates onto the U1's own plate grid, "
-                   "keeping each plate's layout, rotation, scale and the spacing between "
-                   "plates.")
     elif too_wide:
         summary = (f"{len(off_plate)} object(s) fall outside the U1's plate, and the "
                    "whole arrangement is wider than the plate — moving it cannot fix "
@@ -394,10 +341,8 @@ def assess(path: str, bed: dict | None = None) -> dict:
         "off_plate": off_plate,
         "arrangement": {"width": round(span_x, 2), "depth": round(span_y, 2)},
         "suggested_offset": offset if (would_fit and not multi_plate) else None,
-        "plate_grid": grid or None,
-        "plate_offsets": ({str(k): v for k, v in plan["offsets"].items()}
-                          if plan.get("offsets") else None),
-        "skipped_plates": plan.get("skipped") or [],
+        "plate_fit": plate_fit,
+        "oversized_plates": oversized_plates,
         "unresolved_objects": unresolved,
         "fixable": fixable,
         "summary": summary,
@@ -442,7 +387,7 @@ def _rewrite_items(raw: bytes, offset_for) -> tuple[bytes, int]:
     Byte-surgical: only the transform attribute inside <item> tags is rewritten.
     Meshes, painted colour, settings and every other archive entry are unchanged.
     """
-    text = raw.decode("utf-8")
+    text = raw.decode("utf-8", "strict")
     moved = 0
 
     def fix_item(match: re.Match) -> str:
@@ -472,23 +417,6 @@ def _rewrite_items(raw: bytes, offset_for) -> tuple[bytes, int]:
 
 def _uniform_offset(dx: float, dy: float):
     return lambda _oid: (dx, dy)
-
-
-def _per_plate_offset(tm: ThreeMF, plate_offsets: dict):
-    """An offset lookup that moves each object by its own plate's translation."""
-    owner: dict[str, int] = {}
-    for plate in _plates_from_model_settings(tm):
-        for oid in plate.get("object_ids") or []:
-            owner[str(oid)] = plate["ui_number"]
-
-    def lookup(object_id):
-        plate_no = owner.get(str(object_id))
-        if plate_no is None:
-            return None
-        offset = plate_offsets.get(str(plate_no))
-        return (offset["x"], offset["y"]) if offset else None
-
-    return lookup
 
 
 def _unique_output(src: Path, out_dir: Path | None) -> Path:
@@ -533,15 +461,16 @@ def prepare_placed_copy(path: str, out_dir: str | None = None,
                 "reason": "This project has no 3D model part Studio can reposition.",
                 "before": before}
 
-    plate_offsets = before.get("plate_offsets")
-    if plate_offsets:
-        offset_for = _per_plate_offset(tm, plate_offsets)
-        offset = None
-    else:
-        offset = before["suggested_offset"]
-        offset_for = _uniform_offset(offset["x"], offset["y"])
+    offset = before["suggested_offset"]
+    offset_for = _uniform_offset(offset["x"], offset["y"])
 
-    rewritten, moved = _rewrite_items(tm.read_part(ROOT_MODEL), offset_for)
+    try:
+        rewritten, moved = _rewrite_items(tm.read_part(ROOT_MODEL), offset_for)
+    except (UnicodeDecodeError, ValueError):
+        return {"schema_version": SCHEMA_VERSION, "ok": False,
+                "reason": ("Studio could not read this project's model data as text, so "
+                           "it will not rewrite it."),
+                "before": before}
     if not moved:
         return {"schema_version": SCHEMA_VERSION, "ok": False,
                 "reason": "Studio found no placed objects to move in this project.",
@@ -577,17 +506,12 @@ def prepare_placed_copy(path: str, out_dir: str | None = None,
         "output_name": out.name,
         "objects_moved": moved,
         "offset_mm": offset,
-        "plate_offsets": plate_offsets,
         "before": before,
         "after": after,
         "changes": [{
-            "what": ("Moved every plate onto the U1's plate grid" if plate_offsets
-                     else "Moved the whole arrangement onto the U1 plate"),
-            "detail": (
-                f"{len(plate_offsets)} plate(s) repositioned, keeping the spacing "
-                f"between them." if plate_offsets else
-                f"Every object shifted by X {offset['x']:+.1f} mm, "
-                f"Y {offset['y']:+.1f} mm."),
+            "what": "Moved the whole arrangement onto the U1 plate",
+            "detail": (f"Every object shifted by X {offset['x']:+.1f} mm, "
+                       f"Y {offset['y']:+.1f} mm."),
             "kept": "Layout, rotation, scale and height are unchanged.",
         }],
         "summary": (f"{moved} object(s) moved onto the U1 plate in a new copy — "

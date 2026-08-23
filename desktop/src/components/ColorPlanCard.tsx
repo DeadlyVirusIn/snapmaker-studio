@@ -25,7 +25,10 @@ import {
  * unclassified — never in the optimistic bucket, because telling someone their
  * project is easier than it is costs them a whole print.
  */
-export function ColorPlanCard({ path, toolheads = 4 }: { path: string; toolheads?: number }) {
+// `toolheads` is passed only when a printer actually reported it. Left
+// undefined, the engine falls back to the U1's published four and labels the
+// result as not read from a machine.
+export function ColorPlanCard({ path, toolheads }: { path: string; toolheads?: number }) {
   const [plan, setPlan] = useState<ColorPlan | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -72,6 +75,10 @@ export function ColorPlanCard({ path, toolheads = 4 }: { path: string; toolheads
             </div>
 
             <p className="text-xs text-muted-foreground">{plan.summary}</p>
+            <p className="text-[11px] text-muted-foreground">
+              Counted against {plan.toolheads} toolhead
+              {plan.toolheads === 1 ? "" : "s"} — {plan.toolheads_source}.
+            </p>
 
             <ColorGroup
               title="Share the same layers — need a toolhead each"

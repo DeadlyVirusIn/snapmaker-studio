@@ -45,6 +45,23 @@ jobs:
       - name: Self-check (end-to-end pipeline)
         run: python -m u1convert.cli selfcheck
 
+  shell:
+    name: Desktop shell (cargo check)
+    # 500+ lines of Rust own the security boundary — the model-site allowlist, the
+    # tool-launch table, the sidecar job object. Nothing was verifying it.
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop/src-tauri
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+      - name: Check
+        run: cargo check --all-targets
+
   frontend:
     name: Frontend (vitest + tsc + build)
     # Windows runner matches the product target (Windows-only desktop app) and

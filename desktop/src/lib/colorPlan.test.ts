@@ -26,6 +26,8 @@ const plan = (over: Partial<ColorPlan> = {}): ColorPlan => ({
   available: true,
   color_count: 6,
   toolheads: 4,
+  toolheads_measured: false,
+  toolheads_source: "the Snapmaker U1's published four toolheads",
   painted_regions: false,
   simultaneous: [],
   layer_based: [],

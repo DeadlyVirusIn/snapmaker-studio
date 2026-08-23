@@ -72,10 +72,10 @@ def build_fixture(directory: Path) -> Path:
     }
     model_settings = (
         "<config>"
-        '<object id="1"><metadata key="extruder" value="0"/></object>'
-        '<object id="2"><metadata key="extruder" value="1"/></object>'
-        '<object id="3"><metadata key="extruder" value="2"/></object>'
-        '<object id="4"><metadata key="extruder" value="3"/></object>'
+        '<object id="1"><metadata key="extruder" value="1"/></object>'
+        '<object id="2"><metadata key="extruder" value="2"/></object>'
+        '<object id="3"><metadata key="extruder" value="3"/></object>'
+        '<object id="4"><metadata key="extruder" value="4"/></object>'
         '<plate><metadata key="plater_id" value="1"/></plate>'
         "</config>"
     )

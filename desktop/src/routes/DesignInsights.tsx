@@ -22,6 +22,9 @@ import { StrategyPicker } from "@/components/StrategyPicker";
 import { BusinessDoctors } from "@/components/BusinessDoctors";
 import { IntelligenceReport } from "@/components/IntelligenceReport";
 import { FixPlan } from "@/components/FixPlan";
+import { PlacementCard } from "@/components/PlacementCard";
+import { PreflightCard } from "@/components/PreflightCard";
+import { ColorPlanCard } from "@/components/ColorPlanCard";
 import { DesignHealth } from "@/components/DesignHealth";
 import { HeartPulse } from "lucide-react";
 import {
@@ -263,6 +266,19 @@ export default function DesignInsights() {
             mm={mm}
             mesh={meshData}
           />
+
+          {/* These three used to live only under "More tools", which meant the
+              beginner path — Check my model — never showed the checks a beginner
+              most needs. A project's objects can be off the plate, its colours
+              can outnumber the toolheads, and neither is visible from a mesh
+              report. 3MF only: an STL carries none of this. */}
+          {file.ext !== "stl" && (
+            <>
+              <PlacementCard path={file.path} />
+              <ColorPlanCard path={file.path} />
+              <PreflightCard path={file.path} />
+            </>
+          )}
 
           {/* Studio Intelligence Report — the one-screen synthesis (the product) */}
           <IntelligenceReport filePath={file.path} host={u1Host} />

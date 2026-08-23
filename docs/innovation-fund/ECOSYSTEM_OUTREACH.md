@@ -105,8 +105,9 @@ and contribution rules are in [../EXTENDING.md](../EXTENDING.md).
 
 > **Subject:** Studio lists the Toolkit, and shares its stance on print starts
 >
-> Hi — Snapmaker Studio is an MIT local pre-print checker for the U1. It lists the
-> Toolkit as a tool for driving prints from outside the app, with your own caution
+> Hi — Snapmaker Studio is an MIT local pre-print checker for the U1. When a
+> project already contains toolpaths, Studio names the Toolkit as one way to send
+> it to the printer without opening a slicer again, alongside your own caution
 > that it is command-line and young.
 >
 > Studio holds the same line your README does: it can prepare, explain and

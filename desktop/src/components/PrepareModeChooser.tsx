@@ -18,11 +18,11 @@ export function PrepareModeChooser({ mode, onModeChange, onCustom, previewing = 
         </div>
         <label className="flex cursor-pointer items-start gap-2 rounded-md border p-3">
           <input type="radio" name="prepare-mode" checked={mode === "preserve"} onChange={() => onModeChange("preserve")} />
-          <span><span className="block text-sm font-medium">Preserve creator settings</span><span className="block text-xs text-muted-foreground">Keep the creator&apos;s slicer settings where possible. Studio only changes the minimum U1 project wrapper fields needed for Snapmaker Orca.</span></span>
+          <span><span className="flex flex-wrap items-center gap-1.5 text-sm font-medium">Preserve creator settings<span className="rounded-full bg-primary/15 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-primary">Recommended</span></span><span className="block text-xs text-muted-foreground">Keeps the print looking the way the creator intended — the right choice for a downloaded model. Studio changes only the minimum needed for Snapmaker Orca to open it.</span></span>
         </label>
         <label className="flex cursor-pointer items-start gap-2 rounded-md border p-3">
           <input type="radio" name="prepare-mode" checked={mode === "recommended"} onChange={() => onModeChange("recommended")} />
-          <span><span className="block text-sm font-medium">Apply Studio recommended U1 settings</span><span className="block text-xs text-muted-foreground">Use Studio&apos;s recommended U1 starter settings. This can change speed, temperature, retraction, supports, cooling, and other print behavior.</span></span>
+          <span><span className="block text-sm font-medium">Use Studio&apos;s U1 starter settings instead</span><span className="block text-xs text-muted-foreground">Replaces the creator&apos;s print settings with Studio&apos;s U1 defaults — useful when the file was made for a very different printer. Speed, temperature, retraction, supports and cooling will change.</span></span>
         </label>
         <div className="flex items-center justify-between rounded-md border p-3">
           <span><span className="block text-sm font-medium">Custom</span><span className="block text-xs text-muted-foreground">Review settings before preparing.</span></span>

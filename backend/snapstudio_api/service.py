@@ -325,7 +325,7 @@ def printer_facts(host: str | None = None, port: int = 7125) -> dict:
     return facts
 
 
-def color_plan(path: str, toolheads: int = 4) -> dict:
+def color_plan(path: str, toolheads: int | None = None) -> dict:
     """Classify a project's colours against the toolheads available.
 
     Reports which colours share layers (and so need a toolhead each), which are
