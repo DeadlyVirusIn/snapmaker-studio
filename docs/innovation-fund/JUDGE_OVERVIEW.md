@@ -6,6 +6,13 @@ read this one.
 > Independent open-source project — not affiliated with or endorsed by Snapmaker.
 > "Snapmaker" is a trademark of its respective owner.
 
+**If you arrived from the Innovation Fund project wall:** the card there was
+written from the entry submitted on 24 June 2026 and describes the project as it
+was then. Everything under "The hard problem" and "What is verified" below shipped
+after it. The June text is kept verbatim in
+[SUBMITTED_ENTRY.md](SUBMITTED_ENTRY.md) so the difference is auditable rather
+than asserted.
+
 ## What it is
 
 **Snapmaker Studio — The Intelligence Layer for Open 3D Printing.**

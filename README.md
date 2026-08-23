@@ -13,6 +13,8 @@ _Project Doctor. Printer Hub. Cost Doctor — Studio checks every model, surface
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.** "Snapmaker" is a trademark of its respective owner.
 
+<sub>Entered in the Snapmaker U1 Innovation Fund, Phase 1 — one of 41 projects in the running. Entry submitted 24 June 2026; being listed is not an endorsement. What the entry says, and how the project has moved since: [docs/innovation-fund/SUBMITTED_ENTRY.md](docs/innovation-fund/SUBMITTED_ENTRY.md).</sub>
+
 ## In 30 seconds
 
 **What is it?** A local desktop app that reads a 3D project file and finds

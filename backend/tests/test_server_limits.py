@@ -32,11 +32,26 @@ def _post(base, path, body: bytes, token: str | None):
 
 
 def test_oversized_body_is_refused_before_auth(live_server):
+    """The oversized body must be refused, and refused without being read.
+
+    Two outcomes both satisfy that, and which one a client sees is a property of
+    the platform's socket buffering rather than of the server. On Windows the
+    whole body fits in the send buffer, so the client completes the write and
+    reads back 413. On Linux the server answers and closes while the client is
+    still writing, so the client sees the connection break first — which is the
+    stronger of the two behaviours, and used to fail this test on Linux only.
+    """
     base, _token = live_server
     huge = b'{"path":"' + b"a" * (server.MAX_REQUEST_BYTES + 1024) + b'"}'
-    with pytest.raises(urllib.error.HTTPError) as e:
+    with pytest.raises((urllib.error.HTTPError, urllib.error.URLError, OSError)) as e:
         _post(base, "/doctor", huge, token=None)
-    assert e.value.code == 413
+    error = e.value
+    if isinstance(error, urllib.error.HTTPError):
+        assert error.code == 413
+    else:
+        # Refused mid-write. The one thing that must not happen is the request
+        # being accepted, so assert the connection died rather than completed.
+        assert isinstance(error, (urllib.error.URLError, BrokenPipeError, ConnectionError))
 
 
 def test_normal_body_still_works(live_server):
