@@ -26,6 +26,38 @@ to the U1 via Printer Hub.
   started yourself (track the PID); check a process's start time / owner before
   touching anything else.
 
+## Three-bucket rule for any task
+
+Before handing work back to the maintainer, classify it. "I don't have a tool for
+this" is a tool-discovery task, not a human task.
+
+**A — autonomous.** The capability exists. Do it. Code, tests, builds, git, docs,
+screenshots, research, releases, API calls, installers, CLI runs.
+
+**B — tool acquisition.** Software could probably do it. Find the tool: project
+skills, MCP servers, installed applications, package managers, GitHub, the web.
+Evaluate it for safety and licence, install it, verify it on something harmless,
+then do the task. Examples that are bucket B, not C: GUI automation, screen
+recording, installing and testing an installer, driving the app, querying
+repository metrics, publishing a release.
+
+**C — a true human gate.** Only: payment, accepting legal terms, identity
+verification, credentials that do not exist, physical access to hardware, or a
+judgement reserved for the maintainer. **Do everything up to the gate first** —
+research the options, prepare the scripts, write the policy page, validate the
+surrounding flow — and hand back only the irreducible action.
+
+What this looks like in practice, from the 2026-08-23 sprint: the installed-build
+acceptance checks became `tools/acceptance/run.ps1` (21 checks, WebView2 remote
+debugging); the demo became `tools/demo/record.ps1` (FFmpeg + CDP); the "needs a
+real printer" item became a read-only LAN session that found a real bug. See
+`docs/internal/AUTOMATION_CAPABILITY_AUDIT.md`.
+
+The safety rules are unchanged and absolute: never start a print, heat or move
+hardware, flash firmware, modify an original file, force-kill a process this
+session did not start, purchase anything, or accept terms on the maintainer's
+behalf. Those constrain *what* is automated, never *whether* to try.
+
 ## Positioning & priorities
 
 Positioning: **"The Intelligence Layer for Open 3D Printing."**
