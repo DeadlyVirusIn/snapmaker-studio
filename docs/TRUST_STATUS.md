@@ -4,6 +4,60 @@ Honest, current verification state for the latest beta. This file does **not**
 mark a release "accepted" until the interactive install acceptance below is
 completed and recorded.
 
+## v0.4.0-beta.22 — PARTIAL / PENDING (not accepted)
+
+**Object placement, ecosystem tool intelligence, Orca import compatibility.** This
+release adds capabilities that write files and make claims about a user's project,
+so acceptance is tracked item by item below. Automated checks are recorded with the
+command that produced them; anything requiring a person in front of the installed
+application stays **PENDING** with the exact check needed. No item is marked PASS
+on the basis of an author's expectation.
+
+### Automated — verified in this environment
+
+| Check | Status | Evidence |
+|---|---|---|
+| Backend tests | **PASS** | `pytest` — see the count in the release commit; suite covers the placement fix, Orca import rules, ecosystem rules, cost basis and the untrusted-archive limits |
+| Desktop tests | **PASS** | `npm run test` — vitest, all files |
+| TypeScript | **PASS** | `npx tsc --noEmit` clean |
+| Production frontend build | **PASS** | `npm run build` (tsc + vite) |
+| Rust shell | **PASS** | `cargo check` clean |
+| Installer builds | **PASS** | `npm run build:sidecar` + `tauri build` produced the NSIS installer |
+| Installer integrity / SHA256 | **PASS** | See [RELEASE_METADATA.md](RELEASE_METADATA.md) for the canonical name, size and hash |
+| Release-document consistency | **PASS** | `backend/tests/test_release_docs.py` — no duplicate changelog entries, README hash/size/installer match the canonical metadata, no superseded hash left in a download instruction, app manifests match the released version, trust status covers the current release |
+| API response contract | **PASS** | `backend/tests/test_api_contract.py` — every documented top-level field present, including the new routes |
+| Project Doctor (engine) | **PASS** | Backend doctor suite over STL and 3MF fixtures |
+| Placement detection | **PASS** | `test_plate_placement.py` — off-plate objects detected by edge and millimetres, on real archives |
+| Placement fixed-copy workflow | **PASS** | `test_plate_placement.py` — the written copy is re-assessed and every object is on the plate afterwards |
+| Original remains untouched | **PASS** | `test_fix_never_modifies_the_original` (byte comparison) and `test_fix_only_touches_the_model_part` (whole-archive byte diff) |
+| Ecosystem recommendation accuracy | **PASS** | `test_ecosystem.py` — recommendations only fire from measured traits; unmeasured traits fire nothing; the shipped registry is validated against the trait vocabulary |
+| Project Cost with a sliced project | **PASS** | `test_project_cost.py::test_end_to_end_from_a_real_file` |
+| Honest refusal on an unsliced project | **PASS** | `test_project_cost.py::test_unsliced_project_gets_an_explanation_not_a_number` |
+| Prepare U1 copy + preservation summary | **PASS** | `test_preserve_mode.py` — the preservation invariant fails a conversion on any unreported change |
+| Advanced Mode failure message | **PASS** | `test_printer_discovery.py` — unreachable discovery returns the touchscreen instruction, not a bare failure |
+
+### Requires the installed application or real hardware — PENDING
+
+Each row states the smallest check that would settle it.
+
+| Check | Status | Exact manual check |
+|---|---|---|
+| Scripted install smoke | **PENDING** | Run the published installer on a clean Windows 10/11 x64 profile; it completes without error and Snapmaker Studio appears in the Start menu |
+| Launch | **PENDING** | Launch from the Start menu; the main window appears with no error dialog |
+| Sidecar boot | **PENDING** | With the app open, one `snapstudio-api.exe` is running and the app shows live data (open any Doctor and load a file) |
+| Close / no orphan | **PENDING** | Close the window; no `snapstudio-api.exe` remains in Task Manager |
+| Reopen | **PENDING** | Launch again; the app starts cleanly and previously used files still open |
+| Uninstall | **PENDING** | Uninstall from Apps & features; the install directory is removed and no `snapstudio-api.exe` remains |
+| Best Tool panel (GUI) | **PENDING** | Prepare a U1 copy; the "Best tool for this project" panel renders with at least one reason, a licence, and a caution on any preview-maturity tool |
+| Placement card (GUI) | **PENDING** | Open `examples/demo_offplate_foreign.3mf` on the Compatibility page; the placement card names the object and the edge, and the fix button writes a new copy |
+| Fix Ledger (GUI) | **PENDING** | After a fix, the changes list shows what Studio changed with before/after, and "return to original" restores the original file as the working project |
+| Open in Snapmaker Orca | **PENDING** | With Snapmaker Orca installed, the handoff opens the prepared file in Orca and Studio issues no further commands |
+| Printer discovery (real U1) | **PENDING** | With a U1 on the LAN and Advanced Mode enabled, discovery finds it; with Advanced Mode disabled, the failure message names Advanced Mode |
+| Interactive GUI acceptance | **PENDING** | Full beginner walkthrough end to end on the installed build |
+
+| Overall trust status | **PARTIAL / PENDING — not accepted** |
+|---|---|
+
 ## v0.4.0-beta.21.3 — PARTIAL / PENDING (not accepted)
 
 **Preserve-settings summary cleanup.** Interactive GUI testing of beta.21.2 confirmed

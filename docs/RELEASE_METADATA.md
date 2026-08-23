@@ -1,6 +1,17 @@
 # Release Metadata — canonical source
 
-Docs must reference this file instead of duplicating hashes/sizes/versions. Update this file first on every release.
+This file is the single source of truth for the released version, installer name,
+size and hash. Update it first on every release.
+
+**One duplication is allowed, on purpose:** the README's download block repeats the
+size and SHA256, because telling someone to open a second document before verifying
+a download is how verification stops happening. That copy is only safe while it is
+checked, so `backend/tests/test_release_docs.py` fails the build if the README and
+this file disagree, if a superseded hash survives in a download instruction, if the
+app manifests carry a different version, or if `TRUST_STATUS.md` does not lead with
+the release named here.
+
+Every *other* document must link here rather than restate these values.
 
 ## Current release
 
