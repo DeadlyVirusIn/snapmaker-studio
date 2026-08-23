@@ -297,5 +297,24 @@ def colors_cmd(path, toolheads):
     click.echo(json.dumps(color_plan.analyse(path, toolheads=toolheads), indent=2))
 
 
+@cli.command("selfcheck")
+@click.option("--sample", type=click.Path(exists=True), default=None,
+              help="Run against your own 3MF instead of the built-in fixture.")
+@click.option("--json", "as_json", is_flag=True, help="Machine-readable output.")
+def selfcheck_cmd(sample, as_json):
+    """Run the real pipeline end to end and print what worked.
+
+    Nothing is stubbed and nothing is compared against a stored constant: each
+    check asserts a property of a real result, so it can only pass if the feature
+    genuinely worked. Everything is written to a temporary directory, and the
+    input file is verified byte-identical afterwards.
+    """
+    from snapstudio_core import selfcheck as sc
+    report = sc.run(sample)
+    click.echo(json.dumps(report, indent=2) if as_json else sc.format_table(report))
+    if not report["ok"]:
+        raise SystemExit(1)
+
+
 if __name__ == "__main__":  # `python -m u1convert.cli` without installing the package
     cli()
