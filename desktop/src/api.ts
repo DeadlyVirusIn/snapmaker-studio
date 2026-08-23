@@ -1054,3 +1054,68 @@ export async function openModelsDialog(): Promise<string[]> {
   if (Array.isArray(picked)) return picked;
   return typeof picked === "string" ? [picked] : [];
 }
+
+// ---- Ecosystem intelligence -------------------------------------------------
+// Studio reads what a project actually contains and says which open-source tool
+// is the right next step for it. Detection of installed tools happens in Rust
+// (the webview can only ask to open a tool by id, never by path), and the engine
+// only ever marks a tool "installed" for ids Rust actually found on disk.
+
+export interface EcosystemTool {
+  id: string;
+  name: string;
+  kind: string;
+  official: boolean;
+  role: string;
+  url: string;
+  license: string;
+  install_hint: string;
+  caution?: string | null;
+  maturity: "stable" | "preview" | string;
+  handoff: "file" | "link" | string;
+  stage: string;
+  score: number;
+  why: string[];
+  installed: boolean;
+  path: string | null;
+}
+
+export interface EcosystemAdvice {
+  schema_version: string;
+  registry_updated?: string;
+  primary: EcosystemTool | null;
+  alternatives: EcosystemTool[];
+  discover: EcosystemTool[];
+  summary: string;
+  traits: Record<string, any>;
+}
+
+/** Tool id -> install path, containing only tools genuinely found on disk. */
+export async function detectTools(): Promise<Record<string, string>> {
+  try {
+    return await invoke<Record<string, string>>("detect_tools");
+  } catch {
+    // Not running inside the Tauri shell (dev harness): nothing is detectable,
+    // which is reported honestly as "nothing installed" rather than as an error.
+    return {};
+  }
+}
+
+/** One-way handoff: launch a detected tool with this file. Studio never slices. */
+export async function openWithTool(toolId: string, path: string): Promise<void> {
+  await invoke("open_with_tool", { toolId, path });
+}
+
+export async function ecosystemAdvice(
+  path: string,
+  installed?: Record<string, string>,
+): Promise<EcosystemAdvice> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/ecosystem_advice`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ path, installed: installed ?? null }),
+  });
+  if (!r.ok) throw new Error(`ecosystem advice failed (${r.status})`);
+  return r.json();
+}

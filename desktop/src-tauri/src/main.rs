@@ -154,6 +154,112 @@ fn first_existing(candidates: &[PathBuf]) -> Option<PathBuf> {
     candidates.iter().find(|p| p.is_file()).cloned()
 }
 
+// ---- Ecosystem tool detection ----------------------------------------------
+//
+// Studio suggests which open-source tool suits a given project (see the engine's
+// ecosystem registry). The suggestion is only actionable if the tool is actually
+// installed, and "installed" must be a fact, not a guess — so detection is
+// exactly the same rule as the Orca handoff: a tool counts as present only when
+// one of its known install locations is a real file on disk.
+//
+// Rust owns this table on purpose. The webview asks to open a tool *by id*; it
+// can never hand over an arbitrary executable path to launch. Ids here must match
+// the ids in backend/snapstudio_core/data/ecosystem.json.
+//
+// Install locations are best-effort for the community forks: if a fork installs
+// somewhere this table does not list, Studio reports it as not installed and
+// offers its download link. Under-claiming is the correct failure direction.
+#[cfg(windows)]
+fn tool_candidates(id: &str) -> Vec<PathBuf> {
+    let program_files = std::env::var("ProgramFiles").unwrap_or_else(|_| r"C:\Program Files".into());
+    let program_files_x86 = std::env::var("ProgramFiles(x86)").ok();
+    let local_programs = std::env::var("LOCALAPPDATA")
+        .ok()
+        .map(|la| Path::new(&la).join("Programs"));
+
+    // (directory name, executable name) pairs to try under each install root.
+    let specs: &[(&str, &str)] = match id {
+        "snapmaker-orca" => &[("Snapmaker_Orca", "snapmaker-orca.exe")],
+        "orcaslicer" => &[("OrcaSlicer", "orca-slicer.exe")],
+        "forcaslicer" => &[
+            ("FOrcaSlicer", "forca-slicer.exe"),
+            ("FOrcaSlicer", "snapmaker-orca.exe"),
+            ("FOrcaSlicer", "orca-slicer.exe"),
+        ],
+        "orcaslicer-imagemap" => &[
+            ("OrcaSlicer-ImageMap", "orca-slicer.exe"),
+            ("OrcaSlicerImageMap", "orca-slicer.exe"),
+        ],
+        "prusaslicer" => &[("Prusa3D\\PrusaSlicer", "prusa-slicer.exe")],
+        _ => &[],
+    };
+
+    let mut roots: Vec<PathBuf> = vec![PathBuf::from(&program_files)];
+    if let Some(pf86) = program_files_x86 {
+        roots.push(PathBuf::from(pf86));
+    }
+    if let Some(lp) = local_programs {
+        roots.push(lp);
+    }
+
+    let mut out = Vec::new();
+    for root in &roots {
+        for (dir, exe) in specs {
+            out.push(root.join(dir).join(exe));
+        }
+    }
+    out
+}
+
+#[cfg(not(windows))]
+fn tool_candidates(_id: &str) -> Vec<PathBuf> {
+    Vec::new()
+}
+
+/// Ids Studio knows how to look for. Kept in sync with the engine registry.
+const DETECTABLE_TOOLS: &[&str] = &[
+    "snapmaker-orca",
+    "orcaslicer",
+    "forcaslicer",
+    "orcaslicer-imagemap",
+    "prusaslicer",
+];
+
+/// Map of tool id -> install path, containing only tools genuinely found on disk.
+/// A tool that is missing is simply absent from the map; it is never reported
+/// with a guessed path.
+#[tauri::command]
+fn detect_tools() -> std::collections::HashMap<String, String> {
+    let mut found = std::collections::HashMap::new();
+    for id in DETECTABLE_TOOLS {
+        if let Some(p) = first_existing(&tool_candidates(id)) {
+            found.insert((*id).to_string(), p.to_string_lossy().into_owned());
+        }
+    }
+    found
+}
+
+/// Hand a prepared file to one of the detected tools. Same one-way handoff as the
+/// Orca command: the tool is resolved from its id against the table above, the
+/// file must exist, and the file is passed as a single argument — no shell, no
+/// extra flags, no slicing commands.
+#[tauri::command]
+fn open_with_tool(tool_id: String, path: String) -> Result<(), String> {
+    let file = Path::new(path.trim());
+    if path.trim().is_empty() || !file.is_file() {
+        return Err("prepared-file-missing".into());
+    }
+    if !DETECTABLE_TOOLS.contains(&tool_id.as_str()) {
+        return Err("tool-not-supported".into());
+    }
+    let exe = first_existing(&tool_candidates(&tool_id)).ok_or_else(|| "tool-not-found".to_string())?;
+    Command::new(&exe)
+        .arg(file)
+        .spawn()
+        .map_err(|e| format!("launch-failed: {e}"))?;
+    Ok(())
+}
+
 /// Return the path to an installed Snapmaker Orca, or null if none is found.
 #[tauri::command]
 fn detect_orca() -> Option<String> {
@@ -329,7 +435,9 @@ fn main() {
             is_model_browser_open,
             focus_model_browser,
             detect_orca,
-            open_in_orca
+            open_in_orca,
+            detect_tools,
+            open_with_tool
         ])
         .setup(|app| {
             let (info, child) = spawn_sidecar();

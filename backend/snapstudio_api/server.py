@@ -177,6 +177,23 @@ def _make_handler(token: str):
                     self._send(400, {"error": str(e)})
                 except Exception:
                     self._send(500, {"error": "internal error"})
+            elif self.path == "/ecosystem_advice":
+                try:
+                    installed = data.get("installed")
+                    self._send(200, service.ecosystem_advice(
+                        rv.require_path_string(data),
+                        installed=installed if isinstance(installed, dict) else None))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
+            elif self.path == "/project_traits":
+                try:
+                    self._send(200, service.project_traits(rv.require_path_string(data)))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
             elif self.path == "/source_compatibility":
                 path = data.get("path")
                 if not path:

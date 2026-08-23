@@ -1,0 +1,254 @@
+{
+  "schema_version": "ecosystem/1",
+  "updated": "2026-08-22",
+  "about": "The open Snapmaker/U1 ecosystem as data. Studio matches a project's real traits against these entries to suggest which tool is the right next step. Adding a tool is a pull request against this file — no code change. See docs/EXTENDING.md for the schema and the rules for what qualifies.",
+  "confidence_note": "Studio only claims a tool is installed when it found the executable on disk. Everything else is presented as a link, never as a detected install.",
+  "tools": [
+    {
+      "id": "snapmaker-orca",
+      "name": "Snapmaker Orca",
+      "kind": "slicer",
+      "official": true,
+      "role": "Slices your project for the U1. This is the default next step.",
+      "url": "https://github.com/Snapmaker/OrcaSlicer",
+      "license": "AGPL-3.0",
+      "platforms": [
+        "windows",
+        "macos",
+        "linux"
+      ],
+      "install_hint": "Download the installer from the Snapmaker Orca releases page.",
+      "base_score": 50,
+      "handoff": "file",
+      "recommend_when": [
+        {
+          "trait": "is_u1_project",
+          "op": "is_true",
+          "weight": 25,
+          "reason": "This project already targets the Snapmaker U1, so the official slicer opens it with the right profile."
+        },
+        {
+          "trait": "format",
+          "op": "equals",
+          "value": "stl",
+          "weight": 10,
+          "reason": "An STL has no print settings yet — Snapmaker Orca is where you choose them."
+        },
+        {
+          "trait": "foreign_printer",
+          "op": "is_true",
+          "weight": 20,
+          "reason": "This project was authored for another printer. Prepare a U1 copy in Studio first — then Snapmaker Orca opens that copy with U1 settings."
+        }
+      ],
+      "maturity": "stable"
+    },
+    {
+      "id": "forcaslicer",
+      "name": "FOrcaSlicer",
+      "kind": "slicer",
+      "official": false,
+      "role": "A community Snapmaker Orca fork that lets each of the U1's four heads run a different nozzle size, and can wrap one material as a shell over another.",
+      "url": "https://github.com/jiyang1018/FOrcaSlicer",
+      "license": "AGPL-3.0",
+      "platforms": [
+        "windows",
+        "macos",
+        "linux"
+      ],
+      "install_hint": "Download a build from the FOrcaSlicer releases page. It is a separate application; it does not replace Snapmaker Orca.",
+      "caution": "A research-preview community fork, independent of Snapmaker. Review its output before a long print.",
+      "base_score": 0,
+      "handoff": "file",
+      "recommend_when": [
+        {
+          "trait": "mixed_nozzle_sizes",
+          "op": "is_true",
+          "weight": 40,
+          "reason": "This project already uses more than one nozzle size, which is exactly what this fork is built for."
+        },
+        {
+          "trait": "has_painted_color",
+          "op": "is_true",
+          "weight": 15,
+          "reason": "Painted multi-colour regions are where its shell-over-core mode changes the result."
+        }
+      ],
+      "maturity": "preview"
+    },
+    {
+      "id": "orcaslicer-imagemap",
+      "name": "OrcaSlicer ImageMap",
+      "kind": "slicer",
+      "official": false,
+      "role": "An OrcaSlicer fork that prints a raster image into a surface, and converts between textures, vertex colours and painted 3MF regions.",
+      "url": "https://github.com/sentientstardust-dev/OrcaSlicer-ImageMap",
+      "license": "AGPL-3.0",
+      "platforms": [
+        "windows",
+        "macos"
+      ],
+      "install_hint": "Download a build from its releases page. It is a separate application.",
+      "caution": "A community fork, independent of Snapmaker, and self-described as beta.",
+      "base_score": 0,
+      "handoff": "file",
+      "recommend_when": [
+        {
+          "trait": "has_texture",
+          "op": "is_true",
+          "weight": 45,
+          "reason": "This model carries image-texture data, which most slicers throw away and this fork can actually print."
+        }
+      ],
+      "maturity": "preview"
+    },
+    {
+      "id": "makerworld-to-snapmaker-u1",
+      "name": "MakerWorld to Snapmaker U1",
+      "kind": "browser-extension",
+      "official": false,
+      "role": "A browser extension that converts a MakerWorld project to a U1 project at the moment you download it, keeping the creator's own print profile.",
+      "url": "https://github.com/Dragon2203/makerworld-to-snapmaker-u1",
+      "license": "MIT (parts derived from a PolyForm-Noncommercial project — see its notices)",
+      "platforms": [
+        "windows",
+        "macos",
+        "linux"
+      ],
+      "install_hint": "Install it in your browser, then download the project again from MakerWorld.",
+      "base_score": 0,
+      "handoff": "link",
+      "recommend_when": [
+        {
+          "trait": "likely_makerworld",
+          "op": "is_true",
+          "weight": 30,
+          "reason": "This looks like a MakerWorld download authored for another printer. Converting it in the browser next time keeps the creator's profile intact from the start."
+        }
+      ],
+      "maturity": "stable"
+    },
+    {
+      "id": "u1hub",
+      "name": "U1 Print Hub",
+      "kind": "printer-dashboard",
+      "official": false,
+      "role": "A local web dashboard for one or more U1s: send files, map toolheads, track spools, watch a print.",
+      "url": "https://github.com/dlgambill/u1hub",
+      "license": "MIT",
+      "platforms": [
+        "windows",
+        "macos",
+        "linux"
+      ],
+      "install_hint": "Download a single-file binary from its releases page and open it in your browser.",
+      "base_score": 0,
+      "handoff": "link",
+      "stage": "after-slicing",
+      "recommend_when": [
+        {
+          "trait": "is_sliced",
+          "op": "is_true",
+          "weight": 20,
+          "reason": "This project is already sliced, so the next step is getting it onto a printer rather than back into a slicer."
+        }
+      ],
+      "maturity": "stable"
+    },
+    {
+      "id": "snapmaker-u1-toolkit",
+      "name": "Snapmaker U1 Toolkit",
+      "kind": "utility",
+      "official": false,
+      "role": "A command-line toolkit that slices headlessly and starts a print only after a human approves it against a fresh photo of the bed.",
+      "url": "https://github.com/bbolinger/snapmaker-u1-toolkit",
+      "license": "MIT",
+      "platforms": [
+        "windows",
+        "macos",
+        "linux"
+      ],
+      "install_hint": "Clone the repository and follow its README. Command-line, no GUI.",
+      "base_score": 0,
+      "handoff": "link",
+      "stage": "after-slicing",
+      "recommend_when": [],
+      "maturity": "preview",
+      "caution": "Command-line only, and young. Its safety gate asks a human to approve every print start — read its README first."
+    },
+    {
+      "id": "fluidd",
+      "name": "Fluidd (on your printer)",
+      "kind": "printer-dashboard",
+      "official": true,
+      "role": "The web interface the U1 already serves. Nothing to install — it runs on the printer.",
+      "url": "https://docs.fluidd.xyz/",
+      "license": "GPL-3.0",
+      "platforms": [
+        "windows",
+        "macos",
+        "linux"
+      ],
+      "install_hint": "Turn on Advanced Mode on the printer's touchscreen, then open the printer's IP address in your browser.",
+      "base_score": 0,
+      "handoff": "link",
+      "stage": "after-slicing",
+      "recommend_when": [],
+      "maturity": "stable"
+    },
+    {
+      "id": "prusaslicer",
+      "name": "PrusaSlicer",
+      "kind": "slicer",
+      "official": false,
+      "role": "The slicer this project was authored in.",
+      "url": "https://www.prusa3d.com/page/prusaslicer_424/",
+      "license": "AGPL-3.0",
+      "platforms": [
+        "windows",
+        "macos",
+        "linux"
+      ],
+      "install_hint": "Only needed if you want to open the project with its original settings intact.",
+      "base_score": 0,
+      "handoff": "file",
+      "recommend_when": [
+        {
+          "trait": "origin_family",
+          "op": "equals",
+          "value": "prusa",
+          "weight": 20,
+          "reason": "This is a PrusaSlicer project. Its settings are readable there, but they do not carry over to the U1 — you still slice for the U1 in Snapmaker Orca."
+        }
+      ],
+      "maturity": "stable"
+    },
+    {
+      "id": "orcaslicer",
+      "name": "OrcaSlicer (upstream)",
+      "kind": "slicer",
+      "official": false,
+      "role": "The upstream slicer Snapmaker Orca is built from. Useful for printers other than the U1.",
+      "url": "https://github.com/SoftFever/OrcaSlicer",
+      "license": "AGPL-3.0",
+      "platforms": [
+        "windows",
+        "macos",
+        "linux"
+      ],
+      "install_hint": "Only needed if you also print on a non-Snapmaker machine.",
+      "base_score": 0,
+      "handoff": "file",
+      "recommend_when": [
+        {
+          "trait": "foreign_printer",
+          "op": "is_true",
+          "weight": 8,
+          "reason": "This project targets another printer. If you actually want to print it on that machine, upstream OrcaSlicer is the closer match."
+        }
+      ],
+      "maturity": "stable"
+    }
+  ],
+  "maturity_note": "stable = an established, widely used tool. preview = a young or self-described experimental community project; Studio always shows its caution text before suggesting it."
+}

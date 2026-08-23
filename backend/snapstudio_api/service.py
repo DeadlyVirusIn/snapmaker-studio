@@ -201,6 +201,23 @@ def strategy_recommend(path: str) -> dict:
     return rec
 
 
+def ecosystem_advice(path: str, installed: dict | None = None) -> dict:
+    """Read a project and say which open tool is the right next step for it.
+
+    `installed` is supplied by the desktop shell: a map of tool id to the
+    executable it actually found on disk. Anything not in that map is offered as
+    a link, never claimed to be installed.
+    """
+    from snapstudio_core import ecosystem
+    return ecosystem.advise(path, installed=installed)
+
+
+def project_traits(path: str) -> dict:
+    """The graded facts Studio read out of a project file, with evidence."""
+    from snapstudio_core import project_traits as pt
+    return pt.extract(path)
+
+
 def printer_discover(hosts: list[str] | None = None) -> dict:
     """Read-only: probe candidate U1 hosts over Moonraker."""
     from snapstudio_core import moonraker

@@ -29,6 +29,12 @@ _CONTRACT = {
     "/scale_options": ({"path": "none"}, ["available", "schema_version"]),
     "/print_failure_troubleshoot": ({"path": "none"},
         ["available", "summary", "findings", "troubleshooting_steps", "disclaimers"]),
+    # Ecosystem advice must answer even for a file that cannot be read — the UI
+    # shows the honest "could not read" summary rather than an error page.
+    "/ecosystem_advice": ({"path": "none"},
+        ["schema_version", "primary", "alternatives", "discover", "summary", "traits"]),
+    "/project_traits": ({"path": "none"},
+        ["schema_version", "readable", "format", "notes"]),
 }
 
 

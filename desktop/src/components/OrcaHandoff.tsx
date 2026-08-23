@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/store/toast";
 import { detectOrca, openInOrca } from "@/api";
 import { ORCA_RELEASES_URL, ORCA_HANDOFF_LINE, orcaErrorMessage } from "@/lib/orca";
+import { EcosystemPanel } from "@/components/EcosystemPanel";
 
 /**
  * One-way Snapmaker Orca handoff. Shows "Open in Snapmaker Orca" when an install
@@ -70,6 +71,11 @@ export function OrcaHandoff({ outputPath }: { outputPath: string }) {
           </Link>{" "}
           and upload it. (Studio doesn't slice — Snapmaker Orca does.)
         </p>
+      </div>
+      {/* What this specific project might also want. Reads the prepared file and
+          names the community tool that fits, with the reason from the file. */}
+      <div className="mt-1 w-full">
+        <EcosystemPanel path={outputPath} />
       </div>
     </div>
   );

@@ -161,3 +161,42 @@ def diff(file_a, file_b, as_json):
         click.echo(f"    ... +{len(d.settings_changed) - 12} more (use --json for the full list)")
     if not d.has_changes:
         click.echo("\nNo differences.")
+
+
+@cli.command("traits")
+@click.argument("path", type=click.Path(exists=True))
+def traits_cmd(path):
+    """Print the graded facts Studio reads out of a project, with evidence.
+
+    Machine-readable JSON: every trait carries its value, a confidence tier
+    (confirmed / likely / informational / unknown) and the part of the file that
+    proved it. This is the same data the app's Doctors reason from, so a script
+    or another tool can consume it without going through the UI.
+    """
+    from snapstudio_core import project_traits
+    click.echo(json.dumps(project_traits.extract(path), indent=2))
+
+
+@cli.command("ecosystem")
+@click.argument("path", type=click.Path(exists=True))
+@click.option("--installed", "installed", default=None,
+              help='JSON map of tool id to executable path, e.g. \'{"snapmaker-orca":"C:/.../x.exe"}\'.')
+def ecosystem_cmd(path, installed):
+    """Suggest which open-source tool suits this project, and why.
+
+    Studio matches the project's real traits against its ecosystem registry
+    (snapstudio_core/data/ecosystem.json). Tools are only reported as installed
+    for ids given via --installed; nothing is probed or launched here.
+    """
+    from snapstudio_core import ecosystem
+    try:
+        found = json.loads(installed) if installed else None
+    except json.JSONDecodeError:
+        raise click.BadParameter("--installed must be a JSON object")
+    if found is not None and not isinstance(found, dict):
+        raise click.BadParameter("--installed must be a JSON object")
+    click.echo(json.dumps(ecosystem.advise(path, installed=found), indent=2))
+
+
+if __name__ == "__main__":  # `python -m u1convert.cli` without installing the package
+    cli()
