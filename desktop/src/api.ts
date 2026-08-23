@@ -1224,6 +1224,114 @@ export async function preflight(path: string, host?: string, port = 7125): Promi
   return r.json();
 }
 
+// ---- Update check -----------------------------------------------------------
+// The only thing in Studio that talks to the internet, and only when a person
+// presses the button. It sends nothing but the request: no identifiers, no usage,
+// no telemetry. Studio never downloads or installs an update on its own.
+
+export interface UpdateInfo {
+  current: string;
+  latest: string;
+  newer: boolean;
+  url: string;
+  published: string;
+}
+
+export async function checkForUpdate(): Promise<UpdateInfo> {
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<UpdateInfo>("check_for_update");
+}
+
+// ---- Print plan, materials, and the send confirmation ------------------------
+// The three questions that only exist after slicing: what happens and when, what
+// should be loaded, and whether to press send.
+
+export interface PlanLine { at: string; text: string; evidence: string }
+
+export interface PrintPlan {
+  schema_version: string;
+  available: boolean;
+  error?: string;
+  layers_seen?: number;
+  tools_seen?: number[];
+  tool_changes?: number;
+  pauses?: number;
+  first_tool?: number | null;
+  last_tool?: number | null;
+  truncated?: boolean;
+  narration?: PlanLine[];
+  summary?: string;
+}
+
+export interface MaterialSlot {
+  tool: number;
+  label: string;
+  needed: boolean;
+  wants_material: string | null;
+  wants_colour: string | null;
+  has_material: string | null;
+  has_colour: string | null;
+  state: "ready" | "empty" | "wrong_material" | "different_colour" | "unused" | "unknown" | null;
+  detail: string | null;
+  action: string | null;
+}
+
+export interface MaterialPlan {
+  schema_version: string;
+  available: boolean;
+  printer_known: boolean;
+  slots: MaterialSlot[];
+  to_change?: number[];
+  ready?: number[];
+  colour_notes?: number[];
+  summary: string;
+}
+
+export interface SendItem {
+  kind: "blocker" | "warning" | "unknown";
+  title: string;
+  detail: string;
+  action: string | null;
+  source: string | null;
+}
+
+export interface SendCheck {
+  schema_version: string;
+  available: boolean;
+  printer_reachable?: boolean;
+  verdict: "blocker" | "warning" | "unknown" | "ready";
+  counts?: Record<string, number>;
+  items: SendItem[];
+  headline: string;
+  disclaimer: string;
+}
+
+async function post<T>(route: string, body: unknown, label: string): Promise<T> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}${route}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`${label} failed (${r.status})`);
+  return r.json();
+}
+
+export function printPlan(path: string): Promise<PrintPlan> {
+  return post("/print_plan", { path }, "print plan");
+}
+
+export function materialPlan(path: string, host?: string, port = 7125): Promise<MaterialPlan> {
+  return post("/material_plan", { path, host: host ?? "", port }, "material plan");
+}
+
+export function sendCheck(
+  path: string, host?: string, port = 7125, includeTimeline = false,
+): Promise<SendCheck> {
+  return post("/send_check", { path, host: host ?? "", port, include_timeline: includeTimeline },
+    "send check");
+}
+
 // ---- Support bundle ---------------------------------------------------------
 // Studio asks people to report when it gets an analysis wrong. This gathers the
 // facts behind that report — and shows the user exactly what it contains before

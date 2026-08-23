@@ -105,6 +105,14 @@ async function phaseRoutes(page) {
       (b) => b.available === true && b.total_grams === 0.36 && b.waste.separable === false],
     ["/diagnostics_preview", {},
       (b) => typeof b.text === "string" && b.text.length > 0 && /Nothing has been sent/.test(b.note)],
+    ["/print_plan", { path: gcodePath },
+      (b) => b.available === true && b.layers_seen > 0 && Array.isArray(b.narration)
+             && b.narration.every((line) => Boolean(line.evidence))],
+    ["/material_plan", { path: gcodePath, host: "", port: 7125 },
+      (b) => b.available === true && b.printer_known === false],
+    ["/send_check", { path: gcodePath, host: "", port: 7125 },
+      (b) => b.available === true && b.counts.blocker === 0
+             && b.items.some((i) => i.kind === "unknown")],
   ];
   for (const [route, body, verify] of routes) {
     try {
@@ -151,6 +159,23 @@ async function phasePostSlice(page) {
     /not separate|will not split|no tool-change purge/i.test(body), "");
   record("No print-success promise after slicing",
     !/will print successfully|guaranteed/i.test(body), "");
+
+  // The three answers that only exist after slicing.
+  record("Ready-to-send verdict rendered", lower.includes("ready to send?"), "");
+  record("What to load rendered", lower.includes("what to load"), "");
+  record("Send confirmation blocks nothing without a printer",
+    !/will stop the print/i.test(body), "");
+
+  const planButton = page.getByRole("button", { name: /Read the whole job/i }).first();
+  if (await planButton.count()) {
+    await planButton.click();
+    await page.waitForTimeout(2500);
+  }
+  const withPlan = await page.locator("body").innerText();
+  record("Print plan timeline rendered on request",
+    /what happens during this print/i.test(withPlan) && /prints with slot/i.test(withPlan), "");
+  record("Timeline keeps its evidence", /evidence/i.test(withPlan), "");
+
   await shot(page, "05-after-slicing");
 }
 

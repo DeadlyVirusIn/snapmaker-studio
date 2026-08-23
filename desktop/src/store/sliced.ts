@@ -19,6 +19,9 @@ export const useSliced = create<SlicedState>((set) => ({
   path: null,
   name: null,
   setSliced: (path: string) =>
-    set({ path, name: path.split(/[\/]/).pop() || path }),
+    // Split on both separators. Getting this wrong meant `name` stayed the whole
+    // Windows path, and the page — and the recorded demo — showed a home
+    // directory where a file name belonged.
+    set({ path, name: path.split(/[\\/]/).pop() || path }),
   clear: () => set({ path: null, name: null }),
 }));

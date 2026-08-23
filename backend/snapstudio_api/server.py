@@ -230,6 +230,34 @@ def _make_handler(token: str):
                     self._send(400, {"error": str(e)})
                 except Exception:
                     self._send(500, {"error": "internal error"})
+            elif self.path == "/print_plan":
+                try:
+                    self._send(200, service.print_plan(rv.require_path_string(data)))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
+            elif self.path == "/material_plan":
+                try:
+                    self._send(200, service.material_plan(
+                        rv.require_path_string(data),
+                        host=rv.optional_str(data, "host", "") or None,
+                        port=rv.require_port(data)))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
+            elif self.path == "/send_check":
+                try:
+                    self._send(200, service.send_check(
+                        rv.require_path_string(data),
+                        host=rv.optional_str(data, "host", "") or None,
+                        port=rv.require_port(data),
+                        include_timeline=bool(data.get("include_timeline"))))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
             elif self.path == "/diagnostics_preview":
                 try:
                     from snapstudio_core import diagnostics as diag

@@ -232,6 +232,28 @@ def _prusa_printer_model(tm: ThreeMF) -> str | None:
     return m.group(1).strip() if m else None
 
 
+def _prusa_summary(tm: ThreeMF, parts: set[str]) -> dict:
+    """Everything the Prusa reader can establish, or an empty dict."""
+    from . import prusa
+
+    if prusa.SETTINGS_PART not in parts:
+        return {}
+    try:
+        settings_raw = tm.read_part(prusa.SETTINGS_PART)
+    except Exception:
+        return {}
+    model_raw = None
+    if prusa.MODEL_CONFIG_PART in parts:
+        try:
+            model_raw = tm.read_part(prusa.MODEL_CONFIG_PART)
+        except Exception:
+            model_raw = None
+    try:
+        return prusa.summarise(settings_raw, model_raw)
+    except Exception:
+        return {}
+
+
 def extract(path: str) -> dict:
     """Read a model file and return its traits. Never raises."""
     low = (path or "").lower()
@@ -257,9 +279,19 @@ def extract(path: str) -> dict:
 
     printer_model = _first(cfg.get("printer_model")) if cfg else None
     printer_ev = f"{BAMBU_SETTINGS} printer_model" if printer_model else None
+
+    # A PrusaSlicer project carries the same information as a Bambu-family one,
+    # in a different dialect. Reading it properly is what turns "detected" into
+    # supported: without this every downstream check saw zero filaments and no
+    # layer height, and had nothing to say about a perfectly ordinary project.
+    prusa_summary: dict = {}
     if family == "prusa":
-        printer_model = _prusa_printer_model(tm)
+        prusa_summary = _prusa_summary(tm, parts)
+        printer_model = prusa_summary.get("printer_model") or _prusa_printer_model(tm)
         printer_ev = f"{PRUSA_SETTINGS} printer_model" if printer_model else None
+        if prusa_summary.get("application"):
+            app = " ".join(x for x in (prusa_summary["application"],
+                                       prusa_summary.get("application_version")) if x)
 
     is_u1 = bool(isinstance(printer_model, str) and printer_model.strip() == "Snapmaker U1")
     foreign = bool(printer_model) and not is_u1
@@ -295,7 +327,7 @@ def extract(path: str) -> dict:
         except Exception:
             build_items = 0
     ms_objects = len(re.findall(r"<object\b", model_settings_raw))
-    object_count = ms_objects or build_items
+    object_count = ms_objects or prusa_summary.get("object_count") or build_items
     if ms_objects:
         obj_conf, obj_ev = CONFIRMED, MODEL_SETTINGS
     elif build_items:
@@ -306,9 +338,13 @@ def extract(path: str) -> dict:
     colours = _as_list(cfg.get("filament_colour")) if cfg else []
     ftypes = _as_list(cfg.get("filament_type")) if cfg else []
     filament_count = len(colours) or len(ftypes)
+    fil_source = BAMBU_SETTINGS
+    if not filament_count and prusa_summary.get("filament_count"):
+        filament_count = prusa_summary["filament_count"]
+        fil_source = PRUSA_SETTINGS
     if filament_count:
         fil_conf = CONFIRMED
-        fil_ev = f"{filament_count} filament slot(s) in {BAMBU_SETTINGS}"
+        fil_ev = f"{filament_count} filament slot(s) in {fil_source}"
     elif family in ("generic", "none"):
         fil_conf, fil_ev = CONFIRMED, "no slicer settings in this file"
     else:
@@ -316,6 +352,8 @@ def extract(path: str) -> dict:
 
     nozzles = [str(n).strip() for n in (_as_list(cfg.get("nozzle_diameter")) if cfg else [])
                if str(n).strip()]
+    if not nozzles and prusa_summary.get("nozzle_diameters"):
+        nozzles = [str(n).strip() for n in prusa_summary["nozzle_diameters"] if str(n).strip()]
     distinct_nozzles = sorted(set(nozzles))
 
     # --- colour / texture / advanced feature signals ----------------------

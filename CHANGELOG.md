@@ -6,6 +6,77 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-23
+
+**The loop gets intelligent.** v0.4.0 could read a sliced job and check it against
+the printer. This release answers the three questions that follow: what actually
+happens during the print, what should be loaded before it starts, and whether to
+press send.
+
+### Added
+- **The print, in order.** *What happens during this print* reads the whole job in
+  one streaming pass and gives a plain-language timeline: which slot it starts on,
+  when each other slot joins in, when one is finished with and its spool can come
+  out, where it pauses and waits for you, and what the bed and nozzle targets are.
+  Every line carries the G-code that proves it. Verified on a real 89 MB
+  four-colour job with 764 tool changes — read in 0.53 s using 8 MB of memory.
+- **What to load.** Slot by slot: what the job needs, what is in there now, and
+  what to do about the difference. An empty slot the job prints from is a change;
+  a slot the job never touches is left alone and says so; a right-material,
+  wrong-colour slot is advisory rather than alarming; and a material family match
+  means "PLA Matte" is not reported as wrong against "PLA". This is an
+  intelligence layer over whatever spool state exists — Studio does not track
+  filament and does not want to. U1Hub, Spoolman and OpenSpool do that.
+- **Ready to send?** Blockers, warnings and unknowns kept strictly apart. A
+  blocker is a provable mismatch — an empty slot the job uses, a tool the printer
+  does not have. A warning is a real concern that is not proof. An unknown is
+  something Studio cannot verify, and it is never promoted to look thorough or
+  demoted to look clean. Studio still never sends anything on its own, and it does
+  not disable the button: it is your printer.
+- **PrusaSlicer projects are read, not merely recognised.** A Prusa `.3mf` carries
+  its whole configuration in `Metadata/Slic3r_PE.config` and its per-object data in
+  `Metadata/Slic3r_PE_model.config`. Studio now reads both: printer model, bed
+  size, every filament slot with its type, colour, vendor and diameter, layer and
+  first-layer heights, supports, temperatures, per-object extruder assignments,
+  per-object overrides and variable layer-height profiles. What a U1 copy cannot
+  keep — variable layer height, per-object overrides, support styling — is named
+  in the fidelity report rather than quietly lost. Verified against a genuine
+  PrusaSlicer 2.8 project.
+- Six new engine routes — `/print_plan`, `/material_plan`, `/send_check`, plus the
+  0.4.0 additions — all covered by the self-check, which is now 21 checks over 13
+  documented routes.
+- **Check for a newer version**, in Help. This is the only thing in Studio that
+  talks to the internet: one request to GitHub's releases API, made only when
+  somebody presses the button, sending nothing but the request — no identifiers,
+  no usage, no telemetry. Studio never downloads or installs anything on its own.
+  It is implemented in the desktop shell rather than the web view so the page's
+  content-security-policy keeps its lock-down, and `test_local_first.py` fails the
+  build if the shell ever reaches another host, if the check is wired to run
+  automatically, or if the engine requests a remote address at all.
+
+### Fixed
+- **The timeline scanner missed everything in a job written on Windows.** Lines
+  end with CR LF there, and the stray CR sat between the marker and the end of the
+  line, so every anchored pattern missed. Found by its own test.
+- **A quoted filament name containing a comma silently invented an extra
+  extruder.** PrusaSlicer separates per-extruder values with semicolons for
+  strings and commas for numbers, and quotes any value containing either.
+- The public evidence counts in the README, the judge walkthrough and the
+  submission status had drifted from what the harnesses actually produce — 21/21
+  where it is now 27, 15/15 where it is 18, 495 backend tests where there are 766.
+  `docs/internal/evidence.json` is now the single source and
+  `test_evidence_consistency.py` fails the build when a current-state document
+  disagrees with it.
+- The Innovation Fund description still said Studio is "the step before the
+  slicer", which stopped being true in 0.4.0.
+
+### Changed
+- The README's compatibility table no longer calls PrusaSlicer "detected", and
+  names sliced G-code as an input.
+- The change-freeze policy is replaced by a convergence policy: v0.4.0 stays the
+  public stable baseline while development continues, and a new stable ships when
+  it is clearly better rather than when a milestone arrives.
+
 ## [0.4.0] - 2026-08-23
 
 **The first stable release, and the second half of the workflow.**

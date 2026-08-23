@@ -19,12 +19,19 @@ const short = cut === "short";
 
 /** Hold times in milliseconds, per cut. */
 const T = short
-  ? { open: 1500, nav: 2500, problem: 5000, fix: 4500, preflight: 5500,
-      prepare: 6000, fidelity: 5500, ledger: 4000, tool: 3500,
-      coloursNav: 2500, colours: 5000 }
+  ? { open: 1500, nav: 2500, problem: 5000, fix: 4000, preflight: 5000,
+      prepare: 5500, fidelity: 5000, ledger: 3000, tool: 3000,
+      coloursNav: 2000, colours: 4000,
+      afterNav: 2000, sliced: 5500, load: 5000, send: 5000 }
   : { open: 5000, nav: 5000, problem: 6000, fix: 6000, preflight: 7000,
       prepare: 8000, fidelity: 7000, ledger: 6000, tool: 5000,
-      coloursNav: 5000, colours: 6000 };
+      coloursNav: 5000, colours: 6000,
+      afterNav: 3000, sliced: 7000, load: 6000, send: 6000 };
+
+/** A sliced job, written by the recorder next to the sample. Studio does not
+ *  slice, so the demo cannot produce one on camera — but every frame of what
+ *  Studio then does with it is real. */
+const slicedJob = process.argv[4] || "";
 const browser = await chromium.connectOverCDP(cdpUrl);
 
 const beat = (name, ms) => {
@@ -91,6 +98,19 @@ try {
   // Six colours, four toolheads.
   await goto("/colors", T.coloursNav);
   await scrollTo("Colours and toolheads", T.colours);
+
+  // The other half of the loop: Orca has sliced it, and the job comes back.
+  if (slicedJob) {
+    await goto("/after-slicing", T.afterNav);
+    const field = page.locator('input[aria-label="Path to a sliced G-code file"]').first();
+    if (await field.count()) {
+      await field.fill(slicedJob);
+      await page.getByRole("button", { name: /Check this job/i }).first().click();
+      await beat("reading the sliced job", T.sliced);
+    }
+    await scrollTo("Ready to send?", T.send);
+    await scrollTo("What to load", T.load);
+  }
 
   console.log("beats complete");
 } finally {

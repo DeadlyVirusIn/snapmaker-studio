@@ -1,106 +1,114 @@
-# Snapmaker Studio v0.4.0 — the loop closes, and the beta ends
+# Snapmaker Studio v0.5.0 — the loop gets intelligent
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-This is the first stable release of Snapmaker Studio, and it finishes the job the
-project set out to do.
+v0.4.0 taught Studio to read the job your slicer produced and check it against
+your printer. This release answers the three questions that come next.
 
-## Studio can now see the other half
+## What happens during this print?
 
-Until today Studio stopped at the slicer. It read your project, explained the
-risks, compared the project against your printer, prepared a corrected copy, and
-handed that copy to Snapmaker Orca. What Orca produced was somebody else's
-problem — which meant the most expensive failures were the ones Studio could not
-see:
+Studio reads the whole job in one pass and tells you, in order:
 
-* the job prints from slot 3, and slot 3 is empty;
-* the job was sliced for PETG, and PLA is loaded;
-* the job was sliced for a different printer entirely.
+* it starts on slot 3, loaded with your yellow PLA;
+* the bed goes to 65 °C;
+* slots 1, 2 and 4 join in at layer 1;
+* **slot 3 is finished with at layer 239** — that spool can come out;
+* it pauses at layer 88 and waits for you;
+* 764 tool changes in total, each one purging some filament;
+* 281 layers, ending on slot 4.
 
-None of those are visible in the project file. None are visible on the printer
-alone. **Open the `.gcode` your slicer produced and Studio now reads it**, then
-compares it to the printer as it is right now.
+Every line carries the G-code that proves it, folded away until you want it. This
+was verified against a real 89 MB four-colour job: read in half a second, using
+eight megabytes of memory.
 
-Drag it onto the window, or hand it to Studio on the command line — a sliced job
-is not treated as a project, and goes straight to the new **After Slicing** page.
+## What should I load?
 
-Studio still does not slice. Snapmaker Orca does.
+Once a job is sliced its tool assignments are fixed — slot 3 prints what the
+slicer decided slot 3 prints. So Studio answers the question you actually have,
+slot by slot: this one is ready; this one is empty and the job needs it; this one
+has PETG and the job wants PLA; this one the job never touches, so leave it alone.
 
-## What it reads, and what it refuses to
+Colour is advisory and says so. Material is compared by family, so "PLA Matte"
+loaded against a job sliced for "PLA" is not reported as wrong.
 
-From the file itself: which machine it was sliced for, the slicer and version,
-layer count and height, estimated time, filament per slot, which tools it
-actually prints from, the nozzle it expects, whether it defines excludable
-objects.
+Studio does not track your filament and does not want to — U1Hub, Spoolman and
+OpenSpool already do that well. This is the intelligence over whatever spool state
+your printer reports.
 
-Against your printer: every tool it needs exists; every slot it uses has a spool;
-the loaded material matches, compared by family so "PLA Matte" is not a false
-alarm against "PLA"; the sliced bed fits the real bed; the firmware supports the
-object exclusion the job assumes; the printer is free.
+## Ready to send?
 
-And the refusals, which matter just as much. **Purge is never split out of a
-total the slicer did not split.** Snapmaker Orca reports one filament figure per
-slot and does not separate purged filament from printed filament, so Studio
-reports the total, says the split is not available from this file, and leaves it
-there. The nozzle check is still an honest unknown, because stock firmware does
-not report which nozzle is fitted.
+Three buckets, kept strictly apart:
 
-## Costing from measurements instead of estimates
+* **Will stop the print** — provable. A slot the job uses is empty. A tool the
+  printer does not have.
+* **Worth settling first** — real, but not proof. A different colour is loaded.
+  The printer is busy. The job pauses and nobody is standing there.
+* **Studio can't check this** — the fitted nozzle, which stock firmware does not
+  report; free space, which this firmware does not report either.
 
-Once a file is sliced, guessing stops being necessary. Filament by slot and print
-time are read from the file. Every line says where its number came from —
-measured by the slicer, derived from your prices, an assumption you can change,
-or not stated at all. A figure the file does not contain reads as unknown, never
-as zero.
+An unknown is never promoted to look thorough, or demoted to look clean. And the
+send button is not disabled when there is a blocker — it is your printer, and
+Studio says why instead of deciding for you.
 
-## A bug report worth sending
+## PrusaSlicer projects are read, not just recognised
 
-Studio asks people to tell it when it gets an analysis wrong. That report needs
-facts behind it, and gathering those by hand is exactly what nobody does. **Help →
-Reporting something Studio got wrong** now assembles them: your project's traits,
-the Doctor's findings, the sliced job, what your printer reported, and the fix
-ledger.
+Studio used to detect a PrusaSlicer `.3mf` and read its printer model, and
+nothing else — so an ordinary Prusa project came out as "0 filaments, no layer
+height" and every check downstream had nothing to work with.
 
-Your username, home folder, file paths, machine name and printer address are
-replaced *before* the bundle is assembled, and you can read the entire thing
-before it is written to disk. Studio never sends it anywhere.
+It now reads the project's own configuration: printer model and bed size, every
+filament slot with its type, colour, vendor and diameter, layer and first-layer
+heights, supports, temperatures, per-object extruder assignments and overrides,
+and variable layer-height profiles. What a U1 copy cannot keep — variable layer
+height, per-object overrides, support styling — is named in the fidelity report
+instead of quietly disappearing.
 
-## Upgrading from a beta
+## One button that talks to the internet, and only when you press it
 
-Install over the top. Your settings and library are kept, and the upgrade is
-checked as part of the release: a beta.24 installation is created, used, then
-upgraded, and the resulting state is verified.
+**Help → Check for a newer version** asks GitHub which release is newest. That is
+the only outbound request Studio makes. It sends nothing about you, your files or
+your printer, it never runs on its own, and it never downloads or installs
+anything — the answer is a version number and a link.
 
-## What was fixed
+It is built into the desktop shell rather than the page, so the web view keeps its
+lock-down, and a test fails the build if that ever changes.
 
-- `u1convert selfcheck` crashed at the very end on a default Windows console —
-  the results table contained a character `cp1252` cannot encode. The one command
-  Studio tells strangers to run now prints its own results on a stock console.
-- The support bundle leaked a model's file name: redacting a username inside a
-  path inserted characters that stopped the path redaction dead. Paths are
-  redacted first now. Caught by its own test before the feature ever shipped.
-- A slicer that reports filament per slot without a total now has the total added
-  up rather than left blank.
+## Fixed
+
+- The timeline scanner missed everything in a job written on Windows: lines end
+  with CR LF there, and the stray carriage return sat between the marker and the
+  end of the line. Found by its own test.
+- A quoted filament name containing a comma invented an extra extruder.
+- The public evidence counts had drifted from what the harnesses produce — 21/21
+  where it is 27, 15/15 where it is 18, 495 backend tests where there are 766.
+  There is now one canonical source and a test that fails the build when a
+  document disagrees with it.
+
+## Upgrading
+
+Install over the top. Settings and library are kept, and the upgrade path is part
+of the release checks: v0.4.0 is installed, used, then upgraded, and the resulting
+state is verified.
 
 ## Unchanged
 
-Local-first: no cloud, no account, no telemetry, nothing uploaded. Studio does not
-slice. Your originals are never modified. Studio never starts a print on its own.
-Every check is advisory — it does not promise a successful print.
+Local-first: no cloud, no account, no telemetry, nothing uploaded. **Studio does
+not slice** — Snapmaker Orca does; reading a G-code file is not producing one.
+Your originals are never modified. Studio never starts a print on its own. Every
+check is advisory and none of them promises a successful print.
 
 ## Known limitations
 
-- **Windows only.** macOS and Linux builds are not built or tested.
-- **The installer is not code-signed.** SmartScreen will show an unknown
-  publisher; verify the SHA256 below before running it.
-- **Purge cannot be separated** from printed filament in Snapmaker Orca output.
-- **The fitted nozzle cannot be read** from stock firmware.
-- **Painted colour cannot be classified** without slicing, and is reported as
-  unclassified rather than guessed.
+- Windows only.
+- The installer is not code-signed; verify the SHA256.
+- Purge cannot be separated from printed filament in Snapmaker Orca output.
+- The fitted nozzle cannot be read from stock firmware.
+- Free storage is not reported by this firmware, so Studio says so rather than
+  guessing whether a job will fit.
+- Painted colour cannot be classified without slicing.
 
 ## Install
 
 Installer name, size and SHA256: [RELEASE_METADATA.md](RELEASE_METADATA.md).
-Full instructions and uninstall: [windows-install.md](windows-install.md).
 What was verified and how: [TRUST_STATUS.md](TRUST_STATUS.md).

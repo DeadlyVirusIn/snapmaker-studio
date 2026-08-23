@@ -17,7 +17,7 @@ changed. Snapmaker Orca still does the slicing.**
 Free, open source, and entirely on your computer. No account, no cloud, nothing
 uploaded. Your original file is never modified.
 
-### [▶ Watch it work — 52 seconds](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4) · [⬇ Download for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0) · [What it is, in 5 minutes](docs/innovation-fund/JUDGE_OVERVIEW.md)
+### [▶ Watch it work — 64 seconds](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4) · [⬇ Download for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.5.0) · [What it is, in 5 minutes](docs/innovation-fund/JUDGE_OVERVIEW.md)
 
 [![Watch the Snapmaker Studio demo](docs/media/demo-poster.jpg)](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4)
 
@@ -64,23 +64,23 @@ recording, so it also shows what Studio says when it cannot reach one:
 
 ## Download
 
-**[⬇ Download Snapmaker Studio v0.4.0 for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0)**
+**[⬇ Download Snapmaker Studio v0.5.0 for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.5.0)**
 — one click, no Python, runs offline. Windows 10/11 x64.
 
-**v0.4.0 is the first stable release** — not a prerelease, so this is also what
+**v0.5.0 is the current stable release** — not a prerelease, so this is also what
 GitHub's [latest release](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/latest)
 points at. Every build ever published is on the
 [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
 Verify it before you run it:
 
-- Release: [v0.4.0](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0)
-- Installer: `Snapmaker.Studio_0.4.0_x64-setup.exe`
-- Size: 16,297,246 bytes
-- SHA256: `a6a28de6a539170746671d3f4d2e73fdd594c00e3487caf60c028fed3f182f5b`
+- Release: [v0.5.0](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.5.0)
+- Installer: `Snapmaker.Studio_0.5.0_x64-setup.exe`
+- Size: 16,873,584 bytes
+- SHA256: `53e5358698e51df8aaf0a8697068c5793d5dda842ebe09907b239f2588089f2b`
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.5.0_x64-setup.exe
 ```
 
 The installer is not code-signed yet, so Windows SmartScreen will show "Unknown
@@ -148,7 +148,7 @@ its licence in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Evidence
 
-Everything below was verified against the published v0.4.0 installer, not
+Everything below was verified against the published v0.5.0 installer, not
 against a development build. Commands, counts and full reports:
 [docs/TRUST_STATUS.md](docs/TRUST_STATUS.md).
 
@@ -156,9 +156,9 @@ against a development build. Commands, counts and full reports:
 |---|---|
 | Installed-application acceptance, driven through the real UI | **27/27** |
 | Read-only verification against a real Snapmaker U1 | **20/20** |
-| Regression tests against genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **34 tests** |
-| End-to-end pipeline self-check (`u1convert selfcheck`) | **18/18** |
-| Backend / desktop / TypeScript / Rust | 716 · 263 · clean · clean |
+| Regression tests against genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **36 tests** |
+| End-to-end pipeline self-check (`u1convert selfcheck`) | **21/21** |
+| Backend / desktop / TypeScript / Rust | 773 · 277 · clean · clean |
 
 Reproduce any of it yourself:
 [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md).
@@ -298,9 +298,12 @@ is the first printer target; the workflow is built to grow across ecosystems.
 - **Design-first and novice-friendly.** It explains a design in plain language and
   surfaces likely print risks — before you ever open a slicer.
 - **Local-first.** Everything runs on your machine. No cloud, no account, no upload.
-- **Multi-ecosystem foundation.** Bambu, OrcaSlicer, and plain STL are first-class
-  today; PrusaSlicer files are *detected* (full preservation is on the roadmap). The
-  engine is built around a source-neutral model so more ecosystems can follow.
+- **Multi-ecosystem.** Bambu, OrcaSlicer, Snapmaker Orca, PrusaSlicer and plain STL
+  are all read properly — a PrusaSlicer project's printer, bed, filaments, colours,
+  layer heights, supports and per-object assignments are read from its own config,
+  not guessed. What a U1 copy cannot keep from it — variable layer height,
+  per-object overrides, support styling — is named in the fidelity report rather
+  than lost quietly. The engine is source-neutral, so more ecosystems can follow.
 - **Preservation, proved per project.** Preparing a copy is followed by a fidelity
   report: what is byte-identical, what changed and why, what was not carried over,
   and what Studio could not verify. Studio only says nothing was lost when that
@@ -313,9 +316,10 @@ is the first printer target; the workflow is built to grow across ecosystems.
 
 | Input | Status | Result |
 |---|---|---|
-| Bambu / Orca `.3mf` project | ✅ supported | prepared Snapmaker U1 `.3mf` (review in Orca) |
+| Bambu / Orca / Snapmaker Orca `.3mf` project | ✅ supported | prepared Snapmaker U1 `.3mf` (review in Orca) |
+| Sliced `.gcode` | ✅ read | what the printer will actually execute, checked against your printer |
 | `.stl` model | ✅ supported | prepared Snapmaker U1 `.3mf` (review in Orca) |
-| PrusaSlicer `.3mf` | 🚧 detected | read & understood; full conversion planned |
+| PrusaSlicer `.3mf` | ✅ supported | printer, bed, filaments, colours, layer heights, supports and per-object assignments read; what cannot be carried over is named |
 | `.obj` / `.glb` | 🚧 planned | — |
 
 First printer target: **Snapmaker U1**. Open the result in Snapmaker Orca to slice
@@ -407,7 +411,7 @@ validation is mandatory and never removed. Full detail in
 
 ## Roadmap
 
-**Shipped (stable, v0.4.0):** the whole loop — read a project, diagnose it,
+**Shipped (stable, v0.5.0):** the whole loop — read a project, diagnose it,
 compare it against the printer, prepare a copy, prove what survived, hand it to
 Snapmaker Orca, then read the sliced G-code back and check what the printer will
 actually execute against the printer as it is right now, with cost from the
@@ -416,7 +420,7 @@ user-confirmed control/send), the engine and CLI, and a one-click Windows
 installer with the engine bundled.
 
 **Next:**
-- Preserve PrusaSlicer multi-material through preparation (detection ships today)
+- Carry PrusaSlicer per-object extruder assignments through preparation (reading ships today)
 - OBJ and GLB input
 - More printer targets beyond the U1
 - A stable API for third-party integration

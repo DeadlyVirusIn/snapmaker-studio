@@ -1,6 +1,6 @@
 [package]
 name = "snapmaker-studio-desktop"
-version = "0.4.0"
+version = "0.5.0"
 description = "Snapmaker Studio desktop shell"
 edition = "2021"
 
@@ -12,6 +12,11 @@ tauri = { version = "2", features = ["unstable"] }
 tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# The only outbound HTTP in the shell, used by one explicit user action: checking
+# GitHub for a newer release. Deliberately in Rust rather than the webview, so the
+# page's content-security-policy keeps its lock-down and the capability exists
+# only where it is invoked.
+ureq = { version = "2", default-features = false, features = ["tls", "json"] }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security", "Win32_System_JobObjects", "Win32_System_Threading"] }

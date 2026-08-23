@@ -87,7 +87,7 @@ theirs to do — it is their name on it. The text needs no editing to be usable.
 > Everything is local. No account, no cloud, nothing uploaded, MIT licensed.
 > Your original files are never modified. Studio never starts a print.
 >
-> A 52-second recording of it working, the Windows installer with its SHA256, and
+> A 64-second recording of it working, the Windows installer with its SHA256, and
 > the full verification record (including the 21 checks that run against the
 > installer itself, and the 13 read-only checks against a real U1) are here:
 >

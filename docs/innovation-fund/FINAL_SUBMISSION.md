@@ -54,7 +54,7 @@ SHA256: [../RELEASE_METADATA.md](../RELEASE_METADATA.md). Verification record:
 [../TRUST_STATUS.md](../TRUST_STATUS.md).
 
 **Demo:** [`docs/media/snapmaker-studio-demo.mp4`](../media/snapmaker-studio-demo.mp4)
-— 52 seconds, every frame the installed application.
+— 64 seconds, every frame the installed application.
 
 ## 4. How the package maps to the three judged criteria
 
@@ -70,16 +70,16 @@ Practicality & Adaptability. The remaining 20% is a community vote.
 
 ## 5. Evidence, in one table
 
-Verified against the published v0.4.0 installer, not a development build.
+Verified against the published v0.5.0 installer, not a development build.
 
 | What | Result |
 |---|---|
 | Installed-application acceptance, through the real UI | 27/27 |
 | Read-only verification against a real Snapmaker U1 | 20/20 |
-| Regression tests against genuine Orca/Bambu/Prusa projects | 34 tests |
-| End-to-end pipeline self-check | 18/18 |
-| Backend tests | 716 passed, 3 skipped |
-| Desktop tests | 263 passed |
+| Regression tests against genuine Orca/Bambu/Prusa projects | 36 tests |
+| End-to-end pipeline self-check | 21/21 |
+| Backend tests | 773 passed, 3 skipped |
+| Desktop tests | 277 passed |
 | TypeScript · production build · Rust | clean |
 
 Reproduce any of it: [JUDGE_WALKTHROUGH.md](JUDGE_WALKTHROUGH.md).

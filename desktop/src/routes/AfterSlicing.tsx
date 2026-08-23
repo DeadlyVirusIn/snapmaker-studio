@@ -3,6 +3,7 @@ import { FileCheck2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PostSliceCard } from "@/components/PostSliceCard";
+import { MaterialPlanCard, PrintPlanCard, SendReadyCard } from "@/components/PostSlicePanels";
 import { useSliced } from "@/store/sliced";
 import { useSession } from "@/store/session";
 import { POST_SLICE_EXPLAINER } from "@/lib/postSlice";
@@ -78,7 +79,7 @@ export default function AfterSlicing() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm">
               <span className="text-muted-foreground">Checking</span>{" "}
-              <span className="font-medium">{name}</span>
+              <span className="font-medium" title={path}>{name}</span>
               {project && (
                 <>
                   {" "}
@@ -89,7 +90,10 @@ export default function AfterSlicing() {
             </p>
             <Button variant="secondary" size="sm" onClick={clear}>Choose another file</Button>
           </div>
+          <SendReadyCard path={path} />
           <PostSliceCard path={path} projectPath={project?.path} />
+          <MaterialPlanCard path={path} />
+          <PrintPlanCard path={path} />
         </>
       )}
     </div>
