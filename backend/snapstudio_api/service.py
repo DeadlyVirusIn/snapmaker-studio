@@ -325,6 +325,18 @@ def printer_facts(host: str | None = None, port: int = 7125) -> dict:
     return facts
 
 
+def color_plan(path: str, toolheads: int = 4) -> dict:
+    """Classify a project's colours against the toolheads available.
+
+    Reports which colours share layers (and so need a toolhead each), which are
+    introduced at a height (and may be planned swaps), and which Studio cannot
+    classify — painted colour cannot be read without slicing, and is never put in
+    the optimistic bucket.
+    """
+    from snapstudio_core import color_plan as cp
+    return cp.analyse(path, toolheads=toolheads)
+
+
 def fidelity_audit(original: str, prepared: str) -> dict:
     """What survived preparing a copy, element by element, with the reason for
     anything changed or dropped — and an explicit list of what Studio could not

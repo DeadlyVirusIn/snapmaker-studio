@@ -282,5 +282,20 @@ def history_cmd(source, limit, share):
         click.echo(json.dumps(service.fix_history(source=source, limit=limit), indent=2))
 
 
+@cli.command("colors")
+@click.argument("path", type=click.Path(exists=True))
+@click.option("--toolheads", type=int, default=4, show_default=True,
+              help="How many toolheads the printer has.")
+def colors_cmd(path, toolheads):
+    """Say what a project with more colours than toolheads actually needs.
+
+    Classifies each colour as sharing layers (needs a toolhead), introduced at a
+    height (may be a planned swap), or unclassified. Painted colour cannot be read
+    without slicing and is reported as unclassified rather than assumed easy.
+    """
+    from snapstudio_core import color_plan
+    click.echo(json.dumps(color_plan.analyse(path, toolheads=toolheads), indent=2))
+
+
 if __name__ == "__main__":  # `python -m u1convert.cli` without installing the package
     cli()

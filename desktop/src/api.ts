@@ -1341,3 +1341,50 @@ export async function fixOriginal(output: string): Promise<FixOriginal> {
   if (!r.ok) throw new Error(`fix original failed (${r.status})`);
   return r.json();
 }
+
+// ---- Colour planning --------------------------------------------------------
+// More colours than toolheads is not one problem but two: colours that share
+// layers need a toolhead each, colours introduced at a height may be planned
+// swaps. Painted colour cannot be read without slicing and is never put in the
+// optimistic bucket.
+
+export type ColorVerdict = "fits" | "possible_with_swaps" | "needs_reduction" | "cannot_classify";
+
+export interface ColorUse {
+  slot: number;
+  color: string | null;
+  material: string | null;
+  usage: "simultaneous" | "layer_based" | "unclassified";
+  evidence: string;
+  from_z_mm?: number | null;
+  estimated_layer?: number | null;
+  layer_is_estimated?: boolean;
+}
+
+export interface ColorPlan {
+  schema_version: string;
+  available: boolean;
+  reason?: string;
+  color_count: number;
+  toolheads: number;
+  painted_regions: boolean;
+  simultaneous: ColorUse[];
+  layer_based: ColorUse[];
+  unclassified: ColorUse[];
+  verdict: ColorVerdict;
+  headline: string;
+  summary: string;
+  guidance: string[];
+  disclaimer?: string;
+}
+
+export async function colorPlan(path: string, toolheads = 4): Promise<ColorPlan> {
+  const { port, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${port}/color_plan`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ path, toolheads }),
+  });
+  if (!r.ok) throw new Error(`colour plan failed (${r.status})`);
+  return r.json();
+}

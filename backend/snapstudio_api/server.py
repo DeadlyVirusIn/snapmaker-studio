@@ -202,6 +202,15 @@ def _make_handler(token: str):
                     self._send(400, {"error": str(e)})
                 except Exception:
                     self._send(500, {"error": "internal error"})
+            elif self.path == "/color_plan":
+                try:
+                    self._send(200, service.color_plan(
+                        rv.require_path_string(data),
+                        toolheads=rv.optional_int(data, "toolheads", 4)))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
             elif self.path == "/fidelity":
                 try:
                     self._send(200, service.fidelity_audit(
