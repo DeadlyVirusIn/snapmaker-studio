@@ -29,7 +29,7 @@ export function statusLabel(status: FidelityStatus): string {
     case "removed":
       return "Not carried over";
     case "unsupported":
-      return "Studio doesn’t understand this";
+      return "Not checked — Studio can’t read it";
     default:
       return "Couldn’t check";
   }
@@ -54,7 +54,8 @@ export function fidelityHeadline(report: FidelityReport | null): string {
     return "Everything Studio can identify came through, and every change is listed below.";
   }
   if (report.unverified.length) {
-    return `${report.unverified.length} element(s) Studio could not account for — check those yourself.`;
+    const n = report.unverified.length;
+    return `${n} thing${n === 1 ? "" : "s"} in this file changed in a way Studio cannot explain. Open the prepared copy in Snapmaker Orca and compare it with your original before printing — and please report it, because Studio should be able to account for everything it changed.`;
   }
   return "Every change and everything not carried over is listed below, with the reason.";
 }

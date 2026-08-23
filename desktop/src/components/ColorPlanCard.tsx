@@ -5,6 +5,7 @@ import { colorPlan } from "@/api";
 import type { ColorPlan, ColorUse } from "@/api";
 import {
   COLOR_PLAN_TITLE,
+  TOOLHEAD_EXPLAINER,
   groups,
   swapPointText,
   useLabel,
@@ -75,6 +76,7 @@ export function ColorPlanCard({ path, toolheads }: { path: string; toolheads?: n
             </div>
 
             <p className="text-xs text-muted-foreground">{plan.summary}</p>
+            <p className="text-[11px] text-muted-foreground">{TOOLHEAD_EXPLAINER}</p>
             <p className="text-[11px] text-muted-foreground">
               Counted against {plan.toolheads} toolhead
               {plan.toolheads === 1 ? "" : "s"} — {plan.toolheads_source}.

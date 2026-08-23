@@ -88,7 +88,8 @@ def _printer_found(printer: dict) -> dict:
                      "stays unknown."),
         action=(printer.get("hint")
                 or "On the U1 touchscreen open Settings → Maintenance and turn on "
-                   "Advanced Mode, then enter the IP address it shows."),
+                   "Advanced Mode. It will show an IP address — put that into "
+                   "Printer Hub."),
         source="Moonraker /server/info")
 
 

@@ -9,6 +9,12 @@ import type { ColorPlan, ColorUse, ColorVerdict } from "@/api";
 
 export const COLOR_PLAN_TITLE = "Colours and toolheads";
 
+/** A toolhead is the part that melts and lays down one filament. A U1 has four,
+ *  so it can print four colours at once without anyone swapping a spool. */
+export const TOOLHEAD_EXPLAINER =
+  "A toolhead is the part that melts one filament — your U1 has four, so it can print "
+  + "four colours at once without you swapping a spool.";
+
 /** The bold line under the headline. Mirrors the engine's verdict exactly. */
 export function verdictBanner(verdict: ColorVerdict): string {
   switch (verdict) {

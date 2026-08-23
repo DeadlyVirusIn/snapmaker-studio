@@ -81,7 +81,9 @@ describe("fidelityHeadline", () => {
     });
     const headline = fidelityHeadline(r);
     expect(headline).not.toContain("Everything Studio can identify");
-    expect(headline).toContain("check those yourself");
+    // A message that names a problem must also say what to do about it.
+    expect(headline).toContain("Snapmaker Orca");
+    expect(headline).toContain("report it");
   });
 
   it("falls back to listing changes when nothing is unverified but something went", () => {
