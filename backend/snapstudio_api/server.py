@@ -16,6 +16,11 @@ from . import service
 from . import request_validation as rv
 from .request_validation import ValidationError
 
+# Request bodies here are small JSON objects (paths, numbers, short option maps).
+# 1 MiB is orders of magnitude more than any real call needs and bounds what an
+# unauthenticated local caller can make the server allocate.
+MAX_REQUEST_BYTES = 1024 * 1024
+
 
 def _watch_parent_then_exit() -> None:
     """When launched by the desktop shell, exit as soon as the parent process
@@ -131,6 +136,12 @@ def _make_handler(token: str):
                 length = int(self.headers.get("Content-Length", 0) or 0)
             except (TypeError, ValueError):
                 self._send(400, {"error": "invalid Content-Length"})
+                return
+            if length < 0 or length > MAX_REQUEST_BYTES:
+                # Refuse before allocating. Every real request here is a small JSON
+                # object of paths and numbers; a multi-megabyte body is either a bug
+                # or an attempt to exhaust memory ahead of the token check.
+                self._send(413, {"error": "request too large"})
                 return
             raw = self.rfile.read(length) if length > 0 else b""
             if not hmac.compare_digest(self.headers.get("X-Auth-Token") or "", token):

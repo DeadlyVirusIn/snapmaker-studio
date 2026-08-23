@@ -34,3 +34,9 @@ cversions*.db
 *.log
 *.tmp
 .cache/
+
+# Local agent/tooling state (never commit to the public repo)
+.claude/
+.claude-flow/
+.code-review-graph/
+CLAUDE.md.bak-*

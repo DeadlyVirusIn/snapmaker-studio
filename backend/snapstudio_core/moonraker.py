@@ -9,6 +9,7 @@ or printer modification of any kind. Every function here is non-destructive.
 """
 from __future__ import annotations
 import json
+import re
 import urllib.request
 
 DEFAULT_PORT = 7125
@@ -16,11 +17,45 @@ SCHEMA_VERSION = "printer/1"
 # 4 toolheads on the U1 (klipper extruder objects).
 _TOOLHEAD_OBJECTS = ["extruder", "extruder1", "extruder2", "extruder3"]
 
+# A printer address is a bare hostname / mDNS name / IPv4, or a bracketed IPv6
+# literal. The host is interpolated straight into a URL, so anything carrying a
+# scheme, credentials, path, query or whitespace would let a saved setting point
+# Studio at a different server than the one the user thinks they configured.
+_HOSTNAME_RE = re.compile(r"\A(?!-)[A-Za-z0-9_-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9_-]{1,63}(?<!-))*\.?\Z")
+_IPV6_RE = re.compile(r"\A\[[0-9A-Fa-f:.]{2,45}\]\Z")
+
+
+class InvalidHost(ValueError):
+    """A printer address Studio will not turn into a request URL."""
+
+
+def validate_host(host: str) -> str:
+    """Return the normalized host, or raise InvalidHost.
+
+    Accepts `u1.local`, `192.168.1.50`, `[fe80::1]`. Rejects `http://x`,
+    `evil.com/path`, `user@host`, empty strings and anything with whitespace.
+    """
+    h = (host or "").strip()
+    if not h or len(h) > 255:
+        raise InvalidHost("Enter the printer's IP address or hostname.")
+    if _IPV6_RE.match(h):
+        return h
+    if not _HOSTNAME_RE.match(h):
+        raise InvalidHost(
+            "That doesn't look like a printer address. Use the IP address shown "
+            "on the printer (for example 192.168.1.50) or a name like u1.local."
+        )
+    return h
+
+
+def _url(host: str, port: int, path: str) -> str:
+    """Build a Moonraker URL from a validated host. Never accepts a full URL."""
+    return f"http://{validate_host(host)}:{int(port)}{path}"
+
 
 def _get(host: str, port: int, path: str, timeout: float) -> dict:
     """Read-only HTTP GET against Moonraker. Raises on failure."""
-    url = f"http://{host}:{port}{path}"
-    req = urllib.request.Request(url, method="GET")  # explicit: never anything but GET
+    req = urllib.request.Request(_url(host, port, path), method="GET")  # explicit: never anything but GET
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read())
 
@@ -39,10 +74,46 @@ def probe(host: str, port: int = DEFAULT_PORT, timeout: float = 2.0) -> dict:
         return {"reachable": False, "host": host, "port": port, "error": str(e)}
 
 
-def discover(hosts: list[str] | None = None, port: int = DEFAULT_PORT, timeout: float = 1.5) -> list[dict]:
-    """Probe candidate hosts (default the U1 mDNS name). Read-only."""
+# The U1 answers Moonraker on two ports: the Klipper-standard socket on 7125, and
+# the on-device nginx proxy on 80 (the same address the built-in Fluidd UI uses).
+# Which one is open varies with firmware build and whether the owner has turned on
+# Advanced Mode, so discovery tries both rather than assuming one.
+CANDIDATE_PORTS = (DEFAULT_PORT, 80)
+
+# What to tell someone when nothing answers. The U1's web/Moonraker interface is
+# gated behind a setting on the printer's own touchscreen, so "not found" is far
+# more often "the switch is off" than "the network is broken". Saying that is the
+# difference between a dead end and a fix.
+NOT_FOUND_HINT = (
+    "No printer answered. On the U1 touchscreen open Settings → Maintenance and "
+    "turn on Advanced Mode — that is what opens the printer's network interface. "
+    "Then check the IP address shown there and enter it here."
+)
+
+
+def discover(hosts: list[str] | None = None, port: int | None = None,
+             timeout: float = 1.5) -> list[dict]:
+    """Probe candidate hosts on the ports a U1 actually listens on. Read-only.
+
+    Returns one entry per host: the first port that answered, or the last failure
+    for that host so the caller can show a real reason. Passing an explicit `port`
+    checks only that port (used when the user typed one).
+    """
     candidates = hosts or ["U1.local", "snapmaker-u1.local"]
-    return [probe(h, port, timeout) for h in candidates]
+    ports = (port,) if port else CANDIDATE_PORTS
+    out: list[dict] = []
+    for h in candidates:
+        last: dict | None = None
+        for p in ports:
+            res = probe(h, p, timeout)
+            if res.get("reachable"):
+                last = res
+                break
+            last = res
+        if last is not None and not last.get("reachable"):
+            last["hint"] = NOT_FOUND_HINT
+        out.append(last or {"reachable": False, "host": h, "hint": NOT_FOUND_HINT})
+    return out
 
 
 def status(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:
@@ -279,9 +350,8 @@ def capabilities(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> d
 def _post(host: str, port: int, path: str, timeout: float, body: bytes | None = None,
           content_type: str | None = None) -> dict:
     """User-initiated HTTP POST against Moonraker. Raises on failure."""
-    url = f"http://{host}:{port}{path}"
     headers = {"Content-Type": content_type} if content_type else {}
-    req = urllib.request.Request(url, data=body or b"", method="POST", headers=headers)
+    req = urllib.request.Request(_url(host, port, path), data=body or b"", method="POST", headers=headers)
     with urllib.request.urlopen(req, timeout=timeout) as r:
         raw = r.read()
         try:
