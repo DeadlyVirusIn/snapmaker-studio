@@ -200,3 +200,37 @@ def ecosystem_cmd(path, installed):
 
 if __name__ == "__main__":  # `python -m u1convert.cli` without installing the package
     cli()
+
+
+@cli.command("cost")
+@click.argument("path", type=click.Path(exists=True))
+@click.option("--price-per-kg", type=float, default=20.0, show_default=True,
+              help="Your filament price per kilogram.")
+@click.option("--currency", default="$", show_default=True)
+def cost_cmd(path, price_per_kg, currency):
+    """Material cost from the slicing result stored in the project.
+
+    Reports available=false with an explanation when the file carries no real
+    figures, rather than estimating one.
+    """
+    from snapstudio_core import project_cost
+    click.echo(json.dumps(
+        project_cost.estimate(path, price_per_kg=price_per_kg, currency=currency), indent=2))
+
+
+@cli.command("placement")
+@click.argument("path", type=click.Path(exists=True))
+@click.option("--fix", is_flag=True, help="Write a new copy with the arrangement moved onto the plate.")
+@click.option("--out-dir", type=click.Path(), default=None, help="Where to write the fixed copy.")
+def placement_cmd(path, fix, out_dir):
+    """Check whether every object sits inside the U1's printable area.
+
+    With --fix, writes a NEW copy translated onto the plate when one move can do
+    it honestly; the original is never modified and the command refuses rather
+    than half-moving a project.
+    """
+    from snapstudio_core import plate_placement
+    if fix:
+        click.echo(json.dumps(plate_placement.prepare_placed_copy(path, out_dir=out_dir), indent=2))
+    else:
+        click.echo(json.dumps(plate_placement.assess(path), indent=2))

@@ -8,6 +8,7 @@ from .filaments import apply_remap, filament_count, conform_filament_arrays
 from .preserve import machine_compat_keys, prepare_preserved_values
 from .detect import detect_source
 from .optimize import load_optimization, apply_optimization
+from . import orca_import
 from .report import RepairOutcome
 from .u1_identity import (
     normalize_project_identity, normalize_values, scrub_foreign, normalize_slice_info,
@@ -93,9 +94,23 @@ def repair(tm: ThreeMF, mode: str = "u1", remap: dict | None = None,
     if mode == "optimize" and opt_profile:
         report["optimizations"] = apply_optimization(work, load_optimization(opt_profile))
 
+    # Snapmaker Orca import compatibility. These run in EVERY mode including
+    # preserve: they are not settings choices the creator made, they are the
+    # values that stop Snapmaker Orca behaving correctly on a U1 no matter what
+    # the creator wanted. Each change is reported with its old value and reason.
+    if mode in ("preserve", "u1", "optimize"):
+        report["orca_compatibility"] = orca_import.apply_compatibility(
+            work, filament_count(work))
+
     # ThreeMF is in-memory here. Replacing the parts even for dry runs lets the
     # caller validate the exact would-be project without writing an output file.
     tm.replace_part(SETTINGS, dump_project_settings(work))
+    # The authoring slicer's own sliced output is toolpaths for a different
+    # machine. Left in the project, Snapmaker Orca can preview a print that will
+    # never happen on this printer, so it is removed and Orca re-slices.
+    if mode in ("preserve", "u1", "optimize"):
+        report["slice_cache_removed"] = orca_import.strip_slice_cache(tm)
+
     # Blank the Bambu slice_info version stamp (the "newer version" trigger).
     if mode in ("preserve", "u1", "optimize") and SLICE_INFO in tm.list_parts():
         original_slice_info = tm.read_part(SLICE_INFO)

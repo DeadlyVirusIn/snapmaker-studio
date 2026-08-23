@@ -201,6 +201,33 @@ def strategy_recommend(path: str) -> dict:
     return rec
 
 
+def project_cost(path: str, price_per_kg: float = 20.0, currency: str = "$",
+                 prices: dict | None = None) -> dict:
+    """Material cost from the slicing result the project already carries.
+
+    Returns available=False with an explanation when the file has no real
+    figures — the UI shows that instead of a fabricated number.
+    """
+    from snapstudio_core import project_cost as pc
+    return pc.estimate(path, price_per_kg=price_per_kg, currency=currency, prices=prices)
+
+
+def placement_check(path: str) -> dict:
+    """Read-only: where each object sits relative to the U1's printable area."""
+    from snapstudio_core import plate_placement
+    return plate_placement.assess(path)
+
+
+def prepare_placed(path: str, out_dir: str | None = None) -> dict:
+    """Write a new copy with the whole arrangement moved onto the U1 plate.
+
+    Refuses without writing when one move cannot honestly fix the project. The
+    original is never modified.
+    """
+    from snapstudio_core import plate_placement
+    return plate_placement.prepare_placed_copy(path, out_dir=out_dir)
+
+
 def ecosystem_advice(path: str, installed: dict | None = None) -> dict:
     """Read a project and say which open tool is the right next step for it.
 

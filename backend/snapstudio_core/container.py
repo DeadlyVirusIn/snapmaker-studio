@@ -105,6 +105,14 @@ class ThreeMF:
     def replace_part(self, name: str, data: bytes) -> None:
         if name not in self._parts: raise PartNotFound(name)
         self._parts[name] = data; self._dirty.add(name)
+    def remove_part(self, name: str) -> None:
+        """Drop a part from the project. Used to strip the authoring slicer's own
+        sliced output, which is wrong for a different printer. No-op if absent."""
+        self._parts.pop(name, None)
+        self._dirty.discard(name)
+        if name in self._order:
+            self._order.remove(name)
+
     def list_parts(self) -> list[str]: return list(self._order)
 
     def save(self, path: str | Path) -> None:

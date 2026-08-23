@@ -177,6 +177,34 @@ def _make_handler(token: str):
                     self._send(400, {"error": str(e)})
                 except Exception:
                     self._send(500, {"error": "internal error"})
+            elif self.path == "/placement_check":
+                try:
+                    self._send(200, service.placement_check(rv.require_path_string(data)))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
+            elif self.path == "/prepare_placed":
+                try:
+                    self._send(200, service.prepare_placed(
+                        rv.require_path_string(data),
+                        out_dir=data.get("out_dir") or None))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
+            elif self.path == "/project_cost":
+                try:
+                    prices = data.get("prices")
+                    self._send(200, service.project_cost(
+                        rv.require_path_string(data),
+                        price_per_kg=rv.optional_positive_float(data, "price_per_kg", 20.0),
+                        currency=rv.optional_str(data, "currency", "$") or "$",
+                        prices=prices if isinstance(prices, dict) else None))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
             elif self.path == "/ecosystem_advice":
                 try:
                     installed = data.get("installed")

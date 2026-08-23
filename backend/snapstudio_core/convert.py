@@ -102,7 +102,8 @@ def _action_reasons(report: dict) -> tuple[dict[str, str], set[str], set[str]]:
     groups = [report.get("normalizations", []), report.get("profile_changes", []),
               report.get("filament_array_changes", []),
               report.get("value_normalizations", []), report.get("preserved_value_changes", []),
-              report.get("presets_normalized", []), report.get("foreign_cleared", [])]
+              report.get("presets_normalized", []), report.get("foreign_cleared", []),
+              report.get("orca_compatibility", [])]
     identity = report.get("identity", {})
     groups.append(identity.get("changed", []) if isinstance(identity, dict) else [])
     for group in groups:
