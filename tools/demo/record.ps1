@@ -19,6 +19,7 @@ param(
     [string]$FFmpeg = "ffmpeg",
     [string]$Out,
     [string]$WorkDir = (Join-Path $env:TEMP "snapstudio-demo"),
+    [switch]$Short,
     [int]$DebugPort = 9355
 )
 
@@ -136,7 +137,8 @@ public static class Win {
     Start-Sleep -Seconds 3
 
     Write-Host "Recording — driving the demo beats"
-    & node (Join-Path $PSScriptRoot "beats.mjs") "http://127.0.0.1:$DebugPort"
+    $cut = if ($Short) { "short" } else { "full" }
+    & node (Join-Path $PSScriptRoot "beats.mjs") "http://127.0.0.1:$DebugPort" $cut
     if ($LASTEXITCODE -ne 0) { throw "the demo beats failed" }
 
     Start-Sleep -Seconds 2

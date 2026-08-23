@@ -54,8 +54,8 @@ theirs to do — it is their name on it. The text needs no editing to be usable.
 > types in one, colours in another, sub-types and vendors in others, plus a
 > per-slot flag for whether a spool is actually there. I had been looking for a
 > list of objects, found nothing, and reported that as the printer's silence
-> instead of my own bug. Two weeks ago I finally pointed it at a real U1 and it
-> took about a minute to find. Fixed in the current build. If you are writing
+> instead of my own bug. When I finally pointed it at a real U1 it took about a
+> minute to find. Fixed in the current build. If you are writing
 > anything against the U1's Moonraker API, that shape may save you the same hour.
 >
 > The same session confirmed something I had only assumed: **stock firmware
@@ -87,7 +87,7 @@ theirs to do — it is their name on it. The text needs no editing to be usable.
 > Everything is local. No account, no cloud, nothing uploaded, MIT licensed.
 > Your original files are never modified. Studio never starts a print.
 >
-> A 71-second recording of it working, the Windows installer with its SHA256, and
+> A 52-second recording of it working, the Windows installer with its SHA256, and
 > the full verification record (including the 21 checks that run against the
 > installer itself, and the 13 read-only checks against a real U1) are here:
 >
@@ -96,9 +96,11 @@ theirs to do — it is their name on it. The text needs no editing to be usable.
 > It is a beta and the installer is not code-signed yet, so Windows will warn you
 > about an unknown publisher — the hash is published, please check it.
 >
-> If you try it and it tells you something wrong, I would genuinely rather hear
-> about it than not. It has never had a bug report from anyone but me, and that is
-> the least useful kind.
+> **The one thing I actually want:** open one model you were going to print
+> anyway, and tell me what Studio got wrong. There is an issue template called
+> "Studio got this wrong" that asks exactly two things — what Studio said, and
+> what was actually true. It has never had a bug report from anyone but me, and
+> that is the least useful kind.
 
 ---
 

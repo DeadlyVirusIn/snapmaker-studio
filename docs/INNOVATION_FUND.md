@@ -209,7 +209,7 @@ development build. Commands, counts and full reports:
 | TypeScript, Rust, production build | clean |
 
 Demo: [`docs/media/snapmaker-studio-demo.mp4`](media/snapmaker-studio-demo.mp4) —
-71 seconds, every frame the installed application.
+52 seconds, every frame the installed application.
 
 Studio is advisory. It does not slice, does not promise a successful print, and
 never controls a printer on its own.

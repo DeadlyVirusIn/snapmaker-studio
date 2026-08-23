@@ -1,0 +1,67 @@
+name: Watch the Innovation Fund page
+
+# Twenty per cent of the Phase 1 score is a community vote whose system did not
+# exist when the entry was listed, and there is no notification channel that
+# reaches an entrant when it launches. This checks the page once a day and opens
+# an issue if any watched signal moves.
+#
+# One GET per run. Nothing here votes, submits, or interacts with the site.
+
+on:
+  schedule:
+    - cron: "17 8 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    name: Check for the voting system
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Compare the page against the recorded signals
+        id: check
+        run: |
+          set +e
+          out=$(python tools/watch/innovation_fund.py 2>&1)
+          code=$?
+          echo "$out"
+          {
+            echo "report<<EOF"
+            echo "$out"
+            echo "EOF"
+            echo "code=$code"
+          } >> "$GITHUB_OUTPUT"
+          # Only a signal change (2) is interesting; a fetch failure (1) is not
+          # worth an issue, and the run log records it.
+          exit 0
+
+      - name: Open an issue when a signal changes
+        if: steps.check.outputs.code == '2'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPORT: ${{ steps.check.outputs.report }}
+        shell: bash
+        run: |
+          {
+            echo "The daily watcher saw a change in the signals it tracks on"
+            echo "<https://www.snapmaker.com/innovation-fund>."
+            echo
+            echo '```'
+            echo "$REPORT"
+            echo '```'
+            echo
+            echo "If the project-voting system has launched:"
+            echo
+            echo "- Record the legitimate voting path in \`docs/innovation-fund/BETA_TEST_PLAN.md\`."
+            echo "- Do **not** automate, solicit or coordinate votes. Linking the project page once, factually, is the limit."
+            echo "- Refresh the snapshot with \`python tools/watch/innovation_fund.py --update\`."
+          } > issue-body.md
+          gh issue create --title "Innovation Fund page changed - check whether project voting is live" --body-file issue-body.md

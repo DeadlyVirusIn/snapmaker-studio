@@ -1,24 +1,26 @@
 ---
 name: Bug report
-about: Something didn't work as expected
+about: Studio crashed, failed to start, or a button did nothing
 labels: bug
 ---
 
 **What happened**
-A clear description of the problem.
 
-**Command / steps**
-```
-u1convert ...
-```
+**What you did**
+Which page were you on, and what did you click?
 
-**Expected**
-What you expected to happen.
+**What you expected instead**
 
-**File**
-If possible, attach or describe the input file (which slicer it came from, single- or multi-colour, painted?).
+**Studio version**
+Shown in the status bar at the bottom of the window, e.g. `v0.4.0-beta.24`.
 
-**Environment**
-- OS:
-- Python version:
-- Snapmaker Studio version (`pip show snapmaker-studio`):
+**Windows version**
+
+**If the engine is involved**
+Studio runs a local engine on 127.0.0.1. If a card said the engine could not be
+reached, say so — that is a different failure from a wrong answer.
+
+---
+
+*If Studio ran fine but told you something untrue about your model or printer,
+use **"Studio got this wrong"** instead — that report is more useful to us.*

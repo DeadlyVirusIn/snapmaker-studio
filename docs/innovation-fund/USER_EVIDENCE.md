@@ -38,14 +38,44 @@ value, and this page will not pretend otherwise.
 **The honest summary:** there is evidence of *interest* and no evidence of
 *outcome*.
 
+## Ecosystem feedback — a separate category from user outcome
+
+Four factual notes were posted to other maintainers on 2026-08-23 asking them to
+correct how Studio describes their projects. **As of 2026-08-23 all four threads
+are open with no replies.** They were posted the same day; this is not evidence of
+being ignored.
+
+| Thread | State |
+|---|---|
+| [FOrcaSlicer#11](https://github.com/jiyang1018/FOrcaSlicer/issues/11) | open, no reply |
+| [u1hub#2](https://github.com/dlgambill/u1hub/issues/2) | open, no reply |
+| [makerworld-to-snapmaker-u1#2](https://github.com/Dragon2203/makerworld-to-snapmaker-u1/issues/2) | open, no reply |
+| [snapmaker-u1-toolkit#33](https://github.com/bbolinger/snapmaker-u1-toolkit/issues/33) | open, no reply |
+
+A maintainer's correction, if one arrives, will be recorded here as **ecosystem
+feedback** — a peer checking a factual claim. It is not customer testimony and
+will never be presented as one.
+
 ## Where feedback could now come from
 
 Until 2026-08-23 there was no channel with anything in it. Four factual notes have
 since been posted to the maintainers of projects Studio names, asking them to
 correct how their work is described — see
-[ECOSYSTEM_OUTREACH.md](ECOSYSTEM_OUTREACH.md) for the exact posts. Any reply is
-the project's first external feedback of any kind, and will be recorded here as
-what it is: a maintainer's correction, not a user outcome.
+[ECOSYSTEM_OUTREACH.md](ECOSYSTEM_OUTREACH.md) for the exact posts.
+
+Three further channels opened on 2026-08-23, none of which existed before:
+
+- **A "Studio got this wrong" issue form**, which asks for two things — what
+  Studio said, and what was actually true.
+- **GitHub Discussions**, previously disabled, so a one-line observation now has
+  somewhere to go that is not a formal bug report.
+- **A written community post**, ready for the Snapmaker forum, where the project
+  has never been mentioned.
+
+The plan behind them, including what is deliberately *not* being asked for, is
+[BETA_TEST_PLAN.md](BETA_TEST_PLAN.md). The target before evaluation closes is
+deliberately small: **one external report of any kind.** The project has never had
+one.
 
 ## The underlying problems, separately
 

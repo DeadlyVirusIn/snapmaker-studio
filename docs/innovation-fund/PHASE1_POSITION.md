@@ -79,35 +79,27 @@ appear in GitHub's top 30 results for "snapmaker", and its description still rea
 judge clicking "View on GitHub" from the wall landed on a description of a
 different product from the README's.
 
-## If the committee picked 20 today, where does Studio fall?
+## Where Studio falls — superseded by the scorecard
 
-**Borderline. It makes the 20 only if a judge actually opens the repository.**
+An earlier version of this section called Studio "top quartile" on two criteria
+and predicted a prize tier. **Those were hypotheses stated as findings, and they
+are withdrawn.** Scoring the other projects against the same rubric does not
+support them: Lumina-Layers has 60 test files and 24 contributors, Kromacut has
+CI, tests and a 27 KB README, ditherforge has 14 test files and a 50 KB README.
 
-The case for, on the committee's own criteria:
+The scored model, with the rubric, evidence levels for all 41, three separate
+rankings and four scenarios, is
+**[FIELD_SCORECARD.md](FIELD_SCORECARD.md)**. Its summary:
 
-- *Innovation & Technical Depth* — **top quartile.** Nothing else in the field
-  attempts correctness under missing information: evidence grading, the
-  project-to-printer join, an audit that can refuse its own claim, a feature
-  withdrawn because its arithmetic could not be justified. Most entries are
-  competent implementations of an obvious idea. This one has a thesis.
-- *Openness & Quality* — **top quartile.** MIT in a GPL-heavy field, a data-file
-  extension seam, a documented CLI and local API, and — uniquely, as far as I can
-  tell — verification that runs against the *published installer* and against real
-  hardware, reproducible by anyone with two commands.
-- *Practicality & Adaptability* — **middle.** The problems Studio solves are real
-  but abstract. "Turn a photo into a colour print" and "16 colours on a U1" are
-  instantly graspable; "compares your project against your printer's reported
-  capabilities" needs a paragraph.
-- *Community (20%)* — **bottom.** Last in the field. There is no way to fix this
-  honestly in four weeks, and the voting system is not even live.
+- Technical ranking of the visible field: Studio sits in a **six-way tie at
+  11/15**, mid-field — not top quartile.
+- Community position: **last** among every project with a findable repository.
+- Most likely overall band: **11–20**, with meaningful probability of 21–30.
+  Confidence moderate on the technical placement, low on the outcome.
 
-Realistic outcome: **Active Builder tier ($1,500) is achievable; Eco-Enhancer
-($3,000) is possible on technical merit; U1 Pioneer ($5,000) is not.** The three
-top prizes will go to projects with both depth and visible impact — Extended
-Firmware, Lumina-Layers, AFC-class work. Studio cannot out-traction them and
-should not try.
-
-The decisive variable is **whether the committee reads past the wall card.**
+No prize tier is predicted here. The committee has published no intra-criterion
+weights, 19 of 41 projects have no repository I could resolve, and the community
+voting system does not exist yet.
 
 ## The five real risks, ranked
 
@@ -128,15 +120,21 @@ because it is pure signal loss, not a product gap.
 Nothing suggests anyone has used Studio and had a good outcome. Downloads exist
 (43) and clones exist (57 unique in a fortnight), but no engagement of any kind. A
 committee that reads traction as evidence of usefulness will mark this down, and
-they would not be wrong to. Four weeks cannot manufacture a community, and the
-attempt would be worse than the gap.
+they would not be wrong to.
+
+The earlier claim that this "cannot be earned honestly in four weeks" is also
+withdrawn — it confused *buying* engagement, which is off the table, with
+*earning* it, which has simply never been attempted. The project has never been
+posted about anywhere, has no issue template inviting a report, and had
+Discussions turned off. Those are all things that were never tried, not things
+that were tried and failed. See [BETA_TEST_PLAN.md](BETA_TEST_PLAN.md).
 
 ### 3. Presentation weakness — the hardest project in the field to explain
 **Hits: Practicality & Adaptability, and Innovation by omission.**
 Every other entry has a one-sentence pitch a maker instantly pictures. Studio's
 value is conditional, structural, and about *not* claiming things. That is
 genuinely harder to convey, and skim-reading judges will get it wrong more often
-than they get it right. The 71-second demo and the judge overview exist precisely
+than they get it right. The 52-second demo and the judge overview exist precisely
 for this, but the demo is not linked from anywhere Snapmaker controls.
 
 ### 4. Evidence weakness that was publicly visible — CI red on main

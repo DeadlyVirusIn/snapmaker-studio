@@ -8,9 +8,20 @@
 [![CI](https://github.com/DeadlyVirusIn/snapmaker-studio/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DeadlyVirusIn/snapmaker-studio/actions/workflows/ci.yml)
 ![Status: beta](https://img.shields.io/badge/status-beta-orange.svg)
 
-**The Intelligence Layer for Open 3D Printing.**
+### You downloaded a model. Will it actually print on your U1?
 
-_Project Doctor. Printer Hub. Cost Doctor — Studio checks every model, surfaces likely print risks, estimates cost, and helps you price it, before your U1 ever sees it._
+**Snapmaker Studio checks it against your real printer before you slice — tells you
+what is likely to go wrong, fixes what it can prove, and shows you exactly what
+changed. Snapmaker Orca still does the slicing.**
+
+Free, open source, and entirely on your computer. No account, no cloud, nothing
+uploaded. Your original file is never modified.
+
+### [▶ Watch it work — 52 seconds](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4) · [⬇ Download for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.24) · [What it is, in 5 minutes](docs/innovation-fund/JUDGE_OVERVIEW.md)
+
+[![Watch the Snapmaker Studio demo](docs/media/demo-poster.jpg)](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4)
+
+*The Intelligence Layer for Open 3D Printing.*
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.** "Snapmaker" is a trademark of its respective owner.
 
@@ -41,17 +52,13 @@ rather than guessing from a model name.
 which nozzle is fitted, so Studio says *"check this yourself"* — never
 *"unsupported"*.
 
-## Watch it work
+## About the demo
 
-Seventy-one seconds, recorded from the installed application. No slides, no
-reconstruction — an out-of-bounds object found and moved, a copy prepared, every
-change accounted for, and six colours planned against four toolheads. No printer
-is connected in the recording, so it also shows what Studio says when it cannot
-reach one: *"Studio can't tell"*, and what to do about it.
-
-[![Watch the Snapmaker Studio demo](docs/media/demo-poster.jpg)](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4)
-
-**[▶ Watch the 71-second demo](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4)** — plays in the browser, no download needed.
+Recorded from the installed application — no slides, no reconstruction. An
+out-of-bounds object found and moved, a copy prepared, every change accounted for,
+and six colours planned against four toolheads. No printer is connected in the
+recording, so it also shows what Studio says when it cannot reach one:
+*"Studio can't tell"*, and what to do about it.
 
 ## Download
 
@@ -83,6 +90,17 @@ uninstall: [docs/windows-install.md](docs/windows-install.md).
 Canonical release values live in
 [docs/RELEASE_METADATA.md](docs/RELEASE_METADATA.md); what was verified, and how,
 is in [docs/TRUST_STATUS.md](docs/TRUST_STATUS.md).
+
+## Studio got something wrong? That is the report we want
+
+Studio's whole claim is that it tells you the truth about your file and your
+printer, and says *"I can't tell"* when it cannot. Every time it gets that wrong,
+the claim is weaker — so a wrong analysis is the most useful thing you can send.
+
+**[→ Tell us what it got wrong](https://github.com/DeadlyVirusIn/snapmaker-studio/issues/new?template=studio-got-this-wrong.yml)**
+— two questions: what Studio said, and what was actually true. Or start a
+[discussion](https://github.com/DeadlyVirusIn/snapmaker-studio/discussions) if
+you would rather just mention it.
 
 ## Screenshots
 

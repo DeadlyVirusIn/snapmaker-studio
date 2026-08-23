@@ -1,0 +1,82 @@
+name: "Studio got this wrong"
+description: "Studio said something about your model or printer that was not true. This is the most useful report you can send."
+title: "Studio got this wrong: "
+labels: ["wrong-analysis"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you — this is genuinely the report we want most.
+
+        Studio's whole claim is that it tells you the truth about a file and your
+        printer, and says "I can't tell" when it cannot. Every time it gets that
+        wrong, the claim is weaker. You do not need to diagnose anything; just
+        tell us what it said and what was actually the case.
+
+        **Please don't attach models you don't have the right to share.** A
+        description is enough to start.
+
+  - type: textarea
+    id: said
+    attributes:
+      label: What Studio said
+      description: Copy the message, or drop in a screenshot of the card.
+      placeholder: 'e.g. "Nozzle size — check this yourself", or "1 object is outside the U1''s printable area"'
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What was actually true
+      description: What did Snapmaker Orca say, or what happened when you printed it?
+      placeholder: "e.g. Orca sliced it without complaining, and it printed fine."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of mistake was it?
+      options:
+        - Said there was a problem, but there wasn't (false alarm)
+        - Missed a problem that was really there
+        - Said "I can't tell" when it should have been able to tell
+        - Claimed to know something it got wrong
+        - Changed something in the prepared copy that it should have left alone
+        - Something else
+    validations:
+      required: true
+
+  - type: input
+    id: source
+    attributes:
+      label: Where did the model come from?
+      description: Which site, and which slicer made the file, if you know.
+      placeholder: "e.g. MakerWorld, exported from Bambu Studio · or: my own STL from Fusion"
+
+  - type: input
+    id: version
+    attributes:
+      label: Studio version
+      description: Shown in the status bar at the bottom of the window.
+      placeholder: "v0.4.0-beta.24"
+    validations:
+      required: true
+
+  - type: textarea
+    id: file
+    attributes:
+      label: Can you share the file? (optional)
+      description: |
+        Only if you have the right to. A cut-down file that still shows the problem is
+        ideal. If you can't share it, say roughly what it contains — number of objects,
+        how many colours, whether colour was painted or assigned per object.
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else (optional)
+      description: |
+        If a printer was connected, what did Printer Hub show? If you have the
+        prepared copy Studio made, its fix ledger records what it changed.

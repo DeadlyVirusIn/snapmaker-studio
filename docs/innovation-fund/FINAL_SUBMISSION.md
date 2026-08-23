@@ -54,7 +54,7 @@ SHA256: [../RELEASE_METADATA.md](../RELEASE_METADATA.md). Verification record:
 [../TRUST_STATUS.md](../TRUST_STATUS.md).
 
 **Demo:** [`docs/media/snapmaker-studio-demo.mp4`](../media/snapmaker-studio-demo.mp4)
-— 71 seconds, every frame the installed application.
+— 52 seconds, every frame the installed application.
 
 ## 4. How the package maps to the three judged criteria
 

@@ -30,7 +30,7 @@ codebase, not a roadmap item.
 
 [![Snapmaker Studio demo](../media/demo-poster.jpg)](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4)
 
-[71 seconds, recorded from the installed application](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4).
+[52 seconds, recorded from the installed application](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4).
 Nothing staged, nothing re-created. No printer is connected in the recording, so
 it also shows what Studio says when it cannot reach one — which is the more
 interesting half. The beat-by-beat script is

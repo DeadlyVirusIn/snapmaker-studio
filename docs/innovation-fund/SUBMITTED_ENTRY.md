@@ -74,7 +74,7 @@ Nothing in the submitted text became false. A great deal became incomplete.
 | Withdrawn multi-plate maths (beta.23) | A feature removed rather than patched when its arithmetic could not be justified. |
 | Installed-build acceptance harness (beta.24) | 21 checks against the published installer, not a dev server. |
 | Read-only real-U1 verification (beta.24) | 13 checks against a real machine, which found and fixed a genuine firmware-reading bug. |
-| Recorded 71-second demo (beta.24) | The entry had no video. |
+| Recorded 52-second demo (beta.24) | The entry had no video. |
 
 The entry's hardware claim is also now understated in a specific way: it described
 verifying the *control* loop in June. Since then the *read* path has been verified
