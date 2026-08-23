@@ -1,10 +1,112 @@
 # Trust Status — Snapmaker Studio
 
-Honest, current verification state for the latest beta. This file does **not**
-mark a release "accepted" until the interactive install acceptance below is
-completed and recorded.
+Honest, current verification state for the latest beta. A release is only marked
+**ACCEPTED** once the automated suites, the acceptance harness running against the
+published installer, and — from beta.24 onward — read-only verification against a
+real Snapmaker U1 have all passed and are recorded here.
 
-## v0.4.0-beta.23 — PARTIAL / PENDING (not accepted)
+## v0.4.0-beta.24 — ACCEPTED
+
+**The first build verified against a real Snapmaker U1.** Everything below was
+checked against *this installer* — the exact asset published on the release page,
+verified by SHA256 — not against the source tree or a development server. The
+canonical hash, size and installer name are in
+[RELEASE_METADATA.md](RELEASE_METADATA.md).
+
+### CI / software — verified in this environment
+
+| Check | Command | Result |
+|---|---|---|
+| Backend tests | `pytest` | **PASS** — 663 passed, 3 skipped (629 passed, 37 skipped without the fetched real-slicer fixtures) |
+| Real-slicer regression fixtures | `pytest tests/test_real_world_3mf.py` | **PASS** — 34 tests against genuine OrcaSlicer, BambuStudio and PrusaSlicer projects |
+| End-to-end pipeline | `u1convert selfcheck` | **PASS** — 15/15 over production code paths, also run in CI |
+| Desktop tests | `npm run test` | **PASS** — 247 passed across 31 files |
+| TypeScript | `npx tsc --noEmit` | **PASS** — clean |
+| Production frontend build | `npm run build` | **PASS** |
+| Rust shell | `cargo check` | **PASS** — clean |
+| Installer builds | `npm run release:windows` | **PASS** — NSIS installer produced |
+| Release-document consistency | `pytest tests/test_release_docs.py` | **PASS** — including a new check that the Rust crate version matches the released version, which had silently drifted to beta.21.3 |
+
+### Installed application — the acceptance harness
+
+`pwsh -File tools/acceptance/run.ps1 -Installer <the published installer>` —
+**21/21 checks passed**. Full report:
+[internal/acceptance-beta24.json](internal/acceptance-beta24.json).
+
+The harness installs the built installer into an isolated directory, launches it
+with an isolated WebView2 profile and engine data directory, drives the real
+window over the Chrome DevTools Protocol, and uninstalls. It stops only the
+processes it started, and it exports and restores any pre-existing installation's
+uninstall registry entry.
+
+What it proves, in order: the scripted install completes; the application and the
+frozen engine sidecar are both present; the app launches and the sidecar boots
+from the install directory; the shipped webview is reachable; the engine answers
+`/health` from the app's own origin; ecosystem tool detection and Snapmaker Orca
+detection work against this machine; all seven engine routes answer from the
+frozen sidecar, including `/project_cost`; a model handed to the app on its
+command line opens; the placement finding, the preflight card, an honest unknown
+and the absence of the word "unsupported" all render; preparing a copy produces
+the fidelity report, the not-carried-over list, the fix ledger, the
+return-to-original offer, the original-untouched wording and the best-tool panel,
+with no print-success promise anywhere; the colour plan renders with its verdict
+and the source of its toolhead count; **the input file is byte-identical
+afterwards**; closing leaves no orphan sidecar; the app reopens; uninstalling
+completes, removes every file, and leaves no sidecar running.
+
+**Deliberately not automated:** launching Snapmaker Orca with a prepared copy. The
+handoff target is verified — Orca is detected and its executable resolved — but
+actually starting it would leave a user GUI process this harness would then have
+to terminate, and this project does not terminate user processes it did not
+start. The launch itself is a one-click action a person performs.
+
+### Real Snapmaker U1 — read-only
+
+`pwsh -File tools/hardware/verify.ps1 -PrinterHost <printer>` — **13/13 checks
+passed** against a real machine running stock firmware, using this installer.
+Full report: [internal/hardware-beta24.json](internal/hardware-beta24.json), with
+the printer's address replaced before anything was written to disk.
+
+| What was proved | Observed |
+|---|---|
+| Printer discovered and answering | Moonraker on port 7125, print state `standby` |
+| Firmware object list enumerated | 196 Klipper objects |
+| The printer reports its own bed | 271 × 335 × 281 mm — used by the bed check, not a hard-coded default |
+| The printer reports its toolhead count | 4 |
+| **Loaded filament read correctly** | `#000000 PLA Matte`, `#2D9E59 PLA Silk`, `#F8F81C PLA Basic`, `#FFFFFF PLA Matte` — the bug this release fixes |
+| Every loaded slot carries a material and a colour | yes |
+| Fitted nozzle reported as unknown, not unsupported | "Nozzle size — check this yourself" |
+| Nothing undetected is called unsupported | the word does not appear in the report |
+| Project materials vs the machine's toolheads | "project uses 6 filament slot(s); printer reports 4 toolheads" |
+| Project materials vs what is actually loaded | "printer reports 4 loaded; project uses 6" |
+
+**This was read-only.** The route allow-list is asserted in the script before the
+first request. No print was started, nothing was uploaded or queued, and no
+temperature, motion, homing, pause, resume, cancel, emergency-stop or
+configuration call was made.
+
+### Known limitations — stated plainly
+
+- **The fitted nozzle cannot be read.** Stock U1 firmware does not expose nozzle
+  diameter. This was assumed until beta.24 and is now confirmed against hardware.
+  Studio says "check this yourself" and explains the consequence; it will never
+  turn that silence into "your printer can't do it".
+- **Painted colour cannot be classified without slicing.** A colour applied by
+  painting rather than by object assignment is reported as unclassified, not
+  quietly counted in the optimistic direction.
+- **No print-success guarantee.** Every check is advisory. Studio does not slice,
+  and a project that passes every check can still fail on the plate.
+- **No autonomous physical control.** Studio never starts, heats, moves or homes
+  a printer on its own. Printer Hub's actions each require an explicit
+  confirmation.
+- **The installer is not code-signed.** SmartScreen will show an unknown
+  publisher. Verify the SHA256 before running it — see
+  [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md).
+- **Multi-plate repositioning remains withdrawn.** Plate spacing is not recorded
+  in a project file, so any move would be a guess. Each plate is still checked on
+  whether its own contents fit.
+
+## v0.4.0-beta.23 — SUPERSEDED by v0.4.0-beta.24
 
 **Project to printer preflight, fidelity audit, fix ledger, colour planning,
 preset labelling, one-command self-check.** This release also removes a feature —

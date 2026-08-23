@@ -1,103 +1,214 @@
-# Snapmaker Studio — Innovation Fund Submission (DRAFT)
+# Snapmaker Studio — Innovation Fund submission
 
-> Submission-ready package. **Not submitted.** External submission requires
-> manual human action + credentials.
+> **Not yet submitted.** The submission form asks for the maintainer's name and
+> email and represents them personally, so the form itself is theirs to send.
+> Everything that goes into it is written below, ready to paste.
 >
 > Independent open-source project — not affiliated with or endorsed by Snapmaker.
 
-## Project title
-**Snapmaker Studio — the open, local-first workflow platform that prepares 3D
-designs for the Snapmaker U1 (review in Orca before slicing).**
+## The fund, as published today
 
-## Category
-Open-source software / ecosystem & developer tools / user onboarding &
-compatibility.
+Re-read from the official page on **2026-08-23**. Source:
+<https://www.snapmaker.com/innovation-fund>.
+
+| | |
+|---|---|
+| Phase 1 | 9 Jun – **7 Sep 2026**; winners announced 30 Sep 2026 |
+| Phase 2 | 1 Oct – 31 Dec 2026; results 22 Jan 2027 |
+| Scoring | **80%** tech committee (Snapmaker product and engineering staff, invited industry experts, long-standing community members) + **20%** community vote |
+| Community vote | GitHub repository stars, community-channel likes, project-page upvotes |
+| Committee criteria | Innovation & Technical Depth · Openness & Quality · Practicality & Adaptability |
+| Awards per phase | 3 × $5,000 · 7 × $3,000 · 10 × $1,500, plus badge, certificate, social feature and beta access to upcoming products |
+| Eligibility | Build something on or around the U1 — slicer plugin, hardware mod, workflow, accessory. Pre-existing and mature projects are explicitly welcome. Open source is preferred; closed source can qualify if it gives back another way. |
+| Requirements | Published on GitHub or another public page · shared in a Snapmaker community channel · submitted through the fund's online form |
+| Form fields | name, email, project name, GitHub/project URL, category, short description. Optional cover image: 640×360, PNG/JPG, max 5 MB |
+| Word limits | None published. The short description below is kept near 40 words so it fits whatever the field allows. |
+| Updating a submission | Not documented on the page. Assume one submission; do not rely on being able to revise it. |
+
+## Project
+
+**Name:** Snapmaker Studio
+**URL:** <https://github.com/DeadlyVirusIn/snapmaker-studio>
+**Licence:** MIT
+**Category:** Workflow / software tooling
+**Cover image:** `docs/brand/hero.svg` (export at 640×360)
+
+## Positioning
+
+**Snapmaker Studio — The Intelligence Layer for Open 3D Printing.**
 
 ## Short description (~40 words)
-Snapmaker Studio is a free, local-first desktop app that helps makers understand
-a design, catch risks before slicing, and turn Bambu/Orca and STL files into a
-prepared Snapmaker U1 profile copy in one click (review in Orca before slicing) (PrusaSlicer detection today;
-full conversion next) — removing the biggest barrier for makers adding a U1.
+
+Snapmaker Studio is a free, local-first desktop app that reads a downloaded 3D
+project, explains the risks in plain language, compares it against your actual U1
+over Moonraker, fixes only what it can justify, and proves what survived.
+Snapmaker Orca still slices.
 
 ## Long description
-Makers adopting a new printer face a hidden tax: their existing library of
-projects won't load cleanly. A Bambu or PrusaSlicer file opened in Snapmaker
-Orca throws "Customized Preset" and "newer-version" warnings, carries foreign
-printer/filament identity, and multi-material files fail in subtle ways. The
-result is friction exactly at the moment of adoption.
 
-Snapmaker Studio removes that tax. Drop in any file; the **Doctor** diagnoses U1
-compatibility and scores it; one click **converts** it into a genuine U1 project
-— preserving geometry, colors, and filament count — and a **validator** proves
-the output is clean before the user wastes a print. It's local-first (no account,
-no cloud), open source, and ships as a one-click Windows installer with a bundled
-engine (no Python required).
+A beginner downloads a project. It was made somewhere else, for another printer,
+uses six colours on a four-toolhead machine, and one object hangs off the plate.
+Their slicer says `out of bounds` and stops.
 
-It is already real: a real-world corpus of **112 files passes the internal validation
-gate** (not a print-success guarantee), and a former-Bambu project, prepared as a U1
-profile copy, opens in Snapmaker Orca for review before slicing. The
-architecture is a kernel + plugins, so supporting the next printer or slicer is a
-profile/adapter pack — not a rewrite. The long-term vision is "the operating
-system for multi-material 3D printing": diagnose -> transform -> validate ->
-manage -> optimize, across the whole ecosystem.
+Snapmaker Studio is the step before the slicer. It reads the project's real
+contents — not its filename — and says which object, which edge, how many
+millimetres, and why. It asks the printer on the network what it can actually do,
+using the open Klipper/Moonraker stack Snapmaker ships on the U1, and compares the
+two: materials against toolheads, materials against what is *loaded*, objects
+against the real bed, the features a prepared copy relies on against the
+firmware's own object list. It fixes only what it can justify, writing a new copy
+and never touching the original. Then it accounts for the result element by
+element — what stayed byte-for-byte identical, what changed and why, what could
+not be carried over, and, kept separate on purpose, what it could not check at
+all. Finally it names the community tool that should handle the next step, because
+a beginner should not have to know the whole ecosystem before they can use any of
+it.
 
-## Value proposition
-- **For makers:** keep your library when you choose a U1. One click, no terminal,
-  no lost work, no cloud.
-- **For Snapmaker:** a polished, open onboarding funnel that **lowers the barrier
-  to buying/using the U1** — built and maintained by the community, not the
-  vendor. Foreign files become U1-native.
-- **For the ecosystem:** a neutral, trustworthy compatibility layer that grows
-  more valuable as printers proliferate.
+Studio does not slice, and will not. Snapmaker Orca slices. Studio is the layer
+that makes the file, the printer and the person agree before that happens.
 
-## Ecosystem impact
-- **De-risks switching to U1** — the #1 friction for cross-shopping makers.
-- **Multi-material focus** — solves the hardest, highest-value compatibility seam
-  (toolheads, purge math, filament-array consistency) where U1 competes.
-- **Open + extensible** — community adds slicers/printers via profile packs;
-  Snapmaker gets first-class, certified U1 support.
-- **Measurable goodwill** — open source, local-first, no lock-in; aligns with
-  maker trust.
-- **Compounding asset** — the validation corpus + failure taxonomy is a public
-  good no single slicer will build.
+The hard part is not the fixing. It is being correct when the file or the printer
+does not expose enough information to be certain — and saying so, instead of
+guessing in the direction that looks better.
 
-## Milestones (fundable)
-| # | Milestone | Outcome | Evidence |
-|---|---|---|---|
-| M1 | Reliable U1 conversion (DONE) | Bambu/Orca/Prusa/geometry/STL -> U1 profile copy | 112-file corpus, 100% passed the internal structural gate (not print success); review in Orca |
-| M2 | Public beta installer | Signed, branded one-click Windows app | `0.3.0` installer (unsigned — see docs/windows-code-signing.md); icon/branding shipped |
-| M3 | Project library + batch | Manage + convert a whole backlog | library UI + batch report |
-| M4 | Ecosystem breadth | PrusaSlicer/Cura/Creality adapters | corpus expanded across families |
-| M5 | Plugin SDK + certified U1 pack | Community profile packs; certified U1 | public SDK + first external pack |
+## Innovation & technical depth
 
-## Funding use plan
-- **Code signing certificate (EV/OV)** — remove SmartScreen friction for novices
-  (the current GA blocker).
-- **Cross-platform packaging** — macOS/Linux builds + CI release pipeline.
-- **Corpus + reliability** — expand the validation corpus and wire it into CI.
-- **Branding/onboarding polish** — finalize icon set, first-run experience, docs.
-- **Plugin SDK** — stabilize and document the adapter/profile contracts.
-- **Part-time maintainer time** — sustain reviews, releases, and community packs.
+- **Evidence-graded forensics.** Every fact Studio states carries the part of the
+  file that proved it and one of four confidence levels: confirmed, likely,
+  informational, unknown. An unmeasured trait is null at `unknown` — never false.
+  "Not detected" is never rendered as "not supported", and that wording is
+  asserted by tests over every unknown the modules can produce.
+- **Joining a project to a machine.** The preflight is the join: the project's
+  materials, nozzle expectation, geometry and required capabilities against the
+  printer's toolhead count, loaded filament, real bed and Klipper object list.
+- **A preservation invariant.** Originals are never modified. Preparing always
+  writes a new copy, and a test asserts the input is byte-identical afterwards —
+  including in the acceptance harness that runs against the shipped installer.
+- **A fidelity audit that can fail.** Studio may only say "nothing was lost" when
+  the audit grants that claim for *that project*. Most of its tests build a
+  deliberately wrong copy and assert Studio reports it as unverified.
+- **Deterministic classification beyond four colours.** Six colours on four
+  toolheads is two problems, not one: colours that share a layer each need a
+  toolhead, colours introduced higher up may be planned swaps. Painted colour
+  cannot be read without slicing, so it is reported unclassified rather than
+  counted optimistically.
+- **Refusal under uncertainty.** Multi-plate repositioning was implemented,
+  reviewed, and **withdrawn**: plate spacing is not recorded in a project file, a
+  reproduced case placed a plate off the bed while reporting success, and the
+  honest fix was to remove the feature rather than tune a number Studio cannot
+  observe. Per-plate fit checking, which is position-independent, stayed.
+- **Hostile-archive bounds.** A 3MF is an untrusted ZIP. Studio meters the
+  decompressed stream rather than trusting the header, with configurable caps on
+  total bytes, per-part bytes and part count. The same bounding applies to printer
+  responses.
+- **Real firmware interrogation.** The Klipper object list is used as a capability
+  oracle; the U1 answers on port 7125 and on 80, and both are tried. Loaded
+  filament is read the way the firmware actually publishes it — parallel arrays
+  with a per-slot presence flag — a shape found only by asking a real machine.
+- **A reversible fix ledger.** Every produced file records what was done, what
+  triggered it, each change with its old value and reason, and whether the result
+  validated. The way back is explicit, and the exportable form carries no local
+  paths.
+- **Local-first by architecture.** A Python engine on loopback behind a token
+  handshake, a Tauri shell, and no network egress in the pipeline at all.
 
-## Why Snapmaker's open U1 firmware matters
-Snapmaker has open-sourced the U1 firmware (Klipper, Moonraker, Fluidd), so each U1
-**exposes a standard local Moonraker/Klipper ecosystem on the LAN** — no cloud
-required. That makes Snapmaker Studio a natural fit as the **local workflow layer
-above the firmware**: understand a design → check it → get it ready → (next)
-discover and monitor the U1 directly over the local network. It keeps the product
-**local-first with no cloud dependency**, and it opens a clear path to a future
-**Printer Hub** (discovery, live status, toolhead/material telemetry, job status).
-_Full print sending is **not** shipped yet — it depends on a slicing step; see the
-phased plan in [`ROADMAP.md`](ROADMAP.md) and the audit in
-[`design/PRINTER_HUB.md`](design/PRINTER_HUB.md)._
+## Openness & quality
 
-## Proof links (current)
-- Repo: github.com/DeadlyVirusIn/snapmaker-studio
-- Vision: `docs/PRODUCT_VISION.md` . Roadmap: `docs/ROADMAP.md`
-- Reliability: `../PROOF.md` (112-file corpus: 112/112 produced structurally valid U1 profile copies in the internal gate — not a print-success guarantee)
-- Release process: `RELEASE.md`
+- **MIT**, with every interoperating project listed by licence in
+  [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). AGPL and GPL neighbours are
+  interoperated with, never vendored.
+- **No account, no cloud, no telemetry, nothing uploaded.**
+- **A documented CLI** (`u1convert`) and a **documented local HTTP API**, so the
+  engine is usable without the app.
+- **An ecosystem registry that is data, not code.** Adding a tool is a small pull
+  request against a JSON file; the rules that fire it are declarative, and a test
+  proves every entry is reachable. See [EXTENDING.md](EXTENDING.md).
+- **One command anyone can run.** `u1convert selfcheck` runs the real pipeline end
+  to end and prints a 15-check pass/fail table, so the claims can be verified
+  without reading the source. It runs in CI on every pull request.
+- **An acceptance harness that drives the installed application**, not a dev
+  server: 21 checks over the real window and the frozen engine, including that the
+  input file is byte-identical afterwards and that uninstalling leaves nothing
+  behind.
+- **Regression tests against genuine slicer output** — real OrcaSlicer,
+  BambuStudio and PrusaSlicer project files, fetched rather than vendored because
+  they are AGPL and one embeds an upstream developer's username.
+- **Reproducible.** Clone, then `pytest`, `npm run test`, `u1convert selfcheck`,
+  and `tools/acceptance/run.ps1` against a built installer. The walkthrough is
+  [innovation-fund/JUDGE_WALKTHROUGH.md](innovation-fund/JUDGE_WALKTHROUGH.md).
 
-## Asks / notes for submission
-- Confirm fund category + word limits before pasting the short/long descriptions.
-- Code signing is the single highest-leverage funded item for novice reach.
-- We are complementary to (Snapmaker) Orca — the on-ramp, not a competitor.
+## Practicality & adaptability
+
+Situations a novice actually hits, and what Studio does:
+
+| Situation | What Studio does |
+|---|---|
+| A project made in another slicer for another printer | Reads it, states the source, prepares a U1 copy for review in Orca |
+| An object hangs off the plate | Names the object, the edge and the millimetres, and offers to move it in a copy |
+| Six colours, four toolheads | Separates colours that need a toolhead from colours that can be swaps, and says which it cannot classify |
+| The fitted nozzle is unknown | Says "check this yourself", explains the consequence, and never calls it unsupported |
+| The printer is busy, or missing materials | Compares against what the machine reports right now, including which spools are loaded |
+| Something could not be carried over | Lists it, with the reason, separately from what merely changed |
+| The file needs a tool the beginner has never heard of | Names it, says why, and links it |
+
+**Why the U1 specifically.** Snapmaker publishes the U1's firmware and ships the
+standard Klipper/Moonraker stack, so a local application can ask the machine what
+it can do instead of inferring it from a model name. That is what makes a
+project-to-printer comparison possible at all, locally and without a cloud
+account. Studio is a direct beneficiary of Snapmaker's openness, and the
+comparison it performs is not possible on a closed printer.
+
+**Adaptability.** The printer layer speaks Moonraker, not a U1-specific protocol.
+The tool registry is data. The trait extractor reads 3MF dialects from three
+different slicer families. None of that is U1-only by construction — the U1 is
+simply the machine it is verified against.
+
+## Evidence
+
+Everything below was verified against the **published beta.24 installer**, not a
+development build. Commands, counts and full reports:
+[TRUST_STATUS.md](TRUST_STATUS.md).
+
+| What | Result |
+|---|---|
+| Installed-application acceptance, through the real UI | 21/21 |
+| Read-only verification against a real Snapmaker U1 | 13/13 |
+| Regression tests against genuine Orca/Bambu/Prusa projects | 34 tests |
+| End-to-end pipeline self-check | 15/15 |
+| Backend tests | 663 passed, 3 skipped |
+| Desktop tests | 247 passed across 31 files |
+| TypeScript, Rust, production build | clean |
+
+Demo: [`docs/media/snapmaker-studio-demo.mp4`](media/snapmaker-studio-demo.mp4) —
+71 seconds, every frame the installed application.
+
+Studio is advisory. It does not slice, does not promise a successful print, and
+never controls a printer on its own.
+
+## Community evidence
+
+Measured, not asserted — see
+[innovation-fund/USER_EVIDENCE.md](innovation-fund/USER_EVIDENCE.md) for the
+figures and the date they were taken. Interest (downloads, clones, visitors,
+stars) is reported separately from proven user outcomes, and where the second is
+still zero, it says so.
+
+## What funding would be used for
+
+- **Code signing.** The largest barrier to novice adoption is SmartScreen's
+  unknown-publisher warning. EV certificates no longer bypass it, so the plan is
+  reputation over time through [SignPath Foundation](CODE_SIGNING_POLICY.md),
+  which signs qualifying open-source projects at no cost. Funding is not the
+  blocker here, and saying so is better than inflating the ask.
+- **macOS and Linux builds**, with a CI release pipeline.
+- **Broadening the verified hardware surface** — more real printers, more firmware
+  versions, and more genuine slicer projects in the regression corpus.
+- **Maintainer time** for review, releases and community contributions.
+
+## Notes for the submitting maintainer
+
+- The form asks for **name and email**, which is why it is not automated.
+- The community-vote component is 20% and includes GitHub stars. Worth being
+  realistic about rather than gaming.
+- Sharing the project in a Snapmaker community channel is a stated requirement of
+  entry, separate from the form.

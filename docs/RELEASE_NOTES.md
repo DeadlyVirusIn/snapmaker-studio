@@ -1,73 +1,64 @@
-# Snapmaker Studio v0.4.0-beta.23 — This project, on your printer
+# Snapmaker Studio v0.4.0-beta.24 — Verified against a real U1
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-## Before you slice
+This is the first Snapmaker Studio build checked against an actual Snapmaker U1
+rather than only against tests. The printer immediately found a bug.
 
-Studio now compares what your project needs against the printer it can actually
-see: how many materials it uses against how many toolheads your printer reports,
-the nozzle the project was made for against the one your printer reports, the
-objects against your printer's real bed, and the features a prepared copy relies
-on against your firmware's own list.
+## Your printer already knew which filaments are loaded
 
-Where Studio genuinely cannot read something, it says so. Stock U1 firmware does
-not report which nozzle is fitted, so that check reads *"Nozzle size — check this
-yourself"* and explains what a mismatch would do to your print. It never turns
-"couldn't detect" into "your printer can't do it".
+Studio was telling U1 owners *"this printer does not report which filaments are
+loaded"*. The printer was reporting all four, in a shape Studio was not looking
+for: stock U1 firmware publishes loaded filament as parallel lists — the types in
+one, the colours in another, the sub-types and vendors in others, and a
+`filament_exist` flag that is the printer's own answer to "is there a spool in
+this slot".
 
-## What survived preparing this copy
+Studio now reads all four slots, colour and sub-type included, and **Before you
+slice** compares the materials your project needs against what is actually on the
+machine.
 
-Every other converter tells you the same word: converted. Studio now lists what
-stayed byte-for-byte identical, what it changed and why, what it could not carry
-over — and, kept separate on purpose, anything it could not check at all.
+The same session confirmed something Studio has always claimed but had never
+proved on hardware: stock firmware genuinely does not report which nozzle is
+fitted. That check still reads *"Nozzle size — check this yourself"*, and it is
+now known to be honest rather than assumed to be.
 
-Studio only tells you nothing was lost when that check proves it for *your* file.
+## Every message that names a problem now says what to do about it
 
-## Changes Studio made, and the way back
+- When the fidelity report cannot account for something, it now tells you to open
+  the prepared copy in Snapmaker Orca, compare it against your original, and
+  report it — because Studio failing to explain its own change is a bug worth
+  hearing about.
+- Something Studio cannot read is labelled *"Not checked — Studio can't read it"*,
+  which is a different statement from "this is fine".
+- The printer check pointed at a field that did not exist. It now names Printer
+  Hub.
+- **Toolhead** — the word all the colour planning rests on — is explained before
+  it is used.
 
-Every file Studio produces is recorded: what was done, what triggered it, each
-change with its old value and the reason, and whether the result validated. One
-button returns you to your original. Your original was never modified, so going
-back simply reopens the untouched file — the copy stays where it is.
+## Open a project by handing it to Studio
 
-## Six colours, four toolheads
+Studio now accepts an `.stl` or `.3mf` path on its command line and opens it on
+launch, so a file can be sent to Studio from a shell, a script, or a shortcut.
 
-That is not one problem but two, and they have different fixes. Studio separates
-the colours that share layers — each of which needs a toolhead — from colours that
-only appear higher up, which may be handled as planned swaps at the height shown.
-When it cannot tell, because painted colour cannot be read without slicing, it
-says so instead of guessing in the optimistic direction.
+## How this build was checked
 
-## Smaller things that matter
+Every check below ran against **this installer**, not against the source tree:
+installed into a clean directory, launched, driven through the real application
+window, then uninstalled.
 
-- A prepared copy is now labelled with the print preset that matches its actual
-  layer height. A 0.12 mm project used to come out stamped "0.20 Standard".
-- Object placement, colour planning and the printer check now appear on **Check my
-  model**, where a beginner actually lands.
-- Preparing a copy marks **Preserve creator settings** as recommended, and
-  describes both options by what happens to your print rather than by setting name.
-- `u1convert selfcheck` runs the whole pipeline and prints a pass/fail table, for
-  anyone who wants to see it work without installing the app.
+- 21 installed-application checks passed — the project loads, the placement,
+  preflight, fidelity, ledger, colour-plan and cost results all appear in the real
+  UI, the input file is byte-identical afterwards, and uninstalling leaves nothing
+  behind.
+- The real U1 verification above was performed read-only. Studio never heats,
+  moves, homes, uploads to, or configures a printer on its own.
+- Full software suites, the end-to-end self-check, and the real-slicer regression
+  fixtures all pass.
 
-## Removed
-
-**Multi-plate repositioning.** An independent review reproduced a case where it
-placed a plate completely off the bed while reporting success. The spacing between
-plates is not recorded in the project file, so any move is a guess — the feature
-was withdrawn rather than patched. Multi-plate projects are still checked, each
-plate on whether its own contents fit a U1 plate, and Studio points you at
-Snapmaker Orca's Arrange.
-
-## Fixed
-
-- On a clean install, part of the engine was missing from the package, so the
-  local service could not start and the self-check failed. Fixed.
-- Two tools in the ecosystem list could never actually be suggested.
-- The colour check assumed four toolheads without saying it had not asked your
-  printer.
-- Studio now limits how much data it will read from a printer, as it already did
-  for project files.
+The exact commands, counts and evidence are in
+[TRUST_STATUS.md](TRUST_STATUS.md).
 
 ## Unchanged
 

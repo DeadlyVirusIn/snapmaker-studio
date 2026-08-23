@@ -15,96 +15,64 @@ _Project Doctor. Printer Hub. Cost Doctor — Studio checks every model, surface
 
 ## In 30 seconds
 
-**What is it?** A local desktop app that reads a 3D project file and explains what
-will go wrong before you slice it.
+**What is it?** A local desktop app that reads a 3D project file and finds the
+problems that stop a print — before you slice it.
 
-**What problem does it solve?** You download a model and your slicer says
+**What problem does it solve?** You download a project and your slicer says
 `out of bounds`. Studio says *which object, which edge, how many millimetres,
-why* — then fixes it in a new copy and shows you exactly what survived.
+why* — then moves it in a new copy and lists exactly what survived.
 
 **Why isn't it another slicer?** It doesn't slice and won't. Snapmaker Orca
 slices; Studio is the step before, and hands the file over.
 
-**What does it actually do?** Reads a project's real contents; checks it against
-the printer it can see; corrects only what stops Snapmaker Orca working properly
-on a U1; proves what was preserved; costs the print from figures the file already
-carries; and names the community tool that fits your file.
+**What does it actually do?** Reads a project's real contents; compares it against
+the printer it can see on your network; corrects only what it can justify;
+accounts for every element of what it changed; costs the print from figures the
+file already carries; and names the community tool that fits your file.
 
 **Why does Snapmaker's openness make this possible?** The U1 runs Klipper and
 Moonraker and publishes what it can do — so Studio can ask the machine itself
-rather than guessing from a model name. And because the ecosystem is open, Studio
-can point you at the right community tool instead of rebuilding it.
+rather than guessing from a model name.
 
 **And when it can't know something, it says so.** Stock firmware doesn't report
 which nozzle is fitted, so Studio says *"check this yourself"* — never
 *"unsupported"*.
 
+## Watch it work
 
-Snapmaker Studio is a friendly, local-first desktop app (plus a scriptable engine
-and CLI) that **reads the real geometry** of 3D designs from common STL/3MF sources and
-walks it through the whole pre-print workflow:
+Seventy-one seconds, recorded from the installed application. No slides, no
+reconstruction — an out-of-bounds object found and moved, the project compared
+against a printer, the copy prepared, and every change accounted for.
 
-1. **Understand** — colors, size, volume, complexity, source ecosystem, and a **Design Health** read on the actual mesh, in plain language.
-2. **Validate** — will it print? **Watertight check, hole detection, geometry integrity, overhang/supports prediction, stability/tip-risk, and bed fit** — each with what was found, why it matters, and what to do.
-3. **Prepare** — make a prepared U1 profile copy — review in Orca before slicing. Your originals are never changed.
-4. **Monitor & control** — watch your printer's live status, and with an explicit
-   confirmation pause/resume/cancel/start a print or upload sliced gcode.
+[![Watch the Snapmaker Studio demo](docs/media/demo-poster.jpg)](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4)
 
-It's not a converter — it's the layer that surfaces the likely print risks, and
-why, *before* you waste filament, so you can decide what to fix. (Preparing a U1
-profile copy is just one step.) It's advisory: it doesn't guarantee a print.
-
-Runs entirely on your machine. No cloud, no account, no upload — local-first and
-open source.
-
-**Who it's for:** Snapmaker U1 owners — especially beginners working with
-multicolor or support-heavy prints — who want to diagnose, prepare, troubleshoot,
-and estimate a print *before* opening the slicer.
-
-**What it's not:** not a slicer and not a guarantee of print success. Studio gives
-advisory readiness checks and guidance; Orca slices and the U1 prints. Studio can
-monitor your U1 and, with an explicit confirmation each time, control a print
-(pause/resume/cancel/start/emergency-stop) — it never auto-starts and does not
-control Orca.
-
-### Why isn't this just another slicer?
-
-Because it doesn't slice, and won't. Snapmaker Orca slices; Studio is the step
-before that. When Orca says `out of bounds`, Studio says *which object, which
-edge, how many millimetres, and why* — then offers to fix it in a new copy.
-
-### Why isn't this U1Hub, OctoPrint or Fluidd?
-
-Those start when a file is ready to print. Studio finishes there. Fluidd already
-ships on your U1 and Studio does not try to replace it — Printer Hub answers a
-different question: *is this printer ready for this specific project?*
-
-### What makes it different?
-
-It explains, and it says how sure it is. Every fact carries the part of the file
-that proved it and one of four confidence levels. When Studio can't know
-something, it says so instead of guessing — no invented cost, no fabricated
-readiness. And it reads your file to tell you which of the community's tools
-suits it, so you don't have to know all of them first.
-
-> **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
-> Internal validation corpus: **112/112 files produced structurally valid U1 profile copies
-> in the internal validation gate — this is not a print-success guarantee** (see [PROOF.md](PROOF.md)). More context:
-> [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) ·
-> [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md) ·
-> [`docs/INNOVATION_FUND.md`](docs/INNOVATION_FUND.md) ·
-> [`docs/innovation-fund/`](docs/innovation-fund/) (judge walkthrough, competitor matrix, technical depth) ·
-> [`docs/EXTENDING.md`](docs/EXTENDING.md) ·
-> landing [`docs/landing/index.html`](docs/landing/index.html).
+**[▶ Watch the 71-second demo](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4)** — plays in the browser, no download needed.
 
 ## Download
 
-**[⬇ Download the latest Windows installer](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/latest)**
-— one click, no Python, runs offline. (Beta — Windows 10/11 x64.)
+**[⬇ Download for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/latest)**
+— one click, no Python, runs offline. Windows 10/11 x64.
 
-Open the downloaded `…_x64-setup.exe`, install, and launch **Snapmaker Studio**.
-No account, no cloud, nothing leaves your computer. Older builds and checksums are
-on the [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
+Verify it before you run it:
+
+- Release: [v0.4.0-beta.24](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.24)
+- Installer: `Snapmaker.Studio_0.4.0-beta.24_x64-setup.exe`
+- Size: 16,263,985 bytes
+- SHA256: `50fc5434e266f0b8c025336410534d019f8d41c0ec5190290024c702126cbf26`
+
+```powershell
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.24_x64-setup.exe
+```
+
+The installer is not code-signed yet, so Windows SmartScreen will show "Unknown
+publisher". That is expected for this beta — verify the hash above, then choose
+**More info → Run anyway**. Why it is unsigned, and what is being done about it:
+[docs/CODE_SIGNING_POLICY.md](docs/CODE_SIGNING_POLICY.md). Full instructions and
+uninstall: [docs/windows-install.md](docs/windows-install.md).
+
+Canonical release values live in
+[docs/RELEASE_METADATA.md](docs/RELEASE_METADATA.md); what was verified, and how,
+is in [docs/TRUST_STATUS.md](docs/TRUST_STATUS.md).
 
 ## Screenshots
 
@@ -123,45 +91,98 @@ Six colours on four toolheads is not one problem but two, and Studio says which:
 
 Captured from the running build on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission index: [docs/SUBMISSION_STATUS.md](docs/SUBMISSION_STATUS.md).
 
-## What's new in beta.23 — this project, on your printer
+## Why this isn't a slicer, a dashboard, or a converter
 
-**Before you slice.** Studio now compares what your project needs against the
-printer it can actually see: materials against toolheads, the project's nozzle
-against your printer's, the objects against your printer's real bed, and the
-features a prepared copy relies on against your firmware's own list. Where Studio
-genuinely cannot read something — stock firmware doesn't report which nozzle is
-fitted — it says *"check this yourself"*, never *"unsupported"*.
+**Not a slicer.** It doesn't slice, and won't. Snapmaker Orca slices; Studio is
+the step before that. When Orca says `out of bounds`, Studio says *which object,
+which edge, how many millimetres, and why* — then offers to move it in a new copy.
 
-**What survived preparing this copy.** Every other converter says "converted".
-Studio lists what stayed identical, what it changed and why, what it could not
-carry over — and, separately, what it could not check at all. It only says nothing
-was lost when that audit proves it for your file.
+**Not a dashboard.** U1Hub, OctoPrint and Fluidd start when a file is ready to
+print. Fluidd already ships on your U1 and Studio does not try to replace it.
+Printer Hub answers a different question: *is this printer ready for this
+specific project?*
 
-**Changes Studio made, and the way back.** Every file Studio produces is recorded
-with its changes, their old values and the reason. One button returns you to your
-original — which was never modified, so going back just reopens the untouched file.
+**Not a converter.** A converter tells you one word: converted. Studio tells you
+what stayed byte-for-byte identical, what it changed and why, what it could not
+carry over, and — kept separate on purpose — what it could not check at all. It
+only says nothing was lost when the audit proves that for your file.
 
-**Six colours, four toolheads.** Not one problem but two. Studio separates colours
-that share layers (each needs a toolhead) from colours introduced part-way up
-(which may be planned swaps, at the height shown) — and says plainly when it
-cannot tell, because painted colour can't be read without slicing.
+## Built on the open ecosystem, and pointing at it
 
-**A prepared copy is now labelled correctly.** A 0.12 mm project used to come out
-stamped "0.20 Standard" — right settings, wrong label.
+Studio reads your project and names the community tool that fits it — OrcaSlicer,
+Snapmaker Orca, U1Hub, Fluidd, the toolkits people actually use — so a beginner
+does not have to know the whole ecosystem before they can use any of it. The
+registry is a data file: adding a tool is a small pull request, not a code change.
+See [docs/EXTENDING.md](docs/EXTENDING.md) and
+[docs/innovation-fund/OPEN_ECOSYSTEM.md](docs/innovation-fund/OPEN_ECOSYSTEM.md).
 
-**One command for anyone evaluating Studio.** `u1convert selfcheck` runs the real
-pipeline end to end and prints a pass/fail table. It runs in CI too.
+MIT licensed. Local-first: no cloud, no account, no telemetry, nothing uploaded.
+Every third-party project Studio recommends or interoperates with is listed with
+its licence in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-**Removed:** multi-plate repositioning. A review reproduced a case where it placed
-a plate off the bed while reporting success, so it was withdrawn rather than
-patched — the spacing between plates isn't in the file. Multi-plate projects are
-still checked, and Studio points you at Snapmaker Orca's Arrange.
+## Evidence
+
+Everything below was verified against the published beta.24 installer, not
+against a development build. Commands, counts and full reports:
+[docs/TRUST_STATUS.md](docs/TRUST_STATUS.md).
+
+| What | Result |
+|---|---|
+| Installed-application acceptance, driven through the real UI | **21/21** |
+| Read-only verification against a real Snapmaker U1 | **13/13** |
+| Regression tests against genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **34 tests** |
+| End-to-end pipeline self-check (`u1convert selfcheck`) | **15/15** |
+| Backend / desktop / TypeScript / Rust | 663 · 247 · clean · clean |
+
+Reproduce any of it yourself:
+[docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md).
+
+Studio is **advisory**. It does not slice, it does not promise a successful print,
+and it never controls your printer on its own. An earlier internal corpus of 112
+files produced structurally valid U1 profile copies ([PROOF.md](PROOF.md)); that
+number measures structure, not print success, and the checks above are the
+stronger evidence.
+
+## What's new in beta.24 — verified against a real U1
+
+**Your printer already knew which filaments are loaded.** Studio was telling U1
+owners *"this printer does not report which filaments are loaded"* while the
+printer was reporting all four, in a shape Studio was not looking for. The first
+session against real hardware found it. Studio now reads every loaded slot,
+colour and sub-type included, and **Before you slice** compares the materials your
+project needs against what is actually on the machine.
+
+**And it confirmed the honest unknown is honest.** Stock firmware really does not
+report which nozzle is fitted. That check still reads *"Nozzle size — check this
+yourself"*, and that is now known rather than assumed.
+
+**Every message that names a problem says what to do about it.** When the fidelity
+report cannot account for something it tells you to compare the copy against your
+original in Snapmaker Orca and report it — Studio failing to explain its own
+change is a bug. Something Studio cannot read is labelled *"Not checked — Studio
+can't read it"*, which is not the same as "this is fine". **Toolhead**, the word
+all the colour planning rests on, is explained before it is used.
+
+**Open a project by handing it to Studio.** Studio accepts an `.stl` or `.3mf`
+path on its command line, so a file can be sent to it from a shell, a script, or
+a shortcut.
+
+**This build was checked as an installer, not as source.** Twenty-one checks run
+against the installed application through its real window; thirteen more against
+a real U1, read-only. See [docs/TRUST_STATUS.md](docs/TRUST_STATUS.md).
 
 See [RELEASE_NOTES.md](docs/RELEASE_NOTES.md) ·
 [docs/innovation-fund/](docs/innovation-fund/) ·
 [docs/EXTENDING.md](docs/EXTENDING.md).
 
-### Earlier betas
+### Earlier releases
+
+**beta.23** added the project-to-printer preflight, the fidelity audit, the fix
+ledger with a way back to your original, colour planning for more than four
+colours, correct preset labelling, and `u1convert selfcheck`. It withdrew
+multi-plate repositioning: a review reproduced a case where it placed a plate off
+the bed while reporting success, and plate spacing is not recorded in the file, so
+the feature was removed rather than patched.
 
 beta.18 is a polish pass: less crowded pages, shorter beginner copy. Find Models leads with
 "Browse approved model sites inside Studio" (policy details collapse into a note); the cost
@@ -191,26 +212,7 @@ Carried forward: hardware-verified **Printer Hub**, **Print Quality** evidence g
 your own file, **Plate Color Remap**, **Source Check**, Model Browser. All local, advisory
 — no cloud, no account, no guarantees. Studio does not slice; Orca does.
 
-- Release: [v0.4.0-beta.23](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.23)
-- Installer: `Snapmaker.Studio_0.4.0-beta.23_x64-setup.exe`
-- Size: 16,261,551 bytes
-- SHA256: `30c8895175e37ccf61b9f61cc9996b2b37553e490e00cbccfc60ba508aa1ac47`
-- Canonical release metadata: [docs/RELEASE_METADATA.md](docs/RELEASE_METADATA.md)
-- Unsigned beta: the installer is not code-signed yet, so Windows SmartScreen may show “Unknown publisher.” That is expected for this beta. Download only from the release link above and verify the SHA256 before installing.
-
-Install:
-
-1. Download the `.exe` from the release page.
-2. Verify the checksum. It must match the SHA256 published on the release:
-
-```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.4.0-beta.23_x64-setup.exe
-```
-
-3. Run it. On the SmartScreen prompt choose **More info → Run anyway** only after verifying the hash.
-4. Launch Snapmaker Studio from the Start menu.
-
-Full guidance and uninstall: [docs/windows-install.md](docs/windows-install.md). New here? See [docs/JUDGE_OVERVIEW.md](docs/JUDGE_OVERVIEW.md) and [docs/WHAT_TO_TEST_FIRST.md](docs/WHAT_TO_TEST_FIRST.md).
+New here? See [docs/JUDGE_OVERVIEW.md](docs/JUDGE_OVERVIEW.md) and [docs/WHAT_TO_TEST_FIRST.md](docs/WHAT_TO_TEST_FIRST.md).
 
 
 ## Works with the open U1 ecosystem

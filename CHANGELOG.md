@@ -6,6 +6,61 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.4.0-beta.24] - 2026-08-23
+
+The first build verified against a real Snapmaker U1. Hardware found a bug no
+synthetic test could: Studio was telling owners their printer does not report
+which filaments are loaded, while the printer was reporting all four.
+
+### Fixed
+- **Loaded filament is now read the way a real U1 actually reports it.** Stock U1
+  firmware publishes loaded filament as parallel arrays — one array of types, one
+  of colours, one of sub-types, one of vendors, and `filament_exist` as the
+  printer's own answer to "is a spool in this slot". Studio was looking for a list
+  of objects, found nothing, and reported "this printer does not report which
+  filaments are loaded". Against a real machine it now reads all four slots,
+  including colour and sub-type, and the project-to-printer preflight compares a
+  project's materials against what is actually loaded.
+- **Every message that names a problem now says what to do about it.** The
+  fidelity report's "could not account for" headline tells you to open the
+  prepared copy in Snapmaker Orca, compare it with the original, and report it as
+  a bug. An element Studio cannot read is labelled "Not checked — Studio can't
+  read it" rather than left ambiguous. The preflight's printer action names
+  Printer Hub instead of a field that does not exist. "Toolhead" — the word the
+  colour planning rests on — is explained before it is used.
+- The preflight summary no longer lowercases "Studio" mid-sentence.
+
+### Added
+- **Open a project by handing it to the app.** Studio accepts an `.stl` or `.3mf`
+  path on its command line and opens it on launch, so a file can be sent to Studio
+  from a shell, a script, or a shortcut. Only paths that exist and carry those
+  extensions are accepted; anything else is ignored.
+- **An acceptance harness that drives the installed application.**
+  `tools/acceptance/run.ps1` installs the built installer into an isolated
+  directory, launches it with an isolated WebView2 profile and engine data
+  directory, drives the real window over the Chrome DevTools Protocol, and asserts
+  21 checks against the shipped build — including that the input file is
+  byte-identical afterwards and that uninstalling leaves nothing behind. It stops
+  only the processes it started, and restores any pre-existing installation it
+  displaced.
+- **A recorded demo of the running application** at
+  `docs/media/snapmaker-studio-demo.mp4` — 71 seconds, every frame the installed
+  app, nothing reconstructed.
+- **Regression tests against files real slicers wrote.** OrcaSlicer, BambuStudio
+  and PrusaSlicer project 3MFs are fetched from their upstream repositories and
+  the reader is tested against them. They are AGPL-3.0 and one embeds an upstream
+  developer's username, so they are fetched rather than committed; the suite skips
+  cleanly without them. See `backend/tests/fixtures/REAL_WORLD_PROVENANCE.md`.
+- `docs/CODE_SIGNING_POLICY.md` — the signing story, prepared to the point where
+  only a form submission remains.
+
+### Changed
+- The Rust crate version had drifted to `0.4.0-beta.21.3` while the app manifests
+  moved on. It now matches, and `test_release_docs.py` fails the build if it drifts
+  again.
+- `tools/demo/node_modules/` was committed by accident in beta.23. It is now
+  untracked and ignored, as the acceptance harness's dependencies already were.
+
 ## [0.4.0-beta.23] - 2026-08-23
 
 ### Added
