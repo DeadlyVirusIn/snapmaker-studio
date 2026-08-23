@@ -85,7 +85,7 @@ TRAIT_KEYS = (
     "object_count", "filament_count", "has_painted_color", "has_texture",
     "has_custom_per_layer_gcode", "has_support_enforcers", "unit", "non_mm_unit",
     "nozzle_diameters", "mixed_nozzle_sizes", "required_extensions",
-    "unknown_required_extensions", "likely_makerworld",
+    "unknown_required_extensions", "likely_makerworld", "expects_object_exclusion",
 )
 
 
@@ -192,6 +192,8 @@ def _stl_traits() -> dict:
         "required_extensions": _tier([], CONFIRMED, None),
         "unknown_required_extensions": _tier(False, CONFIRMED, None),
         "likely_makerworld": _tier(False, CONFIRMED, None),
+        "expects_object_exclusion": _tier(False, CONFIRMED,
+                                          "an STL carries no slicer settings"),
         "plate_predictions": [],
         "notes": ["An STL is geometry only — colours, materials and print settings "
                   "are chosen later in the slicer."],
@@ -332,6 +334,9 @@ def extract(path: str) -> dict:
     # MakerWorld exports carry Bambu-family settings plus the auxiliary folder the
     # site's own packaging adds. Neither proves the origin on its own, so this
     # stays "likely" rather than claiming certainty.
+    exclude_raw = _first(cfg.get("exclude_object")) if cfg else None
+    exclude_object = str(exclude_raw).strip().lower() in {"1", "true", "yes", "on"}         if exclude_raw is not None else False
+
     aux = any(p.startswith("Auxiliaries/") for p in parts)
     makerworld = bool(family == "bambu-family" and aux and foreign)
 
@@ -390,6 +395,11 @@ def extract(path: str) -> dict:
         "likely_makerworld": _tier(makerworld, LIKELY if makerworld else INFORMATIONAL,
                                    "Bambu-family settings plus an Auxiliaries/ folder"
                                    if makerworld else None),
+        # Whether the project relies on the printer being able to cancel one object
+        # mid-print. Preflight only raises the firmware question when it does.
+        "expects_object_exclusion": _tier(
+            exclude_object, CONFIRMED if cfg else UNKNOWN,
+            f"{BAMBU_SETTINGS} exclude_object" if cfg else None),
         "plate_predictions": _plate_predictions(tm),
         "notes": notes,
     }

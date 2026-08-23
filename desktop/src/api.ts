@@ -1182,3 +1182,44 @@ export async function preparePlaced(path: string, outDir?: string): Promise<Plac
   if (!r.ok) throw new Error(`placement fix failed (${r.status})`);
   return r.json();
 }
+
+// ---- Project ↔ printer preflight -------------------------------------------
+// Joins what a project needs to what the printer reports. Every check can come
+// back "unknown", which is a real answer: stock U1 firmware does not publish the
+// fitted nozzle, so Studio says to go and look rather than inventing a match.
+
+export type PreflightResult = "ok" | "attention" | "unknown" | "blocked";
+
+export interface PreflightCheck {
+  id: string;
+  title: string;
+  result: PreflightResult;
+  evidence: string | null;
+  confidence: "confirmed" | "likely" | "informational" | string;
+  consequence: string;
+  action: string | null;
+  source: string | null;
+}
+
+export interface Preflight {
+  schema_version: string;
+  checks: PreflightCheck[];
+  counts: Record<PreflightResult, number>;
+  needs_attention: PreflightCheck[];
+  unknowns: PreflightCheck[];
+  printer_reachable: boolean;
+  summary: string;
+  disclaimer: string;
+  printer?: Record<string, unknown>;
+}
+
+export async function preflight(path: string, host?: string, port = 7125): Promise<Preflight> {
+  const { port: apiPort, token } = await apiInfo();
+  const r = await fetch(`http://127.0.0.1:${apiPort}/preflight`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+    body: JSON.stringify({ path, host: host ?? "", port }),
+  });
+  if (!r.ok) throw new Error(`preflight failed (${r.status})`);
+  return r.json();
+}

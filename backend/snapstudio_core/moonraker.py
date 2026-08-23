@@ -314,6 +314,46 @@ def bed_mesh(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:
     return out
 
 
+def loaded_filaments(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0):
+    """What the printer says is loaded right now, or None when it does not say.
+
+    The U1's firmware carries a `print_task_config` Klipper object describing the
+    per-toolhead filament assignment; other Klipper machines do not have it. When
+    it is absent the honest answer is None — "this printer does not report it" —
+    which Preflight then shows as unknown rather than as an empty machine.
+
+    Read-only: GET /printer/objects/query?print_task_config.
+    """
+    try:
+        status = _get(host, port, "/printer/objects/query?print_task_config", timeout)             .get("result", {}).get("status", {})
+    except Exception:
+        return None
+    cfg = status.get("print_task_config")
+    if not isinstance(cfg, dict) or not cfg:
+        return None
+    # The object's exact shape varies by firmware build, so accept the shapes seen
+    # in the wild and give up (None) rather than guess at an unfamiliar one.
+    for key in ("filaments", "filament_info", "filament_config", "extruders"):
+        value = cfg.get(key)
+        if isinstance(value, list):
+            out = []
+            for entry in value:
+                if isinstance(entry, dict):
+                    colour = entry.get("color") or entry.get("colour")
+                    material = entry.get("type") or entry.get("material")
+                    out.append({"color": colour, "material": material}
+                               if (colour or material) else None)
+                elif entry:
+                    out.append({"color": str(entry), "material": None})
+                else:
+                    out.append(None)
+            return out
+    colours = cfg.get("colors") or cfg.get("colours")
+    if isinstance(colours, list):
+        return [{"color": c, "material": None} if c else None for c in colours]
+    return None
+
+
 def capabilities(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:
     """Read-only printer capabilities — the U1's REAL bed volume + toolhead count, so
     Design Intelligence can use the actual printer instead of assumed values.

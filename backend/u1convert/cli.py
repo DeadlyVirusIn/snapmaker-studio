@@ -232,5 +232,20 @@ def placement_cmd(path, fix, out_dir):
     else:
         click.echo(json.dumps(plate_placement.assess(path), indent=2))
 
+@cli.command("preflight")
+@click.argument("path", type=click.Path(exists=True))
+@click.option("--host", default=None, help="Printer address (IP or hostname). Omitted = project-only checks.")
+@click.option("--port", type=int, default=7125, show_default=True)
+def preflight_cmd(path, host, port):
+    """Compare what this project needs against what a printer reports.
+
+    Every check reports one of ok / attention / unknown, with its evidence and
+    what to do. `unknown` means Studio could not read it — never that the printer
+    cannot do it. Read-only: nothing is sent to the printer beyond status queries.
+    """
+    from snapstudio_api import service
+    click.echo(json.dumps(service.preflight(path, host=host, port=port), indent=2))
+
+
 if __name__ == "__main__":  # `python -m u1convert.cli` without installing the package
     cli()

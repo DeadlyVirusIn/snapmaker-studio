@@ -177,6 +177,16 @@ def _make_handler(token: str):
                     self._send(400, {"error": str(e)})
                 except Exception:
                     self._send(500, {"error": "internal error"})
+            elif self.path == "/preflight":
+                try:
+                    self._send(200, service.preflight(
+                        rv.require_path_string(data),
+                        host=rv.optional_str(data, "host", "") or None,
+                        port=rv.require_port(data)))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
             elif self.path == "/placement_check":
                 try:
                     self._send(200, service.placement_check(rv.require_path_string(data)))

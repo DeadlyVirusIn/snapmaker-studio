@@ -228,6 +228,70 @@ def prepare_placed(path: str, out_dir: str | None = None) -> dict:
     return plate_placement.prepare_placed_copy(path, out_dir=out_dir)
 
 
+def printer_facts(host: str | None = None, port: int = 7125) -> dict:
+    """Everything Studio can honestly say about a printer right now.
+
+    Gathers only read-only endpoints, and reports `reachable: False` with the
+    reason rather than raising when the printer is not there. Fields the firmware
+    does not expose stay absent — Preflight turns those into "unknown", never into
+    "not supported".
+    """
+    from snapstudio_core import moonraker
+
+    if not host:
+        return {"reachable": False, "error": "no printer address configured",
+                "hint": moonraker.NOT_FOUND_HINT}
+    probe = moonraker.probe(host, port)
+    facts: dict = {"reachable": bool(probe.get("reachable")), "host": host,
+                   "port": probe.get("port", port)}
+    if not facts["reachable"]:
+        facts["error"] = probe.get("error")
+        facts["hint"] = moonraker.NOT_FOUND_HINT
+        return facts
+    try:
+        caps = moonraker.capabilities(host, port)
+        facts["toolhead_count"] = caps.get("toolhead_count")
+        facts["bed_mm"] = caps.get("bed_mm")
+        facts["klipper_objects"] = caps.get("klipper_objects") or []
+    except Exception:
+        facts["klipper_objects"] = []
+    try:
+        facts["print_state"] = moonraker.status(host, port).get("print_state")
+    except Exception:
+        pass
+    loaded = moonraker.loaded_filaments(host, port)
+    if loaded is not None:
+        facts["loaded_filaments"] = loaded
+    return facts
+
+
+def preflight(path: str, host: str | None = None, port: int = 7125) -> dict:
+    """Join what this project needs to what this printer reports.
+
+    When a printer is reachable, object placement is re-checked against the
+    printer's *real* bed rather than the published U1 volume.
+    """
+    from snapstudio_core import preflight as pf
+    from snapstudio_core import plate_placement, project_traits
+
+    project = project_traits.extract(path)
+    facts = printer_facts(host, port)
+
+    bed = None
+    dims = facts.get("bed_mm") or {}
+    if dims.get("x") and dims.get("y"):
+        bed = {"min_x": 0.0, "min_y": 0.0,
+               "max_x": float(dims["x"]), "max_y": float(dims["y"])}
+    try:
+        placement = plate_placement.assess(path, bed=bed)
+    except Exception:
+        placement = None
+
+    out = pf.evaluate(project, facts, placement=placement)
+    out["printer"] = {k: v for k, v in facts.items() if k != "klipper_objects"}
+    return out
+
+
 def ecosystem_advice(path: str, installed: dict | None = None) -> dict:
     """Read a project and say which open tool is the right next step for it.
 

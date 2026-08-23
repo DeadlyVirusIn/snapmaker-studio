@@ -16,6 +16,7 @@ import { COMPAT_COPY, sortFindings, severityLabel, severityToken, countFindings 
 import { useModelPath } from "@/hooks/useModelPath";
 import { isExt } from "@/lib/modelPath";
 import { PlacementCard } from "@/components/PlacementCard";
+import { PreflightCard } from "@/components/PreflightCard";
 
 export default function Compatibility() {
   const { path, fromSession, override } = useModelPath(isExt("3mf"));
@@ -85,6 +86,11 @@ export default function Compatibility() {
           well within the U1's size limits and still land off the plate — the
           settings check above cannot see that, because it is not a setting. */}
       {path && <PlacementCard path={path} />}
+
+      {/* The join: what this project needs against what the printer reports right
+          now. Unknowns stay unknown — a firmware that does not publish the fitted
+          nozzle produces "check this yourself", never a pass. */}
+      {path && <PreflightCard path={path} />}
       {checkM.isError && <p className="text-sm text-risk">Couldn't read that file: {(checkM.error as Error).message}</p>}
 
       {result && (
