@@ -37,12 +37,14 @@ problems that stop prints — before you slice it.
 why* — then moves it in a new copy and lists exactly what survived.
 
 **Why isn't it another slicer?** It doesn't slice and won't. Snapmaker Orca
-slices; Studio is the step before, and hands the file over.
+slices; Studio is the step on either side of it — the checks before, and the
+check of what came out.
 
 **What does it actually do?** Reads a project's real contents; compares it against
 the printer it can see on your network; corrects only what it can justify;
-accounts for every element of what it changed; costs the print from figures the
-file already carries; and names the community tool that fits your file.
+accounts for every element of what it changed; names the community tool that fits
+your file — and once Orca has sliced it, reads the G-code back and checks what
+the printer will actually execute against the printer as it is right now.
 
 **Why does Snapmaker's openness make this possible?** The U1 runs Klipper and
 Moonraker and publishes what it can do — so Studio can ask the machine itself
@@ -153,10 +155,10 @@ against a development build. Commands, counts and full reports:
 | What | Result |
 |---|---|
 | Installed-application acceptance, driven through the real UI | **21/21** |
-| Read-only verification against a real Snapmaker U1 | **13/13** |
+| Read-only verification against a real Snapmaker U1 | **20/20** |
 | Regression tests against genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **34 tests** |
 | End-to-end pipeline self-check (`u1convert selfcheck`) | **15/15** |
-| Backend / desktop / TypeScript / Rust | 663 · 247 · clean · clean |
+| Backend / desktop / TypeScript / Rust | 716 · 263 · clean · clean |
 
 Reproduce any of it yourself:
 [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md).

@@ -17,8 +17,9 @@ than asserted.
 
 **Snapmaker Studio — The Intelligence Layer for Open 3D Printing.**
 
-A local-first desktop application that sits between "I downloaded a project" and
-"I opened the slicer". It reads the project's real contents, compares them against
+A local-first desktop application that wraps the slicer on both sides: between
+"I downloaded a project" and "I opened the slicer", and again between "the slicer
+finished" and "I pressed print". It reads the project's real contents, compares them against
 the printer it can see on the network, fixes only what it can justify in a new
 copy, accounts for what changed, and names the community tool that should handle
 the next step.
@@ -50,6 +51,10 @@ interesting half. The beat-by-beat script is
 6. **Studio proves what changed and what survived**, element by element.
 7. **Studio names the open-ecosystem tool** for the next step.
 8. **Snapmaker Orca slices.**
+9. **The G-code comes back.** Studio reads what the printer will actually
+   execute and joins it to the machine as it is right now — the tools the job
+   needs against the slots that have spools in them, its materials against what
+   is loaded, its bed against the real bed.
 
 ## The hard problem
 
@@ -74,18 +79,18 @@ honest fix was to remove it, not to tune a number Studio cannot observe.
 
 ## What is verified, and how
 
-Everything below ran against the **published beta.24 installer** — installed,
+Everything below ran against the **published v0.4.0 installer** — installed,
 launched, driven through the real window, then uninstalled. Not a development
 server, not the source tree.
 
 | What | Result | How to reproduce |
 |---|---|---|
-| Installed-application acceptance | **21/21** | `pwsh -File tools/acceptance/run.ps1` |
-| Read-only verification against a real Snapmaker U1 | **13/13** | `pwsh -File tools/hardware/verify.ps1 -PrinterHost <ip>` |
-| End-to-end pipeline self-check | **15/15** | `u1convert selfcheck` |
+| Installed-application acceptance | **27/27** | `pwsh -File tools/acceptance/run.ps1` |
+| Read-only verification against a real Snapmaker U1 | **20/20** | `pwsh -File tools/hardware/verify.ps1 -PrinterHost <ip>` |
+| End-to-end pipeline self-check | **18/18** | `u1convert selfcheck` |
 | Genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **34 tests** | `pytest tests/test_real_world_3mf.py` |
-| Backend | 663 passed, 3 skipped | `pytest` |
-| Desktop | 247 passed, 31 files | `npm run test` |
+| Backend | 716 passed, 3 skipped | `pytest` |
+| Desktop | 263 passed | `npm run test` |
 | TypeScript · production build · Rust | clean | `tsc --noEmit` · `npm run build` · `cargo check` |
 
 Full records, including the raw evidence files:
@@ -144,4 +149,4 @@ SHA256 before running it. Why, and what is being done:
 | Technical depth | [TECHNICAL_DEPTH.md](TECHNICAL_DEPTH.md) |
 | Where Studio sits in the field | [COMPETITOR_MATRIX.md](COMPETITOR_MATRIX.md) · [DIFFERENTIATION_STRATEGY.md](DIFFERENTIATION_STRATEGY.md) |
 | The ecosystem story | [OPEN_ECOSYSTEM.md](OPEN_ECOSYSTEM.md) |
-| Download | [Releases](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.24) · hash in [../RELEASE_METADATA.md](../RELEASE_METADATA.md) |
+| Download | [Releases](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0) · hash in [../RELEASE_METADATA.md](../RELEASE_METADATA.md) |

@@ -48,7 +48,7 @@ Long form: [../INNOVATION_FUND.md](../INNOVATION_FUND.md).
 
 ## 3. What is being submitted
 
-**Release:** [v0.4.0-beta.24](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.24)
+**Release:** [v0.4.0](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0)
 — the first build verified against a real Snapmaker U1. Installer name, size and
 SHA256: [../RELEASE_METADATA.md](../RELEASE_METADATA.md). Verification record:
 [../TRUST_STATUS.md](../TRUST_STATUS.md).
@@ -70,16 +70,16 @@ Practicality & Adaptability. The remaining 20% is a community vote.
 
 ## 5. Evidence, in one table
 
-Verified against the published beta.24 installer, not a development build.
+Verified against the published v0.4.0 installer, not a development build.
 
 | What | Result |
 |---|---|
-| Installed-application acceptance, through the real UI | 21/21 |
-| Read-only verification against a real Snapmaker U1 | 13/13 |
+| Installed-application acceptance, through the real UI | 27/27 |
+| Read-only verification against a real Snapmaker U1 | 20/20 |
 | Regression tests against genuine Orca/Bambu/Prusa projects | 34 tests |
-| End-to-end pipeline self-check | 15/15 |
-| Backend tests | 663 passed, 3 skipped |
-| Desktop tests | 247 passed across 31 files |
+| End-to-end pipeline self-check | 18/18 |
+| Backend tests | 716 passed, 3 skipped |
+| Desktop tests | 263 passed |
 | TypeScript · production build · Rust | clean |
 
 Reproduce any of it: [JUDGE_WALKTHROUGH.md](JUDGE_WALKTHROUGH.md).

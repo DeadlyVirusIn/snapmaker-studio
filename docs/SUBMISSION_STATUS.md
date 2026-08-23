@@ -13,10 +13,10 @@ page is the status record only.
 
 | | |
 |---|---|
-| Version | **v0.4.0-beta.24** — the first build verified against a real Snapmaker U1 |
+| Version | **v0.4.0** — the first build verified against a real Snapmaker U1 |
 | Installer, size, SHA256 | [RELEASE_METADATA.md](RELEASE_METADATA.md) — canonical |
 | Verification state | [TRUST_STATUS.md](TRUST_STATUS.md) — **ACCEPTED** |
-| Release | <https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.24> |
+| Release | <https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0> |
 
 Unsigned beta — verify the SHA256 before installing. See
 [windows-install.md](windows-install.md) and

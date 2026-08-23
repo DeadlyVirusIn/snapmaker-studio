@@ -194,18 +194,18 @@ simply the machine it is verified against.
 
 ## Evidence
 
-Everything below was verified against the **published beta.24 installer**, not a
+Everything below was verified against the **published v0.4.0 installer**, not a
 development build. Commands, counts and full reports:
 [TRUST_STATUS.md](TRUST_STATUS.md).
 
 | What | Result |
 |---|---|
-| Installed-application acceptance, through the real UI | 21/21 |
-| Read-only verification against a real Snapmaker U1 | 13/13 |
+| Installed-application acceptance, through the real UI | 27/27 |
+| Read-only verification against a real Snapmaker U1 | 20/20 |
 | Regression tests against genuine Orca/Bambu/Prusa projects | 34 tests |
-| End-to-end pipeline self-check | 15/15 |
-| Backend tests | 663 passed, 3 skipped |
-| Desktop tests | 247 passed across 31 files |
+| End-to-end pipeline self-check | 18/18 |
+| Backend tests | 716 passed, 3 skipped |
+| Desktop tests | 263 passed |
 | TypeScript, Rust, production build | clean |
 
 Demo: [`docs/media/snapmaker-studio-demo.mp4`](media/snapmaker-studio-demo.mp4) —
