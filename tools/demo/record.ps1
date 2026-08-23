@@ -45,11 +45,13 @@ Copy-Item $sample $sampleWork -Force
 # shows this run's work rather than every previous take stacked on top of it.
 Remove-Item (Join-Path $WorkDir "engine-data") -Recurse -Force -ErrorAction SilentlyContinue
 
-if (-not (Test-Path (Join-Path $installDir "snapmaker-studio-desktop.exe"))) {
-    $inst = Resolve-Installer
-    Write-Host "Installing $inst"
-    Start-Process -FilePath $inst -ArgumentList '/S', '/NCRC', "/D=$installDir" -Wait
-}
+# Always install fresh. Reusing whatever was left in the work directory once
+# produced a demo of the previous release — the status bar in the recording named
+# a version that was no longer the one being shipped.
+if (Test-Path $installDir) { Remove-Item $installDir -Recurse -Force -ErrorAction SilentlyContinue }
+$inst = Resolve-Installer
+Write-Host "Installing $inst"
+Start-Process -FilePath $inst -ArgumentList '/S', '/NCRC', "/D=$installDir" -Wait
 
 $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=$DebugPort --remote-allow-origins=*"
 $env:WEBVIEW2_USER_DATA_FOLDER = Join-Path $WorkDir "webview-profile"
@@ -67,14 +69,21 @@ try {
 using System;
 using System.Runtime.InteropServices;
 public static class Win {
-    [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr h,int x,int y,int w,int t,bool r);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h,int c);
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h,IntPtr a,int x,int y,int w,int t,uint f);
     [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
-    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+    [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X, Y; }
+    [DllImport("user32.dll")] public static extern bool GetClientRect(IntPtr h, out RECT r);
+    [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr h, ref POINT p);
+    [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
 }
 "@
+    # Without this, this process is DPI-virtualised: every rectangle Windows
+    # hands back is in logical units while ffmpeg captures physical pixels, and
+    # the capture lands up and to the left of the app — filming a strip of
+    # whatever is behind it and cutting off the right-hand side.
+    [Win]::SetProcessDPIAware() | Out-Null
     $handle = (Get-Process -Id $app.Id).MainWindowHandle
     [Win]::ShowWindow($handle, 9) | Out-Null      # restore, in case it opened maximised
     # Pin the window topmost at a known rectangle. gdigrab's window mode reads the
@@ -88,17 +97,19 @@ public static class Win {
     [Win]::SetForegroundWindow($handle) | Out-Null
     Start-Sleep -Seconds 2
 
-    # Capture the rectangle the window actually occupies. The requested size is in
-    # logical units; on a scaled display the physical window is larger, and
-    # capturing the requested size crops the right-hand side of the app.
-    $rect = New-Object Win+RECT
-    [Win]::GetWindowRect($handle, [ref]$rect) | Out-Null
-    # GetWindowRect includes the drop shadow, which would film a strip of whatever
-    # is behind the app. Inset by the shadow width and skip the title bar.
-    $shadow = 8; $titleBar = 32
-    $x = $rect.Left + $shadow; $y = $rect.Top + $titleBar
-    $w = ($rect.Right - $rect.Left) - (2 * $shadow)
-    $h = ($rect.Bottom - $rect.Top) - $titleBar - $shadow
+    # Capture exactly the client area — the page, with no title bar and no drop
+    # shadow. An earlier version insetted GetWindowRect by fixed pixel counts;
+    # those counts are logical units, the rectangle is physical pixels, and on a
+    # scaled display the difference filmed a strip of whatever was behind the app
+    # and cut off the right-hand side. GetClientRect plus ClientToScreen gives the
+    # true client rectangle in physical pixels, with no arithmetic to get wrong.
+    $client = New-Object Win+RECT
+    [Win]::GetClientRect($handle, [ref]$client) | Out-Null
+    $origin = New-Object Win+POINT
+    [Win]::ClientToScreen($handle, [ref]$origin) | Out-Null
+    $x = $origin.X; $y = $origin.Y
+    $w = $client.Right - $client.Left
+    $h = $client.Bottom - $client.Top
     # x264 needs even dimensions.
     if ($w % 2) { $w-- }
     if ($h % 2) { $h-- }
@@ -116,7 +127,10 @@ public static class Win {
         "-offset_x", "$x", "-offset_y", "$y", "-video_size", "${w}x${h}",
         "-i", "desktop",
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
-        "-pix_fmt", "yuv420p", $raw
+        # Quoted: Start-Process joins the argument list with spaces and does not
+        # quote for you, so an output path containing a space becomes two
+        # arguments and ffmpeg writes nothing.
+        "-pix_fmt", "yuv420p", "`"$raw`""
     )
     $started += $recorder.Id
     Start-Sleep -Seconds 3

@@ -1,0 +1,9 @@
+{
+  "name": "snapstudio-hardware-verify",
+  "private": true,
+  "type": "module",
+  "description": "Read-only verification of the installed build against a real Snapmaker U1.",
+  "dependencies": {
+    "playwright-core": "^1.62.1"
+  }
+}
