@@ -163,3 +163,4 @@ The tests worth reading are the ones that assert what Studio *will not* say:
 - [TECHNICAL_DEPTH.md](TECHNICAL_DEPTH.md) — the hard problems and how they are solved
 - [OPEN_ECOSYSTEM.md](OPEN_ECOSYSTEM.md) — how Studio connects the rest of the ecosystem
 - [../EXTENDING.md](../EXTENDING.md) — the extension seams, for contributors
+- [NEXT_MOVES.md](NEXT_MOVES.md) — what is planned next, and what is deliberately not
