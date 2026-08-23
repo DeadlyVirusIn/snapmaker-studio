@@ -6,7 +6,8 @@ completed and recorded.
 
 ## v0.4.0-beta.22 — PARTIAL / PENDING (not accepted)
 
-**Object placement, ecosystem tool intelligence, Orca import compatibility.** This
+**Object placement, project ↔ printer preflight, fidelity audit, fix ledger, colour
+planning, ecosystem tool intelligence, Orca import compatibility.** This
 release adds capabilities that write files and make claims about a user's project,
 so acceptance is tracked item by item below. Automated checks are recorded with the
 command that produced them; anything requiring a person in front of the installed
@@ -35,6 +36,11 @@ on the basis of an author's expectation.
 | Honest refusal on an unsliced project | **PASS** | `test_project_cost.py::test_unsliced_project_gets_an_explanation_not_a_number` |
 | Prepare U1 copy + preservation summary | **PASS** | `test_preserve_mode.py` — the preservation invariant fails a conversion on any unreported change |
 | Advanced Mode failure message | **PASS** | `test_printer_discovery.py` — unreachable discovery returns the touchscreen instruction, not a bare failure |
+| End-to-end pipeline | **PASS** | `u1convert selfcheck` — 15/15, running production code paths over a generated project: parsing, geometry, traits, placement, prepare, import compatibility, fidelity, placement fix, cost, colour planning, ecosystem, preflight, archive limits, input-file integrity and the documented API routes |
+| Colour planning beyond four toolheads | **PASS** | `test_color_plan.py` — painted colour is never classified as swappable; layer numbers are only ever offered as estimates |
+| Project ↔ printer preflight | **PASS** | `test_preflight.py` — every unknown stays unknown; `test_never_reports_not_detected_as_not_supported` asserts it on the wording of every unknown the module can produce |
+| Fidelity audit | **PASS** | `test_fidelity.py` — 22 cases, most of which build a deliberately wrong prepared copy and assert Studio reports it as unverified rather than excusing it |
+| Fix ledger and return-to-original | **PASS** | `test_fix_ledger.py` — the original is never written to, and a shared export cannot carry a user's directory layout |
 
 ### Requires the installed application or real hardware — PENDING
 
@@ -48,9 +54,12 @@ Each row states the smallest check that would settle it.
 | Close / no orphan | **PENDING** | Close the window; no `snapstudio-api.exe` remains in Task Manager |
 | Reopen | **PENDING** | Launch again; the app starts cleanly and previously used files still open |
 | Uninstall | **PENDING** | Uninstall from Apps & features; the install directory is removed and no `snapstudio-api.exe` remains |
-| Best Tool panel (GUI) | **PENDING** | Prepare a U1 copy; the "Best tool for this project" panel renders with at least one reason, a licence, and a caution on any preview-maturity tool |
-| Placement card (GUI) | **PENDING** | Open `examples/demo_offplate_foreign.3mf` on the Compatibility page; the placement card names the object and the edge, and the fix button writes a new copy |
-| Fix Ledger (GUI) | **PENDING** | After a fix, the changes list shows what Studio changed with before/after, and "return to original" restores the original file as the working project |
+| Best Tool panel (GUI) | **PARTIAL** | Observed rendering with its reason and licence in the **development build** on 2026-08-23 (`docs/screenshots/beta22/fidelity_and_ledger.jpg`). Installed-build check: prepare a U1 copy and confirm the panel renders with at least one reason, a licence, and a caution on any preview-maturity tool |
+| Placement card (GUI) | **PARTIAL** | Observed in the **development build** naming the object, the edge and the millimetres, and writing a new copy (`placement_and_preflight.jpg`, `placement_fixed.jpg`). Installed-build check: repeat on `examples/demo_u1_showcase.3mf` |
+| Preflight card (GUI) | **PARTIAL** | Observed in the **development build** reporting unknowns as "Studio can't tell" with the Advanced Mode instruction (`preflight_unknowns.jpg`). Installed-build check: repeat with and without a printer on the network |
+| Fidelity report (GUI) | **PARTIAL** | Observed in the **development build** listing what could not be carried over with its reason (`fidelity_and_ledger.jpg`). Installed-build check: repeat after preparing a copy |
+| Colour plan (GUI) | **PARTIAL** | Observed in the **development build** answering "6 colours, 4 toolheads — possible without repainting" with per-colour evidence (`colour_plan.jpg`). Installed-build check: repeat on the same sample |
+| Fix Ledger (GUI) | **PARTIAL** | Observed in the **development build** listing both operations with before/after and the return control (`fidelity_and_ledger.jpg`). Installed-build check: press "Return to the original" and confirm the workflow reopens the untouched original |
 | Open in Snapmaker Orca | **PENDING** | With Snapmaker Orca installed, the handoff opens the prepared file in Orca and Studio issues no further commands |
 | Printer discovery (real U1) | **PENDING** | With a U1 on the LAN and Advanced Mode enabled, discovery finds it; with Advanced Mode disabled, the failure message names Advanced Mode |
 | Interactive GUI acceptance | **PENDING** | Full beginner walkthrough end to end on the installed build |
