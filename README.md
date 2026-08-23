@@ -15,8 +15,8 @@ _Project Doctor. Printer Hub. Cost Doctor — Studio checks every model, surface
 
 ## In 30 seconds
 
-**What is it?** A local desktop app that reads a 3D project file and finds the
-problems that stop a print — before you slice it.
+**What is it?** A local desktop app that reads a 3D project file and finds
+problems that stop prints — before you slice it.
 
 **What problem does it solve?** You download a project and your slicer says
 `out of bounds`. Studio says *which object, which edge, how many millimetres,
@@ -41,8 +41,10 @@ which nozzle is fitted, so Studio says *"check this yourself"* — never
 ## Watch it work
 
 Seventy-one seconds, recorded from the installed application. No slides, no
-reconstruction — an out-of-bounds object found and moved, the project compared
-against a printer, the copy prepared, and every change accounted for.
+reconstruction — an out-of-bounds object found and moved, a copy prepared, every
+change accounted for, and six colours planned against four toolheads. No printer
+is connected in the recording, so it also shows what Studio says when it cannot
+reach one: *"Studio can't tell"*, and what to do about it.
 
 [![Watch the Snapmaker Studio demo](docs/media/demo-poster.jpg)](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4)
 

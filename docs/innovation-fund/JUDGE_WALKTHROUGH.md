@@ -156,6 +156,46 @@ The tests worth reading are the ones that assert what Studio *will not* say:
 
 ---
 
+## Verifying the shipped installer, not the source tree
+
+Everything above runs from a clone. Two harnesses go further and check the build a
+user would actually download.
+
+**The installed application.** Build the installer with `npm run release:windows`
+in `desktop/`, then:
+
+```powershell
+pwsh -File tools/acceptance/run.ps1
+```
+
+It installs into an isolated directory with its own WebView2 profile and engine
+data directory, drives the real application window over the Chrome DevTools
+Protocol, and uninstalls. 21 checks, including that the input file is byte-identical
+afterwards and that uninstalling leaves nothing behind. It stops only processes it
+started, and restores any pre-existing installation's registry entry. Last result:
+**21/21** — [../internal/acceptance-beta24.json](../internal/acceptance-beta24.json).
+
+**A real printer.** With a Snapmaker U1 on the same network:
+
+```powershell
+pwsh -File tools/hardware/verify.ps1 -PrinterHost <printer-ip>
+```
+
+Read-only by construction: the allowed routes are asserted against a deny-list
+before the first request, so nothing is started, uploaded or queued and no
+temperature, motion, homing, pause, resume, cancel, emergency-stop or configuration
+call is made. The printer's address is replaced with a placeholder before anything
+reaches the evidence file. Last result: **13/13** —
+[../internal/hardware-beta24.json](../internal/hardware-beta24.json).
+
+That run is worth reading rather than just counting. It proved the four loaded
+filaments are read correctly, that the printer's own 271 × 335 × 281 mm bed is what
+the bed check uses, and — the point of the whole evidence model — that the fitted
+nozzle genuinely is not exposed by stock firmware, so Studio's "check this
+yourself" is honest rather than lazy.
+
+---
+
 ## Further reading
 
 - [DIFFERENTIATION_STRATEGY.md](DIFFERENTIATION_STRATEGY.md) — why this needs to exist

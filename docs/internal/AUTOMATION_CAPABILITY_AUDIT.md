@@ -72,6 +72,26 @@ objects, which is the fact the whole preflight honesty rule rests on.
 |---|---|
 | Record the 90-second demo | Automated — `tools/demo/record.ps1` |
 | Twelve installed-build acceptance checks | Automated — 21 checks, `tools/acceptance/run.ps1` |
-| Real U1 read-only verification | Done, and it found a bug |
+| Real U1 read-only verification | Automated — `tools/hardware/verify.ps1`, 13 checks; the first run found a real bug |
 | Code signing | Researched and prepared; only a form submission remains |
-| Ecosystem outreach | Prepared; posting to other people's issue trackers stays a human decision |
+| Ecosystem outreach | **Posted** 2026-08-23 on the maintainer's explicit instruction — four notes, URLs in [../innovation-fund/ECOSYSTEM_OUTREACH.md](../innovation-fund/ECOSYSTEM_OUTREACH.md). The judgement of *whether* to introduce yourself to a peer is the maintainer's; once they made it, sending the notes was not a human action. |
+
+## Revisited in the beta.24 sprint
+
+Two of the five moved again.
+
+**Real-hardware verification** was done by hand the first time and is now a
+script, so it is part of the release gate rather than a one-off. It runs against
+the installer that will be published, and it is read-only by construction: the
+allowed routes are asserted against a deny-list before the first request.
+
+**Ecosystem outreach** was returned as a human gate on the grounds that outreach
+carries the maintainer's name. That reasoning was right about *the decision* and
+wrong about *the act*. Once the maintainer had decided, writing four tailored
+notes and posting them was ordinary work. The lesson generalises: when something
+looks like a human gate, separate the judgement from the execution, and hand back
+only the judgement.
+
+**What genuinely remains** is smaller than it was: submitting a form that
+represents the maintainer legally, posting under their name in a community
+channel, and physical acts on the printer.
