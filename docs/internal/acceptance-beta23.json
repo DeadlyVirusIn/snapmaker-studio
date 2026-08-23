@@ -1,6 +1,6 @@
 {
   "schema_version": "acceptance/1",
-  "installer": "D:\\STL Files\\snapmaker-studio\\desktop\\src-tauri\\target\\release\\bundle\\nsis\\Snapmaker Studio_0.4.0-beta.23_x64-setup.exe",
+  "installer": "<repo>\\desktop\\src-tauri\\target\\release\\bundle\\nsis\\Snapmaker Studio_0.4.0-beta.23_x64-setup.exe",
   "checks": [
     {
       "name": "Scripted install completes",
@@ -110,5 +110,5 @@
   ],
   "passed": 21,
   "total": 21,
-  "evidence": "C:\\Users\\kunal\\AppData\\Local\\Temp\\snapstudio-acceptance\\evidence"
+  "evidence": "<temp>\\snapstudio-acceptance\\evidence"
 }

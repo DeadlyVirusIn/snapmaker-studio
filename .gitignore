@@ -47,3 +47,11 @@ tools/acceptance/package-lock.json
 
 # Real-world fixtures are fetched, never committed (AGPL + upstream privacy).
 backend/tests/fixtures/real-world/
+
+# Demo recorder deps (installed on demand, never committed)
+tools/demo/node_modules/
+tools/demo/package-lock.json
+
+# Hardware verification reuses the acceptance harness deps
+tools/hardware/node_modules/
+tools/hardware/package-lock.json

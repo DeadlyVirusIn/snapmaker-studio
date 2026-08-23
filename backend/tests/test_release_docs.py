@@ -25,6 +25,7 @@ TRUST = ROOT / "docs" / "TRUST_STATUS.md"
 RELEASE_NOTES = ROOT / "docs" / "RELEASE_NOTES.md"
 PACKAGE_JSON = ROOT / "desktop" / "package.json"
 TAURI_CONF = ROOT / "desktop" / "src-tauri" / "tauri.conf.json"
+CARGO_TOML = ROOT / "desktop" / "src-tauri" / "Cargo.toml"
 
 # Keep-a-Changelog heading: "## [0.4.0-beta.22] - 2026-08-22". [Unreleased] and
 # historical prose headings are allowed through and checked separately.
@@ -156,6 +157,16 @@ def test_app_manifests_match_the_released_version(metadata):
         assert found, f"{manifest.name} has no version field"
         assert found.group(1) == version, (
             f"{manifest.name} says {found.group(1)}, metadata says {version}")
+
+
+def test_the_rust_crate_version_matches_the_released_version(metadata):
+    """The Rust crate is the one manifest nothing else reads at runtime, so it
+    drifted silently: it still said 0.4.0-beta.21.3 three releases later."""
+    version = metadata["version"].lstrip("v")
+    found = re.search(r'^version\s*=\s*"([^"]+)"', _read(CARGO_TOML), re.M)
+    assert found, "Cargo.toml has no version field"
+    assert found.group(1) == version, (
+        f"Cargo.toml says {found.group(1)}, metadata says {version}")
 
 
 # --- trust status -----------------------------------------------------------

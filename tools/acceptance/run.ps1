@@ -221,7 +221,22 @@ $report = [pscustomobject]@{
     evidence       = $outDir
 }
 $reportPath = Join-Path $outDir "acceptance.json"
-$report | ConvertTo-Json -Depth 5 | Set-Content $reportPath -Encoding utf8
+
+# The repository's own rules forbid local paths and usernames in tracked files,
+# and this report is meant to be committed as release evidence. Replace them
+# here rather than remembering to do it by hand later.
+$json = $report | ConvertTo-Json -Depth 5
+foreach ($pair in @(
+    @{ from = $repo;      to = "<repo>" },
+    @{ from = $WorkDir;   to = "<workdir>" },
+    @{ from = $env:TEMP;  to = "<temp>" },
+    @{ from = $env:USERNAME; to = "<user>" })) {
+    if ($pair.from) {
+        $json = $json.Replace($pair.from.Replace('\', '\\'), $pair.to)
+        $json = $json.Replace($pair.from, $pair.to)
+    }
+}
+$json | Set-Content $reportPath -Encoding utf8
 
 Write-Host ""
 Write-Host "$passed/$total checks passed"
