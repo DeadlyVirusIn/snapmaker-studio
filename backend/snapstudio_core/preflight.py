@@ -380,4 +380,7 @@ def _summary(counts: dict, printer: dict) -> str:
         parts.append(f"{attention} thing{'s' if attention != 1 else ''} to resolve")
     if unknown:
         parts.append(f"{unknown} thing{'s' if unknown != 1 else ''} Studio cannot check for you")
-    return " and ".join(parts).capitalize() + " before you slice."
+    # capitalize() would lowercase the rest of the sentence, which turns
+    # "Studio" into "studio". Only the first character should change.
+    text = " and ".join(parts)
+    return text[:1].upper() + text[1:] + " before you slice."

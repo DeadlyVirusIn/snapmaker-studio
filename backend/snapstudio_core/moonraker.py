@@ -332,10 +332,16 @@ def bed_mesh(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:
 def loaded_filaments(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0):
     """What the printer says is loaded right now, or None when it does not say.
 
-    The U1's firmware carries a `print_task_config` Klipper object describing the
-    per-toolhead filament assignment; other Klipper machines do not have it. When
-    it is absent the honest answer is None — "this printer does not report it" —
-    which Preflight then shows as unknown rather than as an empty machine.
+    The U1 carries a `print_task_config` Klipper object holding the per-toolhead
+    filament assignment as *parallel arrays* — `filament_type`,
+    `filament_sub_type`, `filament_color_rgba` and `filament_exist` — one entry
+    per toolhead. That shape was read from a real U1 (firmware reporting four
+    toolheads and a 271x335x281 mm volume) rather than guessed; an earlier
+    version of this function looked for a list of objects and therefore reported
+    "not available" against a printer that was in fact reporting it.
+
+    A machine without the object returns None, which Preflight shows as unknown —
+    never as an empty machine.
 
     Read-only: GET /printer/objects/query?print_task_config.
     """
@@ -346,27 +352,48 @@ def loaded_filaments(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0):
     cfg = status.get("print_task_config")
     if not isinstance(cfg, dict) or not cfg:
         return None
-    # The object's exact shape varies by firmware build, so accept the shapes seen
-    # in the wild and give up (None) rather than guess at an unfamiliar one.
-    for key in ("filaments", "filament_info", "filament_config", "extruders"):
-        value = cfg.get(key)
-        if isinstance(value, list):
-            out = []
-            for entry in value:
-                if isinstance(entry, dict):
-                    colour = entry.get("color") or entry.get("colour")
-                    material = entry.get("type") or entry.get("material")
-                    out.append({"color": colour, "material": material}
-                               if (colour or material) else None)
-                elif entry:
-                    out.append({"color": str(entry), "material": None})
-                else:
-                    out.append(None)
-            return out
-    colours = cfg.get("colors") or cfg.get("colours")
-    if isinstance(colours, list):
-        return [{"color": c, "material": None} if c else None for c in colours]
-    return None
+
+    def column(*names):
+        for name in names:
+            value = cfg.get(name)
+            if isinstance(value, list) and value:
+                return value
+        return None
+
+    types = column("filament_type")
+    colours = column("filament_color_rgba", "filament_color")
+    subtypes = column("filament_sub_type")
+    vendors = column("filament_vendor")
+    present = column("filament_exist")
+
+    slots = max((len(c) for c in (types, colours, subtypes, present) if c), default=0)
+    if not slots:
+        return None
+
+    def at(seq, i):
+        return seq[i] if isinstance(seq, list) and i < len(seq) else None
+
+    def hex_colour(value):
+        if isinstance(value, str) and value.strip():
+            return "#" + value.strip().lstrip("#")[:6].upper()
+        return None
+
+    out = []
+    for i in range(slots):
+        # `filament_exist` is the printer's own answer to "is a spool loaded
+        # here". When it says no, the slot is empty however it is coloured.
+        if present is not None and at(present, i) is False:
+            out.append(None)
+            continue
+        material = at(types, i)
+        sub = at(subtypes, i)
+        entry = {
+            "color": hex_colour(at(colours, i)),
+            "material": f"{material} {sub}".strip() if (material and sub) else material,
+            "vendor": at(vendors, i) or None,
+        }
+        out.append(entry if any(entry.values()) else None)
+    return out
 
 
 def capabilities(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:
