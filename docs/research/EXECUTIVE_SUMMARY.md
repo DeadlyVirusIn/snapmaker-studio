@@ -1,5 +1,7 @@
 # Executive Summary — Research Phase (no code)
 
+> **Historical — written before the Innovation Fund entry was submitted on 24 June 2026.** Kept for the reasoning, not as a description of the project's current state. Current state: [docs/SUBMISSION_STATUS.md](../SUBMISSION_STATUS.md) and [docs/innovation-fund/PHASE1_POSITION.md](../innovation-fund/PHASE1_POSITION.md).
+
 **Date:** 2026-06-18 · Master report over: `PRUSA_XL_AUDIT`,
 `MULTI_ECOSYSTEM_ARCHITECTURE`, `FUND_REVIEWER_CRITIQUE`, `ROADMAP_RECOMMENDATION`,
 `VISION_2030` (all in `docs/research/`).

@@ -1,48 +1,50 @@
 # Final submission package — Snapmaker Innovation Fund, Phase 1
 
-**Status: ready to send. Not sent.** The form asks for the maintainer's name and
-email and represents them personally.
+**Status: submitted, confirmed, and publicly listed.** Entry sent 24 June 2026,
+confirmed 29 June, listed as one of the 41 projects in the running. There is
+nothing left to enter — see [SUBMITTED_ENTRY.md](SUBMITTED_ENTRY.md) for the exact
+text the committee received.
 
-Prepared 2026-08-23, against the fund's rules as published on that date
-(<https://www.snapmaker.com/innovation-fund>). Phase 1 closes **7 September 2026**.
+This page is now the index to the package a judge would read, plus the record of
+what the entry says versus what the project is. Evaluation closes
+**22 September 2026**; 20 of the 41 win. Where Studio stands in that field:
+[PHASE1_POSITION.md](PHASE1_POSITION.md).
 
 > Independent open-source project — not affiliated with or endorsed by Snapmaker.
 
 ---
 
-## 1. What goes in the form
+## 1. What the entry says
 
-| Field | Value |
+| Field | As submitted, 24 June 2026 |
 |---|---|
 | Project name | Snapmaker Studio |
 | Project URL | <https://github.com/DeadlyVirusIn/snapmaker-studio> |
-| Category | Workflow / software tooling |
-| Licence | MIT |
-| Cover image (optional, 640×360, ≤5 MB) | Export `docs/brand/hero.svg` at 640×360, or use `docs/media/demo-poster.jpg` |
-| Name, email | The maintainer's own |
+| Category | Slicer / software (listed on the wall as *Workflow*) |
+| Name, email | Kunal Khurana, kunalkhurana1@gmail.com |
+| Description | The June text, verbatim in [SUBMITTED_ENTRY.md](SUBMITTED_ENTRY.md) |
+| Cover image | The old "workflow platform" banner |
 
-**Short description (~40 words):**
+The listing describes the June build. A correction was prepared for the fund's own
+confirmation thread, with a replacement description and a replacement 640×360 card
+at [`../brand/innovation-fund-card.png`](../brand/innovation-fund-card.png) — see
+[LISTING_UPDATE.md](LISTING_UPDATE.md).
+
+**Do not re-submit the form.** A second entry is a duplicate, which is worse than
+a stale description.
+
+## 2. The current description
+
+The text below is what the project would say today, and what the repository says.
+It is not a form field any more; it is the answer to "what is this?" for anyone
+who arrives from the wall.
 
 > Snapmaker Studio is a free, local-first desktop app that reads a downloaded 3D
 > project, explains the risks in plain language, compares it against your actual
 > U1 over Moonraker, fixes only what it can justify, and proves what survived.
 > Snapmaker Orca still slices.
 
-The long description is in [../INNOVATION_FUND.md](../INNOVATION_FUND.md) and is
-the canonical text. Do not rewrite it in the form; paste it.
-
-## 2. The other two entry requirements
-
-The form is one of three. All three are required.
-
-1. **Published on GitHub or another public page** — done:
-   <https://github.com/DeadlyVirusIn/snapmaker-studio>, with a published release,
-   a demo, and a verification record.
-2. **Shared in a Snapmaker community channel** — **outstanding.** This is a stated
-   requirement and it is also the only honest route into the 20% community
-   component. It carries the maintainer's name, so it is theirs to post.
-3. **Submitted through the fund's online form** — **outstanding**, for the reason
-   above.
+Long form: [../INNOVATION_FUND.md](../INNOVATION_FUND.md).
 
 ## 3. What is being submitted
 
@@ -97,22 +99,26 @@ Stated here so they cannot creep back in under deadline pressure:
 - **The 112-file corpus is not headline evidence.** It measures structure, not
   print success, and it is dominated by STLs. It stays as historical context.
 
-## 7. Sequence for the maintainer
+## 7. What is actually left before 22 September
 
-1. Confirm MFA is enabled on the GitHub account.
-2. Share the project in a Snapmaker community channel (entry requirement).
-3. Submit the form at <https://www.snapmaker.com/innovation-fund>, pasting the
-   short and long descriptions from [../INNOVATION_FUND.md](../INNOVATION_FUND.md).
-   There is no documented way to revise a submission, so send it once.
-4. Separately, apply to SignPath Foundation at <https://signpath.org/apply> —
-   everything it asks for is prepared in
-   [../CODE_SIGNING_POLICY.md](../CODE_SIGNING_POLICY.md).
+1. **Send the listing correction** — drafted in the maintainer's mailbox, on the
+   fund's own confirmation thread. [LISTING_UPDATE.md](LISTING_UPDATE.md).
+2. **Post the community update** — written, never posted before, and checked to
+   confirm that. [COMMUNITY_POST.md](COMMUNITY_POST.md).
+
+That is the whole list. Code signing is prepared but will not land inside the
+evaluation window and does not affect judging; it is tracked separately in
+[../CODE_SIGNING_POLICY.md](../CODE_SIGNING_POLICY.md).
 
 ## 8. Package contents
 
 | File | What it is |
 |---|---|
-| [../INNOVATION_FUND.md](../INNOVATION_FUND.md) | The submission text itself, plus the fund's current rules |
+| [../INNOVATION_FUND.md](../INNOVATION_FUND.md) | The current description of the project, plus the fund's rules |
+| [SUBMITTED_ENTRY.md](SUBMITTED_ENTRY.md) | The June entry, verbatim — historical |
+| [PHASE1_POSITION.md](PHASE1_POSITION.md) | Where Studio stands against the other 40, and the five real risks |
+| [LISTING_UPDATE.md](LISTING_UPDATE.md) | Why the public card is stale and what was done |
+| [COMMUNITY_POST.md](COMMUNITY_POST.md) | The community update, written and ready |
 | [JUDGE_OVERVIEW.md](JUDGE_OVERVIEW.md) | Five-minute orientation for a judge |
 | [JUDGE_WALKTHROUGH.md](JUDGE_WALKTHROUGH.md) | Reproduce every claim yourself |
 | [DEMO_SCRIPT_90_SECONDS.md](DEMO_SCRIPT_90_SECONDS.md) | The recorded demo, beat by beat |

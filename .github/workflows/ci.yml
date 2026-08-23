@@ -59,6 +59,18 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: desktop/src-tauri
+      # Tauri declares the frozen Python engine as an external binary, and its
+      # build script refuses to run if that file is missing — so this job failed
+      # on every commit from the day it was added, because CI does not freeze the
+      # sidecar. `cargo check` never reads the file's contents; it only needs the
+      # resource to resolve. A zero-byte placeholder is enough to type-check the
+      # Rust, and the real engine is frozen and verified at release time by
+      # `npm run release:windows` and the installed-build acceptance harness.
+      - name: Placeholder for the sidecar cargo check only needs to resolve
+        run: |
+          New-Item -ItemType Directory -Force -Path bin | Out-Null
+          New-Item -ItemType File -Force -Path bin/snapstudio-api-x86_64-pc-windows-msvc.exe | Out-Null
+        shell: pwsh
       - name: Check
         run: cargo check --all-targets
 

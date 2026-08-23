@@ -1,10 +1,38 @@
 # Snapmaker Studio — Innovation Fund submission
 
-> **Not yet submitted.** The submission form asks for the maintainer's name and
-> email and represents them personally, so the form itself is theirs to send.
-> Everything that goes into it is written below, ready to paste.
+> ## Status: **Submitted · Phase 1 · publicly listed**
+>
+> Snapmaker Studio was submitted to Phase 1 on **24 June 2026** and confirmed by
+> the Innovation Fund team on **29 June 2026**. It is publicly listed among the
+> **41 projects in the running** on <https://www.snapmaker.com/innovation-fund>
+> as *"snapmaker-studio — by Kunal Khurana"*.
+>
+> **There is nothing left to submit.** Do not submit again; a second entry would
+> be a duplicate. Evaluation closes **22 September 2026** and winners — 20 of the
+> 41 — are announced **30 September 2026**.
 >
 > Independent open-source project — not affiliated with or endorsed by Snapmaker.
+
+## What was actually submitted, and how it has aged
+
+The entry was written against **beta.16-era** Studio. It describes understand →
+validate → prepare → monitor, Source Check, Project Doctor, and the hardware-
+verified Printer Hub control loop. All of that is still true.
+
+What it does not mention, because none of it existed in June, is everything the
+project is now strongest on: the project-to-printer preflight, the fidelity audit,
+the reversible fix ledger, colour classification beyond four toolheads, the
+ecosystem recommender, the installed-build acceptance harness, and the read-only
+verification against a real U1 that shipped in beta.24.
+
+Snapmaker's public wall entry condenses the original to *"Free local pre-print
+checker for U1. Flags model defects and risky settings up front, before you waste
+filament."* That is accurate about June and understates August.
+
+The submitted text is preserved verbatim in
+[innovation-fund/SUBMITTED_ENTRY.md](innovation-fund/SUBMITTED_ENTRY.md). The
+sections below are the **current** description of the project — what an updated
+entry would say, and what any judge reading the repository should be reading.
 
 ## The fund, as published today
 
@@ -23,7 +51,8 @@ Re-read from the official page on **2026-08-23**. Source:
 | Requirements | Published on GitHub or another public page · shared in a Snapmaker community channel · submitted through the fund's online form |
 | Form fields | name, email, project name, GitHub/project URL, category, short description. Optional cover image: 640×360, PNG/JPG, max 5 MB |
 | Word limits | None published. The short description below is kept near 40 words so it fits whatever the field allows. |
-| Updating a submission | Not documented on the page. Assume one submission; do not rely on being able to revise it. |
+| Updating a submission | No self-service editing exists. The page says a browsing-and-voting system is still being built. The confirmation email invites questions at community@snapmaker.com, which is the only documented route to correct a listing. |
+| Evaluation | Ends **22 September 2026**; 20 winners announced 30 September 2026 |
 
 ## Project
 
@@ -205,10 +234,13 @@ still zero, it says so.
   versions, and more genuine slicer projects in the regression corpus.
 - **Maintainer time** for review, releases and community contributions.
 
-## Notes for the submitting maintainer
+## Notes
 
-- The form asks for **name and email**, which is why it is not automated.
-- The community-vote component is 20% and includes GitHub stars. Worth being
-  realistic about rather than gaming.
-- Sharing the project in a Snapmaker community channel is a stated requirement of
-  entry, separate from the form.
+- **Entry is complete.** Submitted, confirmed, and publicly listed. The remaining
+  work is competitive, not procedural.
+- The community-vote component is 20% and includes GitHub stars, but the fund's
+  own page says the voting system is still being built, so there is nothing to
+  vote on yet.
+- The listed description is a June snapshot. See
+  [innovation-fund/LISTING_UPDATE.md](innovation-fund/LISTING_UPDATE.md) for what
+  was done about that.

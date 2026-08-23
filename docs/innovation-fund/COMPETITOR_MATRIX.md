@@ -1,5 +1,11 @@
 # Competitor & ecosystem matrix
 
+> **Superseded for competitive purposes by
+> [PHASE1_POSITION.md](PHASE1_POSITION.md)**, which reassesses all 41 current
+> Phase 1 entries with metrics read on 2026-08-23. This file remains the deeper
+> per-project reference — licences, capability detail, interoperability — and is
+> still accurate on those points.
+
 **Compiled 2026-08-22** from the projects' own repositories, licence files, release
 notes and documentation, plus the published Innovation Fund project list. Every
 row states what was verified and from where. Anything that could not be confirmed

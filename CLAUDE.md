@@ -58,6 +58,30 @@ hardware, flash firmware, modify an original file, force-kill a process this
 session did not start, purchase anything, or accept terms on the maintainer's
 behalf. Those constrain *what* is automated, never *whether* to try.
 
+## State reconciliation (do this before any planning)
+
+Before producing a backlog, roadmap, remaining-actions list, human-gate list,
+competition strategy, release plan, submission plan, or external-action list,
+**establish the current state first.** Authority order, highest first:
+
+1. Explicit current facts from the maintainer
+2. Current authoritative external evidence (the live page, the live listing)
+3. Live system, account or repository state
+4. Recent verified project records
+5. Historical documentation
+6. TODOs, drafts and old plans
+
+**A lower level never overrides a higher one.** When two sources disagree,
+investigate and reconcile before planning any work.
+
+Never turn a stale TODO into new work. Never resurrect a completed task. Never
+call something a human gate without first proving it is currently incomplete.
+
+This rule exists because a sprint reported "submit the Innovation Fund form" as a
+remaining human gate while the project had already been submitted on 24 June 2026,
+confirmed on 29 June, and was publicly listed among the fund's 41 entries. The
+stale document was believed over the live world.
+
 ## Positioning & priorities
 
 Positioning: **"The Intelligence Layer for Open 3D Printing."**

@@ -10,7 +10,10 @@ this file never reads as if shipped work were still pending.
 
 ## The honest read on where Studio stands
 
-**Strong.** In the Phase 1 field as surveyed on 2026-08-22
+**Strong on merit, invisible in the field.** The full reassessment against all 41
+current entries is in [PHASE1_POSITION.md](PHASE1_POSITION.md); Studio is last in
+the field on every community measure and, as far as can be found, the only entry
+doing pre-print validation at all. In the Phase 1 field as first surveyed on 2026-08-22
 ([COMPETITOR_MATRIX.md](COMPETITOR_MATRIX.md)), Studio was the sole entry doing
 pre-print validation, the sole one costing a print, and the sole one naming the
 right community tool for a file. That survey is dated and needs re-checking for
@@ -28,55 +31,56 @@ no issues, and an unsigned installer.
 
 ---
 
+## State this plan starts from
+
+**Submitted, confirmed, publicly listed** — one of 41 projects in the running.
+Evaluation closes **22 September 2026**; 20 win. Nothing about entering the fund
+is outstanding. See [PHASE1_POSITION.md](PHASE1_POSITION.md) for where Studio
+actually stands against the other 40.
+
 ## Done since the last update
 
 | Was | Now |
 |---|---|
-| Record and publish the demo | Recorded from the installed beta.24 build — `docs/media/snapmaker-studio-demo.mp4`, 71 seconds, surfaced at the top of the README |
-| Post the ecosystem notes | Four posted 2026-08-23; see [ECOSYSTEM_OUTREACH.md](ECOSYSTEM_OUTREACH.md) for the URLs. ImageMap skipped — issues disabled |
-| Installed-build acceptance | `tools/acceptance/run.ps1` — 21 checks against the shipped installer, not a dev server |
-| Real hardware verification | `tools/hardware/verify.ps1` — 13 read-only checks against a real U1; it found and fixed a genuine bug in how loaded filament was read |
-| Release acceptance | beta.24 is the first build marked **ACCEPTED** with software, installed-application and hardware evidence all recorded |
-| Code signing | Prepared to the last legal step — [CODE_SIGNING_POLICY.md](../CODE_SIGNING_POLICY.md) answers every SignPath eligibility criterion; only the form and MFA remain |
-| Submission text | [INNOVATION_FUND.md](../INNOVATION_FUND.md) rewritten from the current product, against the fund's rules as re-read on 2026-08-23 |
+| Record and publish the demo | Recorded from the installed beta.24 build, 71 seconds, at the top of the README |
+| Post the ecosystem notes | Four posted 2026-08-23; URLs in [ECOSYSTEM_OUTREACH.md](ECOSYSTEM_OUTREACH.md) |
+| Installed-build acceptance | 21 checks against the shipped installer |
+| Real hardware verification | 13 read-only checks against a real U1; found and fixed a genuine firmware-reading bug |
+| Release acceptance | beta.24 is the first build marked ACCEPTED with software, installed-application and hardware evidence |
+| **CI** | The `cargo check` job had failed on every run since it was added, because Tauri needs the frozen sidecar to exist and CI does not build it. Fixed; the trust record's false "enforced in CI" claim is corrected |
+| **Repository discoverability** | The GitHub description still carried the pre-pivot "workflow platform" positioning and the repo was not in the top 30 results for "snapmaker". Description, homepage and topics rewritten |
+| **Listing correction** | Investigated; there is no editing UI, so a factual update was prepared on the fund's own confirmation thread — [LISTING_UPDATE.md](LISTING_UPDATE.md) |
+| **Community post** | Checked first: the project has never been posted on the Snapmaker forum. Written and ready — [COMMUNITY_POST.md](COMMUNITY_POST.md) |
 
 ---
 
-## Tier 1 — before the deadline
+## Before 22 September — only these
 
-### 1. Submit the entry
-**P5 D0 J5 N0 T0 E5 R0 C5 · cx0 rr0**
+The bar: does it change what a judge understands, or what a user can verify?
+Feature work does not clear it.
 
-Everything the form asks for is written in
-[INNOVATION_FUND.md](../INNOVATION_FUND.md). The form itself asks for the
-maintainer's name and email and represents them personally. Phase 1 closes
-7 September 2026 and there is no published way to revise a submission afterwards,
-so it is worth sending once and sending it late rather than early.
+### 1. Send the listing correction
+**The single highest-leverage item.** The card the committee reads describes the
+June product. One email fixes two months of invisible work. Drafted and waiting in
+the maintainer's mailbox; sending it is theirs.
 
-### 2. Share the project in a Snapmaker community channel
-**P3 D1 J4 N2 T0 E4 R0 C4 · cx1 rr0**
+### 2. Post the community update
+Never done, verified today. It is also the only honest route to the 20% community
+component — and that component has no voting system built yet, so there is nothing
+to game even if we wanted to. Written; posting is the maintainer's.
 
-This is a stated entry requirement, separate from the form, and it is also the
-only route to the 20% community component that does not involve asking for votes.
+### 3. Keep the build green and the evidence reproducible
+CI is now honest. It should stay that way through the evaluation window, because
+"run it yourself" is the whole argument and a red X refutes it silently.
 
-### 3. Apply to SignPath Foundation
-**P4 D1 J3 N5 T1 E1 R1 C2 · cx1 rr0**
-
-Free for qualifying open-source projects; the earlier plan to fund an EV
-certificate was wrong, because EV no longer bypasses SmartScreen. The application
-accepts terms on the maintainer's behalf, which is why it is not automated.
-
-### 4. Get one real user report
-**P5 D5 J5 N5 T0 E5 R0 C5 · cx2 rr0**
-
-43 downloads and zero issues is the weakest part of the submission, and no amount
-of engineering fixes it. The outreach notes are the first channel that exists; a
-maintainer's correction would be the project's first external feedback of any
-kind.
+### 4. Answer anything that arrives
+Four ecosystem notes are out and a community post is pending. A maintainer's
+correction or a first bug report is worth more than any feature — it would be the
+project's first external evidence of any kind.
 
 ---
 
-## Tier 2 — strongest product work after the deadline
+## After 22 September — the strongest product work
 
 ### 5. Painted-colour enumeration
 **P5 D5 J4 N4 T5 E3 R2 C2 · cx4 rr2**
@@ -94,14 +98,13 @@ that rejects rules referencing facts the engine cannot measure. The same shape f
 *diagnostics* would let the community contribute checks without touching engine
 code. This is the strongest long-term answer to the Fund's openness criterion.
 
-### 7. Preflight against a real printer, on hardware
-**P4 D3 J3 N4 T2 E3 R4 C3 · cx2 rr1**
+### 7. Broaden the hardware surface
+**P3 D3 J3 N3 T2 E3 R3 C3 · cx2 rr1**
 
-Every preflight branch is tested without hardware, which is the right way to build
-it but not the same as knowing what a real U1 reports. In particular
-`loaded_filaments()` reads a firmware object whose exact shape varies by build, and
-returns "not reported" when it does not recognise one. One session with a real
-printer would confirm or correct it.
+One U1, one firmware version. The read-only harness generalises; the sample does
+not. More machines and more firmware builds would turn "verified on hardware" into
+"verified across hardware". The original form of this item — verify the preflight
+against a real printer at all — was completed in beta.24 and found a real bug.
 
 ### 8. A second printer
 **P2 D4 J3 N1 T4 E4 R2 C3 · cx4 rr3**
@@ -143,7 +146,9 @@ habit.
 
 ---
 
-## If only one thing gets done
+## If only one thing gets done before 22 September
 
-Record the video. The engineering argument is now made and testable; what is
-missing is that nobody has watched it work.
+Send the listing correction. The engineering is done, recorded, verified against
+hardware and reproducible by anyone — and the page the committee reads still
+describes the June build. Everything else on this page is worth less than closing
+that gap.

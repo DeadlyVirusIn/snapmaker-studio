@@ -3,10 +3,11 @@
 > Independent open-source project — not affiliated with or endorsed by Snapmaker.
 > "Snapmaker" is a trademark of its respective owner.
 
-**The current submission package is
-[innovation-fund/FINAL_SUBMISSION.md](innovation-fund/FINAL_SUBMISSION.md).** The
-text that goes in the form is [INNOVATION_FUND.md](INNOVATION_FUND.md). This page
-is the status record only.
+**Phase 1 entry is submitted and listed.** The current description of the project
+is [INNOVATION_FUND.md](INNOVATION_FUND.md); the competitive position and what is
+worth doing before evaluation closes is
+[innovation-fund/PHASE1_POSITION.md](innovation-fund/PHASE1_POSITION.md). This
+page is the status record only.
 
 ## Current build
 
@@ -21,26 +22,33 @@ Unsigned beta — verify the SHA256 before installing. See
 [windows-install.md](windows-install.md) and
 [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md).
 
-## Has anything been submitted?
+## Submission state — settled
 
-**Not by this repository, and not by any tooling in it.** Phase 1 of the Open
-Competition closes 7 September 2026 and the package above is prepared but not
-sent — the form asks for the maintainer's name and email.
+**Submitted, confirmed, and publicly listed.** This is not an open question and
+must not be reopened.
 
-An earlier version of this page recorded **v0.4.0-beta.16.2** as a "frozen
-submission record". That build exists and its hash is below, but nothing in this
-repository records whether a form was ever actually submitted for it. Only the
-maintainer knows, and it matters: the fund does not publish a way to revise a
-submission, so an existing entry would change what to do next.
-
-| Earlier frozen build | |
+| | |
 |---|---|
-| Version | v0.4.0-beta.16.2 |
-| Installer | `Snapmaker.Studio_0.4.0-beta.16.2_x64-setup.exe` |
-| SHA256 | `76106b28e8824875cbbb0ba5969522cecd39bb733bddfc1fbcf8689e00d4853f` |
-| Release | <https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0-beta.16.2> |
+| Submitted | 24 June 2026, 20:53, via the fund's form |
+| Confirmed | 29 June 2026 by community@snapmaker.com |
+| Listed as | "snapmaker-studio — by Kunal Khurana", category *Workflow* |
+| Where | <https://www.snapmaker.com/innovation-fund>, among 41 projects in the running |
+| Evaluation closes | 22 September 2026 |
+| Winners announced | 30 September 2026 — 20 of the 41 |
 
-Do not install that build for testing — use the current one.
+The exact text submitted is preserved in
+[innovation-fund/SUBMITTED_ENTRY.md](innovation-fund/SUBMITTED_ENTRY.md).
+
+**Do not submit the form again.** A second entry would be a duplicate.
+
+An earlier version of this page speculated that v0.4.0-beta.16.2 might have been a
+"frozen submission record" and that nothing recorded whether a form was ever sent.
+That is now answered: the entry was sent on 24 June, which is beta.16-era, so
+beta.16.2 was indeed roughly the build the committee was told about.
+
+The listing — its description *and* its cover image — still describes that June
+build. What was done about that is in
+[innovation-fund/LISTING_UPDATE.md](innovation-fund/LISTING_UPDATE.md).
 
 ## Hardware verification
 

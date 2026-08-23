@@ -1,5 +1,7 @@
 # Innovation Fund Reviewer Critique (brutal, research — no code)
 
+> **Historical — written before the Innovation Fund entry was submitted on 24 June 2026.** Kept for the reasoning, not as a description of the project's current state. Current state: [docs/SUBMISSION_STATUS.md](../SUBMISSION_STATUS.md) and [docs/innovation-fund/PHASE1_POSITION.md](../innovation-fund/PHASE1_POSITION.md).
+
 **Date:** 2026-06-18 · Written adversarially: argue *against* funding Snapmaker Studio.
 
 ## Why a reviewer would reject us today (the one-paragraph version)

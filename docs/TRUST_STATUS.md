@@ -23,7 +23,7 @@ canonical hash, size and installer name are in
 | Desktop tests | `npm run test` | **PASS** — 247 passed across 31 files |
 | TypeScript | `npx tsc --noEmit` | **PASS** — clean |
 | Production frontend build | `npm run build` | **PASS** |
-| Rust shell | `cargo check` | **PASS** — clean |
+| Rust shell | `cargo check` | **PASS locally.** The CI job for it had never once passed: Tauri's build script refuses to run when the frozen sidecar is missing, and CI does not freeze it. Fixed after this release by giving CI a placeholder for the resource to resolve against. |
 | Installer builds | `npm run release:windows` | **PASS** — NSIS installer produced |
 | Release-document consistency | `pytest tests/test_release_docs.py` | **PASS** — including a new check that the Rust crate version matches the released version, which had silently drifted to beta.21.3 |
 
@@ -122,7 +122,7 @@ beta.22, one of which broke the engine package on a clean install.
 | Desktop tests | **PASS** | `npm run test` — 247 passed across 31 files |
 | TypeScript | **PASS** | `npx tsc --noEmit` clean |
 | Production frontend build | **PASS** | `npm run build` |
-| Rust shell | **PASS** | `cargo check` clean — and now enforced in CI, which it was not before |
+| Rust shell | **PASS** | `cargo check` clean locally. *Corrected 2026-08-23: this row originally said the check was "now enforced in CI". The CI job existed but failed on every run — Tauri's build script needs the frozen sidecar to exist and CI does not build it — so it enforced nothing until it was fixed after beta.24.* |
 | Installer builds | **PASS** | `build:sidecar` + `tauri build` produced the NSIS installer |
 | Installer integrity / SHA256 | **PASS** | See [RELEASE_METADATA.md](RELEASE_METADATA.md) |
 | Release-document consistency | **PASS** | `test_release_docs.py` — it failed against this tree until the notes and this file were updated, which is what it is for |
@@ -140,7 +140,11 @@ beta.22, one of which broke the engine package on a clean install.
 |---|---|
 | Multi-plate repositioning | An independent review reproduced a derived plate stride wrong by 79%, placing a plate off the bed while reporting success, and the guard meant to catch it was a tautology for two-plate projects. The plate spacing is not in the file, so it was removed rather than patched. Multi-plate projects are still checked per plate. |
 
-### Requires the installed application or real hardware — PENDING
+### Requires the installed application or real hardware — PENDING at the time
+
+*Historical. Every item below was subsequently completed by the beta.24 harnesses:
+`tools/acceptance/run.ps1` (21/21) and `tools/hardware/verify.ps1` (13/13). See the
+beta.24 section at the top of this file.*
 
 Observed in the **development build** on 2026-08-23 and evidenced by
 `docs/screenshots/beta22/`: the placement card and its fix, the preflight card and
@@ -166,7 +170,7 @@ ships them.
 | Overall trust status | **PARTIAL / PENDING — not accepted** |
 |---|---|
 
-## v0.4.0-beta.22 — PARTIAL / PENDING (not accepted)
+## v0.4.0-beta.22 — historical (was PARTIAL / PENDING; superseded by beta.24)
 
 **Object placement, project ↔ printer preflight, fidelity audit, fix ledger, colour
 planning, ecosystem tool intelligence, Orca import compatibility.** This
@@ -204,7 +208,11 @@ on the basis of an author's expectation.
 | Fidelity audit | **PASS** | `test_fidelity.py` — 22 cases, most of which build a deliberately wrong prepared copy and assert Studio reports it as unverified rather than excusing it |
 | Fix ledger and return-to-original | **PASS** | `test_fix_ledger.py` — the original is never written to, and a shared export cannot carry a user's directory layout |
 
-### Requires the installed application or real hardware — PENDING
+### Requires the installed application or real hardware — PENDING at the time
+
+*Historical. Every item below was subsequently completed by the beta.24 harnesses:
+`tools/acceptance/run.ps1` (21/21) and `tools/hardware/verify.ps1` (13/13). See the
+beta.24 section at the top of this file.*
 
 Each row states the smallest check that would settle it.
 
@@ -229,7 +237,7 @@ Each row states the smallest check that would settle it.
 | Overall trust status | **PARTIAL / PENDING — not accepted** |
 |---|---|
 
-## v0.4.0-beta.21.3 — PARTIAL / PENDING (not accepted)
+## v0.4.0-beta.21.3 — historical (was PARTIAL / PENDING; superseded by beta.24)
 
 **Preserve-settings summary cleanup.** Interactive GUI testing of beta.21.2 confirmed
 the preserve workflow works (U1 copy created, original untouched, recommended settings
