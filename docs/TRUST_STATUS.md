@@ -5,7 +5,84 @@ Honest, current verification state for the current release. A release is only ma
 published installer, and — from beta.24 onward — read-only verification against a
 real Snapmaker U1 have all passed and are recorded here.
 
-## v0.4.0 — ACCEPTED (first stable release)
+## v0.5.0 — ACCEPTED
+
+**The loop gets intelligent.** Everything below ran against *this installer* — the
+exact asset on the release page, verified by SHA256. Canonical values:
+[RELEASE_METADATA.md](RELEASE_METADATA.md).
+
+### CI / software
+
+| Check | Command | Result |
+|---|---|---|
+| Backend tests | `pytest` | **PASS** — 773 passed, 3 skipped |
+| Desktop tests | `npm run test` | **PASS** — 282 passed |
+| End-to-end pipeline | `u1convert selfcheck` | **PASS** — 21/21 over 13 documented routes |
+| TypeScript | `npx tsc --noEmit` | **PASS** — clean |
+| Production frontend build | `npm run build` | **PASS** |
+| Rust shell | `cargo check` | **PASS** — clean, and green in CI |
+| Release-document consistency | `pytest tests/test_release_docs.py` | **PASS** |
+| Evidence consistency | `pytest tests/test_evidence_consistency.py` | **PASS** — public counts are generated from the harness reports, not copied |
+| Local-first invariant | `pytest tests/test_local_first.py` | **PASS** — the shell reaches one host on one user action; the engine reaches none |
+
+### Installed application — 27/27, including the upgrade
+
+`pwsh -File tools/acceptance/run.ps1 -Installer <published installer> -UpgradeFrom <v0.4.0 installer>`
+Full report: [internal/acceptance-0.5.0.json](internal/acceptance-0.5.0.json).
+
+New in this release, on top of everything 0.4.0 checked: the After Slicing page
+opens a real `.gcode` and renders the ready-to-send verdict, the what-to-load list
+and — on request — the whole print plan with its evidence; the send confirmation
+blocks nothing when there is no printer to check against; and the three new engine
+routes answer from the frozen sidecar. The sliced job is byte-identical
+afterwards, as the project file already was.
+
+**Upgrade path:** v0.4.0 is installed, run so it creates real state, then upgraded
+in place. The user's data survives and only one installation is registered.
+
+### Real Snapmaker U1 — read-only, 20/20
+
+`pwsh -File tools/hardware/verify.ps1 -PrinterHost <printer>`
+Full report: [internal/hardware-0.5.0.json](internal/hardware-0.5.0.json), with the
+printer's address replaced before anything reached disk.
+
+Confirmed against the machine: 196 Klipper objects, its own 271 × 335 × 281 mm
+bed, four toolheads, four loaded filaments read with colour and material, the
+fitted nozzle still honestly unknown before *and* after slicing, and a sliced job
+joined to the live machine — the tool it needs exists, the slot it prints from is
+loaded, its material matches at family level.
+
+Read-only by construction: the route allow-list is asserted before the first
+request. Nothing started, uploaded or queued; no temperature, motion, homing,
+pause, resume, cancel, emergency-stop or configuration call.
+
+Beyond the harness, the same code was run by hand against **real jobs pulled
+read-only from the printer's own storage**, including an 89 MB four-colour job
+with 764 tool changes — scanned in 0.53 s using 8 MB of memory, with the timeline,
+the material comparison and the cost all derived from it. Those files are the
+maintainer's own models and are not committed.
+
+### Known limitations — stated plainly
+
+- **Windows only.** macOS and Linux are not built or tested.
+- **The installer is not code-signed.** Verify the SHA256. See
+  [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md).
+- **Purge cannot be separated from printed filament** in Snapmaker Orca output.
+- **The fitted nozzle cannot be read** from stock firmware — confirmed on hardware.
+- **Free storage is not reported** by this firmware, so whether a job will fit is
+  an honest unknown rather than a guess.
+- **Painted colour cannot be classified** without slicing.
+- **The Post-Slice Doctor reads; it does not simulate.** It reports what the file
+  says the printer will do, which is not a prediction of the print.
+- **PrusaSlicer projects are read, not yet fully converted.** Printer, bed,
+  filaments, colours, layer heights, supports and per-object assignments are read;
+  variable layer height, per-object overrides and support styling cannot be
+  carried into a U1 copy and are named in the fidelity report.
+- **One outbound request exists** — the update check, on an explicit button. It
+  sends nothing about the user, and a test fails the build if that changes.
+- **No print-success guarantee**, and no autonomous printer control.
+
+## v0.4.0 — superseded by v0.5.0 (was ACCEPTED; the first stable release)
 
 **The workflow is complete end to end, and this is the build that says so.**
 Every check below ran against *this installer* — the exact asset published on the

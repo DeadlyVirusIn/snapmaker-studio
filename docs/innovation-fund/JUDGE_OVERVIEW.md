@@ -31,7 +31,7 @@ codebase, not a roadmap item.
 
 [![Snapmaker Studio demo](../media/demo-poster.jpg)](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4)
 
-[52 seconds, recorded from the installed application](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4).
+[64 seconds, recorded from the installed application](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4).
 Nothing staged, nothing re-created. No printer is connected in the recording, so
 it also shows what Studio says when it cannot reach one — which is the more
 interesting half. The beat-by-beat script is
@@ -55,6 +55,13 @@ interesting half. The beat-by-beat script is
    execute and joins it to the machine as it is right now — the tools the job
    needs against the slots that have spools in them, its materials against what
    is loaded, its bed against the real bed.
+10. **The print is explained in order** — which slot it starts on, when each
+    other joins in, when one is finished with and its spool can come out, where
+    it pauses. Every line carries the G-code that proves it.
+11. **What to load, slot by slot** — ready, empty, wrong material, or simply not
+    used by this job.
+12. **Ready to send?** Blockers, warnings and unknowns kept strictly apart, and
+    the button is never disabled: it is the user's printer.
 
 ## The hard problem
 
@@ -79,7 +86,7 @@ honest fix was to remove it, not to tune a number Studio cannot observe.
 
 ## What is verified, and how
 
-Everything below ran against the **published v0.4.0 installer** — installed,
+Everything below ran against the **published v0.5.0 installer** — installed,
 launched, driven through the real window, then uninstalled. Not a development
 server, not the source tree.
 
@@ -87,10 +94,10 @@ server, not the source tree.
 |---|---|---|
 | Installed-application acceptance | **27/27** | `pwsh -File tools/acceptance/run.ps1` |
 | Read-only verification against a real Snapmaker U1 | **20/20** | `pwsh -File tools/hardware/verify.ps1 -PrinterHost <ip>` |
-| End-to-end pipeline self-check | **18/18** | `u1convert selfcheck` |
-| Genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **34 tests** | `pytest tests/test_real_world_3mf.py` |
-| Backend | 716 passed, 3 skipped | `pytest` |
-| Desktop | 263 passed | `npm run test` |
+| End-to-end pipeline self-check | **21/21** | `u1convert selfcheck` |
+| Genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **36 tests** | `pytest tests/test_real_world_3mf.py` |
+| Backend | 773 passed, 3 skipped | `pytest` |
+| Desktop | 282 passed | `npm run test` |
 | TypeScript · production build · Rust | clean | `tsc --noEmit` · `npm run build` · `cargo check` |
 
 Full records, including the raw evidence files:

@@ -414,6 +414,48 @@ def _trait_value(traits: dict, key: str):
     return entry
 
 
+def print_plan(path: str) -> dict:
+    """The ordered account of what a sliced job actually does.
+
+    Separate from `post_slice` because it costs a full pass over the file — a few
+    seconds on a 300 MB job — while the post-slice checks answer immediately.
+    """
+    from snapstudio_core import gcode, print_plan as pp
+
+    plan = pp.scan(path)
+    facts = gcode.read_facts(path)
+    plan["narration"] = pp.narrate(plan, facts)
+    plan["summary"] = pp.summary(plan)
+    return plan
+
+
+def material_plan(path: str, host: str | None = None, port: int = 7125) -> dict:
+    """What to load, and what can stay, for this sliced job."""
+    from snapstudio_core import gcode, material_plan as mp
+
+    facts = gcode.read_facts(path)
+    printer = printer_facts(host, port) if host else {"reachable": False}
+    out = mp.from_facts(facts, printer)
+    out["printer"] = {k: v for k, v in printer.items() if k != "klipper_objects"}
+    return out
+
+
+def send_check(path: str, host: str | None = None, port: int = 7125,
+               include_timeline: bool = False) -> dict:
+    """Ready to send? Blockers, warnings and unknowns, kept apart."""
+    from snapstudio_core import gcode, send_check as sc
+
+    facts = gcode.read_facts(path)
+    printer = printer_facts(host, port) if host else {"reachable": False}
+    timeline = None
+    if include_timeline:
+        from snapstudio_core import print_plan as pp
+        timeline = pp.scan(path)
+    out = sc.evaluate(facts, printer, timeline=timeline)
+    out["printer"] = {k: v for k, v in printer.items() if k != "klipper_objects"}
+    return out
+
+
 def sliced_cost(path: str, price_per_kg: float = 20.0, currency: str = "$",
                 prices: dict | None = None) -> dict:
     """Cost a job from the figures the slicer measured."""

@@ -339,7 +339,30 @@ def _unsupported_rows(a: ThreeMF) -> list[dict]:
                              reason=("this project requires a 3MF extension Studio has no "
                                      "reader for, so any data it carries was copied "
                                      "verbatim but never checked")))
+
+    # PrusaSlicer stores several things Snapmaker Orca has no equivalent for. The
+    # copy is still usable; saying which parts did not survive is the whole point
+    # of this report, and it is better said here than discovered on the plate.
+    rows.extend(_prusa_rows(a))
     return rows
+
+
+def _prusa_rows(tm) -> list[dict]:
+    from . import prusa
+
+    try:
+        parts = set(tm.list_parts())
+        if prusa.SETTINGS_PART not in parts:
+            return []
+        settings_raw = tm.read_part(prusa.SETTINGS_PART)
+        model_raw = tm.read_part(prusa.MODEL_CONFIG_PART) if prusa.MODEL_CONFIG_PART in parts else None
+        summary = prusa.summarise(settings_raw, model_raw)
+    except Exception:
+        return []
+
+    return [_row(item["element"], UNSUPPORTED, detail="from PrusaSlicer",
+                 reason=item["reason"])
+            for item in prusa.not_carried(summary)]
 
 
 # --- entry point ------------------------------------------------------------

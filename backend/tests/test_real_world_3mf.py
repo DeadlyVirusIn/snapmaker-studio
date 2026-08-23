@@ -174,3 +174,45 @@ def test_the_original_is_never_modified(tmp_path, name):
     except Exception:
         pass  # a refusal is fine; modifying the input is not
     assert hashlib.sha256(src.read_bytes()).hexdigest() == before
+
+
+# --- PrusaSlicer, read properly (v0.5.0) ------------------------------------
+
+def test_the_real_prusa_project_is_read_not_merely_recognised():
+    """Before v0.5.0 this file produced "0 filaments, no layer height, no
+    printer". The claim in the README was "detected"; this is what supported
+    means."""
+    path = fixture("prusa-seam-test.3mf")
+    from snapstudio_core import prusa
+    import zipfile
+
+    with zipfile.ZipFile(path) as zf:
+        summary = prusa.summarise(zf.read(prusa.SETTINGS_PART),
+                                  zf.read(prusa.MODEL_CONFIG_PART))
+
+    assert summary["application"] == "PrusaSlicer"
+    assert summary["printer_model"] == "MK4IS"
+    assert summary["bed_mm"] == {"x": 250.0, "y": 210.0}
+    assert summary["layer_height_mm"] == 0.15
+    assert summary["filament_count"] == 1
+    assert summary["filaments"][0]["type"] == "PLA"
+    assert summary["filaments"][0]["color"] == "#FF8000"
+    assert summary["object_count"] == 1
+    # This project does not state a nozzle diameter, and Studio must not supply one.
+    assert summary["nozzle_diameters"] == []
+
+
+def test_traits_of_the_real_prusa_project_feed_the_rest_of_studio():
+    from snapstudio_core import project_traits
+
+    traits = project_traits.extract(fixture("prusa-seam-test.3mf"))
+
+    def value(key):
+        entry = traits.get(key)
+        return entry.get("value") if isinstance(entry, dict) else entry
+
+    assert value("origin_family") == "prusa"
+    assert value("origin_application").startswith("PrusaSlicer")
+    assert value("target_printer") == "MK4IS"
+    assert value("foreign_printer") is True
+    assert value("filament_count") == 1

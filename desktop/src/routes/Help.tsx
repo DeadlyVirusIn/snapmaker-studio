@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/layout";
 import { PRIMARY_DOCTORS } from "@/lib/doctors";
 import { SupportBundle } from "@/components/SupportBundle";
+import { UpdateCheck } from "@/components/UpdateCheck";
 
 // Lightweight help/about hub. Honest pointers only — links to in-app surfaces
 // that actually exist; no fabricated documentation.
@@ -65,7 +66,8 @@ export default function Help() {
           </li>
         </ul>
       </CardContent></Card>
-          <SupportBundle />
+          <UpdateCheck />
+      <SupportBundle />
     </div>
   );
 }

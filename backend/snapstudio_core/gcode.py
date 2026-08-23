@@ -51,6 +51,7 @@ CONFIG_KEYS = (
     "printer_model", "printer_settings_id", "printable_area", "bed_shape",
     "nozzle_diameter", "filament_type", "filament_settings_id", "filament_vendor",
     "filament_density", "filament_diameter", "filament_cost", "filament_colour",
+    "filament_color",
     "layer_height", "first_layer_height", "first_layer_temperature",
     "first_layer_bed_temperature", "temperature", "bed_temperature",
     "enable_prime_tower", "wipe_tower_x", "wipe_tower_y",
@@ -240,6 +241,7 @@ def read_facts(path: str | Path) -> dict:
     types = _strings(config.get("filament_type", ""))
     names = _strings(config.get("filament_settings_id", ""))
     vendors = _strings(config.get("filament_vendor", ""))
+    colours = _strings(config.get("filament_colour", "") or config.get("filament_color", ""))
 
     grams = usage.get("g") or []
     millimetres = usage.get("mm") or []
@@ -259,6 +261,7 @@ def read_facts(path: str | Path) -> dict:
             "type": types[index] if index < len(types) else None,
             "name": names[index] if index < len(names) else None,
             "vendor": vendors[index] if index < len(vendors) else None,
+            "color": _hex(colours[index]) if index < len(colours) else None,
         })
     facts["slots"] = slots
     facts["tools_used"] = [s["tool"] for s in slots if s["used"]]
@@ -289,6 +292,16 @@ def read_facts(path: str | Path) -> dict:
     facts["has_thumbnail"] = "thumbnail begin" in head
 
     return facts
+
+
+def _hex(value: str | None) -> str | None:
+    """`#8080FF` from whatever the slicer wrote, or None."""
+    if not value:
+        return None
+    text = value.strip().lstrip("#")
+    if len(text) >= 6 and all(c in "0123456789abcdefABCDEF" for c in text[:6]):
+        return "#" + text[:6].upper()
+    return None
 
 
 def _one_float(raw: str | None) -> float | None:

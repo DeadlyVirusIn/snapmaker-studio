@@ -350,6 +350,97 @@ fn launch_file_from_args() -> Option<String> {
     })
 }
 
+/// What a release check found. Never fetched unless the user asks for it.
+#[derive(serde::Serialize)]
+struct UpdateInfo {
+    current: String,
+    latest: String,
+    newer: bool,
+    url: String,
+    published: String,
+}
+
+/// Compare two dotted versions numerically, so 0.10.0 is newer than 0.9.0.
+///
+/// A pre-release suffix (`0.5.0-beta.1`) sorts before the same release without
+/// one, which is the behaviour that matters here: a beta must never look newer
+/// than the stable it precedes.
+fn is_newer(latest: &str, current: &str) -> bool {
+    fn parts(v: &str) -> (Vec<u32>, bool) {
+        let trimmed = v.trim_start_matches('v');
+        let (core, pre) = match trimmed.split_once('-') {
+            Some((c, _)) => (c, true),
+            None => (trimmed, false),
+        };
+        (
+            core.split('.')
+                .map(|p| p.parse::<u32>().unwrap_or(0))
+                .collect(),
+            pre,
+        )
+    }
+    let (a, a_pre) = parts(latest);
+    let (b, b_pre) = parts(current);
+    for i in 0..a.len().max(b.len()) {
+        let x = a.get(i).copied().unwrap_or(0);
+        let y = b.get(i).copied().unwrap_or(0);
+        if x != y {
+            return x > y;
+        }
+    }
+    // Same numbers: a release beats a pre-release of itself.
+    b_pre && !a_pre
+}
+
+/// Ask GitHub whether there is a newer release.
+///
+/// This is the only thing in Studio that talks to the internet, it happens only
+/// when a person presses a button, and it sends nothing but the request itself —
+/// no identifiers, no usage, no telemetry. Studio never downloads or installs an
+/// update on its own; the answer is a version number and a link.
+#[tauri::command]
+fn check_for_update() -> Result<UpdateInfo, String> {
+    let current = env!("CARGO_PKG_VERSION").to_string();
+    let response = ureq::get(
+        "https://api.github.com/repos/DeadlyVirusIn/snapmaker-studio/releases/latest",
+    )
+    .set("User-Agent", "snapmaker-studio")
+    .set("Accept", "application/vnd.github+json")
+    .timeout(std::time::Duration::from_secs(10))
+    .call()
+    .map_err(|e| format!("could not reach GitHub: {e}"))?;
+
+    let body: serde_json::Value = response
+        .into_json()
+        .map_err(|e| format!("could not read GitHub's answer: {e}"))?;
+
+    let latest = body
+        .get("tag_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or_default()
+        .trim_start_matches('v')
+        .to_string();
+    if latest.is_empty() {
+        return Err("GitHub did not name a release".into());
+    }
+
+    Ok(UpdateInfo {
+        newer: is_newer(&latest, &current),
+        current,
+        url: body
+            .get("html_url")
+            .and_then(|v| v.as_str())
+            .unwrap_or("https://github.com/DeadlyVirusIn/snapmaker-studio/releases/latest")
+            .to_string(),
+        published: body
+            .get("published_at")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
+        latest,
+    })
+}
+
 /// The model this launch was asked to open, if any. The frontend calls this once
 /// at startup; returning null is the ordinary case.
 #[tauri::command]
@@ -478,7 +569,8 @@ fn main() {
             open_in_orca,
             detect_tools,
             open_with_tool,
-            get_launch_file
+            get_launch_file,
+            check_for_update
         ])
         .setup(|app| {
             let (info, child) = spawn_sidecar();
