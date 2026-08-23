@@ -44,3 +44,6 @@ CLAUDE.md.bak-*
 # Acceptance harness deps (installed on demand, never committed)
 tools/acceptance/node_modules/
 tools/acceptance/package-lock.json
+
+# Real-world fixtures are fetched, never committed (AGPL + upstream privacy).
+backend/tests/fixtures/real-world/

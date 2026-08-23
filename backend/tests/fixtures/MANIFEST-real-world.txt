@@ -1,0 +1,6 @@
+# SHA-256 of each fetched fixture, recorded on first successful download.
+# A mismatch on a later run means upstream changed — check before accepting.
+2e2c0e271a50c6f89cc42a97b134d6f678d7d3d2849fa9b48c8203586aba5111  bambu-pa-pattern.3mf
+04573823874f90a8b46778ef35a78a210422bfef0051a53d296b3364ade56f93  orca-badge.3mf
+f06f8914ad2c7b1faf067f328ea6f8febc01cc3d3aebd399e08d1f5b12b176de  orca-pa-line-dual.3mf
+9fa91ee2f54a33dc65fd681bb24dce666c77a501196815548a051d54e857bdc2  prusa-seam-test.3mf
