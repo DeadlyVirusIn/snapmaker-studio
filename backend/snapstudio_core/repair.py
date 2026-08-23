@@ -62,6 +62,11 @@ def repair(tm: ThreeMF, mode: str = "u1", remap: dict | None = None,
         # Bambu/BBL/H2D strings (e.g. foreign machine G-code).
         report["identity"] = normalize_project_identity(
             work, filament_count(work), preserve_filament_identity=preserve_creator_settings)
+        # When no U1 system preset describes this project, say so rather than
+        # letting Snapmaker Orca's "customised preset" notice look like a fault.
+        preset = (report["identity"] or {}).get("preset") or {}
+        if preset and not preset.get("matched") and preset.get("reason"):
+            report.setdefault("preset_note", preset["reason"])
         report["value_normalizations"] = normalize_values(work)
         report["foreign"] = scrub_foreign(
             work, preserve_creator_settings=preserve_creator_settings,

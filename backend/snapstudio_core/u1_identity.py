@@ -86,15 +86,34 @@ def normalize_project_identity(cfg: dict, n_filaments: int,
     """Force the U1 preset identity block. Returns the changes applied (old->new).
     Filament identity arrays are sized to `n_filaments` (the real colour count)."""
     n = max(1, n_filaments)
+
+    # The preset *name* has to describe the project. Preserve mode keeps the
+    # creator's layer height, so stamping one fixed name onto every project
+    # labelled a 0.12 mm project as "0.20 Standard" — right settings, wrong
+    # label, which Snapmaker Orca then reports as a customised preset with no
+    # explanation. Pick the name that fits; when none does, keep the default and
+    # let the caller tell the user why.
+    from . import process_preset
+
+    preset = process_preset.choose(cfg)
+    if preset["matched"]:
+        print_settings_id = preset["print_settings_id"]
+        printer_settings_id = preset["printer_settings_id"]
+        printer_variant = preset["printer_variant"]
+    else:
+        print_settings_id = U1_PRINT_SETTINGS_ID
+        printer_settings_id = U1_PRINTER_SETTINGS_ID
+        printer_variant = U1_PRINTER_VARIANT
+
     targets = {
         "version": U1_VERSION,
         "printer_model": U1_PRINTER_MODEL,
-        "printer_settings_id": U1_PRINTER_SETTINGS_ID,
-        "printer_variant": U1_PRINTER_VARIANT,
-        "print_settings_id": U1_PRINT_SETTINGS_ID,
-        "default_print_profile": U1_PRINT_SETTINGS_ID,
-        "compatible_printers": [U1_PRINTER_SETTINGS_ID],
-        "print_compatible_printers": [U1_PRINTER_SETTINGS_ID],
+        "printer_settings_id": printer_settings_id,
+        "printer_variant": printer_variant,
+        "print_settings_id": print_settings_id,
+        "default_print_profile": print_settings_id,
+        "compatible_printers": [printer_settings_id],
+        "print_compatible_printers": [printer_settings_id],
         "nozzle_type": U1_NOZZLE_TYPE,
     }
     if not preserve_filament_identity:
@@ -109,7 +128,7 @@ def normalize_project_identity(cfg: dict, n_filaments: int,
             changes.append({"key": k, "old": cfg.get(k), "new": v,
                             "reason": "U1 project identity normalized"})
             cfg[k] = v
-    return {"changed": changes}
+    return {"changed": changes, "preset": preset}
 
 
 # Clean-import normalization (Snapmaker Orca dialogs on a real beta file):
