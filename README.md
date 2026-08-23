@@ -154,10 +154,10 @@ against a development build. Commands, counts and full reports:
 
 | What | Result |
 |---|---|
-| Installed-application acceptance, driven through the real UI | **21/21** |
+| Installed-application acceptance, driven through the real UI | **27/27** |
 | Read-only verification against a real Snapmaker U1 | **20/20** |
 | Regression tests against genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **34 tests** |
-| End-to-end pipeline self-check (`u1convert selfcheck`) | **15/15** |
+| End-to-end pipeline self-check (`u1convert selfcheck`) | **18/18** |
 | Backend / desktop / TypeScript / Rust | 716 · 263 · clean · clean |
 
 Reproduce any of it yourself:
@@ -407,9 +407,13 @@ validation is mandatory and never removed. Full detail in
 
 ## Roadmap
 
-**Shipped (beta):** desktop app (Project Intelligence · Validation Center · Prepare ·
-Batch · Design Library · Printer Hub monitor + user-confirmed control/send), engine + CLI, one-click Windows
-installer with bundled engine.
+**Shipped (stable, v0.4.0):** the whole loop — read a project, diagnose it,
+compare it against the printer, prepare a copy, prove what survived, hand it to
+Snapmaker Orca, then read the sliced G-code back and check what the printer will
+actually execute against the printer as it is right now, with cost from the
+figures the slicer measured. Plus Batch, Design Library, Printer Hub (monitor and
+user-confirmed control/send), the engine and CLI, and a one-click Windows
+installer with the engine bundled.
 
 **Next:**
 - Preserve PrusaSlicer multi-material through preparation (detection ships today)

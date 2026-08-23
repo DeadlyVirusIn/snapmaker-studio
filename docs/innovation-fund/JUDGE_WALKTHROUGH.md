@@ -141,8 +141,9 @@ builds real decompression bombs and asserts the reader refuses them.
 ## Run the tests
 
 ```bash
-cd backend  && pytest          # 495 passed, 3 skipped
-cd desktop  && npm run test    # 192 passed across 27 files
+cd backend  && pytest          # 716 passed, 3 skipped
+cd backend  && u1convert selfcheck   # 18/18 over production code paths
+cd desktop  && npm run test    # 263 passed
 cd desktop  && npm run build   # tsc + vite
 ```
 
@@ -170,10 +171,10 @@ pwsh -File tools/acceptance/run.ps1
 
 It installs into an isolated directory with its own WebView2 profile and engine
 data directory, drives the real application window over the Chrome DevTools
-Protocol, and uninstalls. 21 checks, including that the input file is byte-identical
+Protocol, and uninstalls. 27 checks, including that the input file is byte-identical
 afterwards and that uninstalling leaves nothing behind. It stops only processes it
 started, and restores any pre-existing installation's registry entry. Last result:
-**21/21** — [../internal/acceptance-beta24.json](../internal/acceptance-beta24.json).
+**27/27** — [../internal/acceptance-0.4.0.json](../internal/acceptance-0.4.0.json).
 
 **A real printer.** With a Snapmaker U1 on the same network:
 
@@ -185,8 +186,8 @@ Read-only by construction: the allowed routes are asserted against a deny-list
 before the first request, so nothing is started, uploaded or queued and no
 temperature, motion, homing, pause, resume, cancel, emergency-stop or configuration
 call is made. The printer's address is replaced with a placeholder before anything
-reaches the evidence file. Last result: **13/13** —
-[../internal/hardware-beta24.json](../internal/hardware-beta24.json).
+reaches the evidence file. Last result: **20/20** —
+[../internal/hardware-0.4.0.json](../internal/hardware-0.4.0.json).
 
 That run is worth reading rather than just counting. It proved the four loaded
 filaments are read correctly, that the printer's own 271 × 335 × 281 mm bed is what

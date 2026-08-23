@@ -18,7 +18,7 @@ page is the status record only.
 | Verification state | [TRUST_STATUS.md](TRUST_STATUS.md) — **ACCEPTED** |
 | Release | <https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0> |
 
-Unsigned beta — verify the SHA256 before installing. See
+The installer is not code-signed — verify the SHA256 before installing. See
 [windows-install.md](windows-install.md) and
 [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md).
 
@@ -52,11 +52,13 @@ build. What was done about that is in
 
 ## Hardware verification
 
-**beta.24, 2026-08-23 — read-only, 13/13.** Printer discovered, 196 Klipper
+**v0.4.0, 2026-08-23 — read-only, 20/20.** Printer discovered, 196 Klipper
 objects enumerated, the printer's own 271 × 335 × 281 mm bed used, four loaded
 filaments read with colour and sub-type, the fitted nozzle correctly reported as
 unknown rather than unsupported, and the project's materials compared both against
-toolhead count and against what is loaded. Nothing was started, uploaded or
+toolhead count and against what is loaded, and a sliced job was joined to the
+live machine: the tool it needs exists, the slot it prints from is loaded, and the
+material matches. Nothing was started, uploaded or
 queued; no temperature, motion, homing, pause, resume, cancel, emergency-stop or
 configuration call was made. Record:
 [TRUST_STATUS.md](TRUST_STATUS.md) · raw evidence

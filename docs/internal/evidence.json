@@ -1,0 +1,25 @@
+{
+  "acceptance": {
+    "passed": 27,
+    "report": "acceptance-0.4.0.json",
+    "total": 27
+  },
+  "backend": {
+    "passed": 716,
+    "skipped": 3
+  },
+  "desktop": {
+    "passed": 263
+  },
+  "hardware": {
+    "passed": 20,
+    "report": "hardware-0.4.0.json",
+    "total": 20
+  },
+  "schema_version": "evidence/1",
+  "selfcheck": {
+    "passed": 18,
+    "total": 18
+  },
+  "version": "0.4.0"
+}

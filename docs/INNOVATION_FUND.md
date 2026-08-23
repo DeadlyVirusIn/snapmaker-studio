@@ -79,8 +79,8 @@ A beginner downloads a project. It was made somewhere else, for another printer,
 uses six colours on a four-toolhead machine, and one object hangs off the plate.
 Their slicer says `out of bounds` and stops.
 
-Snapmaker Studio is the step before the slicer. It reads the project's real
-contents — not its filename — and says which object, which edge, how many
+Snapmaker Studio sits on **both sides of Snapmaker Orca**. It reads the project's
+real contents — not its filename — and says which object, which edge, how many
 millimetres, and why. It asks the printer on the network what it can actually do,
 using the open Klipper/Moonraker stack Snapmaker ships on the U1, and compares the
 two: materials against toolheads, materials against what is *loaded*, objects
@@ -93,8 +93,20 @@ all. Finally it names the community tool that should handle the next step, becau
 a beginner should not have to know the whole ecosystem before they can use any of
 it.
 
+Then Orca slices — and the file comes back. Studio reads the G-code itself and
+reports what the printer will *actually execute*: which machine it was sliced for,
+which tools it prints from, how much filament per slot, how long it will take. It
+joins that to the printer as it is right now — the tools the job needs against the
+slots that have spools in them, its materials against what is loaded, its bed
+against the real bed — and costs the job from the grams and minutes the slicer
+measured rather than from an estimate. The failures that live on that side are the
+expensive ones: the job prints from slot 3 and slot 3 is empty; it was sliced for
+PETG and PLA is loaded; it was sliced for another machine entirely. None of them
+are visible in the project file, and none are visible on the printer alone.
+
 Studio does not slice, and will not. Snapmaker Orca slices. Studio is the layer
-that makes the file, the printer and the person agree before that happens.
+that makes the file, the printer and the person agree — before that happens, and
+again afterwards.
 
 The hard part is not the fixing. It is being correct when the file or the printer
 does not expose enough information to be certain — and saying so, instead of
