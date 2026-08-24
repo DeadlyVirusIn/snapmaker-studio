@@ -13,12 +13,32 @@ def _run(httpd):
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
 
-def _post(port, route, payload, token):
-    req = urllib.request.Request(
-        f"http://127.0.0.1:{port}{route}", data=json.dumps(payload).encode(),
-        headers={"Content-Type": "application/json", "X-Auth-Token": token})
-    with urllib.request.urlopen(req, timeout=5) as r:
-        return json.loads(r.read())
+def _post(port, route, payload, token, *, attempts=4):
+    """One call, on one connection, retried when the machine has no port to spare.
+
+    A socket per request is what made this suite fail intermittently on a machine
+    with 14,000 connections held open by something else — a fact about the machine
+    that says nothing about the contract being checked.
+    """
+    import http.client
+    import time
+
+    last = None
+    for attempt in range(attempts):
+        connection = None
+        try:
+            connection = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+            connection.request("POST", route, body=json.dumps(payload).encode(),
+                               headers={"Content-Type": "application/json",
+                                        "X-Auth-Token": token})
+            return json.loads(connection.getresponse().read())
+        except OSError as exc:
+            last = exc
+            time.sleep(0.5 * (attempt + 1))
+        finally:
+            if connection is not None:
+                connection.close()
+    raise AssertionError(f"the machine would not give this test a port ({last})")
 
 
 # route -> (payload, [required top-level keys])

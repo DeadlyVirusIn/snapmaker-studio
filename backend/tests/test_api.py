@@ -9,6 +9,39 @@ from snapstudio_api.server import build_server
 from snapstudio_core.stl_wrap import wrap_stl
 
 
+def _request(port, route, payload, token, *, method="POST", attempts=4):
+    """One HTTP call, retried when the machine has no source port to spare.
+
+    These tests open a loopback connection per request. On a machine whose
+    dynamic port range is busy — one here had 14,000 connections held open by
+    Docker Desktop — that intermittently fails with WinError 10048, which says
+    nothing about the code under test. The retry keeps the suite reporting on
+    Studio rather than on the machine it happens to be running on.
+    """
+    import http.client
+
+    last = None
+    for attempt in range(attempts):
+        connection = None
+        try:
+            connection = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+            body = json.dumps(payload).encode() if payload is not None else None
+            headers = {"Content-Type": "application/json"}
+            if token:
+                headers["X-Auth-Token"] = token
+            connection.request(method, route, body=body, headers=headers)
+            response = connection.getresponse()
+            raw = response.read()
+            return response.status, (json.loads(raw) if raw else {})
+        except OSError as exc:
+            last = exc
+            time.sleep(0.5 * (attempt + 1))
+        finally:
+            if connection is not None:
+                connection.close()
+    raise AssertionError(f"the machine would not give this test a port ({last})")
+
+
 def _poll_until_finished(get_status, timeout=15.0):
     """Poll a batch status callable until its result is finished or timeout."""
     deadline = time.monotonic() + timeout
@@ -165,14 +198,8 @@ def test_server_doctor_requires_token(tmp_path):
 
 
 def _post(port, route, payload, token):
-    req = urllib.request.Request(
-        f"http://127.0.0.1:{port}{route}", data=json.dumps(payload).encode(),
-        headers={"Content-Type": "application/json", "X-Auth-Token": token})
-    try:
-        with urllib.request.urlopen(req, timeout=5) as r:
-            return r.code
-    except urllib.error.HTTPError as e:
-        return e.code
+    status, _body = _request(port, route, payload, token)
+    return status
 
 
 def test_server_plate_dry_run_rejects_missing_filament(tmp_path):
@@ -229,15 +256,27 @@ def test_server_new_endpoints_are_routed():
 
 def _post_full(port, route, raw_or_payload, token):
     """Returns (code, body_text). raw_or_payload may be bytes (sent verbatim)."""
-    data = raw_or_payload if isinstance(raw_or_payload, (bytes, bytearray)) else json.dumps(raw_or_payload).encode()
-    req = urllib.request.Request(
-        f"http://127.0.0.1:{port}{route}", data=data,
-        headers={"Content-Type": "application/json", "X-Auth-Token": token})
-    try:
-        with urllib.request.urlopen(req, timeout=5) as r:
-            return r.code, r.read().decode()
-    except urllib.error.HTTPError as e:
-        return e.code, e.read().decode()
+    import http.client
+
+    data = (raw_or_payload if isinstance(raw_or_payload, (bytes, bytearray))
+            else json.dumps(raw_or_payload).encode())
+    last = None
+    for attempt in range(4):
+        connection = None
+        try:
+            connection = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+            connection.request("POST", route, body=data,
+                               headers={"Content-Type": "application/json",
+                                        "X-Auth-Token": token})
+            response = connection.getresponse()
+            return response.status, response.read().decode()
+        except OSError as exc:
+            last = exc
+            time.sleep(0.5 * (attempt + 1))
+        finally:
+            if connection is not None:
+                connection.close()
+    raise AssertionError(f"the machine would not give this test a port ({last})")
 
 
 def test_server_input_validation_returns_400(tmp_path):

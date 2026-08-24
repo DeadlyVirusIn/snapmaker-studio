@@ -85,6 +85,32 @@ def _screenshots_dir(version: str) -> str:
     return f"docs/screenshots/v{version}" if candidate.exists() else ""
 
 
+def _today() -> str:
+    import datetime
+
+    return datetime.date.today().isoformat()
+
+
+def _installer_block() -> dict:
+    """The installer this release publishes, read from the canonical metadata."""
+    text = METADATA.read_text(encoding="utf-8")
+    block = text[text.index("## Current release"):]
+    if "## Previous release" in block:
+        block = block[:block.index("## Previous release")]
+
+    def field(name: str):
+        found = re.search(r"\|\s*" + re.escape(name) + r"\s*\|\s*(.+?)\s*\|", block)
+        return found.group(1).strip() if found else None
+
+    size = field("Size (bytes)")
+    return {
+        "name": (field("Installer") or "").strip("`") or None,
+        "size_bytes": int(size.replace(",", "")) if size else None,
+        "sha256": (field("SHA256") or "").strip("`") or None,
+        "url": field("Release URL"),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", type=int, required=True, help="pytest passed count")
@@ -109,6 +135,35 @@ def main() -> int:
     }
     OUT.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"wrote {OUT.relative_to(ROOT)}")
+
+    # And the immutable copy. `evidence.json` points at the current release and is
+    # rewritten every time; the snapshot is what a document describing *that*
+    # release quotes for as long as the release exists. Overwriting one would
+    # rewrite what was true when somebody downloaded that installer — which is how
+    # a shipped release came to be described by a later release's numbers.
+    snapshot_dir = INTERNAL / "evidence"
+    snapshot_dir.mkdir(parents=True, exist_ok=True)
+    snapshot_path = snapshot_dir / f"{version}.json"
+    snapshot = dict(evidence)
+    snapshot["schema_version"] = "evidence-snapshot/1"
+    snapshot["installer"] = _installer_block()
+    snapshot["released"] = _today()
+    snapshot["source"] = "recorded when this release was published"
+    if snapshot_path.exists():
+        existing = json.loads(snapshot_path.read_text(encoding="utf-8"))
+        differing = [key for key in ("acceptance", "hardware", "selfcheck", "backend",
+                                     "desktop", "demo", "installer")
+                     if existing.get(key) != snapshot.get(key)]
+        if differing:
+            raise SystemExit(
+                f"{snapshot_path.name} already records this release and differs in "
+                f"{differing}. A published release's evidence does not change — if "
+                "these numbers are the truth, this is a different release and needs "
+                "its own version.")
+    else:
+        snapshot_path.write_text(json.dumps(snapshot, indent=2, sort_keys=True) + "\n",
+                                 encoding="utf-8")
+        print(f"wrote {snapshot_path.relative_to(ROOT)}")
     for key in ("acceptance", "hardware", "selfcheck"):
         block = evidence[key]
         print(f"  {key}: {block['passed']}/{block['total']}")

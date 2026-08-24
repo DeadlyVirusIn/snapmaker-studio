@@ -10,6 +10,7 @@ import json
 import os
 import secrets
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 from . import service
@@ -89,6 +90,16 @@ def cors_allow_origin(origin: str | None) -> str | None:
 
 def _make_handler(token: str):
     class Handler(BaseHTTPRequestHandler):
+        # HTTP/1.1, so a client can keep one connection and reuse it. The default
+        # is HTTP/1.0, which closes after every response — and the app makes a
+        # dozen calls to draw a single page, each one taking a fresh source port
+        # and leaving it in TIME_WAIT. On a machine that is short of ports (one
+        # here had 14,000 connections held open by Docker Desktop) that is the
+        # difference between Studio working and Studio not answering at all.
+        # Every response this handler writes carries an accurate Content-Length,
+        # which is what makes persistent connections safe.
+        protocol_version = "HTTP/1.1"
+
         def log_message(self, *args):  # silence default logging
             pass
 
@@ -970,11 +981,47 @@ def _make_handler(token: str):
     return Handler
 
 
-def build_server(host: str = "127.0.0.1", port: int = 0):
-    """Return (httpd, token). Caller runs httpd.serve_forever()."""
+#: Ports to fall back on when the operating system will not hand out an ephemeral
+#: one. They sit below the Windows dynamic range (49152-65535), so they are still
+#: available on a machine whose dynamic range is exhausted — which is not a rare
+#: state: one developer machine here had 14,000 sockets held open by Docker
+#: Desktop, and the loopback service could not bind at all. Studio then does not
+#: start, for a reason that has nothing to do with Studio.
+FALLBACK_PORTS = (38731, 38732, 38733, 38734, 38735)
+
+
+def build_server(host: str = "127.0.0.1", port: int = 0, attempts: int = 4):
+    """Return (httpd, token). Caller runs httpd.serve_forever().
+
+    Asking for port 0 lets the operating system choose, which is right and is what
+    this does first. When it refuses — because nothing is free in the dynamic
+    range — a handful of fixed ports below that range are tried rather than
+    failing the launch outright.
+    """
     token = secrets.token_hex(16)
-    httpd = ThreadingHTTPServer((host, port), _make_handler(token))
-    return httpd, token
+    last: OSError | None = None
+
+    for attempt in range(max(1, attempts)):
+        try:
+            return ThreadingHTTPServer((host, port), _make_handler(token)), token
+        except OSError as exc:
+            last = exc
+            if port != 0:
+                break
+            time.sleep(0.25 * (attempt + 1))
+
+    if port == 0:
+        for fallback in FALLBACK_PORTS:
+            try:
+                return ThreadingHTTPServer((host, fallback), _make_handler(token)), token
+            except OSError as exc:
+                last = exc
+
+    raise OSError(
+        f"this machine would not give Studio a port to listen on ({last}). Something "
+        "is holding a very large number of network connections open — Docker, a VPN "
+        "or a download manager are the usual causes. Closing it and starting Studio "
+        "again is enough.") from last
 
 
 def serve(host: str = "127.0.0.1", port: int = 0) -> None:

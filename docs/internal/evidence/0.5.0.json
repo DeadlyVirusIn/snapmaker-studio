@@ -1,0 +1,38 @@
+{
+  "acceptance": {
+    "passed": 27,
+    "report": "acceptance-0.5.0.json",
+    "total": 27
+  },
+  "backend": {
+    "passed": 773,
+    "skipped": 3
+  },
+  "demo": {
+    "note": "not recorded at this release",
+    "seconds": null
+  },
+  "desktop": {
+    "passed": 282
+  },
+  "hardware": {
+    "passed": 20,
+    "report": "hardware-0.5.0.json",
+    "total": 20
+  },
+  "installer": {
+    "name": "Snapmaker.Studio_0.5.0_x64-setup.exe",
+    "sha256": "73124b2162ea3581db3237b4e9400d3cb4b9a339bc3bdafb9e5a793c336cf12c",
+    "size_bytes": 16871622,
+    "url": "https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.5.0"
+  },
+  "released": "2026-08-23",
+  "schema_version": "evidence-snapshot/1",
+  "screenshots_dir": null,
+  "selfcheck": {
+    "passed": 21,
+    "total": 21
+  },
+  "source": "reconstructed from the repository at tag v0.5.0: its own evidence.json, harness reports and TRUST_STATUS.md",
+  "version": "0.5.0"
+}

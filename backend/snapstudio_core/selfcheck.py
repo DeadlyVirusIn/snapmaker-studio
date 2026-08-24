@@ -399,7 +399,23 @@ def _api_schema() -> str:
         # busy that is how a self-check fails for a reason that has nothing to do
         # with Studio: "only one usage of each socket address is normally
         # permitted", which reads like a bug in the thing being checked.
-        connection = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+        # Connecting needs a source port, and a machine whose dynamic range is
+        # exhausted has none to give — one machine here had 14,000 connections
+        # held open by Docker Desktop. That is a fact about the machine, so it is
+        # worth waiting through rather than reporting as a fault in Studio.
+        connection = None
+        for attempt in range(4):
+            try:
+                connection = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+                connection.connect()
+                break
+            except OSError as exc:
+                if attempt == 3:
+                    raise AssertionError(
+                        "this machine would not give Studio a port to connect from "
+                        f"({exc}). Something is holding a very large number of network "
+                        "connections open; nothing is wrong with the engine.") from exc
+                time.sleep(1.0)
         try:
             for route, (payload, required) in routes.items():
                 connection.request(

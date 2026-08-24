@@ -1,0 +1,44 @@
+{
+  "acceptance": {
+    "note": "not recorded at this release",
+    "passed": null,
+    "report": null,
+    "total": null
+  },
+  "backend": {
+    "note": "not recorded at this release",
+    "passed": null,
+    "skipped": null
+  },
+  "demo": {
+    "note": "not recorded at this release",
+    "seconds": null
+  },
+  "desktop": {
+    "note": "not recorded at this release",
+    "passed": null
+  },
+  "hardware": {
+    "note": "not recorded at this release",
+    "passed": null,
+    "report": null,
+    "total": null
+  },
+  "installer": {
+    "name": null,
+    "note": "not recorded at this release",
+    "sha256": null,
+    "size_bytes": null,
+    "url": null
+  },
+  "released": "2026-06-17",
+  "schema_version": "evidence-snapshot/1",
+  "screenshots_dir": null,
+  "selfcheck": {
+    "note": "not recorded at this release",
+    "passed": null,
+    "total": null
+  },
+  "source": "reconstructed from the repository at tag v0.2.0: its own evidence.json, harness reports and TRUST_STATUS.md",
+  "version": "0.2.0"
+}
