@@ -116,16 +116,23 @@ def test_preparing_a_copy_of_a_real_painted_project_keeps_the_painting(path, tmp
     # The end-to-end claim: a genuine painted project, through Studio's own
     # prepare, and the painting is still there — checked against the painting
     # itself rather than against the mesh surviving.
+    import shutil
+
     from snapstudio_core import fidelity
     from snapstudio_core.convert import convert_to_u1
 
-    result = convert_to_u1(str(path), out_dir=str(tmp_path / "prepared"))
+    # Preparing leaves a .orig backup beside its *source*, so the fixture is
+    # copied out of the repository first. A test must not write into the tree it
+    # is testing.
+    source = tmp_path / path.name
+    shutil.copy2(path, source)
+    result = convert_to_u1(str(source), out_dir=str(tmp_path / "prepared"))
     assert result.output_path
 
     after = painted.read(result.output_path)
     assert after["slots_referenced"] == EXPECTED_SLOTS
     assert after["painted_triangle_count"] == EXPECTED_PAINTED_TRIANGLES
 
-    report = fidelity.audit(str(path), result.output_path)
+    report = fidelity.audit(str(source), result.output_path)
     row = [r for r in report["rows"] if r["element"] == "Painted colour"][0]
     assert row["status"] == fidelity.PRESERVED_EXACT, row
