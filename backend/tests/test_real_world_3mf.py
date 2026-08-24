@@ -198,8 +198,11 @@ def test_the_real_prusa_project_is_read_not_merely_recognised():
     assert summary["filaments"][0]["type"] == "PLA"
     assert summary["filaments"][0]["color"] == "#FF8000"
     assert summary["object_count"] == 1
-    # This project does not state a nozzle diameter, and Studio must not supply one.
-    assert summary["nozzle_diameters"] == []
+    # A PrusaSlicer project never states `nozzle_diameter` — it belongs to the
+    # printer profile. This one names the variant it was saved with, which is a
+    # fact about the project and is reported as one, with its origin attached.
+    assert summary["nozzle_diameters"] == ["0.4"]
+    assert summary["nozzle_source"] == "the printer variant the project was saved with"
 
 
 def test_traits_of_the_real_prusa_project_feed_the_rest_of_studio():

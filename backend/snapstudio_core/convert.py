@@ -260,6 +260,44 @@ def _unique_output(src: Path, out_dir: Path | None) -> Path:
     return out
 
 
+def _carry_prusa_settings(source: ThreeMF, wrapped: ThreeMF) -> dict | None:
+    """Write the Prusa settings that survive the crossing into the U1 copy.
+
+    Only the ones whose meaning is the same on both sides — `prusa.CARRIED` is the
+    list and the reasoning. A project sliced at 0.15 mm with four walls used to
+    arrive as the starter profile's 0.2 mm and two walls, which is a different
+    print of the same shape with nothing to say so.
+
+    Anything that goes wrong here leaves the copy exactly as it was: a starter
+    profile is a working project, and a half-applied one might not be.
+    """
+    from .config_io import dump_project_settings
+    from . import prusa
+
+    try:
+        if not source.has_part(prusa.SETTINGS_PART):
+            return None
+        config = prusa.settings(source.read_part(prusa.SETTINGS_PART))
+        carried = prusa.to_u1_settings(config)
+        if not carried["settings"]:
+            return None
+        settings = load_project_settings(wrapped.read_part(SETTINGS))
+        for key, value in carried["settings"].items():
+            if isinstance(value, list) and isinstance(settings.get(key), list):
+                # Per-slot values fill the slots the project defines and leave the
+                # rest of the U1's four as they were.
+                merged = list(settings[key])
+                for index, item in enumerate(value[:len(merged)]):
+                    merged[index] = item
+                settings[key] = merged
+            else:
+                settings[key] = value
+        wrapped.replace_part(SETTINGS, dump_project_settings(settings))
+        return carried
+    except Exception:  # noqa: BLE001 — a starter profile is a working project
+        return None
+
+
 def convert_to_u1(path: str, out_dir: str | None = None, prepare_mode: str = "preserve",
                   dry_run: bool = False) -> ConversionResult:
     """Convert a single STL or 3MF into a saved U1-ready 3MF. Returns the result."""
@@ -291,11 +329,20 @@ def convert_to_u1(path: str, out_dir: str | None = None, prepare_mode: str = "pr
         from .stl_wrap import wrap_geometry_3mf
 
         wrapped = wrap_geometry_3mf(str(src))
+        # A PrusaSlicer project has no U1 settings to repair, but it does state
+        # how it was meant to print. Carrying the settings that mean the same
+        # thing on both sides is the difference between a copy of the shape and a
+        # copy of the print.
+        carried = _carry_prusa_settings(tm, wrapped)
         if out:
             wrapped.save(out)
         res = do_validate(wrapped, against=None)
+        summary = _starter_summary(geometry_only=True)
+        if carried:
+            summary["mapped_to_u1"] = carried["evidence"]
+            summary["kept_count"] = len(carried["evidence"])
         return _finish("3mf-geometry", wrapped, out, res, prepare_mode="starter",
-                       settings_summary=_starter_summary(geometry_only=True))
+                       settings_summary=summary)
 
     # 3MF: repair into U1, validate against the source fingerprint (preservation).
     src_fp = compute_fingerprint(tm)
