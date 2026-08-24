@@ -265,17 +265,40 @@ def _name_digest(model_settings_raw: str, prusa: dict) -> str | None:
     every report and diagnostics bundle, so this carries sixteen hex characters
     instead.
     """
-    import hashlib
+    from .gcode import _digest_of
+
+    return _digest_of(_object_names(model_settings_raw, prusa))
+
+
+def _object_names(model_settings_raw: str, prusa: dict) -> list[str]:
+    """The project's object names, normalised the way a sliced job writes them.
+
+    A project stores `Left bracket`; its slice labels the same object
+    `Left_bracket.stl_id_0_copy_0`. Normalising both ends the same way is what
+    makes a project recognisable in its own G-code — comparing them literally
+    would report a mismatch between a project and its own slice, which is the
+    worst answer provenance can give.
+    """
+    from .gcode import _clean_name
 
     names = []
     if model_settings_raw:
         names = _OBJECT_NAME_RE.findall(model_settings_raw)
     elif prusa.get("objects"):
         names = [o["name"] for o in prusa["objects"] if o.get("name")]
-    names = sorted({n.strip().lower() for n in names if n and n.strip()})
-    if not names:
-        return None
-    return hashlib.sha256(chr(0).join(names).encode("utf-8")).hexdigest()[:16]
+    return sorted({_clean_name(n) for n in names if n and str(n).strip()} - {""})
+
+
+def _name_hashes(model_settings_raw: str, prusa: dict) -> list[str]:
+    """One hash per object name — never a name.
+
+    Lets a job that prints *some* of a project's objects — one plate of several,
+    or a big file Studio could only read the ends of — be recognised as part of
+    that project instead of mistaken for a different one.
+    """
+    from .gcode import _digest_of
+
+    return [_digest_of([name]) for name in _object_names(model_settings_raw, prusa)]
 
 
 def _prusa_summary(tm: ThreeMF, parts: set[str]) -> dict:
@@ -458,6 +481,10 @@ def extract(path: str) -> dict:
         "object_name_digest": _tier(_name_digest(model_settings_raw, prusa_summary),
                                     CONFIRMED if model_settings_raw or prusa_summary else UNKNOWN,
                                     "object names in the project"),
+        "object_name_hashes": _tier(_name_hashes(model_settings_raw, prusa_summary),
+                                    CONFIRMED if model_settings_raw or prusa_summary else UNKNOWN,
+                                    "one hash per object name, so a job that prints part of "
+                                    "this project can be recognised as part of it"),
         "has_painted_color": _tier(painted, CONFIRMED if model_settings_raw else UNKNOWN,
                                    f"per-object colour painting data in {MODEL_SETTINGS}"
                                    if painted else None),

@@ -142,11 +142,18 @@ def plan(job_slots: list[dict], loaded: list | None,
         entry["colour_distance"] = None if distance is None else round(distance, 1)
 
         # --- do I have enough of it? -----------------------------------
-        needed = slot.get("grams")
+        grams_needed = slot.get("grams")
         remaining = have.get("remaining_g")
-        entry["needs_grams"] = needed
+        entry["needs_grams"] = grams_needed
         entry["remaining_g"] = remaining
-        entry["sufficiency"] = _sufficiency(needed, remaining)
+        entry["remaining_quality"] = have.get("remaining_quality", "unknown")
+        entry["sufficiency"] = _sufficiency(grams_needed, remaining,
+                                            have.get("remaining_quality", "unknown"),
+                                            have.get("remaining_as_of"))
+        # A provider that disagrees with the printer about this slot is worth
+        # seeing next to the slot it disagrees about.
+        entry["conflicts"] = list(have.get("conflicts") or ())
+        entry["notes"] = list(have.get("notes") or ())
 
         if want_family and have_family and want_family != have_family:
             entry["state"] = "wrong_material"
@@ -165,11 +172,18 @@ def plan(job_slots: list[dict], loaded: list | None,
                                f"{slot['color']} and {have.get('color')} is loaded.")
             entry["action"] = ("Fine if you meant to change the colour. Swap the spool if you "
                                "wanted the original.")
-        elif entry["sufficiency"]["verdict"] == "insufficient":
+        elif entry["sufficiency"]["verdict"] == "insufficient" \
+                and entry["sufficiency"].get("trusted"):
             entry["state"] = "not_enough"
             entry["detail"] = entry["sufficiency"]["detail"]
             entry["action"] = "Load a fuller spool, or be ready to swap part-way through."
             out["changes_needed"] += 1
+        elif entry["sufficiency"]["verdict"] in ("insufficient", "probably_short"):
+            # Short according to a figure nothing is really keeping — say so, but
+            # do not tell someone to change a spool that may be perfectly full.
+            entry["state"] = "maybe_not_enough"
+            entry["detail"] = entry["sufficiency"]["detail"]
+            entry["action"] = "Check what is on this spool before you start."
         else:
             entry["state"] = "ready"
             base = (f"{have.get('material')} is loaded and matches what the job expects."
@@ -238,32 +252,64 @@ def from_facts(gcode_facts: dict, printer: dict | None) -> dict:
 MARGIN = 1.10
 
 
-def _sufficiency(needed, remaining) -> dict:
+#: A tracked weight is somebody's bookkeeping, not a measurement: it drifts every
+#: time a print is run outside the tool that keeps it, and every time a spool is
+#: swapped without being recorded. Inside this margin of the job's needs, "not
+#: enough" is a caution rather than a fact worth blocking a print over.
+DOUBT = 0.05
+
+
+def _sufficiency(needed, remaining, quality: str = "unknown", as_of=None) -> dict:
     """Is there enough filament on this spool for this job?
 
     Only a provider that actually tracks remaining weight can answer this. A
     printer knows which spool is loaded and nothing about what is left on it, so
     on a stock setup the honest answer is unknown — and unknown is what this
     returns, rather than an optimistic silence.
+
+    How the figure is known decides how strongly Studio may put it. "87 g needed,
+    43 g left, it will run out" is worth stopping for; the same sentence built on
+    a number nothing has updated since the last three prints is not, and this
+    reports the difference rather than flattening it.
     """
     if needed is None:
         return {"verdict": "unknown", "detail": "The job does not state how much this slot uses.",
-                "source": "the sliced file"}
+                "source": "the sliced file", "quality": "unknown", "trusted": False}
     if remaining is None:
         return {"verdict": "unknown",
                 "detail": (f"This slot uses {needed:g} g. Nothing Studio can read tracks how much "
                            "is left on the spool, so check it yourself."),
-                "source": "no provider reports remaining weight"}
+                "source": "no provider reports remaining weight",
+                "quality": "unknown", "trusted": False}
+
+    known = "tracked" if quality in ("tracked", "derived") else "unknown"
+    trusted = known == "tracked"
+    where = ("tracked spool weight" if quality == "tracked" else
+             "spool weight worked out from what the spool held and what has been used"
+             if quality == "derived" else "a remaining weight of unstated origin")
+    since = ""
+    if as_of:
+        since = f" Last updated {as_of}."
+
     if remaining >= needed * MARGIN:
         return {"verdict": "enough",
                 "detail": f"{remaining:g} g tracked, {needed:g} g needed.",
-                "source": "tracked spool weight"}
+                "source": where, "quality": known, "trusted": trusted}
     if remaining >= needed:
         return {"verdict": "probably_enough",
                 "detail": (f"{remaining:g} g tracked and {needed:g} g needed — enough on paper, "
-                           "with little to spare. Tracked weights are not exact."),
-                "source": "tracked spool weight"}
+                           "with little to spare. Tracked weights are not exact." + since),
+                "source": where, "quality": known, "trusted": trusted}
+
+    shortfall = needed - remaining
+    marginal = shortfall <= max(needed * DOUBT, 5.0)
+    if marginal or not trusted:
+        return {"verdict": "probably_short",
+                "detail": (f"{remaining:g} g tracked and the job needs {needed:g} g — "
+                           f"{shortfall:g} g short on a figure that is bookkeeping rather than "
+                           "a measurement, so check the spool before you start." + since),
+                "source": where, "quality": known, "trusted": trusted}
     return {"verdict": "insufficient",
             "detail": (f"{remaining:g} g tracked but the job needs {needed:g} g. "
-                       "It will run out part-way through."),
-            "source": "tracked spool weight"}
+                       "It will run out part-way through." + since),
+            "source": where, "quality": known, "trusted": trusted}

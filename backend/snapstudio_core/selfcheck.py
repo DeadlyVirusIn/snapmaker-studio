@@ -21,6 +21,7 @@ import hashlib
 import json
 import shutil
 import tempfile
+import time
 import zipfile
 from pathlib import Path
 
@@ -623,12 +624,30 @@ def _round_trip(workdir: Path) -> str:
     if other["verdict"] != provenance.NO_MATCH:
         raise AssertionError("a job from a different project was not ruled out")
 
+    # A file written a moment ago is still being written as far as anything
+    # outside the slicer can tell, and is deliberately not offered yet.
+    fresh = watch_folder.scan(folder)
+    if not fresh.get("available") or not fresh["candidates"]:
+        raise AssertionError("the watcher found nothing in a folder containing a job")
+    if fresh["candidates"][0]["complete"]:
+        raise AssertionError("a job written a moment ago was offered as finished")
+
+    import os as _os
+    settled = time.time() - 60
+    _os.utime(job, (settled, settled))
     found = watch_folder.scan(folder)
-    if not found.get("available") or not found["candidates"]:
-        raise AssertionError("the watcher found nothing in a folder containing a finished job")
     if not found["candidates"][0]["complete"]:
         raise AssertionError("a finished job was reported as still being written")
-    return "job recognised by its objects, a different project ruled out, folder scan clean"
+
+    part_way = folder / "selfcheck_part_way.gcode"
+    part_way.write_text(_MULTI_GCODE.split("; CONFIG_BLOCK_START")[0], encoding="utf-8")
+    _os.utime(part_way, (settled, settled))
+    cut_short = next(c for c in watch_folder.scan(folder)["candidates"]
+                     if c["name"] == part_way.name)
+    if cut_short["complete"]:
+        raise AssertionError("a job cut off before its end was offered as finished")
+    return ("job recognised by its objects, a different project ruled out, "
+            "unfinished and cut-short files refused")
 
 
 def _providers() -> str:
@@ -640,7 +659,8 @@ def _providers() -> str:
                "slots": [mp._slot(0, material="PLA", subtype="Matte", color="#000000")]}
     tracker = {"source": mp.SPOOLMAN, "available": True, "remaining_known": True,
                "slots": [mp._slot(0, material="PETG", color="#FFFFFF", spool_id=7,
-                                  remaining_g=40.0, source=mp.SPOOLMAN)]}
+                                  remaining_g=40.0, source=mp.SPOOLMAN,
+                                  remaining_quality=mp.TRACKED)]}
     combined = mp.combine(printer, tracker)
     slot = combined["slots"][0]
     if slot["material"] != "PLA" or slot["color"] != "#000000":
@@ -658,4 +678,12 @@ def _providers() -> str:
                                [{"material": "PLA"}], [0])
     if blind["slots"][0]["sufficiency"]["verdict"] != "unknown":
         raise AssertionError("a spool with no tracked weight was not reported as unknown")
-    return "printer stays authoritative; tracked weight adds sufficiency; untracked stays unknown"
+
+    # The same shortfall, on a figure that will not say where it came from, is a
+    # caution rather than a refusal.
+    vague = material_plan.plan([{"tool": 0, "used": True, "grams": 87.0, "type": "PLA"}],
+                               [{"material": "PLA", "remaining_g": 40.0}], [0])
+    if vague["slots"][0]["state"] != "maybe_not_enough":
+        raise AssertionError("an unlabelled remaining weight was treated as a fact")
+    return ("printer stays authoritative; tracked weight can block; unlabelled weight "
+            "only warns; untracked stays unknown")

@@ -647,7 +647,17 @@ def _make_handler(token: str):
                     elif self.path == "/printer/job_queue":
                         out = service.printer_job_queue(host, port)
                     else:  # /printer/upload_gcode
-                        out = service.printer_upload_gcode(host, data.get("path"), port)
+                        expect = data.get("expect_state")
+                        slot_map = data.get("slot_map")
+                        out = service.printer_upload_gcode(
+                            host, data.get("path"), port,
+                            # What the user was shown when they decided to send. The
+                            # upload re-reads the same things and refuses if they
+                            # have moved on.
+                            expect_state=expect if isinstance(expect, dict) else None,
+                            project_path=rv.optional_str(data, "project_path", "") or None,
+                            spoolman=rv.optional_str(data, "spoolman", "") or None,
+                            slot_map=slot_map if isinstance(slot_map, dict) else None)
                     self._send(200, out)
                 except (ValidationError, ValueError) as e:
                     self._send(400, {"error": str(e)})

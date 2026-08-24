@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import re
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -490,6 +491,20 @@ def job_queue(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict
             "count": len(jobs)}
 
 
+class UploadRefused(Exception):
+    """The printer answered and refused the file.
+
+    Kept apart from a network failure on purpose: a printer that says "no room" or
+    "not permitted" has been reached and has an opinion, and the fix is on the
+    printer. A connection that dropped has been reached by nothing, and the file
+    may or may not be there.
+    """
+
+    def __init__(self, status: int, detail: str):
+        super().__init__(detail)
+        self.status = status
+
+
 def upload_gcode(host: str, file_path: str, port: int = DEFAULT_PORT, timeout: float = 60.0) -> dict:
     """Upload a sliced .gcode to the printer (user-initiated). POST multipart /server/files/upload.
     Only .gcode/.g files; the file is read from a local path the user chose."""
@@ -505,11 +520,33 @@ def upload_gcode(host: str, file_path: str, port: int = DEFAULT_PORT, timeout: f
            f"filename=\"{name}\"\r\nContent-Type: application/octet-stream\r\n\r\n").encode()
     post = f"\r\n--{boundary}--\r\n".encode()
     body = pre + content + post
-    res = _post(host, port, "/server/files/upload", timeout, body=body,
-                content_type=f"multipart/form-data; boundary={boundary}")
+    try:
+        res = _post(host, port, "/server/files/upload", timeout, body=body,
+                    content_type=f"multipart/form-data; boundary={boundary}")
+    except urllib.error.HTTPError as exc:
+        raise UploadRefused(exc.code, _refusal(exc)) from exc
     item = res.get("item", {}) if isinstance(res, dict) else {}
     return {"ok": True, "action": "upload", "filename": name,
             "path": item.get("path", name), "size": len(content)}
+
+
+def _refusal(exc) -> str:
+    """What a printer's refusal means to the person holding the file."""
+    code = getattr(exc, "code", 0)
+    if code == 401 or code == 403:
+        return ("The printer refused the upload as not permitted. If it has been given a "
+                "password or an API key, Studio has not been told it.")
+    if code == 404:
+        return ("This printer does not offer file uploads at the address Studio used. "
+                "Check the port in Printer Hub.")
+    if code == 409:
+        return "The printer refused the upload because it is busy with something else."
+    if code == 413:
+        return "The printer refused the file as too large for it."
+    if 400 <= code < 500:
+        return f"The printer refused the upload (error {code})."
+    return (f"The printer answered the upload with an error ({code}). Nothing has been "
+            "started; check the printer before sending again.")
 
 
 def confirm_upload(host: str, filename: str, expected_size: int | None = None,
@@ -529,7 +566,9 @@ def confirm_upload(host: str, filename: str, expected_size: int | None = None,
     starts anything.
     """
     state = {"filename": filename, "present": False, "metadata_ready": False,
-             "size_matches": None, "attempts": 0, "rescanned": False}
+             "size_matches": None, "attempts": 0, "rescanned": False,
+             "fresh": None, "modified": None}
+    started = time.time()
 
     def look():
         try:
@@ -551,6 +590,13 @@ def confirm_upload(host: str, filename: str, expected_size: int | None = None,
             size = meta.get("size")
             if expected_size is not None and isinstance(size, (int, float)):
                 state["size_matches"] = int(size) == int(expected_size)
+            # Moonraker can still be holding the metadata of the file this one
+            # replaced. Same name, same size, older timestamp: the thumbnail and
+            # the time estimate would be the previous job's.
+            modified = meta.get("modified")
+            if isinstance(modified, (int, float)):
+                state["modified"] = modified
+                state["fresh"] = modified >= (started - 60)
             # Moonraker fills these in once it has actually read the file.
             state["metadata_ready"] = any(
                 meta.get(key) is not None
@@ -569,7 +615,8 @@ def confirm_upload(host: str, filename: str, expected_size: int | None = None,
         time.sleep(pause)
 
     state["ok"] = bool(state["present"] and state["metadata_ready"]
-                       and state["size_matches"] is not False)
+                       and state["size_matches"] is not False
+                       and state["fresh"] is not False)
     state["detail"] = _upload_detail(state)
     return state
 
@@ -581,6 +628,10 @@ def _upload_detail(state: dict) -> str:
     if state["size_matches"] is False:
         return ("The printer has a file with this name, but it is a different size. "
                 "An older job of the same name may still be there.")
+    if state["fresh"] is False:
+        return ("The printer is still describing an older file of this name. Its estimate "
+                "and thumbnail would be the previous job's, so give it a moment or check "
+                "the file on the printer.")
     if not state["metadata_ready"]:
         return ("The file is on the printer, but it has not finished reading it yet. "
                 "Give it a moment before starting the print.")

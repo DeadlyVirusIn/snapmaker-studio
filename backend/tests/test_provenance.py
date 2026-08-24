@@ -97,11 +97,20 @@ def test_different_object_names_rule_it_out(tmp_path):
     assert result["verdict"] == provenance.NO_MATCH
 
 
-def test_matching_colours_and_materials_make_it_likely(tmp_path):
+def test_matching_colours_and_materials_are_not_enough_to_claim_a_match(tmp_path):
+    """The setup agreeing is not the model agreeing.
+
+    Every job sliced on the same printer with the same spools loaded has the same
+    materials, the same colours and the same machine. Reading that as "this is
+    your project" would make every job in a workshop look like every other one —
+    so with nothing identifying the model, this stays a question.
+    """
     job = write_job(tmp_path, objects=())          # no object names to compare
     result = provenance.compare(traits(), gcode.read_facts(job))
-    assert result["verdict"] == provenance.LIKELY
+    assert result["verdict"] == provenance.AMBIGUOUS
     assert any(e["signal"] == "filament colours" for e in result["evidence"])
+    assert not result["identity_evidence"]
+    assert "identifies the model" in result["summary"]
 
 
 def test_completely_different_filaments_rule_it_out(tmp_path):
@@ -129,7 +138,9 @@ def test_a_prepared_u1_copy_does_not_look_like_a_different_project(tmp_path):
                                 gcode.read_facts(job))
     printer = next(e for e in result["evidence"] if e["signal"] == "printer")
     assert printer["weight"] > 0
-    assert result["verdict"] in (provenance.LIKELY, provenance.CONFIRMED)
+    # Without object names there is nothing here that identifies the model, so the
+    # honest answer is a question — but never a refusal built on the changed target.
+    assert result["verdict"] == provenance.AMBIGUOUS
 
 
 def test_nothing_to_compare_is_unknown_not_a_match(tmp_path):

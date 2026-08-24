@@ -76,6 +76,23 @@ _DURATION = re.compile(r"(?:(\d+)\s*d)?\s*(?:(\d+)\s*h)?\s*(?:(\d+)\s*m)?\s*(?:(
 _EXCLUDE_DEFINE = re.compile(r"^EXCLUDE_OBJECT_DEFINE\b(.*)$", re.M)
 _OBJECT_NAME = re.compile(r"NAME=([^\s]+)")
 
+# Snapmaker Orca only writes EXCLUDE_OBJECT_DEFINE when object exclusion is
+# switched on, and it is off by default — so real U1 jobs carry none of them. What
+# every job does carry is `; printing object <name> id:<id> copy <n>` around each
+# object, naming exactly the same things. Reading both is the difference between
+# recognising a job as the slice of an open project and having nothing to compare:
+# three real jobs pulled off a U1 had 90, 52 and 3476 of these lines and not one
+# EXCLUDE_OBJECT_DEFINE between them.
+_PRINTING_OBJECT = re.compile(
+    r"^;\s*(?:start\s+)?printing object\s+(?P<name>.+?)\s+id:\s*\S+", re.M | re.I)
+# No `$` anchor: these files end their lines with CRLF as often as not, and `$` in
+# multiline mode matches before a newline, never before a carriage return.
+_M486_NAME = re.compile(r"^M486\s+A(?P<name>[^\r\n]+)", re.M)
+
+#: How many distinct object names to carry. A plate of hundreds of small parts is
+#: ordinary; hashing every one of them is not worth the payload.
+MAX_OBJECT_NAMES = 512
+
 
 def _read_ends(path: Path) -> tuple[str, str, int]:
     """Return (head, tail, size). The two never overlap and are never the whole
@@ -287,18 +304,32 @@ def read_facts(path: str | Path) -> dict:
     # --- purge, and why it cannot be separated -------------------------------
     facts["purge"] = _purge(config, facts["tools_used"])
 
-    # --- object exclusion ----------------------------------------------------
+    # --- which objects this job prints ---------------------------------------
+    #
+    # Object names are model names and are the user's business, so none of them
+    # are carried out of this function. What is carried is a hash per name and a
+    # digest of the set: enough to recognise that a sliced job prints the same
+    # objects as an open project, and nothing anyone can read a model name out of.
     defines = _EXCLUDE_DEFINE.findall(head)
+    names, sources = _object_names(head, tail, defines)
+    facts["objects"] = {
+        "count": len(names),
+        "name_digest": _digest_of(names),
+        # One hash per name, so a job that lists *some* of a project's objects —
+        # one plate of several, or a file Studio could only read the ends of — can
+        # be recognised as a subset instead of being called a different project.
+        "name_hashes": [_digest_of([name]) for name in names],
+        # A large job is read at its ends only, so the set may be incomplete. A
+        # partial set can support a match; it must never be used to rule one out.
+        "complete": bool(not tail) or bool(defines),
+        "sources": sources,
+    }
     facts["exclude_object"] = {
         "present": bool(defines),
-        "objects": len(defines),
-        # Object names are model names and are the user's business; the count is
-        # what the checks need, so the names are deliberately not carried. A
-        # digest of them is, because recognising that a sliced job contains the
-        # same set of objects as an open project is the strongest provenance
-        # evidence there is — and sixteen hex characters give that away to nobody.
-        "name_digest": _name_digest(defines),
-        "source": "EXCLUDE_OBJECT_DEFINE lines" if defines else "no EXCLUDE_OBJECT_DEFINE lines found",
+        "objects": len(defines) or facts["objects"]["count"],
+        "name_digest": facts["objects"]["name_digest"],
+        "source": (", ".join(sources) if sources
+                   else "no object labels found — the slicer did not name what it prints"),
     }
 
     # --- firmware-flavour markers the U1 actually uses ------------------------
@@ -313,19 +344,69 @@ def read_facts(path: str | Path) -> dict:
     return facts
 
 
-def _name_digest(defines: list[str]) -> str | None:
-    """Fingerprint the object names a job declares, without carrying them."""
+def _clean_name(raw: str) -> str:
+    """The comparable part of an object name.
+
+    Slicers decorate the same name differently in different places: an exclusion
+    define writes `Left_bracket.stl_id_0_copy_0`, a printing-object comment writes
+    `Left bracket.stl`, and a project stores `Left bracket`. Comparing those
+    literally would report a mismatch between a project and its own slice, which
+    is the worst answer this module can give.
+    """
+    text = str(raw or "").strip().strip('"').strip()
+    text = re.sub(r"[_\s]*id[_:]\s*\d+.*$", "", text, flags=re.I)
+    text = re.sub(r"[_\s]*copy[_\s]*\d+\s*$", "", text, flags=re.I)
+    text = re.sub(r"\.(stl|3mf|obj|step|stp|ply)$", "", text, flags=re.I)
+    return re.sub(r"[\s_]+", " ", text).strip().lower()
+
+
+def _object_names(head: str, tail: str, defines: list[str]) -> tuple[list[str], list[str]]:
+    """Every object name the job states, normalised, deduplicated and sorted."""
+    names: set[str] = set()
+    sources: list[str] = []
+
+    for chunk in defines:
+        found = _OBJECT_NAME.search(chunk or "")
+        if found:
+            names.add(_clean_name(found.group(1)))
+    if names:
+        sources.append("EXCLUDE_OBJECT_DEFINE lines")
+
+    before = len(names)
+    for blob in (head, tail):
+        if not blob:
+            continue
+        for match in _PRINTING_OBJECT.finditer(blob):
+            names.add(_clean_name(match.group("name")))
+            if len(names) >= MAX_OBJECT_NAMES:
+                break
+        for match in _M486_NAME.finditer(blob):
+            names.add(_clean_name(match.group("name")))
+    if len(names) > before:
+        sources.append("object labels in the toolpath")
+
+    return sorted(n for n in names if n), sources
+
+
+def _digest_of(names: list[str]) -> str | None:
+    """Fingerprint a set of object names without carrying any of them."""
     import hashlib
 
-    names = []
-    for tail in defines:
-        found = _OBJECT_NAME.search(tail or "")
-        if found:
-            names.append(found.group(1).strip().strip('"').lower())
-    names = sorted({n for n in names if n})
-    if not names:
+    ordered = sorted({n for n in names if n})
+    if not ordered:
         return None
-    return hashlib.sha256(chr(0).join(names).encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha256(chr(0).join(ordered).encode("utf-8")).hexdigest()[:16]
+
+
+def _name_digest(defines: list[str]) -> str | None:
+    """Digest of the names in EXCLUDE_OBJECT_DEFINE lines. Kept for callers that
+    only have those."""
+    names = []
+    for chunk in defines:
+        found = _OBJECT_NAME.search(chunk or "")
+        if found:
+            names.append(_clean_name(found.group(1)))
+    return _digest_of(names)
 
 
 def _hex(value: str | None) -> str | None:

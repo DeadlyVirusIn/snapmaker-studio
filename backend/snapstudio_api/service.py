@@ -296,14 +296,19 @@ def printer_facts(host: str | None = None, port: int = 7125) -> dict:
     does not expose stay absent — Preflight turns those into "unknown", never into
     "not supported".
     """
+    import time as _time
+
     from snapstudio_core import moonraker
 
     if not host:
         return {"reachable": False, "error": "no printer address configured",
-                "hint": moonraker.NOT_FOUND_HINT}
+                "hint": moonraker.NOT_FOUND_HINT, "observed_at": _time.time()}
     probe = moonraker.probe(host, port)
+    # Every live fact is only true as of the moment it was read. Stamping that
+    # here is what lets the send path say "this was checked four minutes ago"
+    # instead of presenting it as though it were still being observed.
     facts: dict = {"reachable": bool(probe.get("reachable")), "host": host,
-                   "port": probe.get("port", port)}
+                   "port": probe.get("port", port), "observed_at": _time.time()}
     if not facts["reachable"]:
         facts["error"] = probe.get("error")
         facts["hint"] = moonraker.NOT_FOUND_HINT
@@ -520,8 +525,25 @@ def send_check(path: str, host: str | None = None, port: int = 7125,
 
     out = sc.evaluate(facts, printer, timeline=timeline, provenance=origin)
     out["provenance"] = origin
+    # What this answer rests on, so the send itself can check the world has not
+    # moved on since. Without it the upload would be acting on what was true when
+    # the page was drawn.
+    from snapstudio_core import send_state
+    out["state"] = send_state.fingerprint(facts, printer, origin, file_stat=_file_stat(path))
     out["printer"] = {k: v for k, v in printer.items() if k != "klipper_objects"}
     return out
+
+
+def _file_stat(path: str) -> dict:
+    """Size and modification time, so a file rewritten in place is not mistaken for
+    the one that was checked."""
+    from pathlib import Path as _Path
+
+    try:
+        stat = _Path(path).stat()
+    except OSError:
+        return {}
+    return {"size_bytes": stat.st_size, "modified": round(stat.st_mtime, 3)}
 
 
 def sliced_cost(path: str, price_per_kg: float = 20.0, currency: str = "$",
@@ -635,29 +657,92 @@ def printer_job_queue(host: str, port: int = 7125) -> dict:
 
 
 def printer_upload_gcode(host: str, path: str, port: int = 7125,
-                         confirm: bool = True) -> dict:
-    """Upload a sliced gcode file (chosen by the user) to the printer."""
-    from snapstudio_core import moonraker
+                         confirm: bool = True, expect_state: dict | None = None,
+                         project_path: str | None = None, spoolman: str | None = None,
+                         slot_map: dict | None = None) -> dict:
+    """Upload a sliced gcode file (chosen by the user) to the printer.
+
+    Two things happen before any bytes are sent. The file is checked against what
+    Studio last checked, and the printer is asked what it is doing now — because
+    the send confirmation a person read describes a moment that has since passed.
+    A slot emptied, a spool swapped, a print started, the job re-sliced in place:
+    each of those makes the answer on screen wrong, and none of them looks any
+    different from the outside.
+
+    When something has moved, this uploads nothing and says what changed. The user
+    can look again and send if they still want to; what they cannot do is send on
+    the strength of a check that no longer holds.
+    """
+    from snapstudio_core import moonraker, send_state
     if not path:
         raise ValueError("missing 'path'")
-    result = moonraker.upload_gcode(host, path, port)
+
+    if expect_state:
+        fresh = send_check(path, host=host, port=port, project_path=project_path,
+                           spoolman=spoolman, slot_map=slot_map)
+        moved = send_state.changes(expect_state, fresh.get("state"))
+        if moved:
+            return {
+                "ok": False,
+                "action": "upload",
+                "state": "changed",
+                "changed": moved,
+                "detail": send_state.describe(moved),
+                "check": fresh,
+                "uploaded": False,
+            }
+
+    try:
+        result = moonraker.upload_gcode(host, path, port)
+    except moonraker.UploadRefused as exc:
+        # The printer answered, and said no. That is a different problem from not
+        # finding the printer at all, and it has a different fix.
+        return {"ok": False, "action": "upload", "state": "refused_by_printer",
+                "uploaded": False, "status": exc.status, "detail": str(exc)}
+    except OSError as exc:
+        return {"ok": False, "action": "upload", "state": "not_accepted", "uploaded": False,
+                "detail": ("Studio could not finish sending the file to the printer: "
+                           f"{getattr(exc, 'strerror', None) or exc}. Nothing on the printer "
+                           "has been started.")}
 
     # An accepted POST is not a finished upload. Moonraker parses metadata
     # asynchronously, so a file can be on the printer and not yet readable by it —
     # which is how a tool ends up starting a job the machine cannot describe. Ask
     # the printer what it actually has before reporting success.
     if not confirm:
+        result["state"] = "pending_verification"
         return result
     try:
-        result["confirmation"] = moonraker.confirm_upload(
+        confirmation = moonraker.confirm_upload(
             host, result.get("filename") or "", expected_size=result.get("size"), port=port)
-        result["ok"] = bool(result["confirmation"].get("ok"))
+        result["confirmation"] = confirmation
+        result["ok"] = bool(confirmation.get("ok"))
+        result["state"] = _upload_state(confirmation)
     except Exception as exc:  # noqa: BLE001 — the upload happened; the check did not
         result["confirmation"] = {"ok": False, "error": f"{type(exc).__name__}",
                                   "detail": ("The file was sent, but Studio could not confirm "
                                              "the printer finished reading it.")}
         result["ok"] = False
+        result["state"] = "unknown"
     return result
+
+
+def _upload_state(confirmation: dict) -> str:
+    """Which of the five things that can be true after an upload is true.
+
+    Collapsing these into "upload failed" is how a person deletes and re-sends a
+    file that is already on the printer, or starts one the printer has not finished
+    reading. They are different situations with different next steps.
+    """
+    if not confirmation.get("present"):
+        # The bytes were accepted and the printer does not list the file. Studio
+        # cannot say where they went, and must not imply the job is ready.
+        return "not_listed"
+    if confirmation.get("size_matches") is False or confirmation.get("fresh") is False:
+        return "mismatch"
+    if not confirmation.get("metadata_ready"):
+        return "pending_verification"
+    return "verified"
 
 
 def first_layer(path: str, host: str | None = None, port: int = 7125) -> dict:
