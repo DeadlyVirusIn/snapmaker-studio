@@ -206,7 +206,7 @@ simply the machine it is verified against.
 
 ## Evidence
 
-Everything below was verified against the **published v0.6.0 installer**, not a
+Everything below was verified against the **published v0.6.1 installer**, not a
 development build. Commands, counts and full reports:
 [TRUST_STATUS.md](TRUST_STATUS.md).
 

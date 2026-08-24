@@ -159,7 +159,7 @@ against a development build. Commands, counts and full reports:
 | Read-only verification against a real Snapmaker U1 | **26/26** |
 | Regression tests against genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **36 tests** |
 | End-to-end pipeline self-check (`u1convert selfcheck`) | **25/25** |
-| Backend / desktop / TypeScript / Rust | 822 · 284 · clean · clean |
+| Backend / desktop / TypeScript / Rust | 967 · 290 · clean · clean |
 
 Reproduce any of it yourself:
 [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md).

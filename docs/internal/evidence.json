@@ -23,7 +23,7 @@
   "schema_version": "evidence/1",
   "screenshots_dir": "docs/screenshots/v0.6.1",
   "selfcheck": {
-    "passed": 24,
+    "passed": 25,
     "total": 25
   },
   "version": "0.6.1"

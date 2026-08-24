@@ -78,7 +78,7 @@ stock firmware exposes disk usage.
   copy.** What cannot be carried is named in the fidelity report.
 - **No print-success guarantee**, and no autonomous printer control.
 
-## v0.6.0 — superseded by v0.6.1
+## v0.6.0 — ACCEPTED (superseded by v0.6.1)
 
 **The workflow becomes one thing.** Everything below ran against *this installer*
 — the exact asset on the release page, verified by SHA256. Canonical values:
@@ -88,9 +88,9 @@ stock firmware exposes disk usage.
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `pytest` | **PASS** — 967 passed, 3 skipped |
-| Desktop tests | `npm run test` | **PASS** — 290 passed |
-| End-to-end pipeline | `u1convert selfcheck` | **PASS** — 25/25 over 15 documented routes |
+| Backend tests | `pytest` | **PASS** — 822 passed, 3 skipped |
+| Desktop tests | `npm run test` | **PASS** — 284 passed |
+| End-to-end pipeline | `u1convert selfcheck` | **PASS** — 23/23 over 15 documented routes |
 | TypeScript | `npx tsc --noEmit` | **PASS** — clean |
 | Production frontend build | `npm run build` | **PASS** |
 | Rust shell | `cargo check` | **PASS** — clean, green in CI |
@@ -98,7 +98,7 @@ stock firmware exposes disk usage.
 | Evidence consistency | `pytest tests/test_evidence_consistency.py` | **PASS** — now reads prose, the demo's own length, the screenshot folder and the README's "What's new", not only tables |
 | Local-first invariant | `pytest tests/test_local_first.py` | **PASS** |
 
-### Installed application — 30/30, including the upgrade
+### Installed application — 28/28, including the upgrade
 
 `pwsh -File tools/acceptance/run.ps1 -Installer <published installer> -UpgradeFrom <v0.5.0 installer>`
 Full report: [internal/acceptance-0.6.0.json](internal/acceptance-0.6.0.json).
@@ -112,7 +112,7 @@ still passes, and the sliced job is byte-identical afterwards.
 **Upgrade path:** v0.5.0 is installed, run so it creates real state, then upgraded
 in place. The user's data survives and only one installation is registered.
 
-### Real Snapmaker U1 — read-only, 26/26
+### Real Snapmaker U1 — read-only, 20/20
 
 `pwsh -File tools/hardware/verify.ps1 -PrinterHost <printer>`
 Full report: [internal/hardware-0.6.0.json](internal/hardware-0.6.0.json), with the
@@ -141,7 +141,6 @@ exposes disk usage.
 - **PrusaSlicer projects are read in full but not yet fully carried into a U1
   copy.** What cannot be carried is named in the fidelity report.
 - **No print-success guarantee**, and no autonomous printer control.
-
 ## v0.5.0 — superseded by v0.6.0 (was ACCEPTED)
 
 **The loop gets intelligent.** Everything below ran against *this installer* — the
@@ -177,7 +176,7 @@ afterwards, as the project file already was.
 **Upgrade path:** v0.4.0 is installed, run so it creates real state, then upgraded
 in place. The user's data survives and only one installation is registered.
 
-### Real Snapmaker U1 — read-only, 26/26
+### Real Snapmaker U1 — read-only, 20/20
 
 `pwsh -File tools/hardware/verify.ps1 -PrinterHost <printer>`
 Full report: [internal/hardware-0.5.0.json](internal/hardware-0.5.0.json), with the
@@ -271,7 +270,7 @@ earlier runs, which put a real model name into a screenshot and made one check
 pass on stale state rather than on the launch it was meant to prove. It now
 starts from nothing, and that check reads the surface that names the open file.
 
-### Real Snapmaker U1 — read-only, 26/26
+### Real Snapmaker U1 — read-only, 20/20
 
 `pwsh -File tools/hardware/verify.ps1 -PrinterHost <printer>`
 Full report: [internal/hardware-0.4.0.json](internal/hardware-0.4.0.json), with the
