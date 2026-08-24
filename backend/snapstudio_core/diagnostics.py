@@ -178,6 +178,14 @@ def _sliced(path: str) -> dict:
     }
 
 
+def _loaded_or_reason(moonraker, host: str, port: int):
+    """What is loaded, or why Studio could not find out. Never the two conflated."""
+    try:
+        return moonraker.loaded_filaments(host, port)
+    except moonraker.PrinterUnavailable as exc:
+        return {"error": str(exc)}
+
+
 def _printer(host: str, port: int) -> dict:
     from . import moonraker
     caps = moonraker.capabilities(host, port)
@@ -186,7 +194,7 @@ def _printer(host: str, port: int) -> dict:
         "toolhead_count": caps.get("toolhead_count"),
         "bed_mm": caps.get("bed_mm"),
         "klipper_object_count": len(caps.get("klipper_objects") or []),
-        "loaded_filaments": moonraker.loaded_filaments(host, port),
+        "loaded_filaments": _loaded_or_reason(moonraker, host, port),
     }
     try:
         out["print_state"] = moonraker.status(host, port).get("print_state")

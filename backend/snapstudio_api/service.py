@@ -324,7 +324,14 @@ def printer_facts(host: str | None = None, port: int = 7125) -> dict:
         facts["print_state"] = moonraker.status(host, port).get("print_state")
     except Exception:
         pass
-    loaded = moonraker.loaded_filaments(host, port)
+    try:
+        loaded = moonraker.loaded_filaments(host, port)
+    except moonraker.PrinterUnavailable as exc:
+        # Asking failed. That is not the printer saying it has no filament state,
+        # and reporting it as such would be a claim about the user's machine made
+        # on no evidence.
+        facts["loaded_filaments_error"] = str(exc)
+        loaded = None
     if loaded is not None:
         facts["loaded_filaments"] = loaded
     return facts
@@ -1034,7 +1041,17 @@ def printer_firmware(host: str, port: int = 7125) -> dict:
     into a plain-language capability set (mesh, input shaping, runout, exclusion,
     custom macros, multi-toolhead) and flag extended firmware. Read-only."""
     from snapstudio_core import moonraker, firmware_caps as fwc
-    caps = moonraker.capabilities(host, port)
+
+    try:
+        caps = moonraker.capabilities(host, port)
+    except Exception as exc:  # noqa: BLE001 — a printer that will not answer is an answer
+        # A route that 500s tells the user nothing. "Studio could not ask" is a
+        # state the page already knows how to render, and it is the truth.
+        return {"schema_version": fwc.SCHEMA_VERSION, "available": False,
+                "error": f"the printer did not answer: {type(exc).__name__}",
+                "features": [], "extended_firmware": False,
+                "extended_firmware_evidence": None, "many_custom_macros": False,
+                "summary": "Studio could not ask this printer what its firmware exposes."}
     # One short request, and only ever read as a positive: a community firmware
     # that serves its own page is announcing itself. No answer means Studio does
     # not know, never that the printer is running stock.

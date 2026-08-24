@@ -13,10 +13,10 @@ page is the status record only.
 
 | | |
 |---|---|
-| Version | **v0.6.1** — the current stable release |
+| Version | **v0.6.2** — the current stable release |
 | Installer, size, SHA256 | [RELEASE_METADATA.md](RELEASE_METADATA.md) — canonical |
 | Verification state | [TRUST_STATUS.md](TRUST_STATUS.md) — **ACCEPTED** |
-| Release | <https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.1> |
+| Release | <https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.2> |
 
 The installer is not code-signed — verify the SHA256 before installing. See
 [windows-install.md](windows-install.md) and
@@ -52,7 +52,7 @@ build. What was done about that is in
 
 ## Hardware verification
 
-**v0.6.1, 2026-08-24 — read-only, 26/26.** Printer discovered, 196 Klipper
+**v0.6.2, 2026-08-24 — read-only, 26/26.** Printer discovered, 196 Klipper
 objects enumerated, the printer's own 271 × 335 × 281 mm bed used, four loaded
 filaments read with colour and sub-type, the fitted nozzle correctly reported as
 unknown rather than unsupported, the project's materials compared both against
@@ -63,7 +63,7 @@ probe that reported a stock printer as running Extended Firmware. Nothing was
 started, uploaded or queued; no temperature, motion, homing, pause, resume, cancel,
 emergency-stop or configuration call was made. Record:
 [TRUST_STATUS.md](TRUST_STATUS.md) · raw evidence
-[internal/hardware-0.6.1.json](internal/hardware-0.6.1.json).
+[internal/hardware-0.6.2.json](internal/hardware-0.6.2.json).
 
 **v0.6.0, 2026-08-23 — read-only, 20/20**, and **v0.4.0, 2026-08-23 — read-only,
 20/20**: the same read-only checks against the same machine, recorded per release

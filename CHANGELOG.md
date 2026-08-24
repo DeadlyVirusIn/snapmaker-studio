@@ -6,6 +6,63 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-08-24
+
+**Evidence that stays true, and a service that answers on a busy machine.**
+
+### Fixed
+
+- **A release's evidence changed when a later release shipped.** There was one
+  canonical evidence file, rewritten every time, so publishing restated the numbers
+  every document quoted — including the sections describing releases that had
+  already shipped. TRUST_STATUS said v0.6.0 was verified with 967 backend tests,
+  290 desktop tests, a 30-check acceptance run and 26 hardware checks; it shipped
+  with 822, 284, 28 and 20, and the larger figures come from a suite and a harness
+  that did not exist yet. v0.5.0 and v0.4.0 had their hardware counts overwritten
+  the same way, and SUBMISSION_STATUS attached this week's hardware run to v0.4.0's
+  name while still calling v0.4.0 the current build.
+
+  Evidence is now one immutable snapshot per release in `docs/internal/evidence/`,
+  reconstructed for past releases from what each release's own tag recorded and
+  saying "not recorded" where a release recorded nothing. Publishing adds a file
+  and never edits one. The historical sections are restored from their own tags.
+
+- **Studio could fail to start on a machine that is short of ports.** The loopback
+  service spoke HTTP/1.0, closing the connection after every call, and drawing one
+  page makes a dozen calls. On a machine with 14,000 connections held open by
+  something else, the service could not be reached and sometimes could not bind at
+  all. It speaks HTTP/1.1 so a client keeps one connection, retries the bind, and
+  falls back to fixed ports below the dynamic range.
+
+- **"This printer does not report which filaments are loaded" could be untrue.** A
+  dropped connection and a printer that genuinely reports nothing both came back as
+  `None`, so a momentary network failure was reported as a statement about the
+  user's machine. They are distinct now; printer reads retry; and the firmware
+  route degrades to "Studio could not ask" instead of returning an error.
+
+- **A re-slice could pass as the file that was checked.** The send fingerprint
+  identified a job by size and modification time, and a re-slice that lands on the
+  same byte count within the same timestamp tick matched both. It now also
+  fingerprints the file's contents at three bounded windows — start, middle and
+  end — which is where a slicer writes what distinguishes one job from another.
+
+- **The "Extended firmware" badge appeared on stock printers**, and the acceptance
+  and release-doc guards missed the README's combined row, which said
+  `822 · 284 · clean · clean` through an entire release.
+
+### Added
+
+- Every item in the send confirmation can show what it was read from, one level
+  down, and the card says when the printer was last actually read.
+- An evidence-integrity guard: current documents against the current snapshot,
+  every historical section against *that release's* snapshot, and a regression test
+  that re-derives each published release's evidence from its own tag.
+
+### Verified
+
+pytest 1004 passed / 3 skipped · vitest 293 · self-check 25/25 · installed-build
+acceptance 30/30 including the v0.6.1 upgrade · real Snapmaker U1 read-only 26/26.
+
 ### Added
 
 - Every item in the send confirmation can now show what it was read from, one

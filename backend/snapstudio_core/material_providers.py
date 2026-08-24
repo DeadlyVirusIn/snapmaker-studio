@@ -98,6 +98,9 @@ def stock_u1(host: str, port: int = 7125) -> dict:
         return out
     try:
         loaded = moonraker.loaded_filaments(host, port)
+    except moonraker.PrinterUnavailable as exc:
+        out["error"] = f"Studio could not reach the printer just now: {exc}"
+        return out
     except Exception as exc:  # noqa: BLE001 — a printer that will not answer is an answer
         out["error"] = f"the printer did not answer: {type(exc).__name__}"
         return out

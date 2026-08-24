@@ -1,103 +1,69 @@
-# Snapmaker Studio v0.6.1 — the answers, attacked
+# Snapmaker Studio v0.6.2 — evidence that stays true
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-v0.6.0 closed the workflow: the sliced job comes back on its own, Studio works out
-whether it belongs to your project, and the send confirmation says what will
-actually happen. This release was spent trying to make all of that lie.
+A patch release. Four defects, three of them found by attacking the project's own
+verification rather than its features.
 
-Everything below was a real defect in v0.6.0. If you are running it, this is worth
-the download.
+## A release's evidence changed when a later release shipped
 
-## Studio could not read the object names in a real Orca job
+Studio's public argument is "check it yourself", so its counts are load-bearing.
+There was one canonical evidence file, rewritten on every release — and because
+there was only one of it, publishing quietly restated the numbers that *every*
+document quoted, including the sections describing releases that had already
+shipped.
 
-The strongest evidence that a G-code file is the slice of your project is that it
-prints the same objects. Studio looked for that in the labels Snapmaker Orca writes
-when object exclusion is switched on — and it is off by default.
+The trust record said v0.6.0 had been verified with 967 backend tests, 290 desktop
+tests, a 30-check acceptance run and 26 hardware checks. v0.6.0 shipped with 822,
+284, 28 and 20. The larger figures come from a suite and a harness that did not
+exist when it was published. v0.5.0 and v0.4.0 had their hardware counts
+overwritten the same way.
 
-Three jobs pulled off a real U1 carry 90, 52 and 3,476 object labels between them,
-in the *other* dialect, and not one of the kind Studio was looking for. So the
-evidence was there, in the files it was written for, and Studio was not reading it.
-It reads both dialects now, and PrusaSlicer's as well.
+Evidence is now one immutable snapshot per release. Past releases were
+reconstructed from what each release's own tag recorded — and where a release
+recorded nothing, the snapshot says so rather than carrying a plausible number
+backwards. Publishing adds a file; it never edits one. A test re-derives every
+published release's evidence from its own tag, so a future release cannot rewrite
+what an earlier one was verified with.
 
-## A matching setup was being read as a matching project
+## Studio could fail to start on a machine that is short of ports
 
-Same printer, same spools, same materials came out as "looks like your project" —
-which is true of every job sliced in a workshop. Any file in the folder could be
-called the slice of any project.
+The loopback service spoke HTTP/1.0, which closes the connection after every
+response, and drawing a single page makes a dozen calls. Each one took a fresh
+source port and left it in TIME_WAIT.
 
-Evidence is now separated into what identifies the *model* — which objects the job
-prints — and what merely describes the *setup* it was sliced with. With nothing
-identifying the model, the answer is "Studio can't tell", however much of the rest
-lines up, and the reasoning is one click away wherever the verdict appears.
+That is invisible on a quiet machine and fatal on a busy one. The machine this was
+found on had 14,000 connections held open by Docker Desktop; Studio's own service
+could not be reached, and sometimes could not even bind — the app simply did not
+start, for a reason that had nothing to do with Studio.
 
-The separation also fixes the opposite mistake: a project re-sliced in a different
-colour is still that project, and a job printing one plate of a four-plate project
-is part of it rather than a stranger.
+It speaks HTTP/1.1 now, so a client keeps one connection. Binding retries and falls
+back to fixed ports below the dynamic range, and if even that fails the message
+says what is actually wrong.
 
-## The watcher would offer a file that stopped part-way
+## "This printer does not report which filaments are loaded" could be untrue
 
-Snapmaker Orca writes its time estimate and filament total inside the first few
-hundred kilobytes of a job, and the old completion check accepted either as proof
-the file had finished. A job cut off early contained both. It now needs the ending
-its own dialect actually has.
+A dropped connection and a printer that genuinely reports nothing came back the
+same way, so a momentary network failure was reported as a fact about the user's
+machine. They are told apart now, printer reads retry before giving up, and the
+firmware page degrades to "Studio could not ask" rather than an error.
 
-The same check also slept two seconds per file inside a request the app repeats
-every five seconds, so a folder of twelve jobs blocked for twenty-four. It
-remembers sizes between polls instead, and never sleeps.
+## A re-slice could pass as the file that was checked
 
-## Nothing re-read the world between the check and the send
+The send fingerprint identified a job by size and modification time. A re-slice
+that lands on the same byte count, written inside the same timestamp tick, matched
+both — which is exactly the case the fingerprint exists for. It now fingerprints
+the contents as well, at three bounded windows: the start, the middle and the end.
 
-You read the checks, walk to the printer, come back and press send. In between, a
-slot can empty, a spool change, a print start, or the job be re-sliced to the same
-filename — and nothing on screen looks any different.
+## Also in this release
 
-The check now records what it looked at. Sending re-reads the same things, and if
-any of it moved, nothing is uploaded: what changed is named, the fresh answer
-replaces the stale one, and the decision goes back to you.
-
-## "Upload failed" was four different situations
-
-A printer that refused the file, a connection that dropped, bytes accepted but
-never listed, and a file the printer has not finished reading each need something
-different done about them. They are told apart now — including a printer still
-describing the file this one replaced, which is how a job starts with the previous
-file's estimate.
-
-## Filament figures now say where they came from
-
-"87 g needed, 43 g left, it will run out" only stops a send when it rests on a
-figure something is actually keeping track of, short by more than that tracking can
-drift. A number of unstated origin warns instead. Negative weights, weights larger
-than the spool holds, and weights that are not weights are refused rather than
-used, and a tracker that contradicts the printer about what is loaded is shown as a
-disagreement rather than silently resolved.
-
-## A model name could reach a support bundle
-
-The bundle drops your project's filename on purpose — it goes to a stranger. The
-sliced-job half of it was carrying the name through anyway. Fixed, and now guarded
-by a test that tries to get a model name out of every route into the bundle.
-
-## A badge told people they had firmware they do not have
-
-"Extended firmware" appeared whenever a printer reported fifteen or more macros —
-which a community build adds, and so does an owner who writes their own. Detection
-is positive only now: the firmware has to answer for itself, distinguishably from
-what the printer serves for a path nobody claims. Not finding it never means your
-printer is stock, because Studio cannot know that.
-
-## A prepared PrusaSlicer copy prints the way the project did
-
-Layer height, first layer height, infill, walls, brim, support on or off and the
-filaments now carry into the U1 copy, each recorded with where it came from. A
-project sliced at 0.15 mm with four walls used to arrive as the starter profile's
-0.2 mm and two, which is a different print of the same shape.
-
-Temperatures deliberately do not carry: a PrusaSlicer profile's 245 °C is about a
-Prusa hotend, and copying it into a U1 project would look like fidelity while
-handing one machine another machine's numbers.
+Every item in the send confirmation can show what it was read from, one level down
+— the beginner never opens it, and an expert who doubts a verdict should not have
+to ask. The card says when the printer was last actually read. And the guard that
+checks public counts now reads the README's combined row, which said
+`822 · 284 · clean · clean` through an entire release because the old check only
+recognised a count next to the word "passed".
 
 ## What has not changed
 
@@ -107,15 +73,14 @@ account, no telemetry.
 
 ## Verified against this installer
 
-- Installed-build acceptance: **30/30**, including upgrading in place from v0.6.0
+- Installed-build acceptance: **30/30**, including upgrading in place from v0.6.1
 - Real Snapmaker U1, read-only: **26/26**
 - `u1convert selfcheck`: **25/25** over 15 documented routes
-- `pytest`: **967 passed, 3 skipped** · `npm run test`: **290 passed**
-- Bounds measured on files built for the purpose: a 525 MB job reads in 0.20 s
-  holding 40 MB; its timeline scans in 3.0 s holding 9 MB
+- `pytest`: **1004 passed, 3 skipped** · `npm run test`: **293 passed**
 
 Verification detail: [docs/TRUST_STATUS.md](TRUST_STATUS.md). Installer name, size
-and hash: [docs/RELEASE_METADATA.md](RELEASE_METADATA.md).
+and hash: [docs/RELEASE_METADATA.md](RELEASE_METADATA.md). Each release's evidence
+is kept separately under `docs/internal/evidence/`.
 
 ## Still true, and stated plainly
 

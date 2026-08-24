@@ -146,7 +146,15 @@ async function phasePostSlice(page) {
   if (await field.count()) {
     await field.fill(gcodePath);
     await page.getByRole("button", { name: /Check this job/i }).first().click();
-    await page.waitForTimeout(3000);
+    // Four cards each read the file and ask the printer. A fixed three seconds
+    // asserted against spinners when the printer was slow to answer, which reads
+    // as "the app does not render this" and is not what happened.
+    for (let waited = 0; waited < 40000; waited += 1000) {
+      const text = await page.locator("body").innerText();
+      const settling = /checking whether this job is ready|reading the sliced file|checking what is loaded/i;
+      if (!settling.test(text)) break;
+      await page.waitForTimeout(1000);
+    }
   }
   body = await page.locator("body").innerText();
   const has = (s) => body.includes(s);
@@ -264,6 +272,33 @@ async function phaseProvenance(page) {
     record("Object names stay out of the explanation",
       /fingerprints of the object names/i.test(body), "");
   }
+
+  // The expert half: every simplified verdict can show what it was read from,
+  // and the page says how old the printer reading is.
+  const wheres = page.getByText(/Where this came from/i);
+  const count = await wheres.count();
+  record("Every verdict can show what it was read from", count > 0, `${count} item(s)`);
+  if (count > 0) {
+    for (let index = 0; index < Math.min(count, 4); index += 1) {
+      await wheres.nth(index).click();
+    }
+    await page.waitForTimeout(500);
+    const expanded = await page.locator("body").innerText();
+    record("The disclosure names a source, not a placeholder",
+      /g-code|printer|project and job|firmware|traced on a real u1/i.test(expanded), "");
+    // The sliced job in this harness is named for the sample project; a source
+    // line must never carry a file or model name.
+    const model = gcodePath.split(/[\\/]/).pop().replace(/\.gcode$/i, "");
+    const sources = expanded.split(/Where this came from/i).slice(1)
+      .map((chunk) => chunk.split(/\r?\n/).slice(0, 3).join(" ")).join(" ");
+    record("Expert evidence carries no file or model name",
+      !sources.toLowerCase().includes(model.toLowerCase()),
+      sources.slice(0, 80));
+  }
+  record("The age of the printer reading is stated, or there is no reading",
+    /read from the printer|no printer to check against|cannot reach your printer|connect your u1/i
+      .test(body), "");
+
   await shot(page, "07-provenance");
 }
 

@@ -93,3 +93,52 @@ def test_the_capability_report_never_claims_firmware_without_a_probe(value):
                                   1, None, extended_probe=value)
     assert out["extended_firmware"] is False
     assert out["many_custom_macros"] is True
+
+
+# --- not being able to ask is not an answer ------------------------------------
+
+def test_a_dropped_connection_is_not_the_printer_saying_it_has_no_filament(monkeypatch):
+    """Both used to come back as None, so a socket that failed for a moment was
+    reported to the user as "this printer does not report which filaments are
+    loaded" — a statement about their machine, made on no evidence."""
+    def refuse(host, port, path, timeout):
+        raise OSError("[WinError 10048] no source port available")
+
+    monkeypatch.setattr(moonraker, "_get", refuse)
+    with pytest.raises(moonraker.PrinterUnavailable):
+        moonraker.loaded_filaments("printer.local")
+
+
+def test_a_printer_without_the_object_still_answers_none(monkeypatch):
+    monkeypatch.setattr(moonraker, "_get",
+                        lambda *a, **k: {"result": {"status": {}}})
+    assert moonraker.loaded_filaments("printer.local") is None
+
+
+def test_the_material_provider_says_which_of_the_two_happened(monkeypatch):
+    from snapstudio_core import material_providers as providers
+
+    def refuse(host, port=7125, timeout=3.0):
+        raise moonraker.PrinterUnavailable("Studio could not read what is loaded: OSError")
+
+    monkeypatch.setattr(moonraker, "loaded_filaments", refuse)
+    state = providers.stock_u1("printer.local")
+    assert state["available"] is False
+    assert "could not reach" in state["error"]
+
+    monkeypatch.setattr(moonraker, "loaded_filaments", lambda *a, **k: None)
+    state = providers.stock_u1("printer.local")
+    assert "does not report" in state["error"]
+
+
+def test_the_firmware_route_degrades_instead_of_erroring(monkeypatch):
+    from snapstudio_api import service
+
+    def refuse(host, port=7125, timeout=3.0):
+        raise OSError("no route to host")
+
+    monkeypatch.setattr(moonraker, "capabilities", refuse)
+    out = service.printer_firmware("printer.local")
+    assert out["available"] is False
+    assert "could not ask" in out["summary"]
+    assert out["extended_firmware"] is False

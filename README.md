@@ -17,7 +17,7 @@ changed. Snapmaker Orca still does the slicing.**
 Free, open source, and entirely on your computer. No account, no cloud, nothing
 uploaded. Your original file is never modified.
 
-### [▶ Watch it work — 66 seconds](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4) · [⬇ Download for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.1) · [What it is, in 5 minutes](docs/innovation-fund/JUDGE_OVERVIEW.md)
+### [▶ Watch it work — 66 seconds](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4) · [⬇ Download for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.2) · [What it is, in 5 minutes](docs/innovation-fund/JUDGE_OVERVIEW.md)
 
 [![Watch the Snapmaker Studio demo](docs/media/demo-poster.jpg)](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4)
 
@@ -64,23 +64,23 @@ recording, so it also shows what Studio says when it cannot reach one:
 
 ## Download
 
-**[⬇ Download Snapmaker Studio v0.6.1 for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.1)**
+**[⬇ Download Snapmaker Studio v0.6.2 for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.2)**
 — one click, no Python, runs offline. Windows 10/11 x64.
 
-**v0.6.1 is the current stable release** — not a prerelease, so this is also what
+**v0.6.2 is the current stable release** — not a prerelease, so this is also what
 GitHub's [latest release](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/latest)
 points at. Every build ever published is on the
 [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
 Verify it before you run it:
 
-- Release: [v0.6.1](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.1)
-- Installer: `Snapmaker.Studio_0.6.1_x64-setup.exe`
-- Size: 16,927,507 bytes
-- SHA256: `b062ac52e6e935e79267cbd00aee859c3eb39b768f14a6be3856f944472bdb7b`
+- Release: [v0.6.2](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.2)
+- Installer: `Snapmaker.Studio_0.6.2_x64-setup.exe`
+- Size: 16,923,818 bytes
+- SHA256: `687eabdddff714a614c94f46aa6a4a6a95d0e8a444fbc194c085d8ed9ee740de`
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.6.1_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.6.2_x64-setup.exe
 ```
 
 The installer is not code-signed yet, so Windows SmartScreen will show "Unknown
@@ -112,11 +112,11 @@ sliced job back**.
 
 | The problem, named exactly | The fix, in a new copy — and where Studio says it can't tell |
 |---|---|
-| ![One object hangs 45 mm past the right edge](docs/screenshots/v0.6.1/problem.jpg) | ![The prepared copy, with what survived and what changed](docs/screenshots/v0.6.1/prepared.jpg) |
+| ![One object hangs 45 mm past the right edge](docs/screenshots/v0.6.2/problem.jpg) | ![The prepared copy, with what survived and what changed](docs/screenshots/v0.6.2/prepared.jpg) |
 | **The sliced job, picked up on its own** | **Ready to send? Blockers, warnings and unknowns kept apart** |
-| ![Studio recognises the job Orca just exported](docs/screenshots/v0.6.1/picked-up.jpg) | ![The send verdict, with every unknown named](docs/screenshots/v0.6.1/ready-to-send.jpg) |
+| ![Studio recognises the job Orca just exported](docs/screenshots/v0.6.2/picked-up.jpg) | ![The send verdict, with every unknown named](docs/screenshots/v0.6.2/ready-to-send.jpg) |
 
-From the v0.6.1 build, on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission package: [docs/innovation-fund/FINAL_SUBMISSION.md](docs/innovation-fund/FINAL_SUBMISSION.md).
+From the v0.6.2 build, on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission package: [docs/innovation-fund/FINAL_SUBMISSION.md](docs/innovation-fund/FINAL_SUBMISSION.md).
 
 ## Why this isn't a slicer, a dashboard, or a converter
 
@@ -149,7 +149,7 @@ its licence in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Evidence
 
-Everything below was verified against the published v0.6.1 installer, not
+Everything below was verified against the published v0.6.2 installer, not
 against a development build. Commands, counts and full reports:
 [docs/TRUST_STATUS.md](docs/TRUST_STATUS.md).
 
@@ -159,7 +159,7 @@ against a development build. Commands, counts and full reports:
 | Read-only verification against a real Snapmaker U1 | **26/26** |
 | Regression tests against genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **36 tests** |
 | End-to-end pipeline self-check (`u1convert selfcheck`) | **25/25** |
-| Backend / desktop / TypeScript / Rust | 967 · 290 · clean · clean |
+| Backend / desktop / TypeScript / Rust | 1004 · 293 · clean · clean |
 
 Reproduce any of it yourself:
 [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md).
@@ -170,51 +170,34 @@ files produced structurally valid U1 profile copies ([PROOF.md](PROOF.md)); that
 number measures structure, not print success, and the checks above are the
 stronger evidence.
 
-## What's new in v0.6.1 — the answers, attacked
+## What's new in v0.6.2 — evidence that stays true
 
-A release spent trying to make v0.6.0 lie, and fixing what worked.
+**A release's evidence no longer changes when a later one ships.** Studio kept one
+canonical evidence file and rewrote it on every release, so publishing silently
+restated the numbers *every* document quoted — including the sections describing
+releases that had already shipped. This page's verification table, and
+TRUST_STATUS's history, said v0.6.0 had been verified with 967 tests and 26
+hardware checks. It shipped with 822 and 20. Evidence is now one immutable
+snapshot per release, the historical sections are restored from the releases that
+wrote them, and a test re-derives every published release's evidence from its own
+tag so this cannot happen again.
 
-**Studio could not read the object names in a real Snapmaker Orca job.** It looked
-only for the exclusion labels Orca writes when object exclusion is switched on, and
-it is off by default — so the strongest evidence that a job is the slice of your
-project was missing from the files it was written for. Three jobs pulled off a real
-U1 carry 90, 52 and 3,476 object labels between them in the other dialect, and not
-one of the kind Studio was looking for. Both are read now.
+**Studio could fail to start on a busy machine.** The loopback service spoke
+HTTP/1.0, closing its connection after every call, and a page makes a dozen calls.
+On a machine short of ports — one here had 14,000 held open by Docker Desktop —
+the service could not be reached, and sometimes could not even bind. It speaks
+HTTP/1.1 now, retries, and falls back to fixed ports.
 
-**A matching setup was being read as a matching project.** Same printer, same
-spools, same materials scored as "looks like your project" — which is true of every
-job sliced in a workshop. Studio now separates what identifies the *model* from
-what merely describes the *setup*, and with nothing identifying the model the
-answer is "cannot tell", however much of the rest lines up. It also says why, in a
-sentence, wherever the verdict is shown.
+**"Your printer does not report which filaments are loaded" could be untrue.** A
+dropped connection and a printer that genuinely says nothing both came back the
+same way, so a momentary network failure was reported as a statement about the
+user's machine. They are told apart now, printer reads retry, and the firmware
+route degrades to "Studio could not ask" instead of an error.
 
-**The folder watcher would offer a file that stopped part-way.** Orca writes its
-time estimate and filament total inside the first few hundred kilobytes, so a job
-cut off early contained everything the old completion check looked for. It now
-needs the ending its own dialect actually has.
-
-**Nothing re-read the world between the check and the send.** A slot can empty, a
-spool change, a print start, or the job be re-sliced to the same filename while you
-walk to the printer — and nothing on screen would look any different. The check now
-records what it looked at, and sending re-reads the same things and stops if any of
-it moved, naming what changed.
-
-**"Upload failed" was four different situations.** A printer that refused the file,
-a connection that dropped, bytes accepted but never listed, and a file the printer
-has not finished reading each need something different done about them.
-
-**A model name could reach a support bundle.** The bundle drops the project's
-filename on purpose; the sliced-job half was carrying it. Fixed, and now guarded.
-
-**A badge told people they had firmware they do not have.** "Extended firmware"
-appeared whenever a printer reported fifteen or more macros — which a community
-build adds, and so does an owner who writes their own. Detection is now positive
-only: the firmware has to answer for itself, and not finding it never means stock.
-
-**A PrusaSlicer project now prints the way it was set up.** Layer height, first
-layer, infill, walls, brim, support on or off, and the filaments carry into the
-prepared copy — measured against a real Prusa project first. Temperatures do not:
-they belong to a Prusa hotend, and copying them would look like fidelity.
+**A re-slice could pass as the file that was checked.** The send fingerprint
+identified a job by size and modification time; a re-slice that lands on the same
+byte count within the same timestamp tick matched both. It now fingerprints the
+contents at three bounded windows.
 
 ## Works with the open U1 ecosystem
 
@@ -397,7 +380,7 @@ validation is mandatory and never removed. Full detail in
 
 ## Roadmap
 
-**Shipped (stable, v0.6.1):** the whole loop — read a project, diagnose it,
+**Shipped (stable, v0.6.2):** the whole loop — read a project, diagnose it,
 compare it against the printer, prepare a copy, prove what survived, hand it to
 Snapmaker Orca, then read the sliced G-code back and check what the printer will
 actually execute against the printer as it is right now, with cost from the

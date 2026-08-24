@@ -141,9 +141,9 @@ builds real decompression bombs and asserts the reader refuses them.
 ## Run the tests
 
 ```bash
-cd backend  && pytest          # 967 passed, 3 skipped
+cd backend  && pytest          # 1004 passed, 3 skipped
 cd backend  && u1convert selfcheck   # 25/25 over production code paths
-cd desktop  && npm run test    # 290 passed
+cd desktop  && npm run test    # 293 passed
 cd desktop  && npm run build   # tsc + vite
 ```
 

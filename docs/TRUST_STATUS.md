@@ -5,7 +5,67 @@ Honest, current verification state for the current release. A release is only ma
 published installer, and — from beta.24 onward — read-only verification against a
 real Snapmaker U1 have all passed and are recorded here.
 
-## v0.6.1 — ACCEPTED
+## v0.6.2 — ACCEPTED
+
+**Evidence that stays true.** Everything below ran against *this installer* — the
+exact asset on the release page, verified by SHA256. Canonical values:
+[RELEASE_METADATA.md](RELEASE_METADATA.md). This release's own evidence is frozen
+in [internal/evidence/0.6.2.json](internal/evidence/0.6.2.json), and every earlier
+release's is frozen beside it; publishing this one changed none of them.
+
+### CI / software
+
+| Check | Command | Result |
+|---|---|---|
+| Backend tests | `pytest` | **PASS** — 1004 passed, 3 skipped |
+| Desktop tests | `npm run test` | **PASS** — 293 passed |
+| End-to-end pipeline | `u1convert selfcheck` | **PASS** — 25/25 over 15 documented routes |
+| TypeScript | `npx tsc --noEmit` | **PASS** — clean |
+| Production frontend build | `npm run build` | **PASS** |
+| Rust shell | `cargo check` | **PASS** — clean, green in CI |
+| Release-document consistency | `pytest tests/test_release_docs.py` | **PASS** |
+| Evidence integrity | `pytest tests/test_evidence_integrity.py` | **PASS** — current documents against the current snapshot, every historical section against that release's own snapshot, and every published release's snapshot re-derived from its tag |
+| Local-first invariant | `pytest tests/test_local_first.py` | **PASS** |
+
+### Installed application — 30/30, including the upgrade
+
+`pwsh -File tools/acceptance/run.ps1 -Installer <published installer> -UpgradeFrom <v0.6.1 installer>`
+Full report: [internal/acceptance-0.6.2.json](internal/acceptance-0.6.2.json).
+
+New in this release: the expert disclosure is exercised through the real UI — every
+verdict can show what it was read from, the source lines carry no file or model
+name, and the age of the printer reading is stated or its absence explained.
+
+**Upgrade path:** v0.6.1 is installed, run so it creates real state, then upgraded
+in place. The user's data survives and only one installation is registered.
+
+### Real Snapmaker U1 — read-only, 26/26
+
+`pwsh -File tools/hardware/verify.ps1 -PrinterHost <printer>`
+Full report: [internal/hardware-0.6.2.json](internal/hardware-0.6.2.json), with the
+printer's address replaced before anything reached disk.
+
+This run is also where two of the release's defects were found. Studio reported
+"this printer does not report which filaments are loaded" when the truth was a
+dropped connection, and `/printer/firmware` returned an error rather than an
+honest unknown. Both were caused by the machine having no ports to spare, which is
+a real condition a user's machine can be in, and both are fixed rather than
+worked around.
+
+### Known limitations — stated plainly
+
+- **Windows only.** See [internal/CROSS_PLATFORM_ASSESSMENT.md](internal/CROSS_PLATFORM_ASSESSMENT.md).
+- **The installer is not code-signed.** Verify the SHA256.
+- **Purge cannot be separated from printed filament** in Snapmaker Orca output.
+- **The fitted nozzle cannot be read** from stock firmware.
+- **Free storage is not reported** by stock firmware — traced, not assumed.
+- **Painted colour cannot be classified** without slicing.
+- **Provenance is evidence, not proof.** A job with no object names and no colour
+  data can only be `unknown`, and Studio says so rather than matching on the name.
+- **Remaining filament is only known when something tracks it.** A stock U1 cannot,
+  so sufficiency is unknown unless a provider such as Spoolman is configured.
+
+## v0.6.1 — ACCEPTED (superseded by v0.6.2)
 
 **The answers, attacked.** Everything below ran against *this installer* — the
 exact asset on the release page, verified by SHA256. Canonical values:

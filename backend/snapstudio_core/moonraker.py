@@ -63,6 +63,15 @@ def _url(host: str, port: int, path: str) -> str:
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 
 
+class PrinterUnavailable(Exception):
+    """Studio could not ask the printer, as distinct from the printer answering.
+
+    The difference matters everywhere it is reported: "your printer does not
+    support this" and "Studio could not reach your printer just now" send a person
+    to two different places, and only one of them is about their machine.
+    """
+
+
 def _get(host: str, port: int, path: str, timeout: float) -> dict:
     """Read-only HTTP GET against Moonraker. Raises on failure.
 
@@ -74,7 +83,8 @@ def _get(host: str, port: int, path: str, timeout: float) -> dict:
     the printer itself is not retried: that is an answer.
     """
     req = urllib.request.Request(_url(host, port, path), method="GET")  # explicit: never anything but GET
-    for attempt in range(2):
+    attempts = 3
+    for attempt in range(attempts):
         try:
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 raw = r.read(MAX_RESPONSE_BYTES + 1)
@@ -82,9 +92,9 @@ def _get(host: str, port: int, path: str, timeout: float) -> dict:
         except urllib.error.HTTPError:
             raise
         except OSError:
-            if attempt:
+            if attempt == attempts - 1:
                 raise
-            time.sleep(0.25)
+            time.sleep(0.25 * (attempt + 1))
     if len(raw) > MAX_RESPONSE_BYTES:
         raise ValueError("the printer sent more data than Studio will read")
     return json.loads(raw)
@@ -367,8 +377,13 @@ def loaded_filaments(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0):
     """
     try:
         status = _get(host, port, "/printer/objects/query?print_task_config", timeout)             .get("result", {}).get("status", {})
-    except Exception:
-        return None
+    except Exception as exc:
+        # Not being able to ask is not the printer saying it has nothing. Both
+        # came back as None, so a dropped connection was reported to the user as
+        # "this printer does not report which filaments are loaded" — a statement
+        # about their machine, made on no evidence.
+        raise PrinterUnavailable(
+            f"Studio could not read what is loaded: {type(exc).__name__}") from exc
     cfg = status.get("print_task_config")
     if not isinstance(cfg, dict) or not cfg:
         return None
