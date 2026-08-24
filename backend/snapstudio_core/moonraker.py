@@ -399,38 +399,65 @@ def loaded_filaments(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0):
     return out
 
 
-#: Paths a community firmware build answers on and stock firmware does not. Both
-#: belong to the Extended Firmware project's own web interface, which is a thing
-#: it deliberately serves — not an internal file, and not a guess from behaviour.
+#: Paths a community firmware build serves for itself, with a phrase its own page
+#: contains. Both are needed: the U1's web server answers *every* path with the
+#: same single-page app, so a 200 on any path proves nothing at all. Verified on a
+#: real U1 — `/firmware-config/`, `/metrics` and `/definitely-not-real-9f3b/` all
+#: return the identical 2,863-byte page.
 EXTENDED_MARKERS = (
-    (80, "/firmware-config/", "the Extended Firmware configuration page answered"),
+    (80, "/firmware-config/", "firmware-config",
+     "the Extended Firmware configuration page answered for itself"),
 )
+
+#: A path nothing serves on purpose. What comes back for it is what this server
+#: says to everything, and anything identical to it is not a marker.
+CONTROL_PATH = "/snapstudio-control-9f3b/"
 
 
 def extended_firmware(host: str, timeout: float = 2.0) -> dict:
     """Is a community firmware build answering on this printer?
 
-    Positive detection only, and one request. A firmware that serves its own page
-    is telling you it is there; a printer that does not answer on that path has
-    told you nothing at all — it may be stock, it may be a different build, it may
-    have a reverse proxy in front of it. So this returns detected or unknown, and
-    there is deliberately no third value that means "stock".
+    Positive detection only, and detection means the firmware answered *for
+    itself*: its own page, distinguishable from what the printer serves for a
+    path nobody claims. Without that control request this would report every U1
+    as running community firmware, because the U1's web server hands the same
+    single-page app to every URL — which is how the first version of this
+    function reported a stock machine as extended.
+
+    A printer that does not answer distinctively has told Studio nothing: it may
+    be stock, a different build, or behind a proxy. So this returns detected or
+    unknown, and there is deliberately no value meaning "this printer is stock".
     """
     if not host:
         return {"detected": False, "known": False, "evidence": "no printer address"}
-    for port, path, evidence in EXTENDED_MARKERS:
-        url = _url(host, port, path)
-        request = urllib.request.Request(url, method="GET")
+
+    def fetch(port: int, path: str) -> bytes | None:
         try:
+            request = urllib.request.Request(_url(host, port, path), method="GET")
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 if 200 <= response.status < 300:
-                    return {"detected": True, "known": True, "evidence": evidence,
-                            "source": path}
-        except Exception:  # noqa: BLE001 — anything but a 2xx is "not detected"
+                    return response.read(64 * 1024)
+        except Exception:  # noqa: BLE001 — no answer is no evidence
+            return None
+        return None
+
+    for port, path, phrase, evidence in EXTENDED_MARKERS:
+        page = fetch(port, path)
+        if not page:
             continue
+        control = fetch(port, CONTROL_PATH)
+        if control is not None and control == page:
+            # The server answers everything with the same page, so this one says
+            # nothing about what is installed.
+            continue
+        if phrase.encode("utf-8") not in page.lower():
+            continue
+        return {"detected": True, "known": True, "evidence": evidence, "source": path}
+
     return {"detected": False, "known": False,
-            "evidence": ("no community firmware answered on the paths Studio knows about — "
-                         "which is not the same as this printer running stock firmware")}
+            "evidence": ("no community firmware answered for itself on the paths Studio "
+                         "knows about — which is not the same as this printer running "
+                         "stock firmware")}
 
 
 def capabilities(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:

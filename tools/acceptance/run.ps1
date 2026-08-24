@@ -249,6 +249,15 @@ try {
     $code = Invoke-Phase "cockpit" $sampleWork $gcodeWork
     Add-Check "One surface shows the whole job" ($code -eq 0)
 
+    # Whether a job belongs to the open project decides whether every other
+    # answer on the page is about the right file.
+    $code = Invoke-Phase "provenance" $sampleWork $gcodeWork
+    Add-Check "Studio explains how sure it is about a job" ($code -eq 0)
+
+    # The states a first-time owner hits, driven through the shipped UI.
+    $code = Invoke-Phase "novice" $sampleWork $gcodeWork
+    Add-Check "First-evening mistakes are answered, not ignored" ($code -eq 0)
+
     $gcodeHashAfter = (Get-FileHash $gcodeWork -Algorithm SHA256).Hash
     Add-Check "Sliced job is byte-identical afterwards" ($gcodeHashBefore -eq $gcodeHashAfter)
 

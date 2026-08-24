@@ -1,114 +1,126 @@
-# Snapmaker Studio v0.6.0 — the workflow becomes one thing
+# Snapmaker Studio v0.6.1 — the answers, attacked
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-v0.5.0 could read a sliced job, plan the materials and decide whether to send it.
-It still made you carry the file back from Snapmaker Orca by hand, and it could
-not tell whether that file was the slice of the project you had just checked.
+v0.6.0 closed the workflow: the sliced job comes back on its own, Studio works out
+whether it belongs to your project, and the send confirmation says what will
+actually happen. This release was spent trying to make all of that lie.
 
-Both are fixed, and they are the same fix: Studio now follows one job through its
-whole life instead of answering questions about files.
+Everything below was a real defect in v0.6.0. If you are running it, this is worth
+the download.
 
-## The sliced job comes back on its own
+## Studio could not read the object names in a real Orca job
 
-Tell Studio once where Snapmaker Orca saves its exports. While you are on the page
-that cares, it notices finished jobs appearing there and picks up the one that
-belongs to your project.
+The strongest evidence that a G-code file is the slice of your project is that it
+prints the same objects. Studio looked for that in the labels Snapmaker Orca writes
+when object exclusion is switched on — and it is off by default.
 
-It will not offer a half-written file: a candidate has to have stopped growing
-*and* end the way a finished job ends. One folder, chosen by you. No background
-service, no watching your disk, nothing uploaded anywhere.
+Three jobs pulled off a real U1 carry 90, 52 and 3,476 object labels between them,
+in the *other* dialect, and not one of the kind Studio was looking for. So the
+evidence was there, in the files it was written for, and Studio was not reading it.
+It reads both dialects now, and PrusaSlicer's as well.
 
-## "Is this actually the slice of my project?"
+## A matching setup was being read as a matching project
 
-Everything after slicing depends on that answer, and nothing in a G-code file
-points back at the 3MF it came from. So Studio weighs what evidence exists — the
-set of object names, the filament colours and materials in each slot, how many
-slots, the target machine, the object count — and tells you how sure it is:
+Same printer, same spools, same materials came out as "looks like your project" —
+which is true of every job sliced in a workshop. Any file in the folder could be
+called the slice of any project.
 
-* **This is your project, sliced** — evidence hard to produce by coincidence
-* **Looks like your project** — several signals agree, none decisive
-* **Studio can't tell** — the evidence points both ways
-* **A different project** — something that cannot be true of the same file
+Evidence is now separated into what identifies the *model* — which objects the job
+prints — and what merely describes the *setup* it was sliced with. With nothing
+identifying the model, the answer is "Studio can't tell", however much of the rest
+lines up, and the reasoning is one click away wherever the verdict appears.
 
-**A matching filename is never proof.** Two files can share a name and nothing
-else, and Studio treats that as the weak hint it is. Object names are compared as
-a fingerprint, so your model names never leave the file. If two candidates are
-equally good, you get a question rather than a guess.
+The separation also fixes the opposite mistake: a project re-sliced in a different
+colour is still that project, and a job printing one plate of a four-plate project
+is part of it rather than a stranger.
 
-## What is loaded can come from more than the printer
+## The watcher would offer a file that stopped part-way
 
-The printer knows which spool is in a slot. It does not know how much is left on
-it — no printer does. Studio now accepts optional read-only sources for that, over
-your local network, starting with **Spoolman**.
+Snapmaker Orca writes its time estimate and filament total inside the first few
+hundred kilobytes of a job, and the old completion check accepted either as proof
+the file had finished. A job cut off early contained both. It now needs the ending
+its own dialect actually has.
 
-The printer stays the authority on what is in a slot; another source may only add
-what the machine cannot see. Nothing is required, nothing is written back to
-anyone else's records, and when two sources disagree Studio says so rather than
-picking one.
+The same check also slept two seconds per file inside a request the app repeats
+every five seconds, so a folder of twelve jobs blocked for twenty-four. It
+remembers sizes between polls instead, and never sleeps.
 
-## "Do I have enough filament?"
+## Nothing re-read the world between the check and the send
 
-With a source that tracks remaining weight:
+You read the checks, walk to the printer, come back and press send. In between, a
+slot can empty, a spool change, a print start, or the job be re-sliced to the same
+filename — and nothing on screen looks any different.
 
-> Slot 2 needs 87 g. The tracked spool has 43 g left — it will run out part-way
-> through.
+The check now records what it looked at. Sending re-reads the same things, and if
+any of it moved, nothing is uploaded: what changed is named, the fresh answer
+replaces the stale one, and the decision goes back to you.
 
-That is a blocker on the send check, because running out mid-print is not a
-warning. Where a spool's weight is not tracked — which is every stock U1 — the
-answer is *unknown*, and Studio says so instead of staying quiet.
+## "Upload failed" was four different situations
 
-## One surface for the whole job
+A printer that refused the file, a connection that dropped, bytes accepted but
+never listed, and a file the printer has not finished reading each need something
+different done about them. They are told apart now — including a printer still
+describing the file this one replaced, which is how a job starts with the previous
+file's estimate.
 
-**This print** shows the stages in the order they happen: before slicing,
-prepared, after slicing. It is the same work as before, without needing to know
-which page to open next. Every individual page still exists and still works — in
-Simple mode the cockpit takes the place of "Check my model", which moves to More
-tools.
+## Filament figures now say where they came from
 
-## Fixed: uploads that were not finished
+"87 g needed, 43 g left, it will run out" only stops a send when it rests on a
+figure something is actually keeping track of, short by more than that tracking can
+drift. A number of unstated origin warns instead. Negative weights, weights larger
+than the spool holds, and weights that are not weights are refused rather than
+used, and a tracker that contradicts the printer about what is loaded is shown as a
+disagreement rather than silently resolved.
 
-Moonraker accepts an upload and parses its metadata afterwards, so Studio used to
-report success while the printer could not yet describe the file — the failure
-the U1 Toolkit documented. Uploads are now confirmed against the printer's own
-metadata, with one polite rescan request if it has not appeared, and a file of the
-same name but a different size is caught. "Uploaded" now means the printer has it
-*and* has read it.
+## A model name could reach a support bundle
 
-Also fixed: handing Studio a `.3mf` where a `.gcode` was expected used to produce
-a report that looked empty for no stated reason. It now names the mistake.
+The bundle drops your project's filename on purpose — it goes to a stranger. The
+sliced-job half of it was carrying the name through anyway. Fixed, and now guarded
+by a test that tries to get a model name out of every route into the bundle.
 
-## Checked, and still honestly unknown
+## A badge told people they had firmware they do not have
 
-Free space on the printer. Traced properly this time rather than assumed:
-`/machine/system_info` reports `total_bytes: 0`, `/server/files/roots` reports no
-sizes, and nothing else on stock firmware exposes disk usage. Studio says it
-cannot tell you whether a job will fit, and now says exactly what it looked at.
+"Extended firmware" appeared whenever a printer reported fifteen or more macros —
+which a community build adds, and so does an owner who writes their own. Detection
+is positive only now: the firmware has to answer for itself, distinguishably from
+what the printer serves for a path nobody claims. Not finding it never means your
+printer is stock, because Studio cannot know that.
 
-## Unchanged
+## A prepared PrusaSlicer copy prints the way the project did
 
-Local-first: no cloud, no account, no telemetry, nothing uploaded. **Studio does
-not slice** — Snapmaker Orca does. Your originals are never modified. Studio never
-starts a print on its own, and every check is advisory rather than a promise.
+Layer height, first layer height, infill, walls, brim, support on or off and the
+filaments now carry into the U1 copy, each recorded with where it came from. A
+project sliced at 0.15 mm with four walls used to arrive as the starter profile's
+0.2 mm and two, which is a different print of the same shape.
 
-## Upgrading
+Temperatures deliberately do not carry: a PrusaSlicer profile's 245 °C is about a
+Prusa hotend, and copying it into a U1 project would look like fidelity while
+handing one machine another machine's numbers.
 
-Install over the top. Settings and library are kept, and the upgrade path is part
-of the release checks.
+## What has not changed
 
-## Known limitations
+Studio still does not slice — Snapmaker Orca does. It still never starts a print,
+never modifies your original file, and never sends anything anywhere: no cloud, no
+account, no telemetry.
 
-- Windows only.
-- The installer is not code-signed; verify the SHA256.
-- Purge cannot be separated from printed filament in Snapmaker Orca output.
-- The fitted nozzle cannot be read from stock firmware.
-- Free storage is not reported by stock firmware.
-- Painted colour cannot be classified without slicing.
-- PrusaSlicer projects are read in full but not yet fully carried into a U1 copy;
-  what cannot be carried is named in the fidelity report.
+## Verified against this installer
 
-## Install
+- Installed-build acceptance: **30/30**, including upgrading in place from v0.6.0
+- Real Snapmaker U1, read-only: **26/26**
+- `u1convert selfcheck`: **25/25** over 15 documented routes
+- `pytest`: **967 passed, 3 skipped** · `npm run test`: **290 passed**
+- Bounds measured on files built for the purpose: a 525 MB job reads in 0.20 s
+  holding 40 MB; its timeline scans in 3.0 s holding 9 MB
 
-Installer name, size and SHA256: [RELEASE_METADATA.md](RELEASE_METADATA.md).
-What was verified and how: [TRUST_STATUS.md](TRUST_STATUS.md).
+Verification detail: [docs/TRUST_STATUS.md](TRUST_STATUS.md). Installer name, size
+and hash: [docs/RELEASE_METADATA.md](RELEASE_METADATA.md).
+
+## Still true, and stated plainly
+
+Windows only. The installer is not code-signed — verify the SHA256. Purge cannot be
+separated from printed filament in Orca's output. The fitted nozzle cannot be read
+from the printer, and stays unknown. Free storage is not exposed by stock firmware.
+Painted colour cannot be classified without slicing. Remaining filament is known
+only where something tracks it.

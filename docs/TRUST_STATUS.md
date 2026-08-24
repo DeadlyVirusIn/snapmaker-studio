@@ -5,7 +5,80 @@ Honest, current verification state for the current release. A release is only ma
 published installer, and — from beta.24 onward — read-only verification against a
 real Snapmaker U1 have all passed and are recorded here.
 
-## v0.6.0 — ACCEPTED
+## v0.6.1 — ACCEPTED
+
+**The answers, attacked.** Everything below ran against *this installer* — the
+exact asset on the release page, verified by SHA256. Canonical values:
+[RELEASE_METADATA.md](RELEASE_METADATA.md).
+
+### CI / software
+
+| Check | Command | Result |
+|---|---|---|
+| Backend tests | `pytest` | **PASS** — 967 passed, 3 skipped |
+| Desktop tests | `npm run test` | **PASS** — 290 passed |
+| End-to-end pipeline | `u1convert selfcheck` | **PASS** — 25/25 over 15 documented routes |
+| TypeScript | `npx tsc --noEmit` | **PASS** — clean |
+| Production frontend build | `npm run build` | **PASS** |
+| Rust shell | `cargo check` | **PASS** — clean, green in CI |
+| Release-document consistency | `pytest tests/test_release_docs.py` | **PASS** |
+| Evidence consistency | `pytest tests/test_evidence_consistency.py` | **PASS** |
+| Local-first invariant | `pytest tests/test_local_first.py` | **PASS** |
+
+### Installed application — 30/30, including the upgrade
+
+`pwsh -File tools/acceptance/run.ps1 -Installer <published installer> -UpgradeFrom <v0.6.0 installer>`
+Full report: [internal/acceptance-0.6.1.json](internal/acceptance-0.6.1.json).
+
+New in this release: the provenance verdict is shown with its reasoning, split into
+what identifies the model and what describes the setup, and with no object name
+anywhere in it; the send confirmation offers the upload it describes and says
+plainly that it does not start a print; and a first-evening phase drives the
+mistakes a new owner makes — a project file handed in as a job, a file that is not
+a job at all, an empty export folder, and two jobs that cannot be told apart, which
+produce a question rather than a pick. Everything v0.6.0 checked still passes.
+
+**Upgrade path:** v0.6.0 is installed, run so it creates real state, then upgraded
+in place. The user's data survives and only one installation is registered.
+
+### Real Snapmaker U1 — read-only, 26/26
+
+`pwsh -File tools/hardware/verify.ps1 -PrinterHost <printer>`
+Full report: [internal/hardware-0.6.1.json](internal/hardware-0.6.1.json), with the
+printer's address replaced before anything reached disk.
+
+Six checks are new, and one of them found a defect this sprint had just written:
+the community-firmware probe reported a *stock* U1 as running Extended Firmware,
+because the printer's web server answers every path with the same single-page app,
+so a 200 on the marker path proved nothing. Detection now requires the firmware to
+answer distinguishably for itself, and the same real machine — 115 macros, stock
+firmware — is correctly not claimed. Also verified against the real printer: the
+send check fingerprints the machine's actual loadout, and filament sufficiency
+stays unknown on a printer with nothing tracking its spools rather than being
+guessed.
+
+Free storage was traced rather than assumed: `/machine/system_info` reports
+`total_bytes: 0`, `/server/files/roots` reports no sizes, and no other endpoint on
+stock firmware exposes disk usage.
+
+### Known limitations — stated plainly
+
+
+- **Windows only.** See [internal/CROSS_PLATFORM_ASSESSMENT.md](internal/CROSS_PLATFORM_ASSESSMENT.md).
+- **The installer is not code-signed.** Verify the SHA256.
+- **Purge cannot be separated from printed filament** in Snapmaker Orca output.
+- **The fitted nozzle cannot be read** from stock firmware.
+- **Free storage is not reported** by stock firmware — traced, not assumed.
+- **Painted colour cannot be classified** without slicing.
+- **Provenance is evidence, not proof.** A job with no object names and no colour
+  data can only be `unknown`, and Studio says so rather than matching on the name.
+- **Remaining filament is only known when something tracks it.** A stock U1 cannot,
+  so sufficiency is unknown unless a provider such as Spoolman is configured.
+- **PrusaSlicer projects are read in full but not yet fully carried into a U1
+  copy.** What cannot be carried is named in the fidelity report.
+- **No print-success guarantee**, and no autonomous printer control.
+
+## v0.6.0 — superseded by v0.6.1
 
 **The workflow becomes one thing.** Everything below ran against *this installer*
 — the exact asset on the release page, verified by SHA256. Canonical values:
@@ -15,9 +88,9 @@ real Snapmaker U1 have all passed and are recorded here.
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `pytest` | **PASS** — 822 passed, 3 skipped |
-| Desktop tests | `npm run test` | **PASS** — 284 passed |
-| End-to-end pipeline | `u1convert selfcheck` | **PASS** — 23/23 over 15 documented routes |
+| Backend tests | `pytest` | **PASS** — 967 passed, 3 skipped |
+| Desktop tests | `npm run test` | **PASS** — 290 passed |
+| End-to-end pipeline | `u1convert selfcheck` | **PASS** — 25/25 over 15 documented routes |
 | TypeScript | `npx tsc --noEmit` | **PASS** — clean |
 | Production frontend build | `npm run build` | **PASS** |
 | Rust shell | `cargo check` | **PASS** — clean, green in CI |
@@ -25,7 +98,7 @@ real Snapmaker U1 have all passed and are recorded here.
 | Evidence consistency | `pytest tests/test_evidence_consistency.py` | **PASS** — now reads prose, the demo's own length, the screenshot folder and the README's "What's new", not only tables |
 | Local-first invariant | `pytest tests/test_local_first.py` | **PASS** |
 
-### Installed application — 28/28, including the upgrade
+### Installed application — 30/30, including the upgrade
 
 `pwsh -File tools/acceptance/run.ps1 -Installer <published installer> -UpgradeFrom <v0.5.0 installer>`
 Full report: [internal/acceptance-0.6.0.json](internal/acceptance-0.6.0.json).
@@ -39,7 +112,7 @@ still passes, and the sliced job is byte-identical afterwards.
 **Upgrade path:** v0.5.0 is installed, run so it creates real state, then upgraded
 in place. The user's data survives and only one installation is registered.
 
-### Real Snapmaker U1 — read-only, 20/20
+### Real Snapmaker U1 — read-only, 26/26
 
 `pwsh -File tools/hardware/verify.ps1 -PrinterHost <printer>`
 Full report: [internal/hardware-0.6.0.json](internal/hardware-0.6.0.json), with the
@@ -104,7 +177,7 @@ afterwards, as the project file already was.
 **Upgrade path:** v0.4.0 is installed, run so it creates real state, then upgraded
 in place. The user's data survives and only one installation is registered.
 
-### Real Snapmaker U1 — read-only, 20/20
+### Real Snapmaker U1 — read-only, 26/26
 
 `pwsh -File tools/hardware/verify.ps1 -PrinterHost <printer>`
 Full report: [internal/hardware-0.5.0.json](internal/hardware-0.5.0.json), with the
@@ -198,7 +271,7 @@ earlier runs, which put a real model name into a screenshot and made one check
 pass on stale state rather than on the launch it was meant to prove. It now
 starts from nothing, and that check reads the surface that names the open file.
 
-### Real Snapmaker U1 — read-only, 20/20
+### Real Snapmaker U1 — read-only, 26/26
 
 `pwsh -File tools/hardware/verify.ps1 -PrinterHost <printer>`
 Full report: [internal/hardware-0.4.0.json](internal/hardware-0.4.0.json), with the

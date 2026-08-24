@@ -33,6 +33,11 @@ const READ_ONLY_ROUTES = [
   "/printer/firmware",
   "/preflight",
   "/post_slice",
+  // Reads the machine and the job together, and produces the fingerprint the
+  // send path compares against. It uploads nothing: the engine's upload lives
+  // behind a different route, which is not in this list and never will be.
+  "/send_check",
+  "/material_plan",
 ];
 
 // Anything that could change the machine's state. Asserted, not assumed.
@@ -225,6 +230,50 @@ record("Fitted nozzle stays unknown after slicing too",
 
 record("Nothing undetected is called unsupported after slicing",
   !JSON.stringify(postChecks).toLowerCase().includes("unsupported"));
+
+// --- what this sprint added, against the real machine --------------------------
+
+// The send fingerprint has to describe *this* printer, and notice when it stops
+// describing it. Nothing here changes the machine: the "after" state is the real
+// reading with one slot blanked in the copy Studio was given.
+const send = await callRoute(page, "/send_check",
+  { path: jobPath, host: printerHost, port: 7125 });
+const state = send.body?.state;
+record("The send check fingerprints what it looked at",
+  Boolean(state?.token) && Boolean(state?.hashes?.printer) && Boolean(state?.hashes?.materials),
+  state?.token ? `token ${String(state.token).slice(0, 8)}…` : "no fingerprint");
+
+const sendLoadout = send.body?.printer?.loaded_filaments ?? [];
+record("The fingerprint carries the machine's real loadout",
+  Array.isArray(sendLoadout) && sendLoadout.some((slot) => slot && slot.material),
+  `${sendLoadout.filter(Boolean).length} slot(s) with a spool`);
+
+// A real remaining weight needs something that tracks spools; a stock U1 has
+// nothing that does, and the honest answer is unknown rather than plenty.
+const plan = await callRoute(page, "/material_plan",
+  { path: jobPath, host: printerHost, port: 7125 });
+const slots = plan.body?.slots ?? [];
+const used = slots.filter((slot) => slot.needed);
+record("Filament sufficiency stays unknown on a stock printer",
+  used.length > 0 && used.every((slot) => slot.sufficiency?.verdict === "unknown"),
+  used.map((slot) => `${slot.label}: ${slot.sufficiency?.verdict}`).join(", "));
+record("Nothing on a stock printer is called short of filament",
+  !slots.some((slot) => slot.state === "not_enough"));
+
+// Extended firmware is detected only when a firmware answers for itself. This
+// machine runs stock, so the correct answer is "not detected" — and that must
+// not be reported as "this printer is stock", which Studio cannot know.
+const firmware = await callRoute(page, "/printer/firmware",
+  { host: printerHost, port: 7125 });
+const firmwareBody = firmware.body ?? {};
+evidence.firmware = anonymise(firmwareBody);
+record("Community firmware is not claimed on a stock machine",
+  firmwareBody.extended_firmware === false,
+  `${firmwareBody.macro_count ?? 0} macros, many=${firmwareBody.many_custom_macros ?? false}`);
+record("Not finding a firmware marker is never called stock",
+  typeof firmwareBody.extended_firmware_evidence === "string"
+  && /not the same as/i.test(firmwareBody.extended_firmware_evidence),
+  firmwareBody.extended_firmware_evidence ?? "");
 
 // --- report -------------------------------------------------------------------
 

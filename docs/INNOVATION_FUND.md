@@ -165,10 +165,10 @@ guessing in the direction that looks better.
   request against a JSON file; the rules that fire it are declarative, and a test
   proves every entry is reachable. See [EXTENDING.md](EXTENDING.md).
 - **One command anyone can run.** `u1convert selfcheck` runs the real pipeline end
-  to end and prints a 23-check pass/fail table, so the claims can be verified
+  to end and prints a 25-check pass/fail table, so the claims can be verified
   without reading the source. It runs in CI on every pull request.
 - **An acceptance harness that drives the installed application**, not a dev
-  server: 28 checks over the real window and the frozen engine, including that the
+  server: 30 checks over the real window and the frozen engine, including that the
   input file is byte-identical afterwards and that uninstalling leaves nothing
   behind.
 - **Regression tests against genuine slicer output** — real OrcaSlicer,
@@ -212,12 +212,12 @@ development build. Commands, counts and full reports:
 
 | What | Result |
 |---|---|
-| Installed-application acceptance, through the real UI | 28/28 |
-| Read-only verification against a real Snapmaker U1 | 20/20 |
+| Installed-application acceptance, through the real UI | 30/30 |
+| Read-only verification against a real Snapmaker U1 | 26/26 |
 | Regression tests against genuine Orca/Bambu/Prusa projects | 36 tests |
-| End-to-end pipeline self-check | 23/23 |
-| Backend tests | 822 passed, 3 skipped |
-| Desktop tests | 284 passed |
+| End-to-end pipeline self-check | 25/25 |
+| Backend tests | 967 passed, 3 skipped |
+| Desktop tests | 290 passed |
 | TypeScript, Rust, production build | clean |
 
 Demo: [`docs/media/snapmaker-studio-demo.mp4`](media/snapmaker-studio-demo.mp4) —

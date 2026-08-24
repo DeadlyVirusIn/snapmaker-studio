@@ -14,7 +14,7 @@
 // Usage: node checks.mjs <phase> <cdpUrl> <outDir> [samplePath]
 
 import { chromium } from "playwright-core";
-import { writeFileSync, mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const [, , phase, cdpUrl, outDir, samplePath, gcodePath] = process.argv;
@@ -184,6 +184,15 @@ async function phasePostSlice(page) {
   record("The round-trip watcher is offered", /pick up sliced jobs automatically/i.test(withPlan)
     || /watching for sliced jobs/i.test(withPlan), "");
 
+  // The send button lives with the checks it is based on, and says what it does —
+  // or says why it is not there, which is the case a novice hits first.
+  record("Sending is offered, or its absence is explained",
+    /send this job to the printer/i.test(withPlan)
+    || /connect your u1 in printer hub/i.test(withPlan)
+    || /cannot reach your printer/i.test(withPlan), "");
+  record("Sending never claims to start a print",
+    !/start (the|this) print automatically/i.test(withPlan), "");
+
   await shot(page, "05-after-slicing");
 }
 
@@ -205,6 +214,136 @@ async function phaseCockpit(page) {
     lower.includes("studio can’t tell") || lower.includes("studio can't tell"), "");
   record("Cockpit still says Orca slices", /snapmaker orca/i.test(body), "");
   await shot(page, "06-cockpit");
+}
+
+/**
+ * The half of provenance a person actually reads.
+ *
+ * The engine can be right about a job and still leave someone unable to act on
+ * it. This drives the real page and asserts that the verdict is stated, that the
+ * reasoning is reachable, and that a model's object names never appear in it.
+ */
+async function phaseProvenance(page) {
+  await page.evaluate(() => {
+    window.history.pushState({}, "", "/after-slicing");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
+  await page.waitForTimeout(1500);
+  const field = page.locator('input[aria-label="Path to a sliced G-code file"]').first();
+  if (await field.count()) {
+    await field.fill(gcodePath);
+    await page.getByRole("button", { name: /Check this job/i }).first().click();
+    await page.waitForTimeout(3000);
+  }
+
+  // The send card gathers a G-code read, a printer probe and a provenance
+  // comparison before it can say anything. Waiting a fixed three seconds caught
+  // it mid-thought and read the spinner as an empty answer.
+  const settled = /what studio compared|no project is open, so studio cannot tell/i;
+  for (let waited = 0; waited < 30000; waited += 1000) {
+    const text = await page.locator("body").innerText();
+    if (settled.test(text)) break;
+    await page.waitForTimeout(1000);
+  }
+
+  const details = page.getByText(/What Studio compared/i).first();
+  const offered = (await details.count()) > 0;
+  if (offered) {
+    await details.click();
+    await page.waitForTimeout(600);
+  }
+  const body = await page.locator("body").innerText();
+  // Opened without a project there is nothing to compare, and that must be said
+  // rather than left blank: silence on this page reads as "fine".
+  record("Why Studio reads a job as it does is reachable",
+    offered || /no project is open, so studio cannot tell/i.test(body),
+    offered ? "" : "compared against no open project");
+  if (offered) {
+    record("The two kinds of evidence are kept apart",
+      /identifies the model/i.test(body) && /describes the setup/i.test(body), "");
+    record("Object names stay out of the explanation",
+      /fingerprints of the object names/i.test(body), "");
+  }
+  await shot(page, "07-provenance");
+}
+
+/**
+ * The states a person hits on their first evening, driven through the shipped UI.
+ *
+ * Each one is a place where Studio could say nothing and leave someone stuck. The
+ * assertions are not about wording; they are that *something* is said, in the
+ * place the person is looking, naming what happened and what to do next.
+ *
+ * These are the cases reachable without a printer. The rest — an empty slot, the
+ * wrong material, not enough filament, a pending upload — are checked against a
+ * real U1 by tools/hardware/verify.ps1.
+ */
+async function phaseNovice(page) {
+  await page.evaluate(() => {
+    window.history.pushState({}, "", "/after-slicing");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
+  await page.waitForTimeout(1200);
+
+  const field = () => page.locator('input[aria-label="Path to a sliced G-code file"]').first();
+  const check = async (path) => {
+    // With a job already open the page shows that job; swapping files is what
+    // "Choose another file" is for, and it is the route a person takes too.
+    if (!(await field().count())) {
+      const another = page.getByRole("button", { name: /Choose another file/i }).first();
+      if (await another.count()) {
+        await another.click();
+        await page.waitForTimeout(800);
+      }
+    }
+    if (!(await field().count())) return "";
+    await field().fill(path);
+    await page.getByRole("button", { name: /Check this job/i }).first().click();
+    // Reading a file, probing the printer and comparing to the project all
+    // happen before there is anything to read. A fixed wait caught the spinner.
+    for (let waited = 0; waited < 20000; waited += 1000) {
+      const text = await page.locator("body").innerText();
+      if (!/checking whether this job is ready/i.test(text)) return text;
+      await page.waitForTimeout(1000);
+    }
+    return page.locator("body").innerText();
+  };
+
+  // The likeliest first mistake: handing Studio the project instead of the slice.
+  let body = await check(samplePath);
+  record("A project file handed in as a sliced job is named, not shrugged at",
+    /project file, not a sliced/i.test(body), body ? "" : "no path field on the page");
+
+  // Something that is not a job at all.
+  const notAJob = join(outDir, "notes.gcode");
+  writeFileSync(notAJob, "these are my notes about the print, not a program");
+  body = await check(notAJob);
+  record("A file that is not a sliced job says so",
+    /does not look like a sliced g-code file/i.test(body), "");
+
+  // A watched folder with nothing in it yet.
+  const emptyFolder = join(outDir, "watch-empty");
+  mkdirSync(emptyFolder, { recursive: true });
+  const empty = await callRoute(page, "/watch_folder", { folder: emptyFolder });
+  record("An empty export folder says what will happen next",
+    /nothing new in that folder yet/i.test(empty.body.summary || ""),
+    empty.body.summary || "");
+
+  // Two candidates that cannot be told apart must be a question, not a pick.
+  const twoFolder = join(outDir, "watch-two");
+  mkdirSync(twoFolder, { recursive: true });
+  const job = readFileSync(gcodePath);
+  writeFileSync(join(twoFolder, "job-a.gcode"), job);
+  writeFileSync(join(twoFolder, "job-b.gcode"), job);
+  await page.waitForTimeout(2500);            // let both settle
+  const two = await callRoute(page, "/watch_folder",
+    { folder: twoFolder, project_path: samplePath });
+  const seen = (two.body.candidates || []).length;
+  record("Two indistinguishable jobs are a question, not a guess",
+    seen === 2 && !two.body.best,
+    `${seen} candidate(s), best=${two.body.best ?? "none"}`);
+
+  await shot(page, "08-novice");
 }
 
 async function phaseUi(page) {
@@ -247,6 +386,8 @@ try {
   else if (phase === "ui") await phaseUi(page);
 else if (phase === "post-slice") await phasePostSlice(page);
 else if (phase === "cockpit") await phaseCockpit(page);
+else if (phase === "provenance") await phaseProvenance(page);
+else if (phase === "novice") await phaseNovice(page);
   else if (phase === "prepared") await phasePrepared(page);
   else if (phase === "launch-file") {
     // The app was started with the project as an argument; the shell reports it

@@ -17,11 +17,11 @@ Every *other* document must link here rather than restate these values.
 
 | Field | Value |
 |---|---|
-| Version | v0.6.0 |
-| Installer | `Snapmaker.Studio_0.6.0_x64-setup.exe` |
-| Size (bytes) | 16,900,712 |
-| SHA256 | `e85c18a8589574e107e019d99c504fa5f6ccf15f65fd35416b67e0ec3eff461f` |
-| Release URL | https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.0 |
+| Version | v0.6.1 |
+| Installer | `Snapmaker.Studio_0.6.1_x64-setup.exe` |
+| Size (bytes) | 16,927,507 |
+| SHA256 | `b062ac52e6e935e79267cbd00aee859c3eb39b768f14a6be3856f944472bdb7b` |
+| Release URL | https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.1 |
 | Trust status | ACCEPTED — see [docs/TRUST_STATUS.md](TRUST_STATUS.md) |
 
 A stable release, not a prerelease, so GitHub's "latest release" points at it.
@@ -29,6 +29,16 @@ A stable release, not a prerelease, so GitHub's "latest release" points at it.
 Note: verify with `Get-FileHash -Algorithm SHA256 <installer>`.
 
 ## Previous release
+
+| Field | Value |
+|---|---|
+| Version | v0.6.0 |
+| Installer | `Snapmaker.Studio_0.6.0_x64-setup.exe` |
+| Size (bytes) | 16,900,712 |
+| SHA256 | `e85c18a8589574e107e019d99c504fa5f6ccf15f65fd35416b67e0ec3eff461f` |
+| Release URL | https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.0 |
+
+## Superseded
 
 | Field | Value |
 |---|---|

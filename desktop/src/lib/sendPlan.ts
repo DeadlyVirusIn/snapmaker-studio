@@ -96,7 +96,12 @@ export function changeCount(plan: MaterialPlan | null): number {
 
 export function sendHeadline(check: SendCheck | null): string {
   if (!check) return "Checking whether this job is ready…";
-  return check.headline;
+  // The engine's reasons are written to be read mid-sentence ("Studio could not
+  // read it: that is a project file"). Here one of them *is* the sentence, and
+  // "that does not look like a sliced G-code file" under a heading reads like a
+  // fragment of something else.
+  const text = check.headline ?? "";
+  return text ? text[0].toUpperCase() + text.slice(1) : text;
 }
 
 export function sendTone(verdict: SendCheck["verdict"] | undefined): "ready" | "risk" | "warn" | "muted" {

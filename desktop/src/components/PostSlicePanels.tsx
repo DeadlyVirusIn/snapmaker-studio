@@ -100,7 +100,15 @@ export function SendReadyCard({ path, projectPath }: { path: string; projectPath
               </p>
             )}
 
-            {check.provenance && <ProvenanceNote result={check.provenance} />}
+            {check.provenance ? <ProvenanceNote result={check.provenance} /> : (
+              // Without a project open there is nothing to compare this job to,
+              // and silence reads as "fine". Someone who opened the wrong file
+              // gets no other prompt than this one.
+              <p className="rounded-md border border-border p-2.5 text-xs text-muted-foreground">
+                No project is open, so Studio cannot tell you whether this is the slice of
+                the model you checked. Open the project first and the two are compared.
+              </p>
+            )}
 
             <SendToPrinter path={path} check={check} projectPath={projectPath}
                            onRechecked={setCheck} />
@@ -141,6 +149,17 @@ function SendToPrinter({ path, check, projectPath, onRechecked }: {
     return (
       <p className="text-xs text-muted-foreground">
         Connect your U1 in Printer Hub to send this job to it.
+      </p>
+    );
+  }
+
+  // A printer Studio cannot reach cannot be sent to, and offering the button
+  // anyway teaches people that pressing it does nothing.
+  if (check.printer_reachable === false) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        Studio cannot reach your printer at the moment, so this job cannot be sent to it.
+        Check it is on and on the same network, then look again in Printer Hub.
       </p>
     );
   }

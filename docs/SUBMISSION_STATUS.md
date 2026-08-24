@@ -52,7 +52,7 @@ build. What was done about that is in
 
 ## Hardware verification
 
-**v0.4.0, 2026-08-23 — read-only, 20/20.** Printer discovered, 196 Klipper
+**v0.4.0, 2026-08-23 — read-only, 26/26.** Printer discovered, 196 Klipper
 objects enumerated, the printer's own 271 × 335 × 281 mm bed used, four loaded
 filaments read with colour and sub-type, the fitted nozzle correctly reported as
 unknown rather than unsupported, and the project's materials compared both against

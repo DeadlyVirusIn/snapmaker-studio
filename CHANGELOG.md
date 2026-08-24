@@ -6,6 +6,91 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-08-24
+
+**The answers, attacked.** A release spent trying to make v0.6.0 lie — mismatch
+files, lose provenance, misread materials, mishandle uploads — and fixing what
+worked. Every item below is a defect that was in the published v0.6.0.
+
+### Fixed
+
+- **Object names in real Snapmaker Orca jobs were not read at all.** Studio looked
+  only for `EXCLUDE_OBJECT_DEFINE`, which Orca writes only when object exclusion is
+  switched on, and it is off by default. Three jobs pulled off a real U1 carry 90,
+  52 and 3,476 `; printing object` labels between them and not one exclusion
+  define, so the strongest provenance evidence was missing from exactly the files
+  it was written for. Both dialects are read now, along with PrusaSlicer's `M486`,
+  and names are normalised so `Left_bracket.stl_id_0_copy_0` and `Left bracket` are
+  recognised as the same object.
+- **PrusaSlicer's object labels never parsed on Windows.** The pattern was anchored
+  with `$`, which in multiline mode matches before a newline and never before a
+  carriage return, so every CRLF file — which is most of them — read as having no
+  objects.
+- **A matching setup was read as a matching project.** Evidence is now identity
+  (which objects the job prints) or profile (the setup it was sliced with), and
+  profile evidence alone can never do better than "cannot tell". Identity decides
+  first, so a project re-sliced in a different material is still that project;
+  object names compare as a set of hashes, so one plate of a four-plate project is
+  part of it rather than a stranger.
+- **The folder watcher could offer a file that stopped part-way.** Completion was a
+  two-second pause plus any of five markers in the last 4 KB, and Snapmaker Orca
+  writes three of those markers inside the first few hundred kilobytes. It now
+  needs the terminator its own dialect ends with. That check also slept two seconds
+  per candidate inside a request the app repeats every five seconds; it remembers
+  sizes between polls instead and never sleeps.
+- **A provider could contradict the printer in silence.** A tracker reporting PETG
+  where the printer reports PLA now shows the disagreement against the slot it is
+  about, with the printer's answer standing. A one-based slot map — the way a
+  person counts the slots on a U1 — was read as zero-based.
+- **"It will run out" was built on whatever number came back.** A remaining weight
+  now carries where it came from: tracked, worked out from what was used, or
+  unknown. Only a tracked figure, short by more than the tracking can drift, blocks
+  a send. Negative weights, weights larger than the spool holds, and weights that
+  are not weights are refused.
+- **Nothing re-read the world between the check and the send.** The check records a
+  fingerprint of what it looked at; sending re-reads the same things and refuses,
+  naming what moved, rather than uploading against an answer that no longer holds.
+- **"Upload failed" was four different situations.** A refusal by the printer, a
+  dropped connection, bytes accepted but never listed, and a file the printer has
+  not finished reading are now told apart — including a printer still describing
+  the file this one replaced.
+- **A model name could reach a support bundle.** The bundle drops the project's
+  filename on purpose; the sliced-job section was carrying it through.
+- **A badge told people they had firmware they do not have.** "Extended firmware"
+  appeared whenever a printer reported fifteen or more macros. Detection is
+  positive only now — the firmware has to answer for itself, distinguishably from
+  what the printer serves for a path nobody claims — and not finding it never means
+  the printer is stock. Verified against a real U1 with 115 macros and stock
+  firmware, which the old rule would have badged.
+- **Studio reported "no nozzle" for every PrusaSlicer project.** A project does not
+  carry `nozzle_diameter`; it keeps the printer variant and the profile name, both
+  of which are now read and labelled with where they came from. PrusaSlicer's
+  record of where an object was imported from was also being counted as per-object
+  setting overrides.
+
+### Added
+
+- **A prepared Prusa copy now prints the way the project did.** Layer height, first
+  layer height, infill density, wall count, brim, support on or off, and the
+  filament type and colour per slot are carried into the U1 copy, each recorded
+  with where it came from. Temperatures are deliberately not carried: they belong
+  to a Prusa hotend and a Prusa filament profile.
+- **Sending from where the checks are.** The send confirmation now offers the
+  upload it describes, passing the fingerprint of what was checked.
+- **The reasoning behind a provenance verdict**, grouped into what identifies the
+  model and what describes the setup, wherever the verdict is shown — and never
+  the object names themselves.
+- **An interoperability proposal for U1Hub** ([docs/interop](docs/interop/U1HUB_INTEROP_PROPOSAL.md)):
+  a two-route read-only contract for spool state. U1Hub exposes no interface it
+  means to offer, so Studio reads none of its files and depends on nothing.
+
+### Verified
+
+pytest 967 passed / 3 skipped · vitest 290 · self-check 25/25 · installed-build
+acceptance 30/30 including the v0.6.0 upgrade · real Snapmaker U1 read-only 26/26.
+Bounds measured on files built for the purpose: a 525 MB job reads in 0.20 s
+holding 40 MB, and its timeline scans in 3.0 s holding 9 MB.
+
 ## [0.6.0] - 2026-08-23
 
 **The workflow becomes one thing.** v0.5.0 could read a sliced job, plan the

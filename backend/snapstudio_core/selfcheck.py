@@ -204,6 +204,9 @@ def run(sample: str | None = None) -> dict:
         runner.check("Ready to send", lambda: _send_check(workdir))
         runner.check("Sliced job recognised", lambda: _round_trip(workdir))
         runner.check("Material providers", lambda: _providers())
+        runner.check("Nothing moved since the check",
+                     lambda: _send_state(workdir))
+        runner.check("What happened to an upload", _upload_outcomes)
         runner.check("API schema", _api_schema)
 
         passed = sum(1 for c in runner.checks if c["status"] == PASS)
@@ -648,6 +651,64 @@ def _round_trip(workdir: Path) -> str:
         raise AssertionError("a job cut off before its end was offered as finished")
     return ("job recognised by its objects, a different project ruled out, "
             "unfinished and cut-short files refused")
+
+
+def _send_state(workdir: Path) -> str:
+    """The gap between reading the checks and pressing send."""
+    from . import gcode, send_state
+
+    job = workdir / "selfcheck_send_state.gcode"
+    job.write_text(_MULTI_GCODE, encoding="utf-8")
+    facts = gcode.read_facts(job)
+    loaded = [{"material": "PLA", "color": "#FF0000"}, {"material": "PETG", "color": "#00FF00"}]
+    printer = {"reachable": True, "print_state": "ready", "toolhead_count": 4,
+               "klipper_objects": ["extruder", "exclude_object"], "loaded_filaments": loaded}
+
+    def stat_of(path):
+        info = path.stat()
+        return {"size_bytes": info.st_size, "modified": round(info.st_mtime, 3)}
+
+    before = send_state.fingerprint(facts, printer, file_stat=stat_of(job))
+    unchanged = send_state.fingerprint(facts, printer, file_stat=stat_of(job))
+    if send_state.changes(before, unchanged):
+        raise AssertionError("an unchanged printer was reported as having changed")
+
+    emptied = dict(printer, loaded_filaments=[None, loaded[1]])
+    moved = send_state.changes(before, send_state.fingerprint(facts, emptied,
+                                                              file_stat=stat_of(job)))
+    if [item["part"] for item in moved] != ["materials"]:
+        raise AssertionError("a slot emptied between check and send went unnoticed")
+
+    # Re-slicing to the same filename is ordinary, and the file that comes back is
+    # a different job with the same name.
+    job.write_text(_MULTI_GCODE.replace("G1 X10 Y10 E1", "G1 X20 Y20 E2"), encoding="utf-8")
+    again = send_state.fingerprint(gcode.read_facts(job), printer, file_stat=stat_of(job))
+    if not any(item["part"] == "job" for item in send_state.changes(before, again)):
+        raise AssertionError("the job being written again went unnoticed")
+    return "an unchanged world passes; an emptied slot and a re-sliced file both stop the send"
+
+
+def _upload_outcomes() -> str:
+    """Four different situations that used to read as one failure."""
+    from snapstudio_api.service import _upload_state
+
+    expected = {
+        "verified": {"present": True, "metadata_ready": True, "size_matches": True,
+                     "fresh": True},
+        "pending_verification": {"present": True, "metadata_ready": False,
+                                 "size_matches": True, "fresh": True},
+        "not_listed": {"present": False, "metadata_ready": False},
+        "mismatch": {"present": True, "metadata_ready": True, "size_matches": False},
+    }
+    for state, confirmation in expected.items():
+        got = _upload_state(confirmation)
+        if got != state:
+            raise AssertionError(f"an upload that was {state} was reported as {got}")
+    stale = _upload_state({"present": True, "metadata_ready": True, "size_matches": True,
+                           "fresh": False})
+    if stale != "mismatch":
+        raise AssertionError("the printer still describing the previous file was called fine")
+    return "accepted, pending, not listed, mismatched and stale are told apart"
 
 
 def _providers() -> str:
