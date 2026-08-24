@@ -11,8 +11,8 @@ import { usePrinter } from "@/store/printer";
 import {
   MATERIALS_SUBTITLE, MATERIALS_TITLE, PLAN_SUBTITLE, PLAN_TITLE, SEND_TITLE,
   changeCount, itemLabel, itemsOfKind, materialsHeadline, orderedSlots, planHeadline,
-  planIsTruncated, planLines, sendHeadline, sendTone, shouldDiscourageSend, slotLabel, slotTone,
-  uploadTitle, uploadTone,
+  planIsTruncated, planLines, readAt, sendHeadline, sendTone, shouldDiscourageSend, slotLabel,
+  slotTone, uploadTitle, uploadTone,
 } from "@/lib/sendPlan";
 
 /**
@@ -57,6 +57,9 @@ export function SendReadyCard({ path, projectPath }: { path: string; projectPath
         </h3>
 
         <p className="text-sm text-muted-foreground">{sendHeadline(check)}</p>
+        {check?.printer?.observed_at ? (
+          <p className="text-[11px] text-muted-foreground">{readAt(check.printer.observed_at)}</p>
+        ) : null}
 
         {check?.available && (
           <>
@@ -86,6 +89,17 @@ export function SendReadyCard({ path, projectPath }: { path: string; projectPath
                           <span className="font-medium">Do this:</span>{" "}
                           <span className="text-muted-foreground">{item.action}</span>
                         </p>
+                      )}
+                      {item.source && (
+                        // The same answer, one level deeper: what this was read
+                        // from. A beginner never opens it; an expert who doubts
+                        // the verdict should not have to ask.
+                        <details className="mt-1">
+                          <summary className="cursor-pointer text-[11px] text-muted-foreground hover:text-foreground">
+                            Where this came from
+                          </summary>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">{item.source}</p>
+                        </details>
                       )}
                     </li>
                   ))}

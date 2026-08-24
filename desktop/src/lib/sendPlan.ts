@@ -177,3 +177,20 @@ export function uploadTone(state: UploadState | undefined): "ready" | "risk" | "
   }
   return "muted";
 }
+
+/**
+ * When the machine was last actually read.
+ *
+ * Every live fact has an age, and a five-minute-old spool state must not be able
+ * to pass for what is in the printer now. The send path re-reads before it
+ * uploads; this is so the person reading the page knows which moment they are
+ * looking at.
+ */
+export function readAt(observedAt: number | undefined, now = Date.now() / 1000): string {
+  if (!observedAt) return "";
+  const age = Math.max(0, Math.round(now - observedAt));
+  if (age < 5) return "Read from the printer just now.";
+  if (age < 90) return `Read from the printer ${age} seconds ago.`;
+  const minutes = Math.round(age / 60);
+  return `Read from the printer ${minutes} minute${minutes === 1 ? "" : "s"} ago.`;
+}

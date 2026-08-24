@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- Every item in the send confirmation can now show what it was read from, one
+  level down: the beginner never opens it, and an expert who doubts a verdict
+  should not have to ask.
+- The send card says when the printer was last actually read. The send path
+  already re-reads before uploading; this is so a page drawn four minutes ago
+  cannot be mistaken for what the machine is doing now.
+
 ## [0.6.1] - 2026-08-24
 
 **The answers, attacked.** A release spent trying to make v0.6.0 lie — mismatch
