@@ -181,6 +181,17 @@ def _version(tm: ThreeMF, dialect: str) -> tuple[int | None, str | None]:
     return None, None
 
 
+def _slot_bucket(slot: int) -> dict:
+    """One filament slot's tally across a whole project."""
+    return {"slot": slot, "triangles_touching": 0, "facet_equivalent": 0.0,
+            "leaf_count": 0, "area_mm2": 0.0,
+            # Where the slot is used at all — painting and assigned body both.
+            "z_min_mm": None, "z_max_mm": None,
+            # Where its *painting* is, which is a different and narrower fact.
+            "painted_z_min_mm": None, "painted_z_max_mm": None,
+            "objects": [], "from_painting": False, "from_assignment": False}
+
+
 class _Budget:
     """The painting work one file is allowed, shared by every object in it."""
 
@@ -243,6 +254,19 @@ def _vertices(body: bytes) -> tuple[array, bool]:
     return out, False
 
 
+def _extent(body: bytes) -> tuple[float | None, float | None]:
+    """The height a mesh spans, in its own coordinates.
+
+    Cheap on purpose: the corners are read once and only their Z is kept, so an
+    unpainted mesh costs a scan rather than a decode.
+    """
+    vertices, _ = _vertices(body)
+    if not vertices:
+        return None, None
+    heights = vertices[2::3]
+    return min(heights), max(heights)
+
+
 def _facets(body: bytes):
     """(v1, v2, v3, paint attribute) for every triangle in a mesh.
 
@@ -277,12 +301,18 @@ def _read_object(open_tag: bytes, body: bytes, attribute: str,
     components = [_attrs(m.group(1)) for m in _COMPONENT_RE.finditer(body)]
 
     if painted_marker not in body:
-        triangle_count = body.count(b"<triangle")
+        triangle_count = body.count(b"<triangle ")
         if triangle_count == 0 and not components:
             return None
+        # An unpainted mesh still has a height, and that height is what makes a
+        # painted colour provably separate from a colour assigned to a whole
+        # object. Without it every comparison against an assigned colour ends in
+        # "cannot be proven", which is honest and useless.
+        low, high = _extent(body)
         return {"object_id": object_id, "name": attrs.get("name"),
                 "triangle_count": triangle_count, "painted_triangle_count": 0,
-                "components": components, "painted": False}
+                "components": components, "painted": False,
+                "z_min": low, "z_max": high}
 
     vertices, vertices_truncated = _vertices(body)
     counts: dict[int, dict] = {}
@@ -358,10 +388,13 @@ def _read_object(open_tag: bytes, body: bytes, attribute: str,
                 entry["z_min"] = low if entry["z_min"] is None else min(entry["z_min"], low)
                 entry["z_max"] = high if entry["z_max"] is None else max(entry["z_max"], high)
 
+    heights = vertices[2::3]
     return {"object_id": object_id, "name": attrs.get("name"),
             "triangle_count": triangle_count,
             "painted_triangle_count": painted_count,
             "facets_outside_mesh": outside_mesh,
+            "z_min": min(heights) if heights else None,
+            "z_max": max(heights) if heights else None,
             "leaf_count": leaf_total,
             "states": counts,
             "mesh_area_mm2": total_area,
@@ -533,15 +566,21 @@ def read_container(tm: ThreeMF) -> dict:
         objects.append(entry)
         if entry["default_slot"] is None and entry["unpainted_facet_share"] > 0:
             unresolved_default = True
+        if entry["default_slot"] is not None and entry["z_min_mm"] is not None:
+            # The parts of this mesh nobody painted print in its own slot, over
+            # the mesh's whole height — not only where a painted facet happens to
+            # leave a gap.
+            bucket = slots.setdefault(entry["default_slot"],
+                                      _slot_bucket(entry["default_slot"]))
+            bucket["from_assignment"] = True
+            for name, value, pick in (("z_min_mm", entry["z_min_mm"], min),
+                                      ("z_max_mm", entry["z_max_mm"], max)):
+                bucket[name] = value if bucket[name] is None else pick(bucket[name], value)
         for assignment in entry["assignments"]:
             slot = assignment["slot"]
             if slot is None:
                 continue
-            bucket = slots.setdefault(slot, {
-                "slot": slot, "triangles_touching": 0,
-                "facet_equivalent": 0.0, "leaf_count": 0, "area_mm2": 0.0,
-                "z_min_mm": None, "z_max_mm": None, "objects": [],
-                "from_painting": False, "from_assignment": False})
+            bucket = slots.setdefault(slot, _slot_bucket(slot))
             bucket["triangles_touching"] += assignment["triangles_touching"]
             bucket["facet_equivalent"] += assignment["facet_equivalent"]
             bucket["leaf_count"] += assignment["leaf_count"]
@@ -550,11 +589,48 @@ def read_container(tm: ThreeMF) -> dict:
             bucket["from_painting"] = bucket["from_painting"] or assignment["painted"]
             bucket["from_assignment"] = (bucket["from_assignment"]
                                          or not assignment["painted"])
+            # Two ranges, because they answer two questions. The painted range is
+            # where this colour was painted; the used range is everywhere the
+            # slot prints, painting and assigned body together, and that is the
+            # one a shared layer depends on.
             for name, value, pick in (("z_min_mm", assignment["z_min_mm"], min),
                                       ("z_max_mm", assignment["z_max_mm"], max)):
                 if value is None:
                     continue
                 bucket[name] = value if bucket[name] is None else pick(bucket[name], value)
+            if assignment["painted"]:
+                for name, value, pick in (
+                        ("painted_z_min_mm", assignment["z_min_mm"], min),
+                        ("painted_z_max_mm", assignment["z_max_mm"], max)):
+                    if value is None:
+                        continue
+                    bucket[name] = (value if bucket[name] is None
+                                    else pick(bucket[name], value))
+
+    # A mesh that carries no painting still occupies a height, and the slot it is
+    # assigned to therefore has a measured extent. Without this, a painted colour
+    # could never be proven separate from a colour assigned to a whole object —
+    # which is every colour in most real projects, so the honest answer would
+    # always have been "cannot be proven".
+    for key, info in meshes.items():
+        if info.get("painted"):
+            continue
+        slot, _ = _default_slot(info, dialect, settings, meshes)
+        low, high = info.get("z_min"), info.get("z_max")
+        if slot is None or low is None:
+            continue
+        transform, transform_known = _transform_for(
+            info.get("object_id"), dialect, settings, placements, meshes)
+        if transform is not None and _z_depends_only_on_z(transform):
+            low, high = _placed_z({"z_min": low, "z_max": high}, transform)
+        elif not transform_known:
+            pass
+        bucket = slots.setdefault(slot, _slot_bucket(slot))
+        bucket["from_assignment"] = True
+        bucket["objects"].append(info.get("object_id"))
+        for name, value, pick in (("z_min_mm", round(low, 4), min),
+                                  ("z_max_mm", round(high, 4), max)):
+            bucket[name] = value if bucket[name] is None else pick(bucket[name], value)
 
     if not objects:
         # The attribute was present but nothing decoded from it — an empty
@@ -578,7 +654,12 @@ def read_container(tm: ThreeMF) -> dict:
         "format_version_known": version is not None,
         "objects": objects,
         "slots": [slots[key] for key in sorted(slots)],
-        "slots_referenced": sorted(slots),
+        # The slots the *painting* names. A slot that only appears because an
+        # object is assigned to it is in `slots` with its measured height, but it
+        # is not something this project paints with, and saying otherwise would
+        # overstate what was read.
+        "slots_referenced": sorted(key for key, bucket in slots.items()
+                                   if bucket["from_painting"]),
         "painted_triangle_count": painted_total,
         "malformed_triangle_count": malformed,
         "facets_outside_mesh": outside,
@@ -653,9 +734,15 @@ def _describe(info: dict, key: str, dialect: str, settings: dict,
             "evidence": evidence,
         })
 
+    mesh_low, mesh_high = info.get("z_min"), info.get("z_max")
+    if mesh_low is not None and z_placeable:
+        mesh_low, mesh_high = _placed_z({"z_min": mesh_low, "z_max": mesh_high},
+                                        transform)
     return {
         "object_id": object_id,
         "part": info.get("part"),
+        "z_min_mm": None if mesh_low is None else round(mesh_low, 4),
+        "z_max_mm": None if mesh_high is None else round(mesh_high, 4),
         "name": info.get("name"),
         "triangle_count": info.get("triangle_count", 0),
         "painted_triangle_count": info.get("painted_triangle_count", 0),
@@ -788,7 +875,11 @@ def coexistence(result: dict, *, separation_mm: float = 0.0) -> dict:
     ``separation_mm`` is a margin a caller can demand before believing a
     separation, for the case where a layer straddles the boundary.
     """
-    slots = [s for s in result.get("slots", []) if s.get("from_painting")]
+    # Every slot whose height was measured takes part, painted or assigned: a
+    # painted colour is only separate from an assigned one if the assigned one's
+    # extent is known, and that is exactly the comparison a user needs.
+    slots = [s for s in result.get("slots", [])
+             if s.get("z_min_mm") is not None and s.get("z_max_mm") is not None]
     pairs = []
     for index, first in enumerate(slots):
         for second in slots[index + 1:]:

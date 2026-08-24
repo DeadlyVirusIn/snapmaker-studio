@@ -171,7 +171,8 @@ def analyse(path: str, toolheads: int | None = None) -> dict:
     assigned = {i for i in assigned if 1 <= i <= total}
 
     paint = painted_color.read_container(tm)
-    paint_by_slot = {entry["slot"]: entry for entry in paint.get("slots", [])
+    by_slot = {entry["slot"]: entry for entry in paint.get("slots", [])}
+    paint_by_slot = {slot: entry for slot, entry in by_slot.items()
                      if entry.get("from_painting")}
     together = painted_color.coexistence(paint)
     overlap_by_slot: dict[int, list[dict]] = {}
@@ -190,29 +191,24 @@ def analyse(path: str, toolheads: int | None = None) -> dict:
         if slot and 1 <= slot <= total and slot not in change_by_slot:
             change_by_slot[slot] = change
 
-    # An assigned colour's extent is not read from geometry, so a painted colour
-    # cannot be proven separate from one. That is stated once here and used
-    # wherever a separation would otherwise be claimed.
-    unmeasured = sorted(slot for slot in assigned if slot not in paint_by_slot)
+    # A colour whose height was never measured cannot be proven separate from
+    # anything, and every colour it might be separate from has to know that.
+    measured_slots = {entry["slot"] for entry in paint.get("slots", [])
+                      if entry.get("z_min_mm") is not None}
+    unmeasured = sorted((set(assigned) | set(paint_by_slot)) - measured_slots)
 
     simultaneous, layer_based, unclassified = [], [], []
     for index in range(1, total + 1):
         colour = colours[index - 1]
         material = materials[index - 1] if index - 1 < len(materials) else None
         change = change_by_slot.get(index)
-        brush = paint_by_slot.get(index)
-        if index in assigned:
-            simultaneous.append(_colour_entry(
-                index, colour, material, SIMULTANEOUS,
-                "an object on the plate is assigned this colour, and a plate prints "
-                "layer by layer",
-                **_paint_facts(brush)))
-        elif brush:
-            usage, evidence, extra = _painted_usage(
-                index, brush, overlap_by_slot.get(index, []), unmeasured,
-                change_by_slot, layer_height, first_layer)
+        brush = by_slot.get(index)
+        if index in assigned or brush:
+            usage, evidence, extra = _height_usage(
+                index, brush, index in assigned, overlap_by_slot.get(index, []),
+                unmeasured, layer_height, first_layer)
             entry = _colour_entry(index, colour, material, usage, evidence,
-                                  **{**_paint_facts(brush), **extra})
+                                  **{**_paint_facts(paint_by_slot.get(index)), **extra})
             {SIMULTANEOUS: simultaneous, LAYER_BASED: layer_based,
              UNCLASSIFIED: unclassified}[usage].append(entry)
         elif change:
@@ -363,55 +359,65 @@ def _paint_facts(brush: dict | None) -> dict:
         "painted": True,
         "painted_facets": brush.get("triangles_touching"),
         "painted_area_mm2": round(brush.get("area_mm2") or 0.0, 2),
-        "painted_z_min_mm": brush.get("z_min_mm"),
-        "painted_z_max_mm": brush.get("z_max_mm"),
+        "painted_z_min_mm": brush.get("painted_z_min_mm"),
+        "painted_z_max_mm": brush.get("painted_z_max_mm"),
+        # Where the slot prints at all, which is what a shared layer depends on
+        # and is wider than the painting whenever the object itself uses it.
+        "used_z_min_mm": brush.get("z_min_mm"),
+        "used_z_max_mm": brush.get("z_max_mm"),
     }
 
 
-def _painted_usage(slot: int, brush: dict, pairs: list, unmeasured: list,
-                   change_by_slot: dict, layer_height, first_layer):
-    """How a painted colour is used, and why Studio believes that.
+def _height_usage(slot: int, bucket: dict | None, assigned: bool, pairs: list,
+                  unmeasured: list, layer_height, first_layer):
+    """How a colour is used, decided from measured heights wherever there are any.
 
-    Proven overlap costs a toolhead. Proven separation from everything else
-    leaves the colour available as a planned swap. Anything else — a colour with
-    no readable height, or an object-assigned colour whose extent was never
-    measured — is unclassified, with the specific reason.
+    This is the same question for a painted colour and for a colour assigned to a
+    whole object: does it ever have to be on the plate at the same time as
+    another? Proven overlap costs a toolhead. Proven separation from everything
+    else leaves the colour available as a planned swap. Anything else is
+    unclassified with the reason — never the optimistic answer.
+
+    Studio used to answer "needs a toolhead" for every assigned colour, because it
+    had not measured where those objects were. It has now, so the answer is
+    evidence rather than a safe assumption; where the measurement is missing, the
+    safe assumption is what remains.
     """
-    low, high = brush.get("z_min_mm"), brush.get("z_max_mm")
+    low = (bucket or {}).get("z_min_mm")
+    high = (bucket or {}).get("z_max_mm")
+    painted = bool((bucket or {}).get("from_painting"))
     overlapping = sorted({other for pair in pairs if pair["verdict"] == "overlaps"
                           for other in pair["slots"] if other != slot})
-    unknown = sorted({other for pair in pairs if pair["verdict"] == "unknown"
-                      for other in pair["slots"] if other != slot})
-    if overlapping:
-        names = ", ".join(str(other) for other in overlapping)
-        band = (f" between {low:.2f} mm and {high:.2f} mm"
-                if low is not None and high is not None else "")
-        return SIMULTANEOUS, (
-            f"painted{band}, where slot{'s' if len(overlapping) > 1 else ''} "
-            f"{names} {'are' if len(overlapping) > 1 else 'is'} painted too, so "
-            "the two can meet on a layer and each needs a toolhead"), {}
     if low is None or high is None:
+        if assigned:
+            return SIMULTANEOUS, (
+                "an object on the plate is assigned this colour and Studio could "
+                "not measure where that object sits, so it must be assumed to "
+                "share layers with the others"), {}
         return UNCLASSIFIED, (
             "this project paints with this colour, but the painted facets carry "
             "no readable height, so Studio cannot say whether it shares layers "
             "with the others"), {}
-    if unknown:
-        names = ", ".join(str(other) for other in unknown)
+    if overlapping:
+        names = ", ".join(str(other) for other in overlapping)
+        return SIMULTANEOUS, (
+            f"used between {low:.2f} mm and {high:.2f} mm, where "
+            f"slot{'s' if len(overlapping) > 1 else ''} {names} "
+            f"{'are' if len(overlapping) > 1 else 'is'} used too, so the two can "
+            "meet on a layer and each needs a toolhead"), {}
+    others = [other for other in unmeasured if other != slot]
+    if others:
+        names = ", ".join(str(other) for other in others)
         return UNCLASSIFIED, (
-            f"painted between {low:.2f} mm and {high:.2f} mm, but slot {names} "
-            "has no readable height, so a separation cannot be proven"), {}
-    if unmeasured:
-        names = ", ".join(str(other) for other in unmeasured)
-        return UNCLASSIFIED, (
-            f"painted between {low:.2f} mm and {high:.2f} mm, but slot{'s' if len(unmeasured) > 1 else ''} "
-            f"{names} {'are' if len(unmeasured) > 1 else 'is'} assigned to whole "
-            "objects whose heights Studio has not measured, so a separation "
-            "cannot be proven"), {}
+            f"used between {low:.2f} mm and {high:.2f} mm, but slot{'s' if len(others) > 1 else ''} "
+            f"{names} {'have' if len(others) > 1 else 'has'} no measured height, "
+            "so a separation cannot be proven"), {}
     estimate = _estimated_layer(low, layer_height, first_layer)
+    lead = "painted only" if painted else "used only"
     return LAYER_BASED, (
-        f"painted only between {low:.2f} mm and {high:.2f} mm, and every other "
-        "painted colour ends below that or starts above it, so this one never "
-        "has to share a layer"), {
+        f"{lead} between {low:.2f} mm and {high:.2f} mm, and every other colour "
+        "ends below that or starts above it, so this one never has to share a "
+        "layer"), {
         "from_z_mm": round(low, 2),
         "estimated_layer": estimate,
         "layer_is_estimated": estimate is not None,

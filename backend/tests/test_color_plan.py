@@ -291,7 +291,7 @@ def test_a_painted_colour_cannot_be_proven_separate_from_an_unmeasured_object(tm
                  painted=[(_paint(5), (38.2, 61.0))])
     out = cp.analyse(p, toolheads=4)
     entry = [e for e in out["unclassified"] if e["slot"] == 5][0]
-    assert "has not measured" in entry["evidence"]
+    assert "no measured height" in entry["evidence"]
     assert "38.20 mm" in entry["evidence"]
 
 
@@ -330,3 +330,39 @@ def test_the_disclaimer_no_longer_claims_painting_cannot_be_read(tmp_path):
     out = cp.analyse(p, toolheads=4)
     assert "does not slice" in out["disclaimer"]
     assert "cannot" not in out["disclaimer"].lower()
+
+
+def test_an_assigned_colour_is_offered_as_a_swap_when_its_object_cannot_share_a_layer(tmp_path):
+    """Studio used to answer "needs a toolhead" for every colour assigned to an
+    object, because it had not measured where those objects sit. It has now, so
+    two objects at heights that cannot meet are two colours that can be swapped."""
+    p = _project(tmp_path, colours=["#1", "#2", "#3", "#4"],
+                 painted=[(_paint(2), (0.0, 10.0)), (_paint(3), (30.0, 40.0))])
+    out = cp.analyse(p, toolheads=4)
+    assert slots(out["layer_based"]) == [2, 3]
+    assert out["layer_based"][1]["from_z_mm"] == 30.0
+    assert "never has to share a layer" in out["layer_based"][0]["evidence"]
+
+
+def test_an_object_whose_height_cannot_be_measured_still_takes_a_toolhead(tmp_path):
+    """The old conservative answer is what remains where the measurement does
+    not: an unmeasurable object must be assumed to share layers."""
+    p = _project(tmp_path, colours=["#1", "#2", "#3", "#4"], objects=(1,),
+                 painted=True)
+    out = cp.analyse(p, toolheads=4)
+    entry = [e for e in out["simultaneous"] if e["slot"] == 1][0]
+    assert "could not measure" in entry["evidence"]
+
+
+def test_the_plan_is_json_the_way_the_service_sends_it(tmp_path):
+    """The colour plan crosses a JSON boundary to reach the app. A value that
+    cannot be serialised is not a formatting problem — it is a 500 where a card
+    should be, and the installed-build harness is where it was found."""
+    import json
+
+    p = _project(tmp_path, colours=["#1", "#2", "#3", "#4"], objects=(1,),
+                 painted=[(_paint(2), (0.0, 10.0)), (_paint(3), (30.0, 40.0))],
+                 layer_changes=((4, 12.0),))
+    out = cp.analyse(p, toolheads=4)
+    json.dumps(out)
+    assert out["toolheads_measured"] is True

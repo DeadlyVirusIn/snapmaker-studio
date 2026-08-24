@@ -88,6 +88,40 @@ $sampleHashBefore = (Get-FileHash $sampleWork -Algorithm SHA256).Hash
 # A sliced job. Studio does not slice, so the one input the installed build
 # cannot make for itself is written here — shaped exactly like real Snapmaker
 # Orca output from a physical U1.
+# A painted project. Painting is the one thing a beginner cannot see in a file and
+# Studio now reads before slicing, so the installed build is asked to read it from
+# the frozen engine it actually ships.
+#
+# Two objects that cannot meet on a layer: one at the bottom painted with filament
+# 2 and printing in filament 2, one thirty millimetres up painted with filament 3
+# and printing in filament 3. The answers are therefore known before the app is
+# asked — two painted slots, and a separation the geometry proves, which is the
+# case that turns "cannot classify" into "possible with a planned swap". The
+# attribute values are the format's own: "8" is filament 2, "0C" is filament 3.
+$paintedWork = Join-Path $WorkDir "acceptance_painted.3mf"
+$paintedModel = @'
+<?xml version="1.0" encoding="UTF-8"?><model unit="millimeter" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02"><metadata name="BambuStudio:MmPaintingVersion">1</metadata><resources><object id="1" type="model"><mesh><vertices><vertex x="0" y="0" z="0"/><vertex x="10" y="0" z="0"/><vertex x="0" y="10" z="10"/></vertices><triangles><triangle v1="0" v2="1" v3="2" paint_color="8"/></triangles></mesh></object><object id="2" type="model"><mesh><vertices><vertex x="0" y="0" z="30"/><vertex x="10" y="0" z="30"/><vertex x="0" y="10" z="40"/></vertices><triangles><triangle v1="0" v2="1" v3="2" paint_color="0C"/></triangles></mesh></object></resources><build><item objectid="1" transform="1 0 0 0 1 0 0 0 1 0 0 0"/><item objectid="2" transform="1 0 0 0 1 0 0 0 1 0 0 0"/></build></model>
+'@
+$paintedSettings = @'
+{"printer_model":"Snapmaker U1","filament_colour":["#FF0000","#00FF00","#0000FF","#FFFFFF"],"filament_type":["PLA","PLA","PLA","PLA"],"layer_height":"0.2","initial_layer_print_height":"0.2","nozzle_diameter":["0.4","0.4","0.4","0.4"]}
+'@
+$paintedParts = @'
+<config><object id="1"><part id="1" subtype="normal_part"><metadata key="extruder" value="2"/></part></object><object id="2"><part id="2" subtype="normal_part"><metadata key="extruder" value="3"/></part></object><plate><metadata key="plater_id" value="1"/></plate></config>
+'@
+if (Test-Path $paintedWork) { Remove-Item $paintedWork -Force }
+Add-Type -AssemblyName System.IO.Compression.FileSystem | Out-Null
+$zip = [System.IO.Compression.ZipFile]::Open($paintedWork, "Create")
+foreach ($entry in @(
+    @{ name = "3D/3dmodel.model"; body = $paintedModel },
+    @{ name = "Metadata/project_settings.config"; body = $paintedSettings },
+    @{ name = "Metadata/model_settings.config"; body = $paintedParts })) {
+    $item = $zip.CreateEntry($entry.name)
+    $writer = New-Object System.IO.StreamWriter($item.Open())
+    $writer.Write($entry.body.Trim())
+    $writer.Dispose()
+}
+$zip.Dispose()
+
 $gcodeWork = Join-Path $WorkDir "acceptance_job.gcode"
 @'
 ; HEADER_BLOCK_START
@@ -201,8 +235,8 @@ try {
     $cdp = "http://127.0.0.1:$DebugPort"
     $node = Join-Path $PSScriptRoot "checks.mjs"
 
-    function Invoke-Phase($phase, $arg = "", $arg2 = "") {
-        $out = & node $node $phase $cdp $outDir $arg $arg2 2>&1
+    function Invoke-Phase($phase, $arg = "", $arg2 = "", $arg3 = "") {
+        $out = & node $node $phase $cdp $outDir $arg $arg2 $arg3 2>&1
         $out | ForEach-Object { Write-Host "    $_" }
         return $LASTEXITCODE
     }
@@ -213,7 +247,7 @@ try {
     $code = Invoke-Phase "startup"
     Add-Check "Startup checks" ($code -eq 0)
 
-    $code = Invoke-Phase "routes" $sampleWork $gcodeWork
+    $code = Invoke-Phase "routes" $sampleWork $gcodeWork $paintedWork
     Add-Check "Engine routes answer from the installed sidecar" ($code -eq 0)
 
     # --- the project the app was launched with --------------------------------
@@ -264,6 +298,21 @@ try {
     $sampleHashAfter = (Get-FileHash $sampleWork -Algorithm SHA256).Hash
     Add-Check "Original file is byte-identical afterwards" `
         ($sampleHashBefore -eq $sampleHashAfter)
+
+    # --- the painted project, in the installed UI -----------------------------
+    #
+    # The colours card is where this release's work becomes visible, so it is
+    # driven with a project that is actually painted rather than only asserted
+    # through the engine. The app is restarted with that project because a model
+    # is opened from the command line, which is the same path a file association
+    # takes.
+    Stop-Tracked
+    $script:started = @()
+    $paintedApp = Start-Process -FilePath $appExe -ArgumentList $paintedWork -PassThru
+    $script:started += $paintedApp.Id
+    Start-Sleep -Seconds 12
+    $code = Invoke-Phase "painted"
+    Add-Check "Painted colour is shown in the installed build" ($code -eq 0)
 
     # --- close and prove no orphan -------------------------------------------
     Stop-Tracked

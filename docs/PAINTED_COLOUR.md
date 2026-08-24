@@ -24,6 +24,11 @@ Before anything is sliced, from the project's own facet data:
   heights are heights on the plate.
 - **Which slot the unpainted parts print in**, from the part's own assignment —
   or `unknown`, when the project does not say.
+- **The height band of the objects themselves**, so a colour assigned to a whole
+  object can be compared with a painted one. Two facts are kept apart here: where
+  a colour is *painted*, and where it *prints at all*. A slot painted near the
+  base of an object whose body it also prints is used over that whole object, and
+  it is the second fact that decides whether it can share a layer with anything.
 
 ## What that changes
 
@@ -31,12 +36,19 @@ A project with six colours and four toolheads used to produce one answer:
 *Studio cannot classify this safely*. Now each colour gets a verdict with the
 evidence behind it:
 
-- a colour whose painting overlaps another's height band **needs a toolhead**,
-  because the two can meet on a layer;
-- a colour painted only between, say, 38.2 mm and 61.0 mm, with every other
-  colour ending below or starting above, **can be a planned swap**;
+- a colour whose height band overlaps another's **needs a toolhead**, because the
+  two can meet on a layer;
+- a colour used only between, say, 38.2 mm and 61.0 mm, with every other colour
+  ending below or starting above, **can be a planned swap**;
 - a colour that cannot be compared — no readable height, or another colour's
   extent was never measured — stays **unclassified, with the reason**.
+
+The same rule now decides for a colour assigned to a whole object, which used to
+be answered with a safe assumption: *an object on the plate is assigned this
+colour, and a plate prints layer by layer, so it needs a toolhead*. That was true
+whenever Studio had not measured where the object sat — and now that it does, two
+objects at heights that cannot meet are two colours that can be swapped. Where the
+measurement is missing, the safe assumption is still what remains.
 
 ## Where Studio stops
 

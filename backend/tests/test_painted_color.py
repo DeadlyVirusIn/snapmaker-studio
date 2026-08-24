@@ -171,8 +171,19 @@ def test_painted_heights_come_from_the_painted_geometry(tmp_path):
     path = bambu_project(tmp_path, meshes=[{"painted": {0: paint(1), 1: paint(2)},
                                             "extruder": 1}])
     result = painted.read(path)
-    assert assignment(result, 1)["z_max_mm"] == pytest.approx(0.0)
-    assert assignment(result, 2)["z_min_mm"] == pytest.approx(10.0)
+    assert assignment(result, 1)["painted_z_max_mm"] == pytest.approx(0.0)
+    assert assignment(result, 2)["painted_z_min_mm"] == pytest.approx(10.0)
+
+
+def test_where_a_slot_is_painted_and_where_it_prints_are_different_facts(tmp_path):
+    # Slot 1 is painted on one facet at the bottom, and is also the slot this
+    # part prints in, so it is used over the mesh's whole height. Reporting only
+    # the painted band would understate where the colour actually appears.
+    path = bambu_project(tmp_path, meshes=[{"painted": {0: paint(1)}, "extruder": 1}])
+    entry = assignment(painted.read(path), 1)
+    assert entry["painted_z_max_mm"] == pytest.approx(0.0)
+    assert entry["z_max_mm"] == pytest.approx(10.0)
+    assert entry["from_painting"] is True and entry["from_assignment"] is True
 
 
 def test_a_placement_transform_moves_the_heights_onto_the_plate(tmp_path):
@@ -208,12 +219,29 @@ def test_a_tilting_transform_leaves_the_heights_unplaced_rather_than_wrong(tmp_p
 
 
 def test_two_colours_at_different_heights_are_proven_separate(tmp_path):
+    # Painted low, painted high, and the body of the mesh prints in a third slot,
+    # so neither painted colour is also printing everywhere else.
+    path = bambu_project(tmp_path, meshes=[{"painted": {0: paint(1), 1: paint(2)},
+                                            "extruder": 3}])
+    verdict = painted.coexistence(painted.read(path))
+    pair = [p for p in verdict["pairs"] if p["slots"] == [1, 2]][0]
+    assert pair["verdict"] == "separate"
+    # Neither is separate from *everything*, because slot 3 prints the body of
+    # the mesh and so shares height with both. "Separate from each other" and
+    # "separate from everything" are different claims and only the first holds.
+    assert verdict["slots_separate"] == []
+    assert verdict["slots_overlapping"] == [1, 2, 3]
+
+
+def test_a_colour_that_also_prints_the_whole_object_is_not_separate_from_anything(tmp_path):
+    # The same painting, but the object itself prints in slot 1. Slot 1 is
+    # therefore on every layer, and calling it separable would be the optimistic
+    # answer that costs someone a print.
     path = bambu_project(tmp_path, meshes=[{"painted": {0: paint(1), 1: paint(2)},
                                             "extruder": 1}])
     verdict = painted.coexistence(painted.read(path))
-    pair = verdict["pairs"][0]
-    assert pair["verdict"] == "separate"
-    assert verdict["slots_separate"] == [1, 2]
+    pair = [p for p in verdict["pairs"] if p["slots"] == [1, 2]][0]
+    assert pair["verdict"] == "overlaps"
 
 
 def test_two_colours_sharing_height_are_reported_as_overlapping_not_as_sharing_a_layer(tmp_path):
@@ -224,16 +252,17 @@ def test_two_colours_sharing_height_are_reported_as_overlapping_not_as_sharing_a
     assert "does not slice" in verdict["note"]
 
 
-def test_a_colour_with_no_readable_height_makes_the_pair_unknown(tmp_path):
+def test_a_colour_with_no_readable_height_takes_no_part_in_a_proof(tmp_path):
+    # A slot Studio could not place cannot be compared with anything, so it is
+    # left out of the pairs rather than being paired on a guessed height.
     path = bambu_project(tmp_path, meshes=[{"painted": {0: paint(1), 1: paint(2)},
-                                            "extruder": 1}])
+                                            "extruder": 3}])
     result = painted.read(path)
     for entry in result["slots"]:
         if entry["slot"] == 2:
             entry["z_min_mm"] = entry["z_max_mm"] = None
     verdict = painted.coexistence(result)
-    assert verdict["pairs"][0]["verdict"] == "unknown"
-    assert verdict["unknown_pairs"]
+    assert all(2 not in pair["slots"] for pair in verdict["pairs"])
 
 
 # --- files that are trying to break it ---------------------------------------
@@ -322,3 +351,15 @@ def test_a_deeply_nested_attribute_is_refused_without_taking_the_project_with_it
     result = painted.read(path)
     assert slots(result) == [2]
     assert result["objects"][0]["malformed_triangle_count"] == 1
+
+
+def test_the_reading_is_json_the_way_the_service_sends_it(tmp_path):
+    import json
+
+    path = bambu_project(tmp_path, meshes=[
+        {"painted": {0: paint(2), 1: paint((0, [3, 4]))}, "extruder": 1},
+        {"painted": {}, "extruder": 2},
+    ])
+    result = painted.read(path)
+    json.dumps(result)
+    json.dumps(painted.coexistence(result))

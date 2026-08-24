@@ -11,13 +11,13 @@
 // Run one phase per invocation so the PowerShell driver can interleave native
 // steps (the file dialog) that CDP cannot reach.
 //
-// Usage: node checks.mjs <phase> <cdpUrl> <outDir> [samplePath]
+// Usage: node checks.mjs <phase> <cdpUrl> <outDir> [samplePath] [gcodePath] [paintedPath]
 
 import { chromium } from "playwright-core";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const [, , phase, cdpUrl, outDir, samplePath, gcodePath] = process.argv;
+const [, , phase, cdpUrl, outDir, samplePath, gcodePath, paintedPath] = process.argv;
 mkdirSync(outDir, { recursive: true });
 
 const results = [];
@@ -89,6 +89,23 @@ async function phaseRoutes(page) {
     ["/project_traits", { path: samplePath }, (b) => b.readable === true],
     ["/placement_check", { path: samplePath }, (b) => b.available === true && b.off_plate.length === 1],
     ["/color_plan", { path: samplePath }, (b) => b.color_count === 6 && b.verdict === "possible_with_swaps"],
+    // Painted colour, read by the engine this installer actually ships. The
+    // project is painted with filament 2 at the bottom and filament 3 thirty
+    // millimetres up, so the answers are known before the app is asked: two
+    // slots, and a separation the geometry proves.
+    ["/project_traits", { path: paintedPath }, (b) => b.has_painted_color?.value === true],
+    ["/color_plan", { path: paintedPath },
+      (b) => b.painted?.painted === true
+        && JSON.stringify(b.painted?.slots) === "[2,3]"
+        && b.painted?.painted_facets === 2],
+    // The flagship answer: two painted colours whose objects cannot meet on a
+    // layer are offered as a planned swap rather than each demanding a toolhead.
+    ["/color_plan", { path: paintedPath },
+      (b) => b.layer_based.some((c) => c.slot === 3 && c.painted === true
+        && Math.abs((c.from_z_mm ?? 0) - 30) < 0.01)],
+    ["/color_plan", { path: paintedPath },
+      (b) => (b.painted?.coexistence?.pairs ?? []).length > 0
+        && (b.painted?.coexistence?.pairs ?? []).every((p) => p.verdict === "separate")],
     ["/project_cost", { path: samplePath }, (b) => b.available === false && Boolean(b.reason)],
     ["/ecosystem_advice", { path: samplePath }, (b) => Boolean(b.primary?.why?.length)],
     ["/preflight", { path: samplePath, host: "", port: 7125 }, (b) => Array.isArray(b.checks) && b.checks.length > 0],
@@ -460,6 +477,25 @@ else if (phase === "novice") await phaseNovice(page);
       body.includes("did not read this from a printer") || body.includes("your printer reported"),
       "");
     await shot(page, "04-colours");
+  } else if (phase === "painted") {
+    // The flagship of this release, in the installed build: a painted project is
+    // open, and the colours card has to lead with a sentence a beginner can act
+    // on and keep the measurements behind it.
+    await page.evaluate(() => {
+      window.history.pushState({}, "", "/colors");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    await page.waitForTimeout(4000);
+    const body = await page.locator("body").innerText();
+    record("Painted colour is stated in one sentence",
+      /painted with \d+ filament colours?/i.test(body),
+      (body.split(/?
+/).find((l) => /painted with \d+ filament/i.test(l)) || "").slice(0, 80));
+    record("The painting's measurements are available, not shown by default",
+      body.includes("What Studio read from the painting"), "");
+    record("No raw paint data reaches the page",
+      !/paint_color="|mmu_segmentation="/.test(body), "");
+    await shot(page, "09-painted");
   } else if (phase === "goto-compatibility") {
     await page.evaluate(() => {
       window.history.pushState({}, "", "/compatibility");
