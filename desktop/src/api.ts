@@ -1740,8 +1740,9 @@ export async function fixOriginal(output: string): Promise<FixOriginal> {
 // ---- Colour planning --------------------------------------------------------
 // More colours than toolheads is not one problem but two: colours that share
 // layers need a toolhead each, colours introduced at a height may be planned
-// swaps. Painted colour cannot be read without slicing and is never put in the
-// optimistic bucket.
+// swaps. Painted colour is read from the project itself — which slots, how much
+// area, and at what heights — and a painted colour only leaves the "needs a
+// toolhead" bucket when its separation from every other colour is proven.
 
 export type ColorVerdict = "fits" | "possible_with_swaps" | "needs_reduction" | "cannot_classify";
 
@@ -1754,6 +1755,65 @@ export interface ColorUse {
   from_z_mm?: number | null;
   estimated_layer?: number | null;
   layer_is_estimated?: boolean;
+  /** Set when this colour is used by painting the model rather than by
+   *  assigning a whole object to it. The measurements are of the paint itself. */
+  painted?: boolean;
+  painted_facets?: number | null;
+  painted_area_mm2?: number | null;
+  painted_z_min_mm?: number | null;
+  painted_z_max_mm?: number | null;
+}
+
+/** One painted mesh, for the expert disclosure. */
+export interface PaintedObject {
+  object_id: string | null;
+  part: string | null;
+  name: string | null;
+  triangle_count: number;
+  painted_triangle_count: number;
+  mesh_area_mm2: number;
+  default_slot: number | null;
+  default_slot_source: string;
+  transform_known: boolean;
+  malformed_triangle_count: number;
+  facets_outside_mesh: number;
+  assignments: {
+    slot: number | null;
+    state: number;
+    painted: boolean;
+    triangles_touching: number;
+    area_mm2: number;
+    area_share: number | null;
+    z_min_mm: number | null;
+    z_max_mm: number | null;
+    z_is_placed: boolean;
+    evidence: string;
+  }[];
+}
+
+/** What the project's own painting says, decoded. Absent painting leaves
+ *  `painted` false and everything else empty. */
+export interface PaintedColor {
+  available: boolean;
+  painted?: boolean;
+  reason?: string | null;
+  dialect?: string | null;
+  format_version?: number | null;
+  format_version_known?: boolean;
+  slots?: number[];
+  unlisted_slots?: number[];
+  painted_facets?: number | null;
+  malformed_facets?: number | null;
+  facets_outside_mesh?: number | null;
+  truncated?: boolean;
+  confidence?: string;
+  objects?: PaintedObject[];
+  coexistence?: {
+    pairs: { slots: number[]; verdict: "separate" | "overlaps" | "unknown"; reason: string }[];
+    note: string;
+  };
+  headline?: string | null;
+  evidence?: string | null;
 }
 
 export interface ColorPlan {
@@ -1765,6 +1825,7 @@ export interface ColorPlan {
   toolheads_measured: boolean;
   toolheads_source: string;
   painted_regions: boolean;
+  painted?: PaintedColor;
   simultaneous: ColorUse[];
   layer_based: ColorUse[];
   unclassified: ColorUse[];

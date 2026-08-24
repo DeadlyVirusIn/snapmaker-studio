@@ -7,6 +7,10 @@ import {
   COLOR_PLAN_TITLE,
   TOOLHEAD_EXPLAINER,
   groups,
+  paintedDisclosure,
+  paintedHeadline,
+  paintedLimit,
+  paintedMeasurement,
   swapPointText,
   useLabel,
   verdictBanner,
@@ -21,10 +25,15 @@ import {
  * share layers each need a toolhead, and colours introduced part-way up are
  * already sequential and may be handled as planned swaps.
  *
- * Painted colour is stored encoded, so Studio can prove a project has painted
- * regions but not which colours they use. Those colours are shown as
- * unclassified — never in the optimistic bucket, because telling someone their
+ * Painted colour is read from the project's own facet data: which slots it uses,
+ * how much surface each covers, and the heights each spans. A painted colour is
+ * only offered as a planned swap when its separation from every other colour is
+ * proven; anything less stays unclassified, because telling someone their
  * project is easier than it is costs them a whole print.
+ *
+ * A beginner sees one sentence about the painting. The measurements behind it —
+ * facet counts, areas, heights, and which part of the file they came from — are
+ * one click away and closed by default.
  */
 // `toolheads` is passed only when a printer actually reported it. Left
 // undefined, the engine falls back to the U1's published four and labels the
@@ -76,6 +85,28 @@ export function ColorPlanCard({ path, toolheads }: { path: string; toolheads?: n
             </div>
 
             <p className="text-xs text-muted-foreground">{plan.summary}</p>
+
+            {paintedHeadline(plan) && (
+              <div className="rounded-md border border-border bg-muted/30 p-2.5">
+                <p className="text-xs font-medium">{paintedHeadline(plan)}</p>
+                {paintedLimit(plan) && (
+                  <p className="mt-1 text-[11px] text-muted-foreground">{paintedLimit(plan)}</p>
+                )}
+                <details className="mt-1.5">
+                  <summary className="cursor-pointer text-[11px] text-muted-foreground hover:text-foreground">
+                    What Studio read from the painting
+                  </summary>
+                  <dl className="mt-1 space-y-0.5">
+                    {paintedDisclosure(plan).map((row) => (
+                      <div key={`${row.label}-${row.value}`} className="flex gap-1.5 text-[11px]">
+                        <dt className="shrink-0 text-muted-foreground">{row.label}:</dt>
+                        <dd className="text-muted-foreground">{row.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </details>
+              </div>
+            )}
             <p className="text-[11px] text-muted-foreground">{TOOLHEAD_EXPLAINER}</p>
             <p className="text-[11px] text-muted-foreground">
               Counted against {plan.toolheads} toolhead
@@ -136,6 +167,11 @@ function ColorGroup({ title, uses, swap = false }: {
             <span>
               <span className="font-medium">{useLabel(use)}</span>
               {swap && <span className="text-muted-foreground"> — {swapPointText(use)}</span>}
+              {paintedMeasurement(use) && (
+                <span className="block text-[11px] text-muted-foreground">
+                  Painted: {paintedMeasurement(use)}
+                </span>
+              )}
               <span className="block text-[11px] text-muted-foreground">{use.evidence}</span>
             </span>
           </li>
