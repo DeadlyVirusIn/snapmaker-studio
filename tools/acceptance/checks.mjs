@@ -489,8 +489,7 @@ else if (phase === "novice") await phaseNovice(page);
     const body = await page.locator("body").innerText();
     record("Painted colour is stated in one sentence",
       /painted with \d+ filament colours?/i.test(body),
-      (body.split(/?
-/).find((l) => /painted with \d+ filament/i.test(l)) || "").slice(0, 80));
+      (body.split("\n").find((l) => /painted with \d+ filament/i.test(l)) || "").slice(0, 80));
     record("The painting's measurements are available, not shown by default",
       body.includes("What Studio read from the painting"), "");
     record("No raw paint data reaches the page",
