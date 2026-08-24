@@ -137,3 +137,95 @@ def test_a_folder_of_large_files_is_scanned_without_reading_them(tmp_path):
     found = watch_folder.scan(tmp_path)
     assert len(found["candidates"]) == 6
     assert time.time() - started < 3.0
+
+
+# --- painted colour ----------------------------------------------------------
+#
+# A painted model is the biggest thing Studio decodes per facet rather than per
+# file, so it is the easiest place to accidentally make opening a project take
+# minutes. These fix the shape of the cost: linear in painted facets, bounded in
+# what one file can ask for, and never holding the whole decode in memory.
+
+def _painted_project(path, facets, *, subdivided=False, painted_every=1):
+    from snapstudio_core import paint_codec
+
+    deep = (0, [1, (1, [2, (2, [3, 4, 5])]), 6, 7])
+    vertices, triangles = [], []
+    for index in range(facets):
+        z = (index % 100) * 0.5
+        base = index * 3
+        vertices += [f'<vertex x="0" y="0" z="{z}"/>',
+                     f'<vertex x="10" y="0" z="{z}"/>',
+                     f'<vertex x="0" y="10" z="{z + 0.5}"/>']
+        attribute = ""
+        if painted_every and index % painted_every == 0:
+            tree = deep if subdivided else (index % 7) + 1
+            attribute = f' paint_color="{paint_codec.encode_tree(tree)}"'
+        triangles.append(f'<triangle v1="{base}" v2="{base + 1}" '
+                         f'v3="{base + 2}"{attribute}/>')
+    model = ('<?xml version="1.0"?><model unit="millimeter">'
+             '<resources><object id="1" type="model"><mesh>'
+             f"<vertices>{''.join(vertices)}</vertices>"
+             f"<triangles>{''.join(triangles)}</triangles>"
+             "</mesh></object></resources>"
+             '<build><item objectid="1"/></build></model>')
+    import zipfile
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("3D/3dmodel.model", model)
+        archive.writestr("Metadata/project_settings.config",
+                         '{"filament_colour":["#1","#2","#3","#4","#5","#6","#7"]}')
+        archive.writestr("Metadata/model_settings.config",
+                         '<config><object id="1"><part id="1" subtype="normal_part">'
+                         '<metadata key="extruder" value="1"/></part></object></config>')
+    return str(path)
+
+
+def test_a_heavily_painted_mesh_is_read_in_seconds_not_minutes(tmp_path):
+    from snapstudio_core import painted_color
+
+    path = _painted_project(tmp_path / "painted.3mf", 60_000)
+    start = time.perf_counter()
+    result = painted_color.read(path)
+    elapsed = time.perf_counter() - start
+    assert result["painted_triangle_count"] == 60_000
+    assert result["slots_referenced"] == [1, 2, 3, 4, 5, 6, 7]
+    # Measured at about 0.4 s for this size on the sprint machine; the bound is
+    # loose enough for a slow CI worker and tight enough to catch a regression
+    # that makes the cost non-linear.
+    assert elapsed < 8.0, f"reading 60,000 painted facets took {elapsed:.1f}s"
+
+
+def test_the_painted_facet_budget_stops_a_file_asking_for_unbounded_work(tmp_path, monkeypatch):
+    from snapstudio_core import painted_color
+
+    monkeypatch.setattr(painted_color, "MAX_PAINTED_TRIANGLES", 500)
+    path = _painted_project(tmp_path / "huge.3mf", 5_000)
+    result = painted_color.read(path)
+    assert result["truncated"] is True
+    assert result["limits"]["budget_exhausted"] is True
+    assert result["painted_triangle_count"] == 500
+
+
+def test_a_finely_subdivided_file_is_bounded_by_patches_not_only_facets(tmp_path, monkeypatch):
+    # Seven patches per facet: a file can stay under any facet bound and still
+    # ask for an unbounded amount of decoding.
+    from snapstudio_core import painted_color
+
+    monkeypatch.setattr(painted_color, "MAX_PAINTED_LEAVES", 700)
+    path = _painted_project(tmp_path / "deep.3mf", 5_000, subdivided=True)
+    result = painted_color.read(path)
+    assert result["truncated"] is True
+    assert result["painted_triangle_count"] < 5_000
+
+
+def test_an_unpainted_mesh_costs_almost_nothing_to_check(tmp_path):
+    # The common case is a project with no painting at all, and it must not pay
+    # for the decoder: no vertices are parsed and no facet is decoded.
+    from snapstudio_core import painted_color
+
+    path = _painted_project(tmp_path / "plain.3mf", 60_000, painted_every=None)
+    start = time.perf_counter()
+    result = painted_color.read(path)
+    elapsed = time.perf_counter() - start
+    assert result["slots_referenced"] == []
+    assert elapsed < 2.0, f"checking an unpainted 60,000-facet mesh took {elapsed:.1f}s"

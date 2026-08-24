@@ -235,12 +235,19 @@ def _semantic_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
                            unchanged_reason="every object in the original is in the copy",
                            changed_reason="Studio does not add or remove objects — "
                                           "report this as a bug"))
-    painted_a = sum(fa.painted_triangles.values())
-    painted_b = sum(fb.painted_triangles.values())
-    rows.append(_count_row("Painted colour and support marks", painted_a, painted_b,
-                           unchanged_reason="painted regions are untouched",
-                           changed_reason="Studio does not repaint models — "
-                                          "report this as a bug"))
+    # Painted colour used to be compared by counting how often a marker appeared
+    # in the bytes, which cannot tell a preserved painting from a rewritten one.
+    # It is compared properly in _painted_rows; what stays here is the marker for
+    # the other kinds of painting — supports and seams — which Studio does not
+    # decode and therefore does not claim to have checked semantically.
+    other_paint_a = sum(_other_paint_markers(a).values())
+    other_paint_b = sum(_other_paint_markers(b).values())
+    if other_paint_a or other_paint_b:
+        rows.append(_count_row("Painted supports and seams", other_paint_a, other_paint_b,
+                               unchanged_reason="the same number of marked facets, and "
+                                                "Studio does not decode these",
+                               changed_reason="Studio does not repaint models — "
+                                              "report this as a bug"))
     rows.append(_count_row("Filament slots", fa.filament_count, fb.filament_count,
                            unchanged_reason="every colour slot survives, in its original order",
                            changed_reason="a filament remap was applied"))
@@ -404,6 +411,7 @@ def audit(original: str, prepared: str) -> dict:
 
     rows += _settings_rows(a, b)
     rows += _semantic_rows(a, b)
+    rows += _painted_rows(a, b)
     rows += _optional_rows(a, b)
     rows += _unsupported_rows(a)
 
@@ -484,3 +492,124 @@ def _unavailable(reason: str) -> dict:
             "claims": {"geometry_unchanged": False, "nothing_removed": False,
                        "fully_accounted": False, "may_claim_nothing_lost": False},
             "summary": reason}
+
+
+# --- painted colour ---------------------------------------------------------
+#
+# Painting is exactly the kind of work a converter can destroy quietly: the mesh
+# survives, the file opens, and the hours someone spent painting it are gone. So
+# this does not ask whether the geometry survived. It compares the painting
+# itself — every slot, every facet, every painted area — and it will not call
+# painting preserved because the triangles are still there.
+
+_OTHER_PAINT_MARKERS = (b"paint_supports", b"paint_seam",
+                        b"slic3rpe:custom_supports", b"slic3rpe:custom_seam")
+
+
+def _other_paint_markers(tm: ThreeMF) -> dict:
+    """Support and seam painting, which Studio counts but does not decode."""
+    out = {}
+    for part in tm.list_parts():
+        if not part.lower().endswith(".model"):
+            continue
+        try:
+            blob = tm.read_part(part)
+        except Exception:
+            continue
+        count = sum(blob.count(marker) for marker in _OTHER_PAINT_MARKERS)
+        if count:
+            out[part] = count
+    return out
+
+
+def _paint_attributes(tm: ThreeMF) -> list[str]:
+    """Every paint attribute in the project, in the order the meshes carry them.
+
+    Part names can legitimately change between an original and a copy, so the
+    attributes are compared as a sequence of values rather than by where they
+    live.
+    """
+    out: list[str] = []
+    for part in sorted(tm.list_parts()):
+        if not part.lower().endswith(".model"):
+            continue
+        try:
+            blob = tm.read_part(part)
+        except Exception:
+            continue
+        out += [match.group(1).decode("ascii", "ignore")
+                for match in _PAINT_ATTR_RE.finditer(blob)]
+    return out
+
+
+_PAINT_ATTR_RE = re.compile(
+    rb'(?:paint_color|slic3rpe:mmu_segmentation)="([^"]*)"')
+
+
+def _paint_shape(result: dict) -> dict:
+    """The meaning of a project's painting, independent of how it is written."""
+    return {
+        "slots": result.get("slots_referenced", []),
+        "facets": result.get("painted_triangle_count", 0),
+        "areas": {entry["slot"]: round(entry.get("area_mm2") or 0.0, 3)
+                  for entry in result.get("slots", [])},
+        "heights": {entry["slot"]: (entry.get("z_min_mm"), entry.get("z_max_mm"))
+                    for entry in result.get("slots", [])},
+    }
+
+
+def _painted_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
+    from . import painted_color
+
+    before, after = _paint_attributes(a), _paint_attributes(b)
+    if not before and not after:
+        return []
+    if before and not after:
+        return [_row("Painted colour", REMOVED,
+                     detail=f"{len(before)} painted facet(s) in the original, none in "
+                            "the copy",
+                     reason="Studio does not remove painting — report this as a bug")]
+    if after and not before:
+        return [_row("Painted colour", ADDED,
+                     detail=f"{len(after)} painted facet(s) only in the copy",
+                     reason="Studio does not paint models — report this as a bug")]
+
+    original = painted_color.read_container(a)
+    copy = painted_color.read_container(b)
+    if not original.get("available") or not copy.get("available"):
+        return [_row("Painted colour", UNVERIFIED,
+                     detail="one of the projects could not be read as painted data")]
+    if original.get("truncated") or copy.get("truncated"):
+        return [_row("Painted colour", UNVERIFIED,
+                     detail="the painting is larger than Studio decodes in full, so "
+                            "the comparison would not cover all of it")]
+
+    rows = []
+    if before == after:
+        rows.append(_row("Painted colour", PRESERVED_EXACT,
+                         detail=f"{len(before)} painted facet(s), byte-identical, "
+                                f"using slot(s) "
+                                f"{', '.join(str(s) for s in original['slots_referenced'])}"))
+        return rows
+
+    shape_a, shape_b = _paint_shape(original), _paint_shape(copy)
+    if shape_a == shape_b:
+        rows.append(_row("Painted colour", PRESERVED_SEMANTIC,
+                         detail="the paint data is written differently but names the "
+                                "same slots over the same area at the same heights",
+                         reason="the copy was re-serialised"))
+        return rows
+
+    differences = []
+    if shape_a["slots"] != shape_b["slots"]:
+        differences.append(f"slots {shape_a['slots']} → {shape_b['slots']}")
+    if shape_a["facets"] != shape_b["facets"]:
+        differences.append(f"{shape_a['facets']} → {shape_b['facets']} painted facets")
+    if shape_a["areas"] != shape_b["areas"]:
+        differences.append("the painted area per slot differs")
+    if shape_a["heights"] != shape_b["heights"]:
+        differences.append("the painted heights differ")
+    rows.append(_row("Painted colour", CHANGED,
+                     detail="; ".join(differences) or "the paint data differs",
+                     reason="Studio does not repaint models — report this as a bug"))
+    return rows

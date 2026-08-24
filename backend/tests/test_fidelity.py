@@ -305,3 +305,108 @@ def test_real_conversion_is_fully_accounted(tmp_path):
     assert report["available"] is True
     assert report["counts"].get(fidelity.UNVERIFIED, 0) == 0, report["unverified"]
     assert report["claims"]["fully_accounted"] is True
+
+
+# --- painted colour, which a converter can destroy quietly -------------------
+#
+# The mesh surviving is not the painting surviving. These prove the audit
+# compares the painting itself, and that every way of damaging it is caught.
+
+import zipfile as _zipfile  # noqa: E402
+
+from painted_fixtures import bambu_project as _painted_project  # noqa: E402
+from painted_fixtures import paint as _paint  # noqa: E402
+
+
+def _rewrite(path, tmp_path, name, edit):
+    """A copy of a project with one part rewritten — a damaged prepared copy."""
+    with _zipfile.ZipFile(path) as archive:
+        parts = {item: archive.read(item) for item in archive.namelist()}
+    for part in list(parts):
+        if part.lower().endswith(".model"):
+            parts[part] = edit(parts[part])
+    out = tmp_path / name
+    with _zipfile.ZipFile(out, "w", _zipfile.ZIP_DEFLATED) as archive:
+        for part, data in parts.items():
+            archive.writestr(part, data)
+    return str(out)
+
+
+def _paint_row(report):
+    rows = [r for r in report["rows"] if r["element"] == "Painted colour"]
+    assert rows, [r["element"] for r in report["rows"]]
+    return rows[0]
+
+
+def test_an_untouched_painted_copy_is_preserved_byte_for_byte(tmp_path):
+    original = _painted_project(tmp_path, name="a.3mf",
+                                meshes=[{"painted": {0: _paint(2), 1: _paint(3)},
+                                         "extruder": 1}])
+    copy = _rewrite(original, tmp_path, "b.3mf", lambda data: data)
+    row = _paint_row(fidelity.audit(original, copy))
+    assert row["status"] == fidelity.PRESERVED_EXACT
+    assert "slot(s) 2, 3" in row["detail"]
+
+
+def test_painting_rewritten_to_the_same_meaning_is_preserved_semantically(tmp_path):
+    original = _painted_project(tmp_path, name="a.3mf",
+                                meshes=[{"painted": {0: _paint(2)}, "extruder": 1}])
+    # The same paint, written with a redundant leading zero nibble — different
+    # bytes, identical meaning.
+    copy = _rewrite(original, tmp_path, "b.3mf",
+                    lambda data: data.replace(b'paint_color="8"', b'paint_color="08"'))
+    row = _paint_row(fidelity.audit(original, copy))
+    assert row["status"] == fidelity.PRESERVED_SEMANTIC
+
+
+def test_painting_dropped_from_the_copy_is_reported_as_removed(tmp_path):
+    original = _painted_project(tmp_path, name="a.3mf",
+                                meshes=[{"painted": {0: _paint(2)}, "extruder": 1}])
+    copy = _rewrite(original, tmp_path, "b.3mf",
+                    lambda data: data.replace(b' paint_color="8"', b""))
+    row = _paint_row(fidelity.audit(original, copy))
+    assert row["status"] == fidelity.REMOVED
+    assert "none in the copy" in row["detail"]
+
+
+def test_painting_remapped_to_another_slot_is_reported_as_changed(tmp_path):
+    original = _painted_project(tmp_path, name="a.3mf",
+                                meshes=[{"painted": {0: _paint(2)}, "extruder": 1}])
+    copy = _rewrite(original, tmp_path, "b.3mf",
+                    lambda data: data.replace(b'paint_color="8"',
+                                              b'paint_color="' + _paint(4).encode() + b'"'))
+    row = _paint_row(fidelity.audit(original, copy))
+    assert row["status"] == fidelity.CHANGED
+    assert "[2] → [4]" in row["detail"]
+
+
+def test_painting_shrunk_to_a_smaller_area_is_reported_as_changed(tmp_path):
+    # The same slot, over a quarter of the area it used to cover. Comparing
+    # slot lists alone would call this preserved.
+    original = _painted_project(tmp_path, name="a.3mf",
+                                meshes=[{"painted": {0: _paint(2)}, "extruder": 1}])
+    smaller = _paint((0, [2, 0, 0, 0]))
+    copy = _rewrite(original, tmp_path, "b.3mf",
+                    lambda data: data.replace(b'paint_color="8"',
+                                              b'paint_color="' + smaller.encode() + b'"'))
+    row = _paint_row(fidelity.audit(original, copy))
+    assert row["status"] == fidelity.CHANGED
+    assert "area" in row["detail"]
+
+
+def test_a_corrupted_paint_attribute_in_the_copy_is_not_called_preserved(tmp_path):
+    original = _painted_project(tmp_path, name="a.3mf",
+                                meshes=[{"painted": {0: _paint(2)}, "extruder": 1}])
+    copy = _rewrite(original, tmp_path, "b.3mf",
+                    lambda data: data.replace(b'paint_color="8"', b'paint_color="ZZ"'))
+    row = _paint_row(fidelity.audit(original, copy))
+    assert row["status"] in (fidelity.CHANGED, fidelity.UNVERIFIED)
+    assert row["status"] != fidelity.PRESERVED_EXACT
+
+
+def test_an_unpainted_project_gets_no_painted_row_at_all(tmp_path):
+    original = _painted_project(tmp_path, name="a.3mf",
+                                meshes=[{"painted": {}, "extruder": 1}])
+    copy = _rewrite(original, tmp_path, "b.3mf", lambda data: data)
+    assert not [r for r in fidelity.audit(original, copy)["rows"]
+                if r["element"] == "Painted colour"]

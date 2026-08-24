@@ -179,6 +179,11 @@ def run(sample: str | None = None) -> dict:
 
         runner.check("Fidelity audit", lambda: _fidelity(fidelity, source, prepared))
 
+        runner.check("Painted colour read",
+                     lambda: _painted(workdir))
+        runner.check("Painted colour survives preparing a copy",
+                     lambda: _painted_survives(convert_to_u1, fidelity, workdir))
+
         moved = runner.check("Placement fix",
                              lambda: _placement_fix(plate_placement, source, workdir))
 
@@ -789,3 +794,86 @@ def _providers() -> str:
         raise AssertionError("an unlabelled remaining weight was treated as a fact")
     return ("printer stays authoritative; tracked weight can block; unlabelled weight "
             "only warns; untracked stays unknown")
+
+
+def _painted_fixture(workdir: Path) -> Path:
+    """A project painted the way a slicer paints one: a low band in one filament,
+    a high band in another, and a facet split between two more."""
+    from . import paint_codec
+
+    low, high = paint_codec.encode_leaf(2), paint_codec.encode_leaf(3)
+    split = paint_codec.encode_tree((0, [4, 5]))
+    vertices = "".join(
+        f'<vertex x="{x}" y="{y}" z="{z}"/>' for x, y, z in
+        [(0, 0, 0), (10, 0, 0), (0, 10, 0),
+         (0, 0, 30), (10, 0, 30), (0, 10, 30),
+         (0, 0, 5), (10, 0, 5), (0, 10, 5)])
+    triangles = (
+        f'<triangle v1="0" v2="1" v3="2" paint_color="{low}"/>'
+        f'<triangle v1="3" v2="4" v3="5" paint_color="{high}"/>'
+        f'<triangle v1="6" v2="7" v3="8" paint_color="{split}"/>')
+    model = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<model unit="millimeter" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">'
+        '<metadata name="BambuStudio:MmPaintingVersion">1</metadata>'
+        '<resources><object id="1" type="model"><mesh>'
+        f"<vertices>{vertices}</vertices><triangles>{triangles}</triangles>"
+        "</mesh></object></resources>"
+        '<build><item objectid="1" transform="1 0 0 0 1 0 0 0 1 0 0 0"/></build></model>')
+    settings = {
+        "printer_model": "Snapmaker U1",
+        "filament_colour": ["#FF0000", "#00FF00", "#0000FF", "#FFFFFF", "#111111"],
+        "filament_type": ["PLA"] * 5,
+        "nozzle_diameter": ["0.4"] * 4,
+        "layer_height": "0.2",
+        "initial_layer_print_height": "0.2",
+    }
+    path = workdir / "selfcheck_painted.3mf"
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("[Content_Types].xml", "<Types/>")
+        z.writestr("_rels/.rels", "<Relationships/>")
+        z.writestr("3D/3dmodel.model", model)
+        z.writestr("Metadata/project_settings.config", json.dumps(settings, indent=2))
+        z.writestr("Metadata/model_settings.config",
+                   '<config><object id="1"><part id="1" subtype="normal_part">'
+                   '<metadata key="extruder" value="1"/></part></object>'
+                   '<plate><metadata key="plater_id" value="1"/></plate></config>')
+    return path
+
+
+def _painted(workdir: Path) -> str:
+    """Painted colour, decoded from the project rather than guessed at."""
+    from . import color_plan, painted_color
+
+    source = _painted_fixture(workdir)
+    result = painted_color.read(str(source))
+    assert result["available"], result.get("reason")
+    assert result["slots_referenced"] == [2, 3, 4, 5], result["slots_referenced"]
+    assert result["painted_triangle_count"] == 3
+    assert not result["malformed_triangle_count"], "a facet failed to decode"
+
+    together = painted_color.coexistence(result)
+    verdicts = {tuple(pair["slots"]): pair["verdict"] for pair in together["pairs"]}
+    assert verdicts[(2, 3)] == "separate", verdicts
+    assert verdicts[(4, 5)] == "overlaps", verdicts
+
+    plan = color_plan.analyse(str(source), toolheads=4)
+    assert plan["painted"]["painted"] is True
+    assert plan["painted"]["slots"] == [2, 3, 4, 5]
+    slots = ", ".join(str(slot) for slot in result["slots_referenced"])
+    return (f"4 painted slots read ({slots}); one pair proven separate in Z, "
+            "one proven to overlap")
+
+
+def _painted_survives(convert_to_u1, fidelity, workdir: Path) -> str:
+    """Painting is exactly what a converter can destroy quietly, so preparing a
+    copy is checked against the painting itself, not against the mesh."""
+    source = _painted_fixture(workdir)
+    result = convert_to_u1(str(source), out_dir=str(workdir / "painted-prepared"))
+    assert result.output_path, "no prepared file was written"
+    report = fidelity.audit(str(source), result.output_path)
+    rows = [row for row in report["rows"] if row["element"] == "Painted colour"]
+    assert rows, "the fidelity audit did not look at the painting"
+    status = rows[0]["status"]
+    assert status in (fidelity.PRESERVED_EXACT, fidelity.PRESERVED_SEMANTIC),         f"painting was {status}: {rows[0]['detail']}"
+    return f"painting {status.replace('_', ' ')} in the prepared copy"
