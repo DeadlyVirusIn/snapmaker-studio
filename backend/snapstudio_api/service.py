@@ -573,6 +573,11 @@ def _file_stat(path: str) -> dict:
         with target.open("rb") as handle:
             digest.update(handle.read(window))
             if stat.st_size > window * 2:
+                # The middle as well as the ends. A re-slice almost always changes
+                # the summary at the end, but "almost always" is not a property to
+                # rest a send decision on, and a third window costs another 64 KB.
+                handle.seek(max(window, (stat.st_size // 2) - (window // 2)))
+                digest.update(handle.read(window))
                 handle.seek(stat.st_size - window)
                 digest.update(handle.read(window))
     except OSError:
