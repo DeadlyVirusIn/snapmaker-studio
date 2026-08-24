@@ -169,6 +169,21 @@ def read_facts(path: str | Path) -> dict:
         facts["error"] = "that file does not exist"
         return facts
 
+    # A 3MF is a ZIP, and its compressed bytes decode into enough noise to
+    # contain "G1 " by accident. Handing Studio a project file instead of a
+    # sliced job is the likeliest mistake here, so name it rather than producing
+    # a report that looks empty for no stated reason.
+    try:
+        with target.open("rb") as handle:
+            magic = handle.read(4)
+    except OSError as exc:
+        facts["error"] = f"could not read the file: {exc.strerror or exc}"
+        return facts
+    if magic[:2] == b"PK":
+        facts["error"] = ("that is a project file, not a sliced G-code file - open"
+                          " the .gcode your slicer produced")
+        return facts
+
     try:
         head, tail, size = _read_ends(target)
     except OSError as exc:
@@ -278,7 +293,11 @@ def read_facts(path: str | Path) -> dict:
         "present": bool(defines),
         "objects": len(defines),
         # Object names are model names and are the user's business; the count is
-        # what the checks need, so the names are deliberately not carried.
+        # what the checks need, so the names are deliberately not carried. A
+        # digest of them is, because recognising that a sliced job contains the
+        # same set of objects as an open project is the strongest provenance
+        # evidence there is — and sixteen hex characters give that away to nobody.
+        "name_digest": _name_digest(defines),
         "source": "EXCLUDE_OBJECT_DEFINE lines" if defines else "no EXCLUDE_OBJECT_DEFINE lines found",
     }
 
@@ -292,6 +311,21 @@ def read_facts(path: str | Path) -> dict:
     facts["has_thumbnail"] = "thumbnail begin" in head
 
     return facts
+
+
+def _name_digest(defines: list[str]) -> str | None:
+    """Fingerprint the object names a job declares, without carrying them."""
+    import hashlib
+
+    names = []
+    for tail in defines:
+        found = _OBJECT_NAME.search(tail or "")
+        if found:
+            names.append(found.group(1).strip().strip('"').lower())
+    names = sorted({n for n in names if n})
+    if not names:
+        return None
+    return hashlib.sha256(chr(0).join(names).encode("utf-8")).hexdigest()[:16]
 
 
 def _hex(value: str | None) -> str | None:

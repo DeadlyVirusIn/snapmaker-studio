@@ -165,10 +165,10 @@ guessing in the direction that looks better.
   request against a JSON file; the rules that fire it are declarative, and a test
   proves every entry is reachable. See [EXTENDING.md](EXTENDING.md).
 - **One command anyone can run.** `u1convert selfcheck` runs the real pipeline end
-  to end and prints a 15-check pass/fail table, so the claims can be verified
+  to end and prints a 23-check pass/fail table, so the claims can be verified
   without reading the source. It runs in CI on every pull request.
 - **An acceptance harness that drives the installed application**, not a dev
-  server: 21 checks over the real window and the frozen engine, including that the
+  server: 28 checks over the real window and the frozen engine, including that the
   input file is byte-identical afterwards and that uninstalling leaves nothing
   behind.
 - **Regression tests against genuine slicer output** — real OrcaSlicer,
@@ -206,22 +206,22 @@ simply the machine it is verified against.
 
 ## Evidence
 
-Everything below was verified against the **published v0.5.0 installer**, not a
+Everything below was verified against the **published v0.6.0 installer**, not a
 development build. Commands, counts and full reports:
 [TRUST_STATUS.md](TRUST_STATUS.md).
 
 | What | Result |
 |---|---|
-| Installed-application acceptance, through the real UI | 27/27 |
+| Installed-application acceptance, through the real UI | 28/28 |
 | Read-only verification against a real Snapmaker U1 | 20/20 |
 | Regression tests against genuine Orca/Bambu/Prusa projects | 36 tests |
-| End-to-end pipeline self-check | 21/21 |
-| Backend tests | 773 passed, 3 skipped |
-| Desktop tests | 282 passed |
+| End-to-end pipeline self-check | 23/23 |
+| Backend tests | 822 passed, 3 skipped |
+| Desktop tests | 284 passed |
 | TypeScript, Rust, production build | clean |
 
 Demo: [`docs/media/snapmaker-studio-demo.mp4`](media/snapmaker-studio-demo.mp4) —
-64 seconds, every frame the installed application.
+66 seconds, every frame the installed application.
 
 Studio is advisory. It does not slice, does not promise a successful print, and
 never controls a printer on its own.

@@ -17,7 +17,7 @@ changed. Snapmaker Orca still does the slicing.**
 Free, open source, and entirely on your computer. No account, no cloud, nothing
 uploaded. Your original file is never modified.
 
-### [▶ Watch it work — 64 seconds](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4) · [⬇ Download for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.5.0) · [What it is, in 5 minutes](docs/innovation-fund/JUDGE_OVERVIEW.md)
+### [▶ Watch it work — 66 seconds](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4) · [⬇ Download for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.0) · [What it is, in 5 minutes](docs/innovation-fund/JUDGE_OVERVIEW.md)
 
 [![Watch the Snapmaker Studio demo](docs/media/demo-poster.jpg)](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4)
 
@@ -64,23 +64,23 @@ recording, so it also shows what Studio says when it cannot reach one:
 
 ## Download
 
-**[⬇ Download Snapmaker Studio v0.5.0 for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.5.0)**
+**[⬇ Download Snapmaker Studio v0.6.0 for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.0)**
 — one click, no Python, runs offline. Windows 10/11 x64.
 
-**v0.5.0 is the current stable release** — not a prerelease, so this is also what
+**v0.6.0 is the current stable release** — not a prerelease, so this is also what
 GitHub's [latest release](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/latest)
 points at. Every build ever published is on the
 [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
 Verify it before you run it:
 
-- Release: [v0.5.0](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.5.0)
-- Installer: `Snapmaker.Studio_0.5.0_x64-setup.exe`
-- Size: 16,871,622 bytes
-- SHA256: `73124b2162ea3581db3237b4e9400d3cb4b9a339bc3bdafb9e5a793c336cf12c`
+- Release: [v0.6.0](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.0)
+- Installer: `Snapmaker.Studio_0.6.0_x64-setup.exe`
+- Size: 16,900,712 bytes
+- SHA256: `e85c18a8589574e107e019d99c504fa5f6ccf15f65fd35416b67e0ec3eff461f`
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.5.0_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.6.0_x64-setup.exe
 ```
 
 The installer is not code-signed yet, so Windows SmartScreen will show "Unknown
@@ -107,20 +107,21 @@ you would rather just mention it.
 ## Screenshots
 
 The desktop app — local-first, dark-first. The whole workflow in one place:
-**Understand → Validate → Prepare → Monitor**.
+**Understand → check against your printer → prepare → hand to Orca → read the
+sliced job back**.
 
 | The problem, named exactly | The fix, in a new copy — and where Studio says it can't tell |
 |---|---|
-| ![One object hangs 45 mm past the right edge](docs/screenshots/beta24/placement.jpg) | ![Moved onto the plate, original untouched, printer unknowns kept unknown](docs/screenshots/beta24/placement_fixed_and_unknowns.jpg) |
-| **What survived preparing the copy** | **Six colours, four toolheads** |
-| ![Fidelity report: 13 kept, 2 changed, 1 not carried over](docs/screenshots/beta24/fidelity_and_ledger.jpg) | ![Colours and toolheads, with what a toolhead is](docs/screenshots/beta24/colour_plan.jpg) |
+| ![One object hangs 45 mm past the right edge](docs/screenshots/v0.6.0/problem.jpg) | ![The prepared copy, with what survived and what changed](docs/screenshots/v0.6.0/prepared.jpg) |
+| **The sliced job, picked up on its own** | **Ready to send? Blockers, warnings and unknowns kept apart** |
+| ![Studio recognises the job Orca just exported](docs/screenshots/v0.6.0/picked-up.jpg) | ![The send verdict, with every unknown named](docs/screenshots/v0.6.0/ready-to-send.jpg) |
 
-Frames from the beta.24 recording above, on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission package: [docs/innovation-fund/FINAL_SUBMISSION.md](docs/innovation-fund/FINAL_SUBMISSION.md).
+From the v0.6.0 build, on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission package: [docs/innovation-fund/FINAL_SUBMISSION.md](docs/innovation-fund/FINAL_SUBMISSION.md).
 
 ## Why this isn't a slicer, a dashboard, or a converter
 
 **Not a slicer.** It doesn't slice, and won't. Snapmaker Orca slices; Studio is
-the step before that. When Orca says `out of bounds`, Studio says *which object,
+the step on either side of it. When Orca says `out of bounds`, Studio says *which object,
 which edge, how many millimetres, and why* — then offers to move it in a new copy.
 
 **Not a dashboard.** U1Hub, OctoPrint and Fluidd start when a file is ready to
@@ -148,17 +149,17 @@ its licence in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Evidence
 
-Everything below was verified against the published v0.5.0 installer, not
+Everything below was verified against the published v0.6.0 installer, not
 against a development build. Commands, counts and full reports:
 [docs/TRUST_STATUS.md](docs/TRUST_STATUS.md).
 
 | What | Result |
 |---|---|
-| Installed-application acceptance, driven through the real UI | **27/27** |
+| Installed-application acceptance, driven through the real UI | **28/28** |
 | Read-only verification against a real Snapmaker U1 | **20/20** |
 | Regression tests against genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **36 tests** |
-| End-to-end pipeline self-check (`u1convert selfcheck`) | **21/21** |
-| Backend / desktop / TypeScript / Rust | 773 · 282 · clean · clean |
+| End-to-end pipeline self-check (`u1convert selfcheck`) | **23/23** |
+| Backend / desktop / TypeScript / Rust | 822 · 284 · clean · clean |
 
 Reproduce any of it yourself:
 [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md).
@@ -169,47 +170,47 @@ files produced structurally valid U1 profile copies ([PROOF.md](PROOF.md)); that
 number measures structure, not print success, and the checks above are the
 stronger evidence.
 
-## What's new in v0.4.0 — the loop closes
+## What's new in v0.6.0 — the workflow becomes one thing
 
-**Studio can see what happens after the slicer.** Until now it read your project,
-explained the risks, compared the project against your printer, prepared a
-corrected copy, and handed that copy to Snapmaker Orca — and stopped. The most
-expensive failures live on the other side of that handoff: the job prints from
-slot 3 and slot 3 is empty; it was sliced for PETG and PLA is loaded; it was
-sliced for a different printer entirely. None of those are visible in the project
-file, and none are visible on the printer alone.
+**The sliced job comes back on its own.** Tell Studio once where Snapmaker Orca
+saves its exports, and it picks up the finished job when it appears — no more
+carrying the file back by hand. It waits until the slicer has actually stopped
+writing, watches only that one folder, and never runs in the background behind
+your back.
 
-Open the `.gcode` your slicer produced — drag it onto the window, or hand it to
-Studio on the command line — and the new **After Slicing** page reads it and
-compares it to your printer as it is right now.
+**"Is this really the slice of my project?"** Nothing in a G-code file points back
+at the 3MF it came from, so Studio weighs the evidence that exists — the set of
+object names, the filament colours and materials in each slot, the target machine
+— and tells you how sure it is. **A matching filename is never proof.** Object
+names are compared as a fingerprint, so your model names never leave the file, and
+two equally good candidates get you a question rather than a guess.
 
-**It costs the job from what the slicer measured**, not from an estimate: filament
-by slot and print time come out of the file, and every line says whether its
-number was measured, derived from your prices, an assumption, or simply not
-stated.
+**Do I have enough filament?** Studio can now read optional local sources such as
+Spoolman for the one thing no printer knows: how much is left on the spool. *Slot
+2 needs 87 g, the tracked spool has 43 g* is a blocker, because running out
+mid-print is not a warning. On a stock U1, which cannot know, the answer stays
+unknown.
 
-**And it still refuses to guess.** Snapmaker Orca reports one filament figure per
-slot and does not separate purged filament from printed filament, so Studio
-reports the total and says the split is not available from this file. The nozzle
-check remains an honest unknown, because stock firmware does not report which
-nozzle is fitted.
+**One surface for the whole job.** *This print* shows the stages in the order they
+happen — before slicing, prepared, after slicing — so you no longer need to know
+which page to open next. Every individual page still exists and still works.
 
-**A bug report worth sending.** Help → *Reporting something Studio got wrong* now
-gathers the facts behind a report — project traits, Doctor findings, the sliced
-job, what your printer reported, the fix ledger. Your username, home folder, file
-paths, machine name and printer address are replaced before the bundle is
-assembled, and you can read all of it before it is written. Studio never sends it
-anywhere.
-
-**It is no longer a beta.** The workflow is complete end to end, so this is
-`v0.4.0` rather than `beta.25`, and it is a normal release rather than a
-prerelease.
+**Uploads are confirmed, not assumed.** Moonraker parses metadata after accepting
+a file, so "uploaded" used to mean "the POST returned". It now means the printer
+has the file and has finished reading it.
 
 See [RELEASE_NOTES.md](docs/RELEASE_NOTES.md) ·
 [docs/innovation-fund/](docs/innovation-fund/) ·
 [docs/EXTENDING.md](docs/EXTENDING.md).
 
 ### Earlier releases
+
+**v0.5.0** made the loop intelligent: the print plan timeline, what to load, the
+ready-to-send verdict, and PrusaSlicer projects read properly.
+
+**v0.4.0** was the first stable release and closed the loop: Studio learned to read
+the sliced G-code and check what the printer will actually execute against the
+printer as it is right now, with cost from the figures the slicer measured.
 
 **beta.24** was the first build verified against a real Snapmaker U1, which found
 a genuine bug: stock firmware publishes loaded filament as parallel arrays, and
@@ -405,13 +406,13 @@ Local-first, no network. Layers:
   child process (zero orphans on exit) and talks to it over loopback.
 - **CLI** — `u1convert` exposes the same engine for scripting/automation.
 
-Workflow everywhere: **Understand → Validate → Prepare → Monitor** —
+Workflow everywhere: **Understand → check the printer → prepare → Orca slices → read the job back** —
 validation is mandatory and never removed. Full detail in
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Roadmap
 
-**Shipped (stable, v0.5.0):** the whole loop — read a project, diagnose it,
+**Shipped (stable, v0.6.0):** the whole loop — read a project, diagnose it,
 compare it against the printer, prepare a copy, prove what survived, hand it to
 Snapmaker Orca, then read the sliced G-code back and check what the printer will
 actually execute against the printer as it is right now, with cost from the

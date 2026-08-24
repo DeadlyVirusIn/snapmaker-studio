@@ -37,15 +37,26 @@ CURRENT_DOCS = [
 # "n/n" on it has to be that capability's real number.
 SUBJECTS = {
     "acceptance": ("installed-application acceptance", "installed application acceptance",
-                   "acceptance harness", "installed-build acceptance", "acceptance run"),
+                   "acceptance harness", "installed-build acceptance", "acceptance run",
+                   "drives the installed application"),
     "hardware": ("real snapmaker u1", "real u1", "hardware verification",
                  "read-only verification"),
     "selfcheck": ("selfcheck", "self-check"),
 }
 
+#: Prose forms of the same claim. "a 15-check pass/fail table" and "27 checks over
+#: the real window" are counts too, and they drifted while the tables were right.
+_PROSE_COUNT = re.compile(r"(\d{1,3})[- ]check(?:s)?", re.I)
+
 _RATIO = re.compile(r"\b(\d{1,3})\s*/\s*(\d{1,3})\b")
 _HISTORICAL = ("historical", "superseded", "was accepted", "an earlier version",
                "corrected 2026", "at the time")
+
+
+def _report(offenders: list[str]) -> str:
+    """One offender per line, so a failure reads as a list rather than a blob."""
+    joined = chr(10) + "  "
+    return joined + joined.join(offenders)
 
 
 @pytest.fixture(scope="module")
@@ -88,11 +99,17 @@ def test_public_counts_match_the_canonical_evidence(doc, evidence):
             if not any(word in lowered for word in words):
                 continue
             expected = f"{evidence[key]['passed']}/{evidence[key]['total']}"
+            total = evidence[key]["total"]
             for found in _RATIO.finditer(line):
                 ratio = f"{int(found.group(1))}/{int(found.group(2))}"
                 if ratio != expected:
                     offenders.append(f"{doc.name}:{number} says {ratio} for {key}, "
                                      f"canonical is {expected}")
+            # Prose: "a 15-check pass/fail table", "27 checks over the real window".
+            for found in _PROSE_COUNT.finditer(line):
+                if int(found.group(1)) != total:
+                    offenders.append(f"{doc.name}:{number} says "
+                                     f"{found.group(0)!r} for {key}, canonical total is {total}")
     assert not offenders, "\n  " + "\n  ".join(offenders)
 
 
@@ -139,3 +156,74 @@ def test_the_workflow_description_includes_the_post_slice_half():
         text = doc.read_text(encoding="utf-8").lower()
         assert "g-code" in text or "gcode" in text, (
             f"{doc.name} never mentions the sliced job — it describes the pre-0.4.0 product")
+
+
+# --- the other things that go stale -----------------------------------------
+
+def _released_version() -> str:
+    metadata = (ROOT / "docs" / "RELEASE_METADATA.md").read_text(encoding="utf-8")
+    block = metadata[metadata.index("## Current release"):]
+    found = re.search(r"\|\s*Version\s*\|\s*v?([^\s|]+)\s*\|", block)
+    assert found, "RELEASE_METADATA.md has no current version"
+    return found.group(1)
+
+
+@pytest.mark.parametrize("doc", CURRENT_DOCS, ids=lambda p: p.name)
+def test_the_demo_length_matches_the_demo(doc, evidence):
+    """The length is quoted in prose and read here from the file's own header."""
+    seconds = (evidence.get("demo") or {}).get("seconds")
+    if not seconds:
+        pytest.skip("no demo recorded")
+    offenders = []
+    for number, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), start=1):
+        lowered = line.lower()
+        if any(marker in lowered for marker in _HISTORICAL):
+            continue
+        # Only lines actually talking about the recording. "In 30 seconds" is a
+        # heading about reading time, not a claim about the video.
+        if not any(word in lowered for word in ("demo", "recording", "video", ".mp4", "watch it")):
+            continue
+        for found in re.finditer(r"(\d{1,3})[- ]second", line, re.I):
+            if abs(int(found.group(1)) - seconds) > 1:
+                offenders.append(f"{doc.name}:{number} says {found.group(0)}, "
+                                 f"the file is {seconds}s")
+    assert not offenders, _report(offenders)
+
+
+@pytest.mark.parametrize("doc", CURRENT_DOCS, ids=lambda p: p.name)
+def test_screenshots_are_not_from_an_older_release(doc, evidence):
+    """A screenshot path carries a version. Pointing at an old one shows a judge
+    the wrong product."""
+    expected = (evidence.get("screenshots_dir") or "").split("/")[-1]
+    if not expected:
+        pytest.skip("no versioned screenshot folder for this release")
+    text = doc.read_text(encoding="utf-8")
+    stale = {m for m in re.findall(r"docs/screenshots/([A-Za-z0-9._]+)/", text)
+             if m != expected}
+    assert not stale, f"{doc.name} shows screenshots from {sorted(stale)}, current is {expected}"
+
+
+@pytest.mark.parametrize("doc", CURRENT_DOCS, ids=lambda p: p.name)
+def test_current_copy_does_not_describe_the_pre_0_4_product(doc):
+    """"The step before the slicer" stopped being the whole truth in v0.4.0."""
+    offenders = []
+    for number, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), start=1):
+        lowered = line.lower()
+        if any(marker in lowered for marker in _HISTORICAL):
+            continue
+        if "step before the slicer" in lowered or "step before that" in lowered:
+            offenders.append(f"{doc.name}:{number}: {line.strip()[:80]}")
+    assert not offenders, _report(offenders)
+
+
+def test_the_readme_whats_new_names_the_current_release():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    version = _released_version()
+    found = re.search(r"^##\s+What's new in ([^\s—-]+)", readme, re.M)
+    assert found, "README has no 'What's new' section"
+    assert found.group(1).lstrip("v") == version, (
+        f"README leads with What's new in {found.group(1)}, released version is {version}")
+
+
+def test_the_evidence_file_names_the_released_version(evidence):
+    assert evidence["version"] == _released_version()

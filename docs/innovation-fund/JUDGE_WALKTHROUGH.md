@@ -141,9 +141,9 @@ builds real decompression bombs and asserts the reader refuses them.
 ## Run the tests
 
 ```bash
-cd backend  && pytest          # 773 passed, 3 skipped
-cd backend  && u1convert selfcheck   # 21/21 over production code paths
-cd desktop  && npm run test    # 282 passed
+cd backend  && pytest          # 822 passed, 3 skipped
+cd backend  && u1convert selfcheck   # 23/23 over production code paths
+cd desktop  && npm run test    # 284 passed
 cd desktop  && npm run build   # tsc + vite
 ```
 
@@ -171,7 +171,7 @@ pwsh -File tools/acceptance/run.ps1
 
 It installs into an isolated directory with its own WebView2 profile and engine
 data directory, drives the real application window over the Chrome DevTools
-Protocol, and uninstalls. 27 checks, including that the input file is byte-identical
+Protocol, and uninstalls. 28 checks, including that the input file is byte-identical
 afterwards and that uninstalling leaves nothing behind. It stops only processes it
 started, and restores any pre-existing installation's registry entry. Last result:
 **27/27** — [../internal/acceptance-0.4.0.json](../internal/acceptance-0.5.0.json).

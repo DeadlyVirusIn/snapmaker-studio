@@ -113,6 +113,12 @@ async function phaseRoutes(page) {
     ["/send_check", { path: gcodePath, host: "", port: 7125 },
       (b) => b.available === true && b.counts.blocker === 0
              && b.items.some((i) => i.kind === "unknown")],
+    // The round-trip: the folder holding the job is watched, and a job that did
+    // not come from the open project must never be claimed as a match.
+    ["/watch_folder", { folder: outDir },
+      (b) => b.available === true && Array.isArray(b.candidates)],
+    ["/slice_provenance", { project_path: samplePath, gcode_path: gcodePath },
+      (b) => ["confirmed", "likely", "ambiguous", "no_match", "unknown"].includes(b.verdict)],
   ];
   for (const [route, body, verify] of routes) {
     try {
@@ -175,8 +181,30 @@ async function phasePostSlice(page) {
   record("Print plan timeline rendered on request",
     /what happens during this print/i.test(withPlan) && /prints with slot/i.test(withPlan), "");
   record("Timeline keeps its evidence", /evidence/i.test(withPlan), "");
+  record("The round-trip watcher is offered", /pick up sliced jobs automatically/i.test(withPlan)
+    || /watching for sliced jobs/i.test(withPlan), "");
 
   await shot(page, "05-after-slicing");
+}
+
+async function phaseCockpit(page) {
+  await page.evaluate(() => {
+    window.history.pushState({}, "", "/this-print");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
+  await page.waitForTimeout(4000);
+  const body = await page.locator("body").innerText();
+  const lower = body.toLowerCase();
+
+  record("Cockpit renders the job's stages",
+    lower.includes("this print") && lower.includes("before slicing")
+    && lower.includes("after slicing"), "");
+  record("Cockpit shows the real findings, not placeholders",
+    /hangs [\d.]+ mm past the \w+ edge/i.test(body), "");
+  record("Cockpit keeps the honest unknown",
+    lower.includes("studio can’t tell") || lower.includes("studio can't tell"), "");
+  record("Cockpit still says Orca slices", /snapmaker orca/i.test(body), "");
+  await shot(page, "06-cockpit");
 }
 
 async function phaseUi(page) {
@@ -218,6 +246,7 @@ try {
   else if (phase === "routes") await phaseRoutes(page);
   else if (phase === "ui") await phaseUi(page);
 else if (phase === "post-slice") await phasePostSlice(page);
+else if (phase === "cockpit") await phaseCockpit(page);
   else if (phase === "prepared") await phasePrepared(page);
   else if (phase === "launch-file") {
     // The app was started with the project as an argument; the shell reports it

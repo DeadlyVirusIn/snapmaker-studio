@@ -13,6 +13,8 @@
 // Usage: node beats.mjs <cdpUrl> [short]
 
 import { chromium } from "playwright-core";
+import { copyFileSync, mkdirSync } from "node:fs";
+import { basename, join } from "node:path";
 
 const [, , cdpUrl, cut] = process.argv;
 const short = cut === "short";
@@ -32,6 +34,8 @@ const T = short
  *  slice, so the demo cannot produce one on camera — but every frame of what
  *  Studio then does with it is real. */
 const slicedJob = process.argv[4] || "";
+/** Where the demo pretends Snapmaker Orca exports to. Real folder, real pickup. */
+const watchFolder = process.argv[5] || "";
 const browser = await chromium.connectOverCDP(cdpUrl);
 
 const beat = (name, ms) => {
@@ -99,15 +103,33 @@ try {
   await goto("/colors", T.coloursNav);
   await scrollTo("Colours and toolheads", T.colours);
 
-  // The other half of the loop: Orca has sliced it, and the job comes back.
+  // The other half of the loop. Orca slices; the job appears in the folder the
+  // user pointed Studio at, and Studio picks it up by itself. Nothing here is
+  // staged in the app — the file really is written to that folder while the
+  // recording runs, and the app really does notice it.
   if (slicedJob) {
-    await goto("/after-slicing", T.afterNav);
-    const field = page.locator('input[aria-label="Path to a sliced G-code file"]').first();
-    if (await field.count()) {
-      await field.fill(slicedJob);
-      await page.getByRole("button", { name: /Check this job/i }).first().click();
-      await beat("reading the sliced job", T.sliced);
+    if (watchFolder) {
+      mkdirSync(watchFolder, { recursive: true });
+      await page.evaluate((folder) => {
+        window.localStorage.setItem("snapstudio.watchFolder", folder);
+        window.localStorage.setItem("snapstudio.watchAutoOpen", "on");
+      }, watchFolder);
     }
+    await goto("/after-slicing", T.afterNav);
+
+    if (watchFolder) {
+      await beat("waiting for Orca's export", 2500);
+      copyFileSync(slicedJob, join(watchFolder, basename(slicedJob)));
+      await beat("the sliced job appears and Studio picks it up", T.sliced);
+    } else {
+      const field = page.locator('input[aria-label="Path to a sliced G-code file"]').first();
+      if (await field.count()) {
+        await field.fill(slicedJob);
+        await page.getByRole("button", { name: /Check this job/i }).first().click();
+        await beat("reading the sliced job", T.sliced);
+      }
+    }
+
     await scrollTo("Ready to send?", T.send);
     await scrollTo("What to load", T.load);
   }

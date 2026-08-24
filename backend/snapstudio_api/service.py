@@ -414,6 +414,54 @@ def _trait_value(traits: dict, key: str):
     return entry
 
 
+def watch_folder(folder: str, project_path: str | None = None) -> dict:
+    """Look in the folder the user chose for a sliced job that just appeared.
+
+    Polled by the app while the user is on the page that cares. The engine keeps
+    no background watcher, and nothing outside this folder is ever read.
+    """
+    from snapstudio_core import watch_folder as wf
+    return wf.match_project(folder, project_path)
+
+
+def slice_provenance(project_path: str, gcode_path: str) -> dict:
+    """Is this G-code the slice of that project?"""
+    from snapstudio_core import gcode, project_traits, provenance
+    from pathlib import Path as _Path
+
+    return provenance.compare(
+        project_traits.extract(project_path),
+        gcode.read_facts(gcode_path),
+        project_name=_Path(project_path).name,
+        gcode_name=_Path(gcode_path).name)
+
+
+def _with_providers(printer: dict, host: str | None, port: int,
+                    spoolman: str | None, slot_map: dict | None) -> dict:
+    """Fold optional material providers into the printer's own report.
+
+    The printer stays authoritative about what is in a slot; a provider can only
+    add what the machine cannot know, such as a spool identity or a remaining
+    weight. None of them is required for anything here to work.
+    """
+    if not spoolman:
+        return printer
+    from snapstudio_core import material_providers as providers
+
+    states = []
+    if host:
+        states.append(providers.stock_u1(host, port))
+    states.append(providers.spoolman(spoolman, slot_map))
+    combined = providers.combine(*states)
+    loaded = providers.as_loaded_filaments(combined)
+    if loaded is not None:
+        printer = dict(printer)
+        printer["loaded_filaments"] = loaded
+        printer["material_sources"] = combined.get("sources")
+        printer["remaining_known"] = combined.get("remaining_known", False)
+    return printer
+
+
 def print_plan(path: str) -> dict:
     """The ordered account of what a sliced job actually does.
 
@@ -429,29 +477,49 @@ def print_plan(path: str) -> dict:
     return plan
 
 
-def material_plan(path: str, host: str | None = None, port: int = 7125) -> dict:
+def material_plan(path: str, host: str | None = None, port: int = 7125,
+                  spoolman: str | None = None, slot_map: dict | None = None) -> dict:
     """What to load, and what can stay, for this sliced job."""
     from snapstudio_core import gcode, material_plan as mp
 
     facts = gcode.read_facts(path)
     printer = printer_facts(host, port) if host else {"reachable": False}
+    printer = _with_providers(printer, host, port, spoolman, slot_map)
     out = mp.from_facts(facts, printer)
     out["printer"] = {k: v for k, v in printer.items() if k != "klipper_objects"}
     return out
 
 
 def send_check(path: str, host: str | None = None, port: int = 7125,
-               include_timeline: bool = False) -> dict:
+               include_timeline: bool = False, project_path: str | None = None,
+               spoolman: str | None = None, slot_map: dict | None = None) -> dict:
     """Ready to send? Blockers, warnings and unknowns, kept apart."""
     from snapstudio_core import gcode, send_check as sc
 
     facts = gcode.read_facts(path)
     printer = printer_facts(host, port) if host else {"reachable": False}
+    printer = _with_providers(printer, host, port, spoolman, slot_map)
+
     timeline = None
     if include_timeline:
         from snapstudio_core import print_plan as pp
         timeline = pp.scan(path)
-    out = sc.evaluate(facts, printer, timeline=timeline)
+
+    origin = None
+    if project_path:
+        from pathlib import Path as _Path
+
+        from snapstudio_core import project_traits
+        from snapstudio_core import provenance as pv
+        try:
+            origin = pv.compare(project_traits.extract(project_path), facts,
+                                project_name=_Path(project_path).name,
+                                gcode_name=_Path(path).name)
+        except Exception:
+            origin = None
+
+    out = sc.evaluate(facts, printer, timeline=timeline, provenance=origin)
+    out["provenance"] = origin
     out["printer"] = {k: v for k, v in printer.items() if k != "klipper_objects"}
     return out
 
@@ -566,12 +634,30 @@ def printer_job_queue(host: str, port: int = 7125) -> dict:
     return moonraker.job_queue(host, port)
 
 
-def printer_upload_gcode(host: str, path: str, port: int = 7125) -> dict:
+def printer_upload_gcode(host: str, path: str, port: int = 7125,
+                         confirm: bool = True) -> dict:
     """Upload a sliced gcode file (chosen by the user) to the printer."""
     from snapstudio_core import moonraker
     if not path:
         raise ValueError("missing 'path'")
-    return moonraker.upload_gcode(host, path, port)
+    result = moonraker.upload_gcode(host, path, port)
+
+    # An accepted POST is not a finished upload. Moonraker parses metadata
+    # asynchronously, so a file can be on the printer and not yet readable by it —
+    # which is how a tool ends up starting a job the machine cannot describe. Ask
+    # the printer what it actually has before reporting success.
+    if not confirm:
+        return result
+    try:
+        result["confirmation"] = moonraker.confirm_upload(
+            host, result.get("filename") or "", expected_size=result.get("size"), port=port)
+        result["ok"] = bool(result["confirmation"].get("ok"))
+    except Exception as exc:  # noqa: BLE001 — the upload happened; the check did not
+        result["confirmation"] = {"ok": False, "error": f"{type(exc).__name__}",
+                                  "detail": ("The file was sent, but Studio could not confirm "
+                                             "the printer finished reading it.")}
+        result["ok"] = False
+    return result
 
 
 def first_layer(path: str, host: str | None = None, port: int = 7125) -> dict:

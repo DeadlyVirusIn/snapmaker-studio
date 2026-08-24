@@ -246,6 +246,9 @@ try {
     $code = Invoke-Phase "post-slice" $sampleWork $gcodeWork
     Add-Check "Post-Slice Doctor reads a sliced job in the installed app" ($code -eq 0)
 
+    $code = Invoke-Phase "cockpit" $sampleWork $gcodeWork
+    Add-Check "One surface shows the whole job" ($code -eq 0)
+
     $gcodeHashAfter = (Get-FileHash $gcodeWork -Algorithm SHA256).Hash
     Add-Check "Sliced job is byte-identical afterwards" ($gcodeHashBefore -eq $gcodeHashAfter)
 

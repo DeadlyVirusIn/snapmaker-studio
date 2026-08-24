@@ -230,6 +230,24 @@ def _make_handler(token: str):
                     self._send(400, {"error": str(e)})
                 except Exception:
                     self._send(500, {"error": "internal error"})
+            elif self.path == "/watch_folder":
+                try:
+                    self._send(200, service.watch_folder(
+                        rv.require_path_string(data, "folder"),
+                        project_path=rv.optional_str(data, "project_path", "") or None))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
+            elif self.path == "/slice_provenance":
+                try:
+                    self._send(200, service.slice_provenance(
+                        rv.require_path_string(data, "project_path"),
+                        rv.require_path_string(data, "gcode_path")))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
             elif self.path == "/print_plan":
                 try:
                     self._send(200, service.print_plan(rv.require_path_string(data)))
@@ -239,21 +257,28 @@ def _make_handler(token: str):
                     self._send(500, {"error": "internal error"})
             elif self.path == "/material_plan":
                 try:
+                    slot_map = data.get("slot_map")
                     self._send(200, service.material_plan(
                         rv.require_path_string(data),
                         host=rv.optional_str(data, "host", "") or None,
-                        port=rv.require_port(data)))
+                        port=rv.require_port(data),
+                        spoolman=rv.optional_str(data, "spoolman", "") or None,
+                        slot_map=slot_map if isinstance(slot_map, dict) else None))
                 except ValidationError as e:
                     self._send(400, {"error": str(e)})
                 except Exception:
                     self._send(500, {"error": "internal error"})
             elif self.path == "/send_check":
                 try:
+                    slot_map = data.get("slot_map")
                     self._send(200, service.send_check(
                         rv.require_path_string(data),
                         host=rv.optional_str(data, "host", "") or None,
                         port=rv.require_port(data),
-                        include_timeline=bool(data.get("include_timeline"))))
+                        include_timeline=bool(data.get("include_timeline")),
+                        project_path=rv.optional_str(data, "project_path", "") or None,
+                        spoolman=rv.optional_str(data, "spoolman", "") or None,
+                        slot_map=slot_map if isinstance(slot_map, dict) else None))
                 except ValidationError as e:
                     self._send(400, {"error": str(e)})
                 except Exception:

@@ -1,25 +1,30 @@
 {
   "acceptance": {
-    "passed": 27,
-    "report": "acceptance-0.5.0.json",
-    "total": 27
+    "passed": 28,
+    "report": "acceptance-0.6.0.json",
+    "total": 28
   },
   "backend": {
-    "passed": 773,
+    "passed": 822,
     "skipped": 3
   },
+  "demo": {
+    "file": "docs/media/snapmaker-studio-demo.mp4",
+    "seconds": 66
+  },
   "desktop": {
-    "passed": 282
+    "passed": 284
   },
   "hardware": {
     "passed": 20,
-    "report": "hardware-0.5.0.json",
+    "report": "hardware-0.6.0.json",
     "total": 20
   },
   "schema_version": "evidence/1",
+  "screenshots_dir": "docs/screenshots/v0.6.0",
   "selfcheck": {
-    "passed": 21,
-    "total": 21
+    "passed": 23,
+    "total": 23
   },
-  "version": "0.5.0"
+  "version": "0.6.0"
 }

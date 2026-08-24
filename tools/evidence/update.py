@@ -46,11 +46,43 @@ def harness(kind: str, version: str) -> dict:
     return {"passed": data["passed"], "total": data["total"], "report": path.name}
 
 
+def mp4_seconds(path: Path) -> int | None:
+    """Duration of an MP4, read from its own `mvhd` box.
+
+    Done here rather than with ffprobe because the demo's length is quoted in
+    public documents, and a claim in a document should be checkable by the same
+    test run that checks everything else — without needing a tool installed.
+    """
+    if not path.exists():
+        return None
+    data = path.read_bytes()
+    marker = data.find(b"mvhd")
+    if marker == -1:
+        return None
+    # After the four-byte type comes a one-byte version and three flag bytes,
+    # then creation and modification times, then the timescale and duration. The
+    # times are 32-bit in version 0 and 64-bit in version 1.
+    version = data[marker + 4]
+    if version == 1:
+        scale = int.from_bytes(data[marker + 8 + 16:marker + 8 + 20], "big")
+        duration = int.from_bytes(data[marker + 8 + 20:marker + 8 + 28], "big")
+    else:
+        scale = int.from_bytes(data[marker + 8 + 8:marker + 8 + 12], "big")
+        duration = int.from_bytes(data[marker + 8 + 12:marker + 8 + 16], "big")
+    return round(duration / scale) if scale else None
+
+
 def selfcheck_total() -> dict:
     sys.path.insert(0, str(ROOT / "backend"))
     from snapstudio_core import selfcheck
     report = selfcheck.run()
     return {"passed": report["passed"], "total": report["total"]}
+
+
+def _screenshots_dir(version: str) -> str:
+    """Which screenshot folder the public documents should be pointing at."""
+    candidate = ROOT / "docs" / "screenshots" / f"v{version}"
+    return f"docs/screenshots/v{version}" if candidate.exists() else ""
 
 
 def main() -> int:
@@ -69,6 +101,11 @@ def main() -> int:
         "selfcheck": selfcheck_total(),
         "backend": {"passed": args.backend, "skipped": args.backend_skipped},
         "desktop": {"passed": args.desktop},
+        "demo": {
+            "seconds": mp4_seconds(ROOT / "docs" / "media" / "snapmaker-studio-demo.mp4"),
+            "file": "docs/media/snapmaker-studio-demo.mp4",
+        },
+        "screenshots_dir": _screenshots_dir(version),
     }
     OUT.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"wrote {OUT.relative_to(ROOT)}")
@@ -77,6 +114,7 @@ def main() -> int:
         print(f"  {key}: {block['passed']}/{block['total']}")
     print(f"  backend: {args.backend} passed, {args.backend_skipped} skipped")
     print(f"  desktop: {args.desktop} passed")
+    print(f"  demo: {evidence['demo']['seconds']}s")
     return 0
 
 

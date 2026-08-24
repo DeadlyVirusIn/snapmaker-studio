@@ -5,7 +5,71 @@ Honest, current verification state for the current release. A release is only ma
 published installer, and — from beta.24 onward — read-only verification against a
 real Snapmaker U1 have all passed and are recorded here.
 
-## v0.5.0 — ACCEPTED
+## v0.6.0 — ACCEPTED
+
+**The workflow becomes one thing.** Everything below ran against *this installer*
+— the exact asset on the release page, verified by SHA256. Canonical values:
+[RELEASE_METADATA.md](RELEASE_METADATA.md).
+
+### CI / software
+
+| Check | Command | Result |
+|---|---|---|
+| Backend tests | `pytest` | **PASS** — 822 passed, 3 skipped |
+| Desktop tests | `npm run test` | **PASS** — 284 passed |
+| End-to-end pipeline | `u1convert selfcheck` | **PASS** — 23/23 over 15 documented routes |
+| TypeScript | `npx tsc --noEmit` | **PASS** — clean |
+| Production frontend build | `npm run build` | **PASS** |
+| Rust shell | `cargo check` | **PASS** — clean, green in CI |
+| Release-document consistency | `pytest tests/test_release_docs.py` | **PASS** |
+| Evidence consistency | `pytest tests/test_evidence_consistency.py` | **PASS** — now reads prose, the demo's own length, the screenshot folder and the README's "What's new", not only tables |
+| Local-first invariant | `pytest tests/test_local_first.py` | **PASS** |
+
+### Installed application — 28/28, including the upgrade
+
+`pwsh -File tools/acceptance/run.ps1 -Installer <published installer> -UpgradeFrom <v0.5.0 installer>`
+Full report: [internal/acceptance-0.6.0.json](internal/acceptance-0.6.0.json).
+
+New in this release: the folder watcher and provenance answer from the frozen
+sidecar; the After Slicing page offers to pick jobs up automatically; and one
+surface — *This print* — renders the real findings for all three stages, keeps the
+honest unknown, and still says Snapmaker Orca slices. Everything v0.5.0 checked
+still passes, and the sliced job is byte-identical afterwards.
+
+**Upgrade path:** v0.5.0 is installed, run so it creates real state, then upgraded
+in place. The user's data survives and only one installation is registered.
+
+### Real Snapmaker U1 — read-only, 20/20
+
+`pwsh -File tools/hardware/verify.ps1 -PrinterHost <printer>`
+Full report: [internal/hardware-0.6.0.json](internal/hardware-0.6.0.json), with the
+printer's address replaced before anything reached disk.
+
+Beyond the harness, and on the same machine: the upload-confirmation path was
+exercised read-only against a job already on the printer — metadata present,
+size matching, parse complete — and against a filename that does not exist, which
+correctly reported that the printer has not listed it. Free storage was traced
+rather than assumed: `/machine/system_info` reports `total_bytes: 0`,
+`/server/files/roots` reports no sizes, and no other endpoint on stock firmware
+exposes disk usage.
+
+### Known limitations — stated plainly
+
+- **Windows only.** See [internal/CROSS_PLATFORM_ASSESSMENT.md](internal/CROSS_PLATFORM_ASSESSMENT.md).
+- **The installer is not code-signed.** Verify the SHA256.
+- **Purge cannot be separated from printed filament** in Snapmaker Orca output.
+- **The fitted nozzle cannot be read** from stock firmware.
+- **Free storage is not reported** by stock firmware — traced, not assumed.
+- **Painted colour cannot be classified** without slicing.
+- **Provenance is evidence, not proof.** A job with no object names and no colour
+  data can only be `unknown`, and Studio says so rather than matching on the name.
+- **Remaining filament is only known when something tracks it.** A stock U1 cannot,
+  so sufficiency is unknown unless a provider such as Spoolman is configured.
+- **PrusaSlicer projects are read in full but not yet fully carried into a U1
+  copy.** What cannot be carried is named in the fidelity report.
+- **No print-success guarantee**, and no autonomous printer control.
+
+## v0.5.0 — superseded by v0.6.0 (was ACCEPTED)
 
 **The loop gets intelligent.** Everything below ran against *this installer* — the
 exact asset on the release page, verified by SHA256. Canonical values:

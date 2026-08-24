@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PostSliceCard } from "@/components/PostSliceCard";
 import { MaterialPlanCard, PrintPlanCard, SendReadyCard } from "@/components/PostSlicePanels";
+import { OrcaRoundTrip } from "@/components/OrcaRoundTrip";
 import { useSliced } from "@/store/sliced";
 import { useSession } from "@/store/session";
 import { POST_SLICE_EXPLAINER } from "@/lib/postSlice";
@@ -32,6 +33,8 @@ export default function AfterSlicing() {
         <h2 className="text-lg font-semibold">After slicing</h2>
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{POST_SLICE_EXPLAINER}</p>
       </div>
+
+      <OrcaRoundTrip />
 
       {!path && (
         <Card>
@@ -90,7 +93,7 @@ export default function AfterSlicing() {
             </p>
             <Button variant="secondary" size="sm" onClick={clear}>Choose another file</Button>
           </div>
-          <SendReadyCard path={path} />
+          <SendReadyCard path={path} projectPath={project?.path} />
           <PostSliceCard path={path} projectPath={project?.path} />
           <MaterialPlanCard path={path} />
           <PrintPlanCard path={path} />

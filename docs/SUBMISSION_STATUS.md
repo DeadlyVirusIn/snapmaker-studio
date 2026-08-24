@@ -89,5 +89,5 @@ a Klipper shutdown and firmware restart. Record:
   reproduce every claim yourself
 - [innovation-fund/DEMO_SCRIPT_90_SECONDS.md](innovation-fund/DEMO_SCRIPT_90_SECONDS.md)
   — the recorded demo, beat by beat
-- [media/snapmaker-studio-demo.mp4](media/snapmaker-studio-demo.mp4) — 71 seconds
+- [media/snapmaker-studio-demo.mp4](media/snapmaker-studio-demo.mp4) — 66 seconds
   of the running application

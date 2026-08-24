@@ -23,19 +23,19 @@ import {
  *
  * Nothing here sends anything.
  */
-export function SendReadyCard({ path }: { path: string }) {
+export function SendReadyCard({ path, projectPath }: { path: string; projectPath?: string }) {
   const host = usePrinter((s) => s.host);
   const [check, setCheck] = useState<SendCheck | null>(null);
 
   useEffect(() => {
     let alive = true;
     setCheck(null);
-    sendCheck(path, host, 7125, true).then(
+    sendCheck(path, host, 7125, true, projectPath).then(
       (r) => { if (alive) setCheck(r); },
       () => { /* the post-slice card already reports an unreadable file */ },
     );
     return () => { alive = false; };
-  }, [path, host]);
+  }, [path, host, projectPath]);
 
   const tone = sendTone(check?.verdict);
   const Icon = tone === "ready" ? CheckCircle2

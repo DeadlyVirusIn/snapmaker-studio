@@ -141,6 +141,13 @@ def plan(job_slots: list[dict], loaded: list | None,
         distance = colour_distance(slot.get("color"), have.get("color"))
         entry["colour_distance"] = None if distance is None else round(distance, 1)
 
+        # --- do I have enough of it? -----------------------------------
+        needed = slot.get("grams")
+        remaining = have.get("remaining_g")
+        entry["needs_grams"] = needed
+        entry["remaining_g"] = remaining
+        entry["sufficiency"] = _sufficiency(needed, remaining)
+
         if want_family and have_family and want_family != have_family:
             entry["state"] = "wrong_material"
             entry["detail"] = (f"The job was sliced for {want_family}; the printer reports "
@@ -158,18 +165,28 @@ def plan(job_slots: list[dict], loaded: list | None,
                                f"{slot['color']} and {have.get('color')} is loaded.")
             entry["action"] = ("Fine if you meant to change the colour. Swap the spool if you "
                                "wanted the original.")
+        elif entry["sufficiency"]["verdict"] == "insufficient":
+            entry["state"] = "not_enough"
+            entry["detail"] = entry["sufficiency"]["detail"]
+            entry["action"] = "Load a fuller spool, or be ready to swap part-way through."
+            out["changes_needed"] += 1
         else:
             entry["state"] = "ready"
-            entry["detail"] = (f"{have.get('material')} is loaded and matches what the job expects."
-                               if have.get("material") else "Loaded and matching.")
+            base = (f"{have.get('material')} is loaded and matches what the job expects."
+                    if have.get("material") else "Loaded and matching.")
+            if entry["sufficiency"]["verdict"] in ("enough", "probably_enough"):
+                base += " " + entry["sufficiency"]["detail"]
+            entry["detail"] = base
             entry["action"] = None
 
         out["slots"].append(entry)
 
     out["needed"] = sorted(used)
+    out["short"] = [s["tool"] for s in out["slots"] if s.get("state") == "not_enough"]
+    out["remaining_known"] = any(s.get("remaining_g") is not None for s in out["slots"])
     out["ready"] = [s["tool"] for s in out["slots"] if s["state"] == "ready"]
     out["to_change"] = [s["tool"] for s in out["slots"]
-                        if s["state"] in ("empty", "wrong_material")]
+                        if s["state"] in ("empty", "wrong_material", "not_enough")]
     out["colour_notes"] = [s["tool"] for s in out["slots"] if s["state"] == "different_colour"]
     out["summary"] = _summary(out)
     return out
@@ -212,3 +229,41 @@ def from_facts(gcode_facts: dict, printer: dict | None) -> dict:
     return plan(gcode_facts.get("slots") or [],
                 (printer or {}).get("loaded_filaments"),
                 gcode_facts.get("tools_used"))
+
+
+#: How much more than the job needs should be on the spool before Studio calls it
+#: comfortable. Filament weight is never exact — a spool's tare varies, and a
+#: tracked figure drifts between manual corrections — so "just enough" is a
+#: warning, not a pass.
+MARGIN = 1.10
+
+
+def _sufficiency(needed, remaining) -> dict:
+    """Is there enough filament on this spool for this job?
+
+    Only a provider that actually tracks remaining weight can answer this. A
+    printer knows which spool is loaded and nothing about what is left on it, so
+    on a stock setup the honest answer is unknown — and unknown is what this
+    returns, rather than an optimistic silence.
+    """
+    if needed is None:
+        return {"verdict": "unknown", "detail": "The job does not state how much this slot uses.",
+                "source": "the sliced file"}
+    if remaining is None:
+        return {"verdict": "unknown",
+                "detail": (f"This slot uses {needed:g} g. Nothing Studio can read tracks how much "
+                           "is left on the spool, so check it yourself."),
+                "source": "no provider reports remaining weight"}
+    if remaining >= needed * MARGIN:
+        return {"verdict": "enough",
+                "detail": f"{remaining:g} g tracked, {needed:g} g needed.",
+                "source": "tracked spool weight"}
+    if remaining >= needed:
+        return {"verdict": "probably_enough",
+                "detail": (f"{remaining:g} g tracked and {needed:g} g needed — enough on paper, "
+                           "with little to spare. Tracked weights are not exact."),
+                "source": "tracked spool weight"}
+    return {"verdict": "insufficient",
+            "detail": (f"{remaining:g} g tracked but the job needs {needed:g} g. "
+                       "It will run out part-way through."),
+            "source": "tracked spool weight"}

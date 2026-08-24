@@ -31,7 +31,7 @@ codebase, not a roadmap item.
 
 [![Snapmaker Studio demo](../media/demo-poster.jpg)](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4)
 
-[64 seconds, recorded from the installed application](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4).
+[66 seconds, recorded from the installed application](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4).
 Nothing staged, nothing re-created. No printer is connected in the recording, so
 it also shows what Studio says when it cannot reach one — which is the more
 interesting half. The beat-by-beat script is
@@ -86,18 +86,18 @@ honest fix was to remove it, not to tune a number Studio cannot observe.
 
 ## What is verified, and how
 
-Everything below ran against the **published v0.5.0 installer** — installed,
+Everything below ran against the **published v0.6.0 installer** — installed,
 launched, driven through the real window, then uninstalled. Not a development
 server, not the source tree.
 
 | What | Result | How to reproduce |
 |---|---|---|
-| Installed-application acceptance | **27/27** | `pwsh -File tools/acceptance/run.ps1` |
+| Installed-application acceptance | **28/28** | `pwsh -File tools/acceptance/run.ps1` |
 | Read-only verification against a real Snapmaker U1 | **20/20** | `pwsh -File tools/hardware/verify.ps1 -PrinterHost <ip>` |
-| End-to-end pipeline self-check | **21/21** | `u1convert selfcheck` |
+| End-to-end pipeline self-check | **23/23** | `u1convert selfcheck` |
 | Genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **36 tests** | `pytest tests/test_real_world_3mf.py` |
-| Backend | 773 passed, 3 skipped | `pytest` |
-| Desktop | 282 passed | `npm run test` |
+| Backend | 822 passed, 3 skipped | `pytest` |
+| Desktop | 284 passed | `npm run test` |
 | TypeScript · production build · Rust | clean | `tsc --noEmit` · `npm run build` · `cargo check` |
 
 Full records, including the raw evidence files:

@@ -6,6 +6,69 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-23
+
+**The workflow becomes one thing.** v0.5.0 could read a sliced job, plan the
+materials and decide whether to send. It still needed the user to carry the file
+back from Snapmaker Orca by hand, and it still could not tell whether that file
+was the slice of the project they had just checked. Both are fixed.
+
+### Added
+- **The sliced job comes back on its own.** Point Studio at the folder Snapmaker
+  Orca exports to — once — and it notices finished jobs appearing there while the
+  page is open. It offers a file only when it can see the slicer has stopped
+  writing it: the size has settled *and* the file ends the way a finished job
+  ends. One folder, chosen by the user; no background daemon, no whole-disk
+  watcher, nothing uploaded.
+- **Provenance: is this actually the slice of my project?** Every conclusion in
+  the post-slice half depends on the answer, and there is no identifier linking a
+  3MF to its G-code. So Studio weighs the evidence that exists — the set of object
+  names, filament colours and materials per slot, slot count, the target machine,
+  object count — and reports `confirmed`, `likely`, `ambiguous`, `no_match` or
+  `unknown`. **A filename is never proof**, and a folder with two equally good
+  candidates produces a question rather than a guess. Object names are compared as
+  a digest, so a model's name never leaves the file.
+- **A material provider seam.** What is loaded no longer has to come from the
+  printer alone. `material_providers` normalises any read-only source to one
+  shape, and **Spoolman** is supported optionally over the local network. The
+  printer stays authoritative about *what* is in a slot; another source may only
+  add what the machine cannot know — a spool identity, a remaining weight. Nothing
+  is required, nothing is written back, and a disagreement between two sources is
+  reported as a disagreement.
+- **Do I have enough filament?** With a source that tracks remaining weight,
+  Studio compares grams needed against grams left, per slot: enough, probably
+  enough (with a stated margin, because tracked weights are not exact),
+  insufficient, or — on a stock U1, which cannot know — unknown. A short spool is
+  a blocker on the send check, because it stops the print part-way.
+- **One surface for the whole job.** *This print* shows the stages in the order
+  they happen: before slicing, prepared, after slicing. Every individual page
+  still exists and still works; the cockpit exists so a beginner does not have to
+  know the order to follow it. In Simple mode it replaces "Check my model", which
+  moves to More tools.
+
+### Fixed
+- **Studio called an upload finished when the printer had not read it.**
+  Moonraker accepts the bytes and parses metadata afterwards, so a job could be
+  "uploaded" and not yet startable — the failure the U1 Toolkit documented.
+  Uploads are now confirmed against the printer's own metadata, with one polite
+  `metascan` request if it has not appeared, and `ok` means the printer has the
+  file *and* has finished reading it. A same-named file of a different size is
+  caught, which is what happens when a slicer re-exports over an old job.
+- **A project file handed in where G-code was expected** produced a report that
+  looked empty for no stated reason: a 3MF is a ZIP, and its compressed bytes
+  decode into enough noise to contain `G1 `. Studio now names the mistake.
+- The public evidence counts had drifted again — the Innovation Fund page still
+  described a 15-check self-check and a 21-check acceptance harness. The guard now
+  reads prose as well as tables, and also checks the demo's length against the
+  recording's own header, the screenshot folder against the released version, and
+  that the README's "What's new" names the current release.
+
+### Traced, and deliberately still unknown
+- **Free storage on the printer.** Checked properly this time rather than assumed:
+  `/machine/system_info` reports `total_bytes: 0`, `/server/files/roots` reports no
+  sizes, and nothing else on stock firmware exposes disk usage. Studio says it
+  cannot tell, and now says exactly what it looked at.
+
 ## [0.5.0] - 2026-08-23
 
 **The loop gets intelligent.** v0.4.0 could read a sliced job and check it against

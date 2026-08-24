@@ -290,3 +290,71 @@ def test_an_unreadable_job_cannot_be_reported_as_ready(tmp_path):
     report = send_check.evaluate({"available": False, "error": "nope"}, printer())
     assert report["available"] is False
     assert report["verdict"] != send_check.READY
+
+
+# --- upload confirmation (the metadata race) --------------------------------
+
+def test_an_accepted_upload_is_not_a_finished_upload(monkeypatch):
+    """Moonraker parses metadata asynchronously. Treating the POST as completion
+    is how a tool starts a job the printer cannot describe yet — the failure the
+    U1 Toolkit hit, and one Studio would have hit too."""
+    from snapstudio_core import moonraker
+
+    answers = [
+        None,                                        # not listed yet
+        {"size": 350527},                            # listed, not parsed
+        {"size": 350527, "estimated_time": 391, "layer_count": 45},   # parsed
+    ]
+
+    def fake_get(host, port, path, timeout):
+        assert "metadata" in path
+        value = answers.pop(0) if answers else answers
+        return {"result": value} if value is not None else {}
+
+    monkeypatch.setattr(moonraker, "_get", fake_get)
+    monkeypatch.setattr(moonraker.time, "sleep", lambda *_: None)
+    state = moonraker.confirm_upload("printer.local", "job.gcode", expected_size=350527,
+                                     attempts=5, pause=0)
+    assert state["ok"] is True
+    assert state["metadata_ready"] is True
+    assert state["size_matches"] is True
+
+
+def test_a_file_the_printer_never_lists_is_not_confirmed(monkeypatch):
+    from snapstudio_core import moonraker
+
+    monkeypatch.setattr(moonraker, "_get", lambda *a, **k: {})
+    monkeypatch.setattr(moonraker.time, "sleep", lambda *_: None)
+    state = moonraker.confirm_upload("printer.local", "job.gcode", attempts=2, pause=0)
+    assert state["ok"] is False
+    assert state["present"] is False
+    assert "may not have completed" in state["detail"]
+
+
+def test_a_same_named_file_of_a_different_size_is_caught(monkeypatch):
+    """The old job of the same name is still there — a real failure mode when a
+    slicer re-exports with the same filename."""
+    from snapstudio_core import moonraker
+
+    monkeypatch.setattr(moonraker, "_get", lambda *a, **k: {
+        "result": {"size": 999, "estimated_time": 12, "layer_count": 3}})
+    monkeypatch.setattr(moonraker.time, "sleep", lambda *_: None)
+    state = moonraker.confirm_upload("printer.local", "job.gcode", expected_size=350527,
+                                     attempts=2, pause=0)
+    assert state["ok"] is False
+    assert state["size_matches"] is False
+    assert "different size" in state["detail"]
+
+
+def test_studio_asks_the_printer_to_rescan_before_giving_up(monkeypatch):
+    from snapstudio_core import moonraker
+
+    scanned = []
+    monkeypatch.setattr(moonraker, "_get", lambda *a, **k: {"result": {"size": 1}})
+    monkeypatch.setattr(moonraker, "_post",
+                        lambda *a, **k: scanned.append(a) or {"result": "ok"})
+    monkeypatch.setattr(moonraker.time, "sleep", lambda *_: None)
+    state = moonraker.confirm_upload("printer.local", "job.gcode", attempts=4, pause=0)
+    assert state["rescanned"] is True
+    assert scanned, "the metascan endpoint was never called"
+    assert state["ok"] is False        # still not parsed, and still not claimed

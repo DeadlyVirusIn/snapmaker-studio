@@ -30,6 +30,8 @@ const doctorRoute = (id: string) => DOCTORS.find((d) => d.id === id)!.route;
 // Doctor, and Batch Prepare last.
 export const PRIMARY_NAV: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+  // One job, through its stages. The individual Doctors stay where they were.
+  { to: "/this-print", label: "This Print", icon: FileCheck2 },
   { to: "/start", label: "Get Started", icon: Rocket },
   { to: doctorRoute("project"), label: "Project Doctor", icon: FileCheck2, doctorId: "project" },
   { to: "/projects", label: "Projects", icon: FolderKanban },
@@ -60,7 +62,11 @@ export const PRIMARY_NAV: NavItem[] = [
 // PRIMARY_NAV unchanged. Routes stay validated by isKnownRoute().
 export const BEGINNER_NAV: NavItem[] = [
   { to: "/", label: "Home", icon: LayoutDashboard, end: true },
-  { to: doctorRoute("project"), label: "Check my model", icon: FileCheck2, doctorId: "project" },
+  // In Simple mode the cockpit *is* "check my model": it opens on the same
+  // findings and then stays with the job. The standalone Project Doctor keeps its
+  // route and lives under More tools, so nothing is taken away from anyone who
+  // was using it.
+  { to: "/this-print", label: "This print", icon: FileCheck2 },
   { to: "/projects", label: "My designs", icon: FolderKanban },
   { to: doctorRoute("printer"), label: "Printer", icon: HeartPulse, doctorId: "printer" },
   { to: "/help", label: "Help", icon: BookOpen },
@@ -84,7 +90,7 @@ export const SIMPLE_SECONDARY_NAV: NavItem[] =
 export const STATIC_ROUTES = new Set<string>([
   "/", "/projects", "/batch", "/workspace", "/printers", "/settings",
   "/why", "/plate-remap", "/compatibility", "/colors", "/scale", "/print-quality", "/first-layer", "/find-models", "/start", "/help", "/source",
-  "/after-slicing",
+  "/after-slicing", "/this-print",
 ]);
 
 /** True when a nav `to` resolves to a real route — guards against blank pages. */

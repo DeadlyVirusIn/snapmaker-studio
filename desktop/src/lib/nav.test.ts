@@ -77,11 +77,15 @@ describe("5. no broken routes / blank pages", () => {
   });
 });
 
-describe("6. Simple mode IA (beta.21 — one clear path for a novice)", () => {
+describe("6. Simple mode IA (one clear path for a novice)", () => {
   it("has at most 5 primary items, in the novice order", () => {
     expect(BEGINNER_NAV.length).toBeLessThanOrEqual(5);
+    // "This print" replaced "Check my model" in v0.6.0: the cockpit opens on the
+    // same findings and then stays with the job through slicing and sending,
+    // which is the journey a beginner actually has. The standalone Project
+    // Doctor keeps its route and moves to More tools — nothing was removed.
     expect(BEGINNER_NAV.map((n) => n.label)).toEqual([
-      "Home", "Check my model", "My designs", "Printer", "Help",
+      "Home", "This print", "My designs", "Printer", "Help",
     ]);
   });
   it("keeps every advanced tool reachable (More tools covers the rest of PRIMARY_NAV)", () => {

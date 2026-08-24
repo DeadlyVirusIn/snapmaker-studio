@@ -201,6 +201,8 @@ def run(sample: str | None = None) -> dict:
         runner.check("Print plan timeline", lambda: _print_plan(workdir))
         runner.check("What to load", lambda: _material_plan(workdir))
         runner.check("Ready to send", lambda: _send_check(workdir))
+        runner.check("Sliced job recognised", lambda: _round_trip(workdir))
+        runner.check("Material providers", lambda: _providers())
         runner.check("API schema", _api_schema)
 
         passed = sum(1 for c in runner.checks if c["status"] == PASS)
@@ -369,6 +371,9 @@ def _api_schema() -> str:
             "/print_plan": ({"path": "none"}, ["schema_version", "available"]),
             "/material_plan": ({"path": "none"}, ["schema_version", "available"]),
             "/send_check": ({"path": "none"}, ["schema_version", "available", "verdict"]),
+            "/watch_folder": ({"folder": "none"}, ["schema_version", "available"]),
+            "/slice_provenance": ({"project_path": "none", "gcode_path": "none"},
+                                  ["schema_version", "verdict"]),
         }
         for route, (payload, required) in routes.items():
             req = urllib.request.Request(
@@ -582,3 +587,75 @@ def _send_check(workdir: Path) -> str:
     if any(p in text for p in ("will print", "guaranteed", "100%")):
         raise AssertionError("the send confirmation promised a successful print")
     return "empty slot blocks the send; no printer blocks nothing; no success promise"
+
+
+def _round_trip(workdir: Path) -> str:
+    """The step that used to be manual: notice the sliced job and know whose it is."""
+    from . import gcode, provenance, watch_folder
+
+    folder = workdir / "orca-output"
+    folder.mkdir(exist_ok=True)
+    job = folder / "selfcheck_round_trip.gcode"
+    job.write_text(_MULTI_GCODE.replace(
+        "PRINT_START",
+        "PRINT_START" + chr(10)
+        + "EXCLUDE_OBJECT_DEFINE NAME=Bracket_left CENTER=10,10" + chr(10)
+        + "EXCLUDE_OBJECT_DEFINE NAME=Bracket_right CENTER=40,40"), encoding="utf-8")
+
+    facts = gcode.read_facts(job)
+    digest = (facts.get("exclude_object") or {}).get("name_digest")
+    if not digest:
+        raise AssertionError("the job's object names were not fingerprinted")
+
+    traits = {
+        "readable": True,
+        "object_name_digest": {"value": digest},
+        "filament_slots": {"value": [{"tool": 0, "type": "PLA", "color": "#FF0000"},
+                                      {"tool": 1, "type": "PETG", "color": "#00FF00"}]},
+        "filament_count": {"value": 2},
+        "target_printer": {"value": "Snapmaker U1"},
+    }
+    match = provenance.compare(traits, facts)
+    if match["verdict"] != provenance.CONFIRMED:
+        raise AssertionError(f"a job from the same project was not recognised: {match['verdict']}")
+
+    other = provenance.compare({**traits, "object_name_digest": {"value": "deadbeefdeadbeef"}}, facts)
+    if other["verdict"] != provenance.NO_MATCH:
+        raise AssertionError("a job from a different project was not ruled out")
+
+    found = watch_folder.scan(folder)
+    if not found.get("available") or not found["candidates"]:
+        raise AssertionError("the watcher found nothing in a folder containing a finished job")
+    if not found["candidates"][0]["complete"]:
+        raise AssertionError("a finished job was reported as still being written")
+    return "job recognised by its objects, a different project ruled out, folder scan clean"
+
+
+def _providers() -> str:
+    """The seam: optional sources add what the printer cannot know, and never
+    override what it can see."""
+    from . import material_plan, material_providers as mp
+
+    printer = {"source": mp.STOCK, "available": True, "remaining_known": False,
+               "slots": [mp._slot(0, material="PLA", subtype="Matte", color="#000000")]}
+    tracker = {"source": mp.SPOOLMAN, "available": True, "remaining_known": True,
+               "slots": [mp._slot(0, material="PETG", color="#FFFFFF", spool_id=7,
+                                  remaining_g=40.0, source=mp.SPOOLMAN)]}
+    combined = mp.combine(printer, tracker)
+    slot = combined["slots"][0]
+    if slot["material"] != "PLA" or slot["color"] != "#000000":
+        raise AssertionError("a provider overrode what the printer itself reported")
+    if slot["remaining_g"] != 40.0:
+        raise AssertionError("the tracked remaining weight was not carried through")
+
+    loaded = mp.as_loaded_filaments(combined)
+    plan = material_plan.plan([{"tool": 0, "used": True, "grams": 87.0, "type": "PLA",
+                                "color": "#000000"}], loaded, [0])
+    if plan["slots"][0]["state"] != "not_enough":
+        raise AssertionError("87 g needed against 40 g tracked was not reported as short")
+
+    blind = material_plan.plan([{"tool": 0, "used": True, "grams": 87.0, "type": "PLA"}],
+                               [{"material": "PLA"}], [0])
+    if blind["slots"][0]["sufficiency"]["verdict"] != "unknown":
+        raise AssertionError("a spool with no tracked weight was not reported as unknown")
+    return "printer stays authoritative; tracked weight adds sufficiency; untracked stays unknown"

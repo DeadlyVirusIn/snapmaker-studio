@@ -70,11 +70,40 @@ def test_upload_rejects_non_gcode(tmp_path):
 def test_upload_gcode_posts_multipart(capture_post, tmp_path):
     g = tmp_path / "part.gcode"
     g.write_bytes(b"G28\nG1 X0 Y0\n")
+    out = service.printer_upload_gcode("U1.local", str(g), 7125, confirm=False)
+    assert out["filename"] == "part.gcode"
+    upload = next(p for p in capture_post if p["path"] == "/server/files/upload")
+    assert upload["has_body"] and "multipart/form-data" in upload["content_type"]
+
+
+def test_an_upload_is_not_ok_until_the_printer_confirms_it(capture_post, tmp_path, monkeypatch):
+    """`ok` used to mean "the POST returned". It now means "the printer has the
+    file and has finished reading it", because Moonraker parses metadata
+    asynchronously and the difference is a job that cannot be started."""
+    g = tmp_path / "part.gcode"
+    g.write_bytes(b"G28")
+    from snapstudio_core import moonraker
+
+    # The printer never answers. Don't spend the polling budget in real time.
+    monkeypatch.setattr(moonraker, "_get", lambda *a, **k: {})
+    monkeypatch.setattr(moonraker.time, "sleep", lambda *_: None)
     out = service.printer_upload_gcode("U1.local", str(g), 7125)
-    assert out["ok"] and out["filename"] == "part.gcode"
-    last = capture_post[-1]
-    assert last["path"] == "/server/files/upload"
-    assert last["has_body"] and "multipart/form-data" in last["content_type"]
+    assert out["ok"] is False
+    assert out["confirmation"]["ok"] is False
+    assert out["confirmation"]["detail"]
+
+
+def test_an_upload_the_printer_confirms_is_ok(capture_post, tmp_path, monkeypatch):
+    from snapstudio_core import moonraker
+
+    monkeypatch.setattr(moonraker, "confirm_upload",
+                        lambda *a, **k: {"ok": True, "present": True,
+                                         "metadata_ready": True, "detail": "confirmed"})
+    g = tmp_path / "part.gcode"
+    g.write_bytes(b"G28")
+    out = service.printer_upload_gcode("U1.local", str(g), 7125)
+    assert out["ok"] is True
+    assert out["confirmation"]["metadata_ready"] is True
 
 
 def test_upload_requires_path():

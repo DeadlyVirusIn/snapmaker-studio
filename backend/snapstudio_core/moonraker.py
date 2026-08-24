@@ -10,6 +10,8 @@ or printer modification of any kind. Every function here is non-destructive.
 from __future__ import annotations
 import json
 import re
+import time
+import urllib.parse
 import urllib.request
 
 DEFAULT_PORT = 7125
@@ -508,3 +510,78 @@ def upload_gcode(host: str, file_path: str, port: int = DEFAULT_PORT, timeout: f
     item = res.get("item", {}) if isinstance(res, dict) else {}
     return {"ok": True, "action": "upload", "filename": name,
             "path": item.get("path", name), "size": len(content)}
+
+
+def confirm_upload(host: str, filename: str, expected_size: int | None = None,
+                   port: int = DEFAULT_PORT, attempts: int = 10,
+                   pause: float = 1.0, timeout: float = 5.0) -> dict:
+    """Has the printer really got this file, and finished reading it?
+
+    A successful upload POST means Moonraker accepted the bytes. It does not mean
+    the file is listed, and it does not mean the metadata has been parsed —
+    Moonraker does that asynchronously. Treating the POST as completion is how a
+    tool ends up starting a job the printer cannot describe yet, or showing a
+    thumbnail from the previous file of the same name. The U1 Toolkit hit this;
+    Studio would have hit it too.
+
+    So this polls the printer's own metadata for the file, asks it to scan once if
+    the metadata has not appeared, and reports what is actually true. It never
+    starts anything.
+    """
+    state = {"filename": filename, "present": False, "metadata_ready": False,
+             "size_matches": None, "attempts": 0, "rescanned": False}
+
+    def look():
+        try:
+            data = _get(host, port, f"/server/files/metadata?filename={urllib.parse.quote(filename)}",
+                        timeout)
+        except Exception:
+            return None
+        # Moonraker wraps everything in {"result": ...}; _get returns the envelope.
+        if isinstance(data, dict):
+            inner = data.get("result")
+            return inner if isinstance(inner, dict) else data
+        return None
+
+    for round_number in range(max(1, attempts)):
+        state["attempts"] = round_number + 1
+        meta = look()
+        if meta:
+            state["present"] = True
+            size = meta.get("size")
+            if expected_size is not None and isinstance(size, (int, float)):
+                state["size_matches"] = int(size) == int(expected_size)
+            # Moonraker fills these in once it has actually read the file.
+            state["metadata_ready"] = any(
+                meta.get(key) is not None
+                for key in ("estimated_time", "object_height", "layer_count", "filament_total"))
+            if state["metadata_ready"]:
+                break
+        if round_number == max(1, attempts) // 2 and not state["metadata_ready"]:
+            # Ask once, politely, then keep waiting rather than hammering it.
+            try:
+                _post(host, port, "/server/files/metascan", timeout,
+                      body=json.dumps({"filename": filename}).encode(),
+                      content_type="application/json")
+                state["rescanned"] = True
+            except Exception:
+                pass
+        time.sleep(pause)
+
+    state["ok"] = bool(state["present"] and state["metadata_ready"]
+                       and state["size_matches"] is not False)
+    state["detail"] = _upload_detail(state)
+    return state
+
+
+def _upload_detail(state: dict) -> str:
+    if not state["present"]:
+        return ("The printer has not listed this file. The upload may not have completed — "
+                "check the printer before starting anything.")
+    if state["size_matches"] is False:
+        return ("The printer has a file with this name, but it is a different size. "
+                "An older job of the same name may still be there.")
+    if not state["metadata_ready"]:
+        return ("The file is on the printer, but it has not finished reading it yet. "
+                "Give it a moment before starting the print.")
+    return "The printer has the file and has finished reading it."

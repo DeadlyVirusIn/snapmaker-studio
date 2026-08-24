@@ -46,6 +46,9 @@ Copy-Item $sample $sampleWork -Force
 # A sliced job for the second half of the demo. Studio does not slice, so this is
 # the one thing the recording cannot produce on camera; everything Studio then
 # does with it is real, and this file is shaped exactly like Snapmaker Orca output.
+$demoWatch = Join-Path $WorkDir "orca-output"
+Remove-Item $demoWatch -Recurse -Force -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force -Path $demoWatch | Out-Null
 $demoJob = Join-Path $WorkDir "demo_job.gcode"
 @'
 ; HEADER_BLOCK_START
@@ -176,7 +179,7 @@ public static class Win {
 
     Write-Host "Recording — driving the demo beats"
     $cut = if ($Short) { "short" } else { "full" }
-    & node (Join-Path $PSScriptRoot "beats.mjs") "http://127.0.0.1:$DebugPort" $cut $demoJob
+    & node (Join-Path $PSScriptRoot "beats.mjs") "http://127.0.0.1:$DebugPort" $cut $demoJob $demoWatch
     if ($LASTEXITCODE -ne 0) { throw "the demo beats failed" }
 
     Start-Sleep -Seconds 2

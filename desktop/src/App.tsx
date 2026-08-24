@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppShell } from "@/components/shell/AppShell";
 import AfterSlicing from "@/routes/AfterSlicing";
+import Cockpit from "@/routes/Cockpit";
 import Dashboard from "@/routes/Dashboard";
 import Projects from "@/routes/Projects";
 import Batch from "@/routes/Batch";
@@ -74,6 +75,7 @@ export default function App() {
             <Route path="/plate-remap" element={<PlateRemap />} />
             <Route path="/compatibility" element={<CompatibilityHub />} />
             <Route path="/after-slicing" element={<AfterSlicing />} />
+            <Route path="/this-print" element={<Cockpit />} />
             <Route path="/find-models" element={<FindModels />} />
             <Route path="/source" element={<SourceCompatibility />} />
             <Route path="/scale" element={<ScaleDoctor />} />

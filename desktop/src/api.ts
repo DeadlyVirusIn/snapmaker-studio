@@ -1224,6 +1224,59 @@ export async function preflight(path: string, host?: string, port = 7125): Promi
   return r.json();
 }
 
+// ---- The Orca round-trip ----------------------------------------------------
+// After Snapmaker Orca slices the prepared copy, the result should come back on
+// its own. Studio polls one folder the user chose, only while the page that
+// cares is open, and only offers files it can see are finished.
+
+export type Provenance = "confirmed" | "likely" | "ambiguous" | "no_match" | "unknown";
+
+export interface ProvenanceResult {
+  schema_version: string;
+  verdict: Provenance;
+  score: number;
+  evidence: Array<{ signal: string; weight: number; detail: string }>;
+  summary: string;
+}
+
+export interface WatchCandidate {
+  path: string;
+  name: string;
+  size_bytes: number;
+  age_seconds: number;
+  complete: boolean;
+  state: string;
+  job?: {
+    slicer: string | null;
+    printer_model: string | null;
+    layer_count: number | null;
+    tools_used: number[] | null;
+    total_g: number | null;
+  };
+  provenance?: ProvenanceResult;
+}
+
+export interface WatchResult {
+  schema_version: string;
+  available: boolean;
+  error?: string;
+  folder: string | null;
+  seen?: number;
+  candidates: WatchCandidate[];
+  best?: string | null;
+  best_verdict?: Provenance | null;
+  summary?: string;
+}
+
+export function watchFolder(folder: string, projectPath?: string): Promise<WatchResult> {
+  return post("/watch_folder", { folder, project_path: projectPath ?? "" }, "watch folder");
+}
+
+export function sliceProvenance(projectPath: string, gcodePath: string): Promise<ProvenanceResult> {
+  return post("/slice_provenance", { project_path: projectPath, gcode_path: gcodePath },
+    "provenance");
+}
+
 // ---- Update check -----------------------------------------------------------
 // The only thing in Studio that talks to the internet, and only when a person
 // presses the button. It sends nothing but the request: no identifiers, no usage,
@@ -1297,6 +1350,7 @@ export interface SendItem {
 
 export interface SendCheck {
   schema_version: string;
+  provenance?: ProvenanceResult | null;
   available: boolean;
   printer_reachable?: boolean;
   verdict: "blocker" | "warning" | "unknown" | "ready";
@@ -1326,10 +1380,12 @@ export function materialPlan(path: string, host?: string, port = 7125): Promise<
 }
 
 export function sendCheck(
-  path: string, host?: string, port = 7125, includeTimeline = false,
+  path: string, host?: string, port = 7125, includeTimeline = false, projectPath?: string,
 ): Promise<SendCheck> {
-  return post("/send_check", { path, host: host ?? "", port, include_timeline: includeTimeline },
-    "send check");
+  return post("/send_check", {
+    path, host: host ?? "", port, include_timeline: includeTimeline,
+    project_path: projectPath ?? "",
+  }, "send check");
 }
 
 // ---- Support bundle ---------------------------------------------------------

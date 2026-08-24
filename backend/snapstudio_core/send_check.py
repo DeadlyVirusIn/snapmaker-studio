@@ -37,7 +37,8 @@ def _item(kind: str, title: str, detail: str, *, action: str | None = None,
 
 
 def evaluate(gcode_facts: dict, printer: dict | None,
-             plan: dict | None = None, timeline: dict | None = None) -> dict:
+             plan: dict | None = None, timeline: dict | None = None,
+             provenance: dict | None = None) -> dict:
     """Compose the send confirmation from facts gathered elsewhere."""
     if not gcode_facts.get("available"):
         return {
@@ -85,6 +86,48 @@ def evaluate(gcode_facts: dict, printer: dict | None,
                     action=slot.get("action"),
                     source="G-code filament colour vs printer filament state"))
 
+    # --- is this even the right file? ----------------------------------------
+    #
+    # Every check above is about a job. If that job is not the slice of the
+    # project the user just checked, those checks are answering the wrong
+    # question, which is worse than not answering.
+    if provenance:
+        verdict = provenance.get("verdict")
+        if verdict == "no_match":
+            items.append(_item(
+                BLOCKER, "This does not look like the slice of your project",
+                provenance.get("summary") or "",
+                action="Pick the G-code that came from this project, or re-slice it.",
+                source="project and job compared"))
+        elif verdict == "ambiguous":
+            items.append(_item(
+                WARNING, "Studio cannot tie this job to your project",
+                provenance.get("summary") or "",
+                action="Check you picked the right file before you send it.",
+                source="project and job compared"))
+        elif verdict == "unknown":
+            items.append(_item(
+                UNKNOWN, "Whether this is the slice of your project",
+                "Neither file states enough for Studio to tell.",
+                action="Check the file yourself.",
+                source="project and job compared"))
+
+    # --- material sufficiency, where anything actually tracks it -------------
+    for slot in (materials.get("slots") or []):
+        sufficiency = slot.get("sufficiency") or {}
+        if sufficiency.get("verdict") == "insufficient":
+            items.append(_item(
+                BLOCKER, "Not enough filament in " + slot["label"],
+                sufficiency.get("detail") or "",
+                action=slot.get("action"),
+                source=sufficiency.get("source")))
+        elif sufficiency.get("verdict") == "probably_enough":
+            items.append(_item(
+                WARNING, slot["label"].capitalize() + " has little to spare",
+                sufficiency.get("detail") or "",
+                action="Have a spare spool to hand.",
+                source=sufficiency.get("source")))
+
     # --- things only this moment can answer ----------------------------------
     size = gcode_facts.get("size_bytes")
     free = (printer or {}).get("free_bytes")
@@ -102,7 +145,9 @@ def evaluate(gcode_facts: dict, printer: dict | None,
                 f"This job is {size / 1e6:.0f} MB. This firmware does not report how much "
                 "room is left, so Studio cannot tell you whether it will fit.",
                 action="If uploads have failed before, clear some old jobs first.",
-                source="the firmware exposes no disk usage"))
+                source=("traced on a real U1: /machine/system_info reports total_bytes 0 "
+                        "and /server/files/roots reports no sizes, so there is "
+                        "nothing to read")))
 
     if not reachable:
         items.append(_item(

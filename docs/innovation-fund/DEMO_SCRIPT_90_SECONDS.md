@@ -91,7 +91,7 @@ what survived, and checks it against your actual printer.*
 
 ```
 $ u1convert selfcheck
-15/15 checks passed
+21/21 checks passed
 ```
 
 > **Snapmaker Studio**
