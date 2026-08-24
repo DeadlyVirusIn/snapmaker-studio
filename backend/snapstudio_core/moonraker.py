@@ -64,10 +64,27 @@ MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 
 
 def _get(host: str, port: int, path: str, timeout: float) -> dict:
-    """Read-only HTTP GET against Moonraker. Raises on failure."""
+    """Read-only HTTP GET against Moonraker. Raises on failure.
+
+    Retried once when the machine cannot open the socket at all. Studio polls a
+    printer every few seconds, and on a machine short of ephemeral ports — one
+    here had 14,000 held open by Docker Desktop — that fails intermittently for a
+    reason that has nothing to do with the printer. One quick retry turns a
+    spurious "your printer stopped answering" into a small pause. A refusal from
+    the printer itself is not retried: that is an answer.
+    """
     req = urllib.request.Request(_url(host, port, path), method="GET")  # explicit: never anything but GET
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        raw = r.read(MAX_RESPONSE_BYTES + 1)
+    for attempt in range(2):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                raw = r.read(MAX_RESPONSE_BYTES + 1)
+            break
+        except urllib.error.HTTPError:
+            raise
+        except OSError:
+            if attempt:
+                raise
+            time.sleep(0.25)
     if len(raw) > MAX_RESPONSE_BYTES:
         raise ValueError("the printer sent more data than Studio will read")
     return json.loads(raw)

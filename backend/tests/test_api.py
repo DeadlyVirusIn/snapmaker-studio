@@ -211,12 +211,26 @@ def test_server_bad_content_length_is_400():
     _run(httpd)
     try:
         port = httpd.server_address[1]
-        s = socket.create_connection(("127.0.0.1", port), timeout=5)
-        s.sendall(b"POST /doctor HTTP/1.1\r\nHost: x\r\n"
-                  b"Content-Length: notanumber\r\nConnection: close\r\n\r\n")
-        resp = s.recv(256)
-        s.close()
-        assert b"400" in resp.split(b"\r\n", 1)[0]
+        # A raw socket, because the point is a malformed header no HTTP client
+        # would send. Retried like every other connection in this file: a machine
+        # with no source port to spare says nothing about how the server handles
+        # this request.
+        response = None
+        for attempt in range(4):
+            try:
+                sock = socket.create_connection(("127.0.0.1", port), timeout=10)
+            except OSError:
+                time.sleep(0.5 * (attempt + 1))
+                continue
+            try:
+                sock.sendall(b"POST /doctor HTTP/1.1\r\nHost: x\r\n"
+                             b"Content-Length: notanumber\r\nConnection: close\r\n\r\n")
+                response = sock.recv(256)
+            finally:
+                sock.close()
+            break
+        assert response is not None, "the machine would not give this test a port"
+        assert b"400" in response.split(b"\r\n", 1)[0]
     finally:
         httpd.shutdown()
 
@@ -448,20 +462,16 @@ def test_server_batch_roundtrip(tmp_path, monkeypatch):
     _run(httpd)
     try:
         port = httpd.server_address[1]
-        hdr = {"Content-Type": "application/json", "X-Auth-Token": token}
         stl = tmp_path / "cube.stl"; stl.write_bytes(_bin_tetra())
 
-        req = urllib.request.Request(f"http://127.0.0.1:{port}/batch",
-                                     data=json.dumps({"paths": [str(stl)]}).encode(), headers=hdr)
-        with urllib.request.urlopen(req, timeout=5) as r:
-            start = json.loads(r.read())
+        _status, start = _request(port, "/batch", {"paths": [str(stl)]}, token)
         job_id = start["job_id"]
 
         def status():
-            req = urllib.request.Request(f"http://127.0.0.1:{port}/batch/status",
-                                         data=json.dumps({"job_id": job_id}).encode(), headers=hdr)
-            with urllib.request.urlopen(req, timeout=5) as r:
-                return json.loads(r.read())
+            # Polled every 50 ms until the batch finishes: a socket per poll is
+            # what made this the last flaky test in the suite.
+            _code, body = _request(port, "/batch/status", {"job_id": job_id}, token)
+            return body
 
         st = _poll_until_finished(status)
         assert st["result"]["done"] == 1
