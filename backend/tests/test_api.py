@@ -164,9 +164,8 @@ def test_server_health_open():
     _run(httpd)
     try:
         port = httpd.server_address[1]
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=5) as r:
-            body = json.loads(r.read())
-        assert body["status"] == "ok"
+        status, body = _request(port, "/health", None, None, method="GET")
+        assert status == 200 and body["status"] == "ok"
     finally:
         httpd.shutdown()
 
@@ -177,22 +176,12 @@ def test_server_doctor_requires_token(tmp_path):
     try:
         port = httpd.server_address[1]
         out = _sample_u1(tmp_path)
-        payload = json.dumps({"path": str(out)}).encode()
 
-        req = urllib.request.Request(f"http://127.0.0.1:{port}/doctor", data=payload,
-                                     headers={"Content-Type": "application/json"})
-        try:
-            urllib.request.urlopen(req, timeout=5)
-            assert False, "expected 401 without token"
-        except urllib.error.HTTPError as e:
-            assert e.code == 401
+        status, _ = _request(port, "/doctor", {"path": str(out)}, None)
+        assert status == 401, "expected 401 without token"
 
-        req = urllib.request.Request(f"http://127.0.0.1:{port}/doctor", data=payload,
-                                     headers={"Content-Type": "application/json",
-                                              "X-Auth-Token": token})
-        with urllib.request.urlopen(req, timeout=5) as r:
-            body = json.loads(r.read())
-        assert body["verdict"] == "READY"
+        status, body = _request(port, "/doctor", {"path": str(out)}, token)
+        assert status == 200 and body["verdict"] == "READY"
     finally:
         httpd.shutdown()
 
@@ -408,15 +397,10 @@ def test_server_library_roundtrip(tmp_path, monkeypatch):
         hdr = {"Content-Type": "application/json", "X-Auth-Token": token}
 
         # diagnose over the wire -> auto-records into the library
-        req = urllib.request.Request(f"http://127.0.0.1:{port}/doctor",
-                                     data=json.dumps({"path": str(out)}).encode(), headers=hdr)
-        urllib.request.urlopen(req, timeout=5).read()
+        _request(port, "/doctor", {"path": str(out)}, token)
 
         # list via /library
-        req = urllib.request.Request(f"http://127.0.0.1:{port}/library",
-                                     data=b"{}", headers=hdr)
-        with urllib.request.urlopen(req, timeout=5) as r:
-            body = json.loads(r.read())
+        _status, body = _request(port, "/library", {}, token)
         assert body["count"] == 1 and body["projects"][0]["name"] == "cube_U1.3mf"
     finally:
         httpd.shutdown()
