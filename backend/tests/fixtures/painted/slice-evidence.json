@@ -1,0 +1,12 @@
+{
+  "schema_version": "paintevidence/1",
+  "recorded": "2026-08-24",
+  "what_this_is": "The result of slicing the painted fixture with a real slicer, kept so the claim 'a paint state names filament N' is checkable rather than asserted.",
+  "source_fixture": "prusaslicer-2.9.6-painted-cube.3mf",
+  "slicer": "PrusaSlicer 2.9.6",
+  "command": "prusa-slicer-console.exe --slice --nozzle-diameter 0.4,0.4,0.4,0.4,0.4 --filament-diameter 1.75,1.75,1.75,1.75,1.75 -o painted.gcode <fixture>",
+  "painted_states_in_fixture": [1, 2, 3, 4, 5],
+  "tool_changes_in_gcode": {"T0": 65, "T1": 64, "T2": 16, "T3": 17, "T4": 32},
+  "filament_used_mm": [1413.43, 785.34, 15.65, 138.7, 374.24],
+  "conclusion": "States 1-5 drove tools T0-T4 and no other tool appeared, so paint state N is the project's filament N, counting from one; the G-code tool number is N-1."
+}
