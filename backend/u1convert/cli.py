@@ -290,8 +290,10 @@ def colors_cmd(path, toolheads):
     """Say what a project with more colours than toolheads actually needs.
 
     Classifies each colour as sharing layers (needs a toolhead), introduced at a
-    height (may be a planned swap), or unclassified. Painted colour cannot be read
-    without slicing and is reported as unclassified rather than assumed easy.
+    height (may be a planned swap), or unclassified. Painted colour is read from
+    the project itself; what still needs the slicer is whether two colours land on
+    the same layer, and a colour that cannot be proven separate is reported as
+    unclassified rather than assumed easy.
     """
     from snapstudio_core import color_plan
     click.echo(json.dumps(color_plan.analyse(path, toolheads=toolheads), indent=2))

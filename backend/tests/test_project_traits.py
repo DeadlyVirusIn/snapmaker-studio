@@ -35,6 +35,15 @@ def _write(path, entries: dict) -> str:
     return str(path)
 
 
+def _painted_model(attribute: str) -> bytes:
+    """A model part whose mesh carries painted colour — where a slicer puts it."""
+    return _model().decode().replace(
+        "<resources/>",
+        '<resources><object id="1" type="model"><mesh><triangles>'
+        f'<triangle v1="0" v2="1" v3="2" {attribute}/>'
+        "</triangles></mesh></object></resources>").encode()
+
+
 def _bambu(tmp_path, name="p.3mf", settings=None, extra_parts=None, model=None):
     parts = {
         "[Content_Types].xml": "<x/>",
@@ -127,14 +136,27 @@ def test_uniform_nozzles_are_not_called_mixed(tmp_path):
 
 
 def test_texture_and_painted_colour_detection(tmp_path):
-    p = _bambu(tmp_path, extra_parts={
-        "3D/Textures/skin.png": b"\x89PNG",
-        "Metadata/model_settings.config":
-            "<config><object><metadata key='mmu_segmentation' value='1'/></object></config>",
-    })
+    # Painting is carried on the mesh triangles. Studio used to look for it in
+    # model_settings.config, where no slicer has ever written it, so every
+    # painted project was reported as unpainted.
+    p = _bambu(tmp_path, model=_painted_model('paint_color="8"'),
+               extra_parts={"3D/Textures/skin.png": b"\x89PNG"})
     t = pt.extract(p)
     assert t["has_texture"]["value"] is True
     assert t["has_painted_color"]["value"] is True
+    assert "3D/3dmodel.model" in t["has_painted_color"]["evidence"]
+
+
+def test_the_prusa_dialect_of_painting_is_detected_too(tmp_path):
+    model = _painted_model('slic3rpe:mmu_segmentation="8"')
+    assert pt.extract(_bambu(tmp_path, model=model))[
+        "has_painted_color"]["value"] is True
+
+
+def test_a_project_with_no_painting_does_not_claim_any(tmp_path):
+    t = pt.extract(_bambu(tmp_path))
+    assert t["has_painted_color"]["value"] is False
+    assert t["has_painted_color"]["evidence"] is None
 
 
 def test_unknown_required_extension_is_reported(tmp_path):

@@ -342,8 +342,10 @@ def color_plan(path: str, toolheads: int | None = None) -> dict:
 
     Reports which colours share layers (and so need a toolhead each), which are
     introduced at a height (and may be planned swaps), and which Studio cannot
-    classify — painted colour cannot be read without slicing, and is never put in
-    the optimistic bucket.
+    classify. Painted colour is decoded from the project's own facet data — the
+    slots it uses, the area each covers and the heights each spans — and a
+    painted colour is only offered as a swap when its separation from every other
+    colour is proven.
     """
     from snapstudio_core import color_plan as cp
     return cp.analyse(path, toolheads=toolheads)

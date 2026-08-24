@@ -15,17 +15,25 @@ the two reasons have completely different fixes:
 Studio classifies each colour into one of those, or into **cannot classify**, and
 refuses to guess between them.
 
-Two honesty constraints shape the implementation:
+Three honesty constraints shape the implementation:
 
-1. **Painted colour cannot be enumerated without slicing.** Per-triangle paint
-   data is stored in an encoded form, so Studio can prove a project *has* painted
-   regions but not which colours they use. Those colours go to "cannot classify"
-   with that reason — never silently into the sequential bucket, which is the
-   bucket that would tell someone their project is easier than it is.
+1. **Painted colour is read, not guessed — and only as far as it goes.** Studio
+   decodes the project's own per-facet paint (:mod:`painted_color`), so the
+   filaments a painted region uses, how much area each covers and the heights
+   each spans are facts here rather than an "unclassified". What painting still
+   cannot settle is whether two colours land on the *same printed layer*:
+   overlapping heights prove they *can*, and only slicing proves they do. A
+   colour whose painting cannot be compared stays unclassified with the reason,
+   never in the optimistic bucket — that is the bucket that would tell someone
+   their project is easier than it is.
 
 2. **Layer numbers do not exist in an unsliced project.** A colour change is
    recorded at a height. Studio reports the height, and offers a layer number only
    as an estimate, labelled as one, computed from the project's own layer height.
+
+3. **A slot a project paints with but never lists is reported, not silently
+   renumbered.** It is a defect in the project, and guessing which filament was
+   meant would be inventing a colour.
 
 Studio does not promise that a manual-swap workflow will work — that depends on
 the slicer. It reports what the file contains and what that implies.
@@ -35,6 +43,7 @@ from __future__ import annotations
 import json
 import re
 
+from . import painted_color
 from .container import ThreeMF
 from .errors import UnsafeArchive
 
@@ -57,7 +66,6 @@ POSSIBLE_WITH_SWAPS = "possible_with_swaps"
 NEEDS_REDUCTION = "needs_reduction"
 CANNOT_CLASSIFY = "cannot_classify"
 
-_PAINT_TOKENS = (b"paint_color", b"mmu_segmentation")
 _EXTRUDER_RE = re.compile(r'key="extruder"\s+value="(\d+)"')
 _LAYER_TAG_RE = re.compile(r"<layer\b[^>]*>")
 _ATTR_RE = re.compile(r'([A-Za-z_:][\w.:-]*)\s*=\s*"([^"]*)"')
@@ -162,15 +170,16 @@ def analyse(path: str, toolheads: int | None = None) -> dict:
     assigned = {int(v) for v in _EXTRUDER_RE.findall(model_settings)}
     assigned = {i for i in assigned if 1 <= i <= total}
 
-    painted_triangles = 0
-    for part in tm.list_parts():
-        if part.endswith(".model"):
-            try:
-                blob = tm.read_part(part)
-            except Exception:
-                continue
-            painted_triangles += sum(blob.count(tok) for tok in _PAINT_TOKENS)
-    painted = painted_triangles > 0
+    paint = painted_color.read_container(tm)
+    paint_by_slot = {entry["slot"]: entry for entry in paint.get("slots", [])
+                     if entry.get("from_painting")}
+    together = painted_color.coexistence(paint)
+    overlap_by_slot: dict[int, list[dict]] = {}
+    for pair in together["pairs"]:
+        for slot in pair["slots"]:
+            overlap_by_slot.setdefault(slot, []).append(pair)
+    painted = bool(paint_by_slot) or paint.get("painted_triangle_count", 0) > 0
+    painted_triangles = paint.get("painted_triangle_count", 0)
 
     layer_height = _float(cfg.get("layer_height"))
     first_layer = _float(cfg.get("initial_layer_print_height"))
@@ -181,16 +190,31 @@ def analyse(path: str, toolheads: int | None = None) -> dict:
         if slot and 1 <= slot <= total and slot not in change_by_slot:
             change_by_slot[slot] = change
 
+    # An assigned colour's extent is not read from geometry, so a painted colour
+    # cannot be proven separate from one. That is stated once here and used
+    # wherever a separation would otherwise be claimed.
+    unmeasured = sorted(slot for slot in assigned if slot not in paint_by_slot)
+
     simultaneous, layer_based, unclassified = [], [], []
     for index in range(1, total + 1):
         colour = colours[index - 1]
         material = materials[index - 1] if index - 1 < len(materials) else None
         change = change_by_slot.get(index)
+        brush = paint_by_slot.get(index)
         if index in assigned:
             simultaneous.append(_colour_entry(
                 index, colour, material, SIMULTANEOUS,
                 "an object on the plate is assigned this colour, and a plate prints "
-                "layer by layer"))
+                "layer by layer",
+                **_paint_facts(brush)))
+        elif brush:
+            usage, evidence, extra = _painted_usage(
+                index, brush, overlap_by_slot.get(index, []), unmeasured,
+                change_by_slot, layer_height, first_layer)
+            entry = _colour_entry(index, colour, material, usage, evidence,
+                                  **{**_paint_facts(brush), **extra})
+            {SIMULTANEOUS: simultaneous, LAYER_BASED: layer_based,
+             UNCLASSIFIED: unclassified}[usage].append(entry)
         elif change:
             z = change.get("z_mm")
             estimate = _estimated_layer(z, layer_height, first_layer)
@@ -202,17 +226,16 @@ def analyse(path: str, toolheads: int | None = None) -> dict:
                 from_z_mm=round(z, 2) if z is not None else None,
                 estimated_layer=estimate,
                 layer_is_estimated=estimate is not None))
-        elif painted:
-            unclassified.append(_colour_entry(
-                index, colour, material, UNCLASSIFIED,
-                "this project has painted regions, and painted colour is stored in a "
-                "form Studio cannot read without slicing — so it will not guess "
-                "whether this colour shares layers with the others"))
         else:
             unclassified.append(_colour_entry(
                 index, colour, material, UNCLASSIFIED,
                 "Studio found no object, painted region or colour change using this "
                 "slot, so it cannot say how it is used"))
+
+    # A project can paint with a slot it never lists. That is the project's
+    # defect, and it is reported rather than renumbered onto a filament that
+    # happens to exist.
+    unlisted = sorted(slot for slot in paint_by_slot if slot > total or slot < 1)
 
     verdict = _verdict(total, tools, simultaneous, layer_based, unclassified)
     return {
@@ -226,15 +249,18 @@ def analyse(path: str, toolheads: int | None = None) -> dict:
                                   "Studio did not read this from a printer"),
         "painted_regions": painted,
         "painted_marker_count": painted_triangles,
+        "painted": _painted_summary(paint, paint_by_slot, together, unlisted,
+                                    colours, materials),
         "simultaneous": simultaneous,
         "layer_based": layer_based,
         "unclassified": unclassified,
         "verdict": verdict,
         "headline": _headline(total, tools, verdict),
         "summary": _summary(verdict, tools, simultaneous, layer_based, unclassified),
-        "guidance": _guidance(verdict),
-        "disclaimer": ("Studio reads what the project records; it does not slice. Whether "
-                       "a colour change can be handled as a swap depends on your slicer."),
+        "guidance": _guidance(verdict, bool(paint_by_slot), unlisted),
+        "disclaimer": ("Studio reads what the project records — including its painting — "
+                       "but it does not slice. Heights that overlap show two colours can "
+                       "meet on a layer; only the slice proves that they do."),
     }
 
 
@@ -278,28 +304,36 @@ def _summary(verdict: str, tools: int, simultaneous: list, layer_based: list,
                 f"toolhead, which is more than the {tools} available. Some of them have to "
                 "be merged before this can print as one job.")
     return (f"{len(unclassified)} colour(s) could not be classified, so Studio will not "
-            "tell you whether swaps would work. Open the project in Snapmaker Orca to see "
-            "how the colours are used.")
+            "tell you whether swaps would work. The reason is on each colour below; "
+            "opening the project in Snapmaker Orca settles it.")
 
 
-def _guidance(verdict: str) -> list[str]:
+def _guidance(verdict: str, painted: bool = False,
+              unlisted: list | None = None) -> list[str]:
+    lines: list[str]
     if verdict == FITS:
-        return ["Load the colours in the order the project lists them."]
-    if verdict == POSSIBLE_WITH_SWAPS:
-        return [
+        lines = ["Load the colours in the order the project lists them."]
+    elif verdict == POSSIBLE_WITH_SWAPS:
+        lines = [
             "Assign the colours that share layers to your toolheads.",
             "Plan the remaining colour(s) as a swap at the height shown.",
             "Confirm in Snapmaker Orca before printing — Studio does not slice.",
         ]
-    if verdict == NEEDS_REDUCTION:
-        return [
+    elif verdict == NEEDS_REDUCTION:
+        lines = [
             "Merge the closest colours in the project, or split it across plates.",
             "Reducing painted colours is a change to the model, so make it on a copy.",
         ]
-    return [
-        "Open the project in Snapmaker Orca and look at the colour assignment.",
-        "Studio only reports what the file records; painted colour needs slicing to read.",
-    ]
+    else:
+        lines = [
+            "Open the project in Snapmaker Orca and look at the colour assignment.",
+            "Studio reads the painting itself; what needs the slicer is whether two "
+            "colours end up on the same layer.",
+        ]
+    for slot in (unlisted or []):
+        lines.append(f"This project paints with slot {slot} but does not list a "
+                     f"filament for it — check the colour assignment in Orca.")
+    return lines
 
 
 def _unavailable(reason: str) -> dict:
@@ -307,4 +341,110 @@ def _unavailable(reason: str) -> dict:
             "color_count": 0, "toolheads": DEFAULT_TOOLHEADS,
             "simultaneous": [], "layer_based": [], "unclassified": [],
             "verdict": CANNOT_CLASSIFY, "headline": reason, "summary": reason,
-            "guidance": [], "painted_regions": False}
+            "guidance": [], "painted_regions": False, "painted_marker_count": 0,
+            "painted": {"available": False, "reason": reason, "slots": [],
+                        "headline": None}}
+
+
+# ---------------------------------------------------------------------------
+# Painted colour.
+#
+# The paint is decoded facet by facet in painted_color; what happens here is the
+# step after: turning "slot 4 is painted between 38.2 and 61.0 mm" into an answer
+# about whether slot 4 needs a toolhead of its own. The rule is that a colour
+# only leaves the "needs a toolhead" bucket when its separation from every other
+# colour is *proven*, and that an unproven separation is stated as unproven.
+# ---------------------------------------------------------------------------
+def _paint_facts(brush: dict | None) -> dict:
+    """The measured painting facts a UI can show beside a colour."""
+    if not brush:
+        return {"painted": False}
+    return {
+        "painted": True,
+        "painted_facets": brush.get("triangles_touching"),
+        "painted_area_mm2": round(brush.get("area_mm2") or 0.0, 2),
+        "painted_z_min_mm": brush.get("z_min_mm"),
+        "painted_z_max_mm": brush.get("z_max_mm"),
+    }
+
+
+def _painted_usage(slot: int, brush: dict, pairs: list, unmeasured: list,
+                   change_by_slot: dict, layer_height, first_layer):
+    """How a painted colour is used, and why Studio believes that.
+
+    Proven overlap costs a toolhead. Proven separation from everything else
+    leaves the colour available as a planned swap. Anything else — a colour with
+    no readable height, or an object-assigned colour whose extent was never
+    measured — is unclassified, with the specific reason.
+    """
+    low, high = brush.get("z_min_mm"), brush.get("z_max_mm")
+    overlapping = sorted({other for pair in pairs if pair["verdict"] == "overlaps"
+                          for other in pair["slots"] if other != slot})
+    unknown = sorted({other for pair in pairs if pair["verdict"] == "unknown"
+                      for other in pair["slots"] if other != slot})
+    if overlapping:
+        names = ", ".join(str(other) for other in overlapping)
+        band = (f" between {low:.2f} mm and {high:.2f} mm"
+                if low is not None and high is not None else "")
+        return SIMULTANEOUS, (
+            f"painted{band}, where slot{'s' if len(overlapping) > 1 else ''} "
+            f"{names} {'are' if len(overlapping) > 1 else 'is'} painted too, so "
+            "the two can meet on a layer and each needs a toolhead"), {}
+    if low is None or high is None:
+        return UNCLASSIFIED, (
+            "this project paints with this colour, but the painted facets carry "
+            "no readable height, so Studio cannot say whether it shares layers "
+            "with the others"), {}
+    if unknown:
+        names = ", ".join(str(other) for other in unknown)
+        return UNCLASSIFIED, (
+            f"painted between {low:.2f} mm and {high:.2f} mm, but slot {names} "
+            "has no readable height, so a separation cannot be proven"), {}
+    if unmeasured:
+        names = ", ".join(str(other) for other in unmeasured)
+        return UNCLASSIFIED, (
+            f"painted between {low:.2f} mm and {high:.2f} mm, but slot{'s' if len(unmeasured) > 1 else ''} "
+            f"{names} {'are' if len(unmeasured) > 1 else 'is'} assigned to whole "
+            "objects whose heights Studio has not measured, so a separation "
+            "cannot be proven"), {}
+    estimate = _estimated_layer(low, layer_height, first_layer)
+    return LAYER_BASED, (
+        f"painted only between {low:.2f} mm and {high:.2f} mm, and every other "
+        "painted colour ends below that or starts above it, so this one never "
+        "has to share a layer"), {
+        "from_z_mm": round(low, 2),
+        "estimated_layer": estimate,
+        "layer_is_estimated": estimate is not None,
+    }
+
+
+def _painted_summary(paint: dict, paint_by_slot: dict, together: dict,
+                     unlisted: list, colours: list, materials: list) -> dict:
+    """What the painting is, in one place, for the UI and the disclosure panel."""
+    if not paint.get("available"):
+        return {"available": False, "reason": paint.get("reason"),
+                "slots": [], "headline": None}
+    slots = sorted(paint_by_slot)
+    if not slots:
+        return {"available": True, "painted": False, "slots": [],
+                "headline": None, "reason": paint.get("reason")}
+    count = len(slots)
+    return {
+        "available": True,
+        "painted": True,
+        "dialect": paint.get("dialect"),
+        "format_version": paint.get("format_version"),
+        "format_version_known": paint.get("format_version_known"),
+        "slots": slots,
+        "unlisted_slots": unlisted,
+        "painted_facets": paint.get("painted_triangle_count"),
+        "malformed_facets": paint.get("malformed_triangle_count"),
+        "facets_outside_mesh": paint.get("facets_outside_mesh"),
+        "truncated": paint.get("truncated"),
+        "confidence": paint.get("confidence"),
+        "objects": paint.get("objects"),
+        "coexistence": together,
+        "headline": (f"Parts of this model are painted with {count} filament "
+                     f"colour{'s' if count != 1 else ''}."),
+        "evidence": paint.get("evidence"),
+    }

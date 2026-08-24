@@ -108,6 +108,25 @@ def _model_head(tm: ThreeMF) -> tuple[dict, dict]:
     return attrs, meta
 
 
+# The two names the same per-facet painting goes by. Studio reads both; see
+# painted_color for what the data behind them means.
+_PAINT_MARKERS = (b"paint_color", b"slic3rpe:mmu_segmentation")
+
+
+def _painted_marker(tm: ThreeMF) -> tuple[bool, str | None]:
+    """Whether any mesh in this project carries painted colour, and where."""
+    for part in tm.list_parts():
+        if not part.lower().endswith(".model"):
+            continue
+        try:
+            blob = tm.read_part(part)
+        except Exception:
+            continue
+        if any(marker in blob for marker in _PAINT_MARKERS):
+            return True, part
+    return False, None
+
+
 def _json_settings(tm: ThreeMF, part: str) -> dict:
     try:
         out = json.loads(tm.read_part(part).decode("utf-8", "ignore"))
@@ -426,8 +445,11 @@ def extract(path: str) -> dict:
     distinct_nozzles = sorted(set(nozzles))
 
     # --- colour / texture / advanced feature signals ----------------------
-    painted = ("mmu_segmentation" in model_settings_raw
-               or "paint_color" in model_settings_raw)
+    # Painting lives on the mesh triangles, not in the settings file. Looking for
+    # it in model_settings.config found it in no real project ever written, which
+    # is why this reads the mesh parts themselves. Only the marker is looked for
+    # here — decoding it is painted_color's job, and traits stay cheap.
+    painted, painted_part = _painted_marker(tm)
     textured = any(p.startswith("3D/Textures/") for p in parts)
     enforcers = model_settings_raw.count("support_enforcer")
 
@@ -485,8 +507,8 @@ def extract(path: str) -> dict:
                                     CONFIRMED if model_settings_raw or prusa_summary else UNKNOWN,
                                     "one hash per object name, so a job that prints part of "
                                     "this project can be recognised as part of it"),
-        "has_painted_color": _tier(painted, CONFIRMED if model_settings_raw else UNKNOWN,
-                                   f"per-object colour painting data in {MODEL_SETTINGS}"
+        "has_painted_color": _tier(painted, CONFIRMED,
+                                   f"per-facet colour painting data in {painted_part}"
                                    if painted else None),
         "has_texture": _tier(textured, CONFIRMED,
                              "texture parts under 3D/Textures/" if textured else None),

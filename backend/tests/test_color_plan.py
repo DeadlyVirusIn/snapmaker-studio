@@ -4,7 +4,7 @@ The dangerous answer here is the optimistic one. Telling someone their seven-col
 project can be printed with planned swaps, when in fact the colours share layers,
 costs them a whole print. So most of these tests check that Studio refuses to
 classify a colour it cannot account for, and that painted projects — where the
-colour data genuinely cannot be read without slicing — never come back as easy.
+painted colour is read but cannot be proven separate — never come back as easy.
 """
 from __future__ import annotations
 
@@ -33,9 +33,26 @@ def _project(tmp_path, name="p.3mf", *, colours, materials=None, objects=(),
         for i, slot in enumerate(objects))
     model = ('<model unit="millimeter"><resources/><build><item objectid="1"/></build></model>')
     if painted:
+        # `painted` may be True (a painted facet with no readable geometry, which
+        # is what a mesh Studio cannot place looks like) or a list of
+        # (attribute, (z_low, z_high)) for facets whose heights are real.
+        if painted is True:
+            facets = '<triangle v1="0" v2="1" v3="2" paint_color="8"/>'
+            vertices = ""
+        else:
+            vertices, facets, index = [], [], 0
+            for attribute, (low, high) in painted:
+                vertices += [f'<vertex x="0" y="0" z="{low}"/>',
+                             f'<vertex x="10" y="0" z="{low}"/>',
+                             f'<vertex x="0" y="10" z="{high}"/>']
+                facets.append(f'<triangle v1="{index}" v2="{index + 1}" '
+                              f'v3="{index + 2}" paint_color="{attribute}"/>')
+                index += 3
+            vertices = f"<vertices>{''.join(vertices)}</vertices>"
+            facets = "".join(facets)
         model = model.replace("<resources/>",
-                              '<resources><object id="1"><mesh><triangles>'
-                              '<triangle v1="0" v2="1" v3="2" paint_color="8"/>'
+                              '<resources><object id="1"><mesh>'
+                              f'{vertices}<triangles>{facets}'
                               "</triangles></mesh></object></resources>")
     parts = {
         "3D/3dmodel.model": model,
@@ -135,25 +152,24 @@ def test_more_shared_layer_colours_than_toolheads_needs_reduction(tmp_path):
     assert "merged" in out["summary"] or "merge" in " ".join(out["guidance"]).lower()
 
 
-def test_painted_colours_are_never_classified_as_swappable(tmp_path):
-    """Painted colour is stored encoded. Studio can prove painting exists but not
-    which colours it uses, so those colours must not land in the easy bucket."""
+def test_painted_facets_with_no_readable_height_are_still_not_swappable(tmp_path):
+    """The slot is read; the height is not. Without a height there is no proof of
+    separation, so the colour must not land in the easy bucket."""
     p = _project(tmp_path, colours=["#1", "#2", "#3", "#4", "#5", "#6"],
                  objects=(1, 2), painted=True)
     out = cp.analyse(p, toolheads=4)
     assert out["painted_regions"] is True
     assert slots(out["layer_based"]) == []
-    assert slots(out["unclassified"]) == [3, 4, 5, 6]
     assert out["verdict"] == cp.CANNOT_CLASSIFY
-    assert "cannot classify" in out["headline"].lower()
 
 
-def test_the_painted_explanation_says_why_studio_cannot_read_it(tmp_path):
+def test_the_painted_explanation_names_what_is_missing_not_slicing_in_general(tmp_path):
     p = _project(tmp_path, colours=["#1", "#2", "#3", "#4", "#5"],
                  objects=(1,), painted=True)
-    entry = cp.analyse(p, toolheads=4)["unclassified"][0]
-    assert "without slicing" in entry["evidence"]
-    assert "will not guess" in entry["evidence"]
+    out = cp.analyse(p, toolheads=4)
+    entry = [e for e in out["unclassified"] if e.get("painted")][0]
+    assert "no readable height" in entry["evidence"]
+    assert entry["slot"] == 2  # the slot the painting actually names
 
 
 def test_painted_project_can_still_be_proven_to_need_reduction(tmp_path):
@@ -232,3 +248,85 @@ def test_malformed_layer_records_are_skipped_not_fatal(tmp_path):
             z.writestr(n, d)
     out = cp.analyse(str(p2), toolheads=4)
     assert out["available"] is True
+
+
+# --- painted colour, now that it is read rather than guessed at --------------
+#
+# Every one of these was "cannot classify" before Studio decoded the project's
+# own paint. What has to stay true is that the new answers are *proven* ones:
+# a colour leaves the "needs a toolhead" bucket only when its separation from
+# every other colour is demonstrated, and an unproven separation still says so.
+
+from snapstudio_core import paint_codec as _codec  # noqa: E402
+
+
+def _paint(state):
+    return _codec.encode_tree(state)
+
+
+def test_a_painted_colour_that_never_shares_a_height_is_offered_as_a_swap(tmp_path):
+    p = _project(tmp_path, colours=["#1", "#2", "#3", "#4", "#5"],
+                 painted=[(_paint(2), (0.0, 10.0)), (_paint(5), (38.2, 61.0))])
+    out = cp.analyse(p, toolheads=4)
+    swap = [e for e in out["layer_based"] if e["slot"] == 5]
+    assert swap, out["layer_based"]
+    assert swap[0]["from_z_mm"] == 38.2
+    assert "38.20 mm" in swap[0]["evidence"]
+    assert swap[0]["painted_area_mm2"] > 0
+
+
+def test_two_painted_colours_sharing_a_height_each_need_a_toolhead(tmp_path):
+    p = _project(tmp_path, colours=["#1", "#2", "#3", "#4"],
+                 painted=[(_paint(2), (0.0, 20.0)), (_paint(3), (10.0, 30.0))])
+    out = cp.analyse(p, toolheads=4)
+    assert slots(out["simultaneous"]) == [2, 3]
+    assert "can meet on a layer" in out["simultaneous"][0]["evidence"]
+
+
+def test_a_painted_colour_cannot_be_proven_separate_from_an_unmeasured_object(tmp_path):
+    # An object-assigned colour's height is not read from geometry, so Studio
+    # cannot prove the painted one avoids it — and says exactly that instead of
+    # quietly assuming either answer.
+    p = _project(tmp_path, colours=["#1", "#2", "#3", "#4", "#5"], objects=(1,),
+                 painted=[(_paint(5), (38.2, 61.0))])
+    out = cp.analyse(p, toolheads=4)
+    entry = [e for e in out["unclassified"] if e["slot"] == 5][0]
+    assert "has not measured" in entry["evidence"]
+    assert "38.20 mm" in entry["evidence"]
+
+
+def test_the_painted_summary_is_a_sentence_a_beginner_can_read(tmp_path):
+    p = _project(tmp_path, colours=["#1", "#2", "#3", "#4"],
+                 painted=[(_paint(2), (0.0, 5.0)), (_paint(3), (0.0, 5.0)),
+                          (_paint(4), (0.0, 5.0))])
+    painted = cp.analyse(p, toolheads=4)["painted"]
+    assert painted["headline"] == "Parts of this model are painted with 3 filament colours."
+    assert painted["slots"] == [2, 3, 4]
+    assert painted["painted_facets"] == 3
+    assert painted["dialect"] == "bambu"
+
+
+def test_painting_with_a_slot_the_project_never_lists_is_reported(tmp_path):
+    p = _project(tmp_path, colours=["#1", "#2"],
+                 painted=[(_paint(6), (0.0, 5.0))])
+    out = cp.analyse(p, toolheads=4)
+    assert out["painted"]["unlisted_slots"] == [6]
+    assert any("slot 6" in line for line in out["guidance"])
+
+
+def test_a_painted_project_reports_how_much_of_it_each_colour_covers(tmp_path):
+    p = _project(tmp_path, colours=["#1", "#2", "#3", "#4"],
+                 painted=[(_paint((0, [2, 3])), (0.0, 0.0))])
+    out = cp.analyse(p, toolheads=4)
+    areas = {e["slot"]: e["painted_area_mm2"] for e in
+             out["simultaneous"] + out["layer_based"] + out["unclassified"]
+             if e.get("painted")}
+    # One triangle of 50 mm², split in half by the paint itself.
+    assert areas[2] == 25.0 and areas[3] == 25.0
+
+
+def test_the_disclaimer_no_longer_claims_painting_cannot_be_read(tmp_path):
+    p = _project(tmp_path, colours=["#1", "#2"], painted=[(_paint(2), (0.0, 5.0))])
+    out = cp.analyse(p, toolheads=4)
+    assert "does not slice" in out["disclaimer"]
+    assert "cannot" not in out["disclaimer"].lower()
