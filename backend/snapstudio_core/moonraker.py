@@ -399,6 +399,40 @@ def loaded_filaments(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0):
     return out
 
 
+#: Paths a community firmware build answers on and stock firmware does not. Both
+#: belong to the Extended Firmware project's own web interface, which is a thing
+#: it deliberately serves — not an internal file, and not a guess from behaviour.
+EXTENDED_MARKERS = (
+    (80, "/firmware-config/", "the Extended Firmware configuration page answered"),
+)
+
+
+def extended_firmware(host: str, timeout: float = 2.0) -> dict:
+    """Is a community firmware build answering on this printer?
+
+    Positive detection only, and one request. A firmware that serves its own page
+    is telling you it is there; a printer that does not answer on that path has
+    told you nothing at all — it may be stock, it may be a different build, it may
+    have a reverse proxy in front of it. So this returns detected or unknown, and
+    there is deliberately no third value that means "stock".
+    """
+    if not host:
+        return {"detected": False, "known": False, "evidence": "no printer address"}
+    for port, path, evidence in EXTENDED_MARKERS:
+        url = _url(host, port, path)
+        request = urllib.request.Request(url, method="GET")
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                if 200 <= response.status < 300:
+                    return {"detected": True, "known": True, "evidence": evidence,
+                            "source": path}
+        except Exception:  # noqa: BLE001 — anything but a 2xx is "not detected"
+            continue
+    return {"detected": False, "known": False,
+            "evidence": ("no community firmware answered on the paths Studio knows about — "
+                         "which is not the same as this printer running stock firmware")}
+
+
 def capabilities(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:
     """Read-only printer capabilities — the U1's REAL bed volume + toolhead count, so
     Design Intelligence can use the actual printer instead of assumed values.

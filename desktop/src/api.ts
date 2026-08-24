@@ -614,7 +614,11 @@ export interface PrinterFirmware {
   toolhead_count?: number | null;
   bed_mm?: { x: number; y: number; z: number } | null;
   macro_count?: number;
+  /** True only when a community firmware answered for itself. Never inferred
+   *  from macro count, and its absence never means the printer is stock. */
   extended_firmware?: boolean;
+  extended_firmware_evidence?: string | null;
+  many_custom_macros?: boolean;
   features?: FirmwareFeature[];
   summary?: string;
   reason?: string;

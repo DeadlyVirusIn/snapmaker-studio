@@ -14,9 +14,12 @@ from __future__ import annotations
 
 SCHEMA_VERSION = "firmwarecaps/1"
 
-# Stock U1 firmware exposes a handful of gcode_macros; well beyond that suggests
-# the owner or a community/extended firmware has added their own.
-_EXTENDED_MACRO_THRESHOLD = 15
+# Stock U1 firmware exposes a handful of gcode_macros. Well beyond that means
+# somebody has added their own — which may be a community firmware build, and may
+# equally be the owner, who is entitled to write macros on their own printer.
+# Counting them is a fact; concluding "extended firmware" from the count was not,
+# and the badge that said so was shown to people running stock.
+_MANY_MACROS = 15
 
 
 def _prefix(obj: str) -> str:
@@ -24,7 +27,7 @@ def _prefix(obj: str) -> str:
     return obj.split(" ", 1)[0].strip().lower()
 
 
-def interpret(objects, toolhead_count=None, bed_mm=None) -> dict:
+def interpret(objects, toolhead_count=None, bed_mm=None, extended_probe=None) -> dict:
     """Map a klipper object list to a plain-language capability set.
 
     objects: the GET /printer/objects/list result (a list of strings).
@@ -75,7 +78,13 @@ def interpret(objects, toolhead_count=None, bed_mm=None) -> dict:
         features.append({"name": f"{tc}-toolhead multimaterial",
                          "detail": f"prints up to {tc} colours/materials in one job"})
 
-    extended = macro_count >= _EXTENDED_MACRO_THRESHOLD
+    # Positive detection only. A community firmware announces itself — its own web
+    # interface answers on a path stock firmware does not have — and that is the
+    # only thing worth calling detection. Nothing here ever concludes "stock" from
+    # the absence of a marker: not finding something is not finding it.
+    probe = extended_probe or {}
+    extended = bool(probe.get("detected"))
+    many_macros = macro_count >= _MANY_MACROS
 
     bed_txt = (f"{bed_mm['x']}×{bed_mm['y']}×{bed_mm['z']} mm bed"
                if isinstance(bed_mm, dict) and bed_mm.get("x") else None)
@@ -83,7 +92,8 @@ def interpret(objects, toolhead_count=None, bed_mm=None) -> dict:
     bits = [b for b in (head_txt, bed_txt) if b]
     summary = ("Your U1 reports " + ", ".join(bits) + "; " if bits else "Your U1 reports ") + \
               f"{len(features)} capabilit{'ies' if len(features) != 1 else 'y'} detected" + \
-              (" (firmware looks extended beyond stock)." if extended else ".")
+              (" (community firmware answered on this printer)." if extended
+               else f" ({macro_count} custom macros on it)." if many_macros else ".")
 
     return {
         "schema_version": SCHEMA_VERSION,
@@ -91,7 +101,9 @@ def interpret(objects, toolhead_count=None, bed_mm=None) -> dict:
         "toolhead_count": tc or None,
         "bed_mm": bed_mm,
         "macro_count": macro_count,
+        "many_custom_macros": many_macros,
         "extended_firmware": extended,
+        "extended_firmware_evidence": probe.get("evidence"),
         "features": features,
         "summary": summary,
     }

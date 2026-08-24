@@ -245,11 +245,19 @@ export default function Printers() {
           <CardContent className="space-y-3 p-5">
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-2 text-sm font-semibold"><Cpu className="h-4 w-4 text-primary" /> What your U1 can do</span>
-              {firmware.data.extended_firmware && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                  <Sparkles className="h-3 w-3" /> Extended firmware
+              {firmware.data.extended_firmware ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"
+                      title={firmware.data.extended_firmware_evidence ?? undefined}>
+                  <Sparkles className="h-3 w-3" /> Community firmware
                 </span>
-              )}
+              ) : firmware.data.many_custom_macros ? (
+                // Somebody has added macros to this printer. That is a fact about
+                // the printer; concluding "extended firmware" from it was not, and
+                // the badge saying so was shown to people running stock.
+                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                  <Sparkles className="h-3 w-3" /> {firmware.data.macro_count} custom macros
+                </span>
+              ) : null}
             </div>
             <ul className="grid gap-2 sm:grid-cols-2">
               {firmware.data.features!.map((f, i) => (

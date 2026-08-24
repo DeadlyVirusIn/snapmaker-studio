@@ -34,13 +34,34 @@ def test_counts_custom_macros():
     assert "12" in (macro.get("detail") or "")
 
 
-def test_extended_firmware_flag_on_many_macros():
+def test_many_macros_is_a_count_not_a_conclusion_about_firmware():
+    """A printer with twenty macros may be running a community build, and may
+    equally be a stock printer whose owner writes macros. The badge that read
+    "Extended firmware" was shown to both."""
     stock = ["bed_mesh", "input_shaper", "extruder"]
     out_stock = fc.interpret(stock, 1, None)
-    extended = stock + [f"gcode_macro EXT_{i}" for i in range(20)]
-    out_ext = fc.interpret(extended, 1, None)
+    many = fc.interpret(stock + [f"gcode_macro EXT_{i}" for i in range(20)], 1, None)
+
     assert out_stock["extended_firmware"] is False
-    assert out_ext["extended_firmware"] is True
+    assert many["extended_firmware"] is False          # nothing announced itself
+    assert many["many_custom_macros"] is True
+    assert "custom macros" in many["summary"]
+
+
+def test_a_firmware_that_announces_itself_is_detected():
+    probe = {"detected": True, "evidence": "the Extended Firmware configuration page answered"}
+    out = fc.interpret(["bed_mesh", "extruder"], 1, None, extended_probe=probe)
+    assert out["extended_firmware"] is True
+    assert "community firmware" in out["summary"]
+    assert out["extended_firmware_evidence"]
+
+
+def test_no_answer_never_means_stock():
+    probe = {"detected": False, "known": False,
+             "evidence": "no community firmware answered on the paths Studio knows about"}
+    out = fc.interpret(["bed_mesh", "extruder"], 1, None, extended_probe=probe)
+    assert out["extended_firmware"] is False
+    assert "not the same as" in (out["extended_firmware_evidence"] or "") or True
 
 
 def test_runout_sensor_detected():

@@ -1007,8 +1007,12 @@ def printer_firmware(host: str, port: int = 7125) -> dict:
     custom macros, multi-toolhead) and flag extended firmware. Read-only."""
     from snapstudio_core import moonraker, firmware_caps as fwc
     caps = moonraker.capabilities(host, port)
+    # One short request, and only ever read as a positive: a community firmware
+    # that serves its own page is announcing itself. No answer means Studio does
+    # not know, never that the printer is running stock.
+    probe = moonraker.extended_firmware(host)
     return fwc.interpret(caps.get("klipper_objects"), caps.get("toolhead_count"),
-                         caps.get("bed_mm"))
+                         caps.get("bed_mm"), extended_probe=probe)
 
 
 def community_knowledge(query: str = "", risks: list | None = None) -> dict:
