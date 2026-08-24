@@ -45,7 +45,9 @@ def fingerprint(gcode_facts: dict | None, printer: dict | None,
     machine = printer or {}
 
     job = {
-        "file": facts.get("file"),
+        # A hash, not the name: a model's filename is the user's business, and this
+        # fingerprint travels to the app and back with every send.
+        "file": _hash(facts.get("file")),
         "size": (file_stat or {}).get("size_bytes", facts.get("size_bytes")),
         "modified": (file_stat or {}).get("modified"),
         "layers": facts.get("layer_count"),

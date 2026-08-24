@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { verdictLabel, verdictTone } from "./OrcaRoundTrip";
+import { verdictLabel, verdictTone } from "./ProvenanceNote";
 
 describe("how sure Studio says it is about a picked-up job", () => {
   it("never presents an unsure match as the user's project", () => {

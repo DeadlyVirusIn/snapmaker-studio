@@ -319,9 +319,10 @@ def read_facts(path: str | Path) -> dict:
         # one plate of several, or a file Studio could only read the ends of — can
         # be recognised as a subset instead of being called a different project.
         "name_hashes": [_digest_of([name]) for name in names],
-        # A large job is read at its ends only, so the set may be incomplete. A
-        # partial set can support a match; it must never be used to rule one out.
-        "complete": bool(not tail) or bool(defines),
+        # A large job is read at its ends only, and a plate of hundreds of parts
+        # is cut off at the cap — so the set may be incomplete. A partial set can
+        # support a match; it must never be used to rule one out.
+        "complete": (bool(not tail) or bool(defines)) and len(names) < MAX_OBJECT_NAMES,
         "sources": sources,
     }
     facts["exclude_object"] = {
@@ -374,14 +375,15 @@ def _object_names(head: str, tail: str, defines: list[str]) -> tuple[list[str], 
 
     before = len(names)
     for blob in (head, tail):
-        if not blob:
+        if not blob or len(names) >= MAX_OBJECT_NAMES:
             continue
-        for match in _PRINTING_OBJECT.finditer(blob):
-            names.add(_clean_name(match.group("name")))
+        for pattern in (_PRINTING_OBJECT, _M486_NAME):
+            for match in pattern.finditer(blob):
+                names.add(_clean_name(match.group("name")))
+                if len(names) >= MAX_OBJECT_NAMES:
+                    break
             if len(names) >= MAX_OBJECT_NAMES:
                 break
-        for match in _M486_NAME.finditer(blob):
-            names.add(_clean_name(match.group("name")))
     if len(names) > before:
         sources.append("object labels in the toolpath")
 

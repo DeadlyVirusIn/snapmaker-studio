@@ -782,8 +782,42 @@ export function printerEmergencyStop(host: string, port = 7125): Promise<Printer
 export function printerJobQueue(host: string, port = 7125): Promise<PrinterQueue> {
   return printerPost("/printer/job_queue", { host, port });
 }
-export function printerUploadGcode(host: string, path: string, port = 7125): Promise<PrinterControlResult> {
-  return printerPost("/printer/upload_gcode", { host, path, port });
+/**
+ * What can be true after an upload. Collapsing these into "failed" is how someone
+ * deletes a file that is already on the printer, or starts one the printer has
+ * not finished reading.
+ */
+export type UploadState =
+  | "verified"              // the printer has it and has read it
+  | "pending_verification"  // it is there; the printer is still reading it
+  | "not_listed"            // the bytes were accepted and the printer does not list it
+  | "mismatch"              // a file of that name is there, and it is not this one
+  | "refused_by_printer"    // the printer answered, and said no
+  | "not_accepted"          // the connection failed; nothing was started
+  | "changed"               // the world moved since the checks were read
+  | "unknown";
+
+export interface UploadResult extends PrinterControlResult {
+  state?: UploadState;
+  uploaded?: boolean;
+  detail?: string;
+  status?: number;
+  changed?: Array<{ part: string; title: string; detail: string }>;
+  check?: SendCheck;
+  confirmation?: { ok?: boolean; detail?: string };
+}
+
+export function printerUploadGcode(
+  host: string, path: string, port = 7125,
+  // What the user was shown when they decided to send. The engine re-reads the
+  // same things and refuses rather than uploading against a stale answer.
+  expectState?: SendState | null, projectPath?: string,
+): Promise<UploadResult> {
+  return printerPost("/printer/upload_gcode", {
+    host, path, port,
+    expect_state: expectState ?? null,
+    project_path: projectPath ?? "",
+  });
 }
 
 // Native picker limited to sliced gcode, for uploading to the printer.
@@ -1231,12 +1265,30 @@ export async function preflight(path: string, host?: string, port = 7125): Promi
 
 export type Provenance = "confirmed" | "likely" | "ambiguous" | "no_match" | "unknown";
 
+// Evidence is not all of one kind, and the difference decides the answer.
+// "identity" says something about the model itself — which objects the job
+// prints. "profile" says something about the setup it was sliced with, which
+// every job from the same printer with the same spools shares. Only identity
+// evidence can establish a match; profile evidence can only corroborate one.
+export type EvidenceKind = "identity" | "profile" | "circumstantial";
+
+export interface ProvenanceEvidence {
+  signal: string;
+  weight: number;
+  detail: string;
+  kind?: EvidenceKind;
+  label?: string;
+}
+
 export interface ProvenanceResult {
   schema_version: string;
   verdict: Provenance;
   score: number;
-  evidence: Array<{ signal: string; weight: number; detail: string }>;
+  evidence: ProvenanceEvidence[];
+  identity_evidence?: ProvenanceEvidence[];
   summary: string;
+  /** Why this answer and not a more certain one. */
+  why?: string;
 }
 
 export interface WatchCandidate {
@@ -1324,9 +1376,28 @@ export interface MaterialSlot {
   wants_colour: string | null;
   has_material: string | null;
   has_colour: string | null;
-  state: "ready" | "empty" | "wrong_material" | "different_colour" | "unused" | "unknown" | null;
+  state:
+    | "ready" | "empty" | "wrong_material" | "different_colour"
+    // Short according to something that tracks the spool, and short according to
+    // a figure that will not say where it came from. They read the same and mean
+    // different things, so they are not the same state.
+    | "not_enough" | "maybe_not_enough"
+    | "unused" | "unknown" | null;
   detail: string | null;
   action: string | null;
+  needs_grams?: number | null;
+  remaining_g?: number | null;
+  remaining_quality?: "tracked" | "derived" | "unknown";
+  sufficiency?: {
+    verdict: "enough" | "probably_enough" | "probably_short" | "insufficient" | "unknown";
+    detail: string;
+    source: string;
+    quality?: string;
+    trusted?: boolean;
+  };
+  /** Where two sources describe this slot differently. Shown, never resolved. */
+  conflicts?: string[];
+  notes?: string[];
 }
 
 export interface MaterialPlan {
@@ -1348,6 +1419,20 @@ export interface SendItem {
   source: string | null;
 }
 
+/**
+ * A fingerprint of everything the send check looked at.
+ *
+ * Passed back with the upload so the engine can re-read the same things and
+ * refuse if any of them moved while the user was deciding — a slot emptied, a
+ * spool swapped, a print started, the job re-sliced to the same filename.
+ */
+export interface SendState {
+  schema_version: string;
+  token: string;
+  hashes: Record<string, string>;
+  parts: Record<string, unknown>;
+}
+
 export interface SendCheck {
   schema_version: string;
   provenance?: ProvenanceResult | null;
@@ -1358,6 +1443,8 @@ export interface SendCheck {
   items: SendItem[];
   headline: string;
   disclaimer: string;
+  state?: SendState;
+  printer?: { observed_at?: number; reachable?: boolean };
 }
 
 async function post<T>(route: string, body: unknown, label: string): Promise<T> {

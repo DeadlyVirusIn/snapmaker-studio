@@ -479,7 +479,20 @@ def print_plan(path: str) -> dict:
     facts = gcode.read_facts(path)
     plan["narration"] = pp.narrate(plan, facts)
     plan["summary"] = pp.summary(plan)
+
+    # The scan can hold twenty thousand events; the app shows the narration and the
+    # counts. Sending all of them was a megabyte over the loopback and a megabyte
+    # held in the page for nothing.
+    events = plan.get("events") or []
+    plan["event_count"] = len(events)
+    plan["events"] = events[:EVENT_SAMPLE]
+    plan["events_sampled"] = len(events) > EVENT_SAMPLE
     return plan
+
+
+#: How many raw events to hand to the app. Enough to show a slice of the timeline
+#: if anything ever wants to; not the whole scan.
+EVENT_SAMPLE = 200
 
 
 def material_plan(path: str, host: str | None = None, port: int = 7125,

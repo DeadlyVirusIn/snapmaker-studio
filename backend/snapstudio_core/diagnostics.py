@@ -159,7 +159,18 @@ def _project(path: str) -> dict:
 def _sliced(path: str) -> dict:
     from . import gcode, post_slice, sliced_cost
     facts = gcode.read_facts(path)
-    trimmed = {k: v for k, v in facts.items() if k != "config"}
+    # The reader reports which file it read, and that name is the user's model
+    # name — `dads urn lid v3.gcode` in a bundle handed to a stranger. The project
+    # section has always dropped it; this one was carrying it through.
+    trimmed = {k: v for k, v in facts.items() if k not in ("config", "file")}
+    trimmed["extension"] = Path(path).suffix.lower()
+    # The object hashes are how Studio recognises a project in its own slice. They
+    # are not names, but a bundle goes to a stranger, and someone holding a guess
+    # could check it against a hash. The count and the set digest answer every
+    # question a bug report needs to ask.
+    if isinstance(trimmed.get("objects"), dict):
+        trimmed["objects"] = {k: v for k, v in trimmed["objects"].items()
+                              if k != "name_hashes"}
     return {
         "facts": trimmed,
         "checks": post_slice.analyse(facts, {"reachable": False}),

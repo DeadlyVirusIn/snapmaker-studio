@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 import {
-  AlertOctagon, AlertTriangle, CheckCircle2, HelpCircle, ListOrdered, Loader2, Package,
+  AlertOctagon, AlertTriangle, CheckCircle2, HelpCircle, ListOrdered, Loader2, Package, Upload,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { materialPlan, printPlan, sendCheck } from "@/api";
-import type { MaterialPlan, PrintPlan, SendCheck, SendItem } from "@/api";
+import { materialPlan, printerUploadGcode, printPlan, sendCheck } from "@/api";
+import type { MaterialPlan, PrintPlan, SendCheck, SendItem, UploadResult } from "@/api";
+import { ProvenanceNote } from "@/components/ProvenanceNote";
 import { usePrinter } from "@/store/printer";
 import {
   MATERIALS_SUBTITLE, MATERIALS_TITLE, PLAN_SUBTITLE, PLAN_TITLE, SEND_TITLE,
   changeCount, itemLabel, itemsOfKind, materialsHeadline, orderedSlots, planHeadline,
   planIsTruncated, planLines, sendHeadline, sendTone, shouldDiscourageSend, slotLabel, slotTone,
+  uploadTitle, uploadTone,
 } from "@/lib/sendPlan";
 
 /**
@@ -98,11 +100,115 @@ export function SendReadyCard({ path, projectPath }: { path: string; projectPath
               </p>
             )}
 
+            {check.provenance && <ProvenanceNote result={check.provenance} />}
+
+            <SendToPrinter path={path} check={check} projectPath={projectPath}
+                           onRechecked={setCheck} />
+
             <p className="text-[11px] text-muted-foreground">{check.disclaimer}</p>
           </>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Sending, against the checks that are on the screen and not against the ones
+ * that were true when the page was drawn.
+ *
+ * The gap this closes is small and completely invisible: a person reads the
+ * checks, walks to the printer, comes back and presses send. A slot can have
+ * emptied, a spool changed, another print started, or the job been re-sliced to
+ * the same filename in between — and nothing on screen would look any different.
+ *
+ * So the fingerprint of what was checked goes with the upload. If the engine
+ * finds the world has moved, nothing is uploaded: what changed is named, the
+ * fresh answer replaces the stale one, and the decision is put back to the person
+ * who has to live with it. Studio uploads a file; it never starts a print.
+ */
+function SendToPrinter({ path, check, projectPath, onRechecked }: {
+  path: string; check: SendCheck; projectPath?: string;
+  onRechecked: (check: SendCheck) => void;
+}) {
+  const host = usePrinter((s) => s.host);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<UploadResult | null>(null);
+
+  useEffect(() => { setResult(null); }, [path, check.state?.token]);
+
+  if (!host) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        Connect your U1 in Printer Hub to send this job to it.
+      </p>
+    );
+  }
+
+  async function send() {
+    setBusy(true);
+    try {
+      const sent = await printerUploadGcode(host!, path, 7125, check.state, projectPath);
+      setResult(sent);
+      // A refusal comes back with the answer that replaced the stale one, so the
+      // page a person is looking at is the page they are deciding from.
+      if (sent.state === "changed" && sent.check) onRechecked(sent.check);
+    } catch (error) {
+      setResult({
+        ok: false, state: "not_accepted", uploaded: false,
+        detail: error instanceof Error ? error.message
+          : "Studio could not reach the printer. Nothing has been started.",
+      } as UploadResult);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button size="sm" variant={check.verdict === "blocker" ? "secondary" : "primary"}
+                disabled={busy} onClick={send}>
+          {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                : <Upload className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />}
+          Send this job to the printer
+        </Button>
+        <span className="text-[11px] text-muted-foreground">
+          Uploads the file. It does not start a print.
+        </span>
+      </div>
+      {result && <UploadOutcome result={result} />}
+    </div>
+  );
+}
+
+function UploadOutcome({ result }: { result: UploadResult }) {
+  const tone = uploadTone(result.state);
+  const border = tone === "ready" ? "border-ready/40"
+    : tone === "risk" ? "border-risk/50" : "border-border";
+  return (
+    <div className={`rounded-md border ${border} p-2.5`}>
+      <p className="text-sm font-medium">{uploadTitle(result.state)}</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {result.detail ?? result.confirmation?.detail ?? ""}
+      </p>
+      {result.changed?.length ? (
+        <ul className="mt-1.5 flex flex-col gap-1">
+          {result.changed.map((change) => (
+            <li key={change.part} className="text-xs">
+              <span className="font-medium">{change.title}.</span>{" "}
+              <span className="text-muted-foreground">{change.detail}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {result.state === "changed" && (
+        <p className="mt-1.5 text-xs text-muted-foreground">
+          The checks above have been read again. Look at them, then send again if you
+          still want to.
+        </p>
+      )}
+    </div>
   );
 }
 

@@ -3,34 +3,13 @@ import { CheckCircle2, FolderSearch, HelpCircle, Loader2, RefreshCw, XCircle } f
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { watchFolder } from "@/api";
-import type { Provenance, WatchCandidate, WatchResult } from "@/api";
+import type { WatchCandidate, WatchResult } from "@/api";
 import { useSession } from "@/store/session";
 import { useSliced } from "@/store/sliced";
 import { useWatch } from "@/store/watch";
+import { ProvenanceNote, verdictLabel, verdictTone } from "@/components/ProvenanceNote";
 
 const POLL_MS = 5000;
-
-/** How sure Studio is that a file belongs to the open project. */
-export function verdictLabel(verdict: Provenance | undefined): string {
-  switch (verdict) {
-    case "confirmed":
-      return "This is your project, sliced";
-    case "likely":
-      return "Looks like your project";
-    case "no_match":
-      return "A different project";
-    case "ambiguous":
-      return "Studio can't tell";
-    default:
-      return "Not enough to compare";
-  }
-}
-
-export function verdictTone(verdict: Provenance | undefined): "ready" | "risk" | "muted" {
-  if (verdict === "confirmed" || verdict === "likely") return "ready";
-  if (verdict === "no_match") return "risk";
-  return "muted";
-}
 
 /**
  * The last manual step, removed.
@@ -206,26 +185,9 @@ function CandidateRow({ candidate, open, onOpen }: {
       )}
 
       {candidate.provenance && (
-        <>
-          <p className="mt-1 text-xs">
-            <span className="rounded-full bg-muted px-1.5 py-px text-[10px] uppercase tracking-wide text-muted-foreground">
-              {verdictLabel(verdict)}
-            </span>
-          </p>
-          <details className="mt-1">
-            <summary className="cursor-pointer text-[11px] text-muted-foreground hover:text-foreground">
-              Why
-            </summary>
-            <p className="mt-1 text-[11px] text-muted-foreground">{candidate.provenance.summary}</p>
-            <ul className="mt-1 flex flex-col gap-0.5">
-              {candidate.provenance.evidence.map((item) => (
-                <li key={item.signal} className="text-[11px] text-muted-foreground">
-                  {item.detail}
-                </li>
-              ))}
-            </ul>
-          </details>
-        </>
+        <div className="mt-1">
+          <ProvenanceNote result={candidate.provenance} compact />
+        </div>
       )}
     </li>
   );
