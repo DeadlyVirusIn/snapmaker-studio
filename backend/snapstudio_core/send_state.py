@@ -50,6 +50,9 @@ def fingerprint(gcode_facts: dict | None, printer: dict | None,
         "file": _hash(facts.get("file")),
         "size": (file_stat or {}).get("size_bytes", facts.get("size_bytes")),
         "modified": (file_stat or {}).get("modified"),
+        # The ends of the file, hashed. A re-slice that happens to land on the
+        # same byte count in the same timestamp tick is otherwise invisible.
+        "content": (file_stat or {}).get("content"),
         "layers": facts.get("layer_count"),
         "tools": facts.get("tools_used"),
         "objects": (facts.get("objects") or {}).get("name_digest"),

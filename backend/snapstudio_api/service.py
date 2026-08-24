@@ -548,15 +548,38 @@ def send_check(path: str, host: str | None = None, port: int = 7125,
 
 
 def _file_stat(path: str) -> dict:
-    """Size and modification time, so a file rewritten in place is not mistaken for
-    the one that was checked."""
+    """What identifies *this* file, so one rewritten in place is not mistaken for
+    the one that was checked.
+
+    Size and modification time are not enough on their own: a re-slice that lands
+    on the same byte count, written within the same timestamp tick, looks
+    identical to both. So this also fingerprints the ends of the file - bounded,
+    a few hundred kilobytes at most, and the ends are where a slicer writes
+    everything that distinguishes one job from another.
+    """
+    import hashlib
     from pathlib import Path as _Path
 
+    target = _Path(path)
     try:
-        stat = _Path(path).stat()
+        stat = target.stat()
     except OSError:
         return {}
-    return {"size_bytes": stat.st_size, "modified": round(stat.st_mtime, 3)}
+
+    window = 64 * 1024
+    digest = hashlib.sha256()
+    digest.update(str(stat.st_size).encode())
+    try:
+        with target.open("rb") as handle:
+            digest.update(handle.read(window))
+            if stat.st_size > window * 2:
+                handle.seek(stat.st_size - window)
+                digest.update(handle.read(window))
+    except OSError:
+        return {"size_bytes": stat.st_size, "modified": round(stat.st_mtime, 3)}
+
+    return {"size_bytes": stat.st_size, "modified": round(stat.st_mtime, 3),
+            "content": digest.hexdigest()[:16]}
 
 
 def sliced_cost(path: str, price_per_kg: float = 20.0, currency: str = "$",

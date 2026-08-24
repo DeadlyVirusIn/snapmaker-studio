@@ -357,7 +357,22 @@ def _api_schema() -> str:
 
     from snapstudio_api.server import build_server
 
-    httpd, token = build_server(port=0)
+    # Binding an ephemeral port can fail on a machine that has run out of them —
+    # this one had 14,000 sockets open when it first happened. That is a fact
+    # about the machine, not about Studio, so it is worth a couple of retries and
+    # a sentence that says so rather than an OSError the reader has to decode.
+    httpd = token = None
+    for attempt in range(3):
+        try:
+            httpd, token = build_server(port=0)
+            break
+        except OSError as exc:
+            if attempt == 2:
+                raise AssertionError(
+                    "this machine would not give Studio a port to listen on "
+                    f"({exc}). Nothing is wrong with the engine; close some "
+                    "network-heavy applications and run the check again.") from exc
+            time.sleep(0.5)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     try:
         port = httpd.server_address[1]
@@ -674,8 +689,9 @@ def _send_state(workdir: Path) -> str:
                "klipper_objects": ["extruder", "exclude_object"], "loaded_filaments": loaded}
 
     def stat_of(path):
-        info = path.stat()
-        return {"size_bytes": info.st_size, "modified": round(info.st_mtime, 3)}
+        from snapstudio_api.service import _file_stat
+
+        return _file_stat(str(path))
 
     before = send_state.fingerprint(facts, printer, file_stat=stat_of(job))
     unchanged = send_state.fingerprint(facts, printer, file_stat=stat_of(job))
