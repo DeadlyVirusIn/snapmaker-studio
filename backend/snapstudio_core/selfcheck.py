@@ -352,8 +352,8 @@ def _unchanged(source: Path, before_hash: str) -> str:
 
 def _api_schema() -> str:
     """Start the real loopback service and call the documented routes."""
+    import http.client
     import threading
-    import urllib.request
 
     from snapstudio_api.server import build_server
 
@@ -379,14 +379,23 @@ def _api_schema() -> str:
             "/slice_provenance": ({"project_path": "none", "gcode_path": "none"},
                                   ["schema_version", "verdict"]),
         }
-        for route, (payload, required) in routes.items():
-            req = urllib.request.Request(
-                f"http://127.0.0.1:{port}{route}", data=json.dumps(payload).encode(),
-                headers={"Content-Type": "application/json", "X-Auth-Token": token})
-            with urllib.request.urlopen(req, timeout=10) as response:
+        # One connection for all of them, kept open. A fresh socket per route
+        # left fifteen in TIME_WAIT every run, and on a machine that has been
+        # busy that is how a self-check fails for a reason that has nothing to do
+        # with Studio: "only one usage of each socket address is normally
+        # permitted", which reads like a bug in the thing being checked.
+        connection = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+        try:
+            for route, (payload, required) in routes.items():
+                connection.request(
+                    "POST", route, body=json.dumps(payload).encode(),
+                    headers={"Content-Type": "application/json", "X-Auth-Token": token})
+                response = connection.getresponse()
                 body = json.loads(response.read())
-            missing = [field for field in required if field not in body]
-            assert not missing, f"{route} is missing {missing}"
+                missing = [field for field in required if field not in body]
+                assert not missing, f"{route} is missing {missing}"
+        finally:
+            connection.close()
         return f"{len(routes)} documented routes answered with their fields"
     finally:
         httpd.shutdown()
