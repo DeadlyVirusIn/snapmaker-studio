@@ -47,6 +47,93 @@ represented". The **format** can represent them perfectly well. What cannot, tod
 is Studio's own prepare path, which writes one part per object. That is a limit of
 this tool and is now described as one.
 
+## What Snapmaker Orca 2.3.5 did with a prepared project — measured 2026-08-25
+
+The rows above read files Orca had written. These rows go the other way: Orca was
+handed a prepared project, and the project **Orca saved back** was read. That file
+is Orca's own account of what it understood, and it is machine-readable in a way
+Orca's object list is not.
+
+How: Studio starts its own Orca on the project (never touching one already
+running), waits for it to load, drives **Save Project As** through the file
+dialog — a standard Windows dialog, so its field and button are real UI Automation
+elements — and reads the saved archive. Where the question was about printing
+rather than about words, the plate is sliced first and the footprint Orca records
+for it is read.
+
+### It reads two parts, and one of the two filaments
+
+The prepared multi-part fixture — one object, parts on filaments 2 and 5 — came
+back from Orca as:
+
+| Claim | Result |
+|---|---|
+| One logical object holding two parts | **yes**, one composite object with two components |
+| Part geometry | both part digests **identical** to what Studio wrote, 6 facets each |
+| Part 1 filament | `extruder="2"` — **kept** |
+| Part 2 filament | written as 5, came back **`0`** — not kept |
+| The object's own assignment | `extruder="0"` — kept |
+| Volume identity | Orca traced the two parts back as `source_volume_id` 0 and 1 |
+
+So the multi-part structure is understood. **Filament 5 is not.** The U1 profile
+configures four filaments, and a slot beyond that is discarded to "unassigned"
+rather than clamped to the highest. Isolated by changing one number: the same file
+with parts on filaments 2 and **4** came back with both kept exactly.
+
+This does not change what Studio should write. PrusaSlicer round-trips slot 6
+faithfully, so the source really does say 5 and a copy saying anything else would
+be a different project. What it changes is what may be claimed: the *file* carries
+filament 5; *Snapmaker Orca* does not act on it.
+
+### The four helper roles are words it knows
+
+Each role word was written into an otherwise identical project, and the project
+Orca saved back was read. A deliberately invented word is the control.
+
+| Studio writes | Orca writes back |
+|---|---|
+| `normal_part` | `normal_part` |
+| `modifier_part` | `modifier_part` |
+| `negative_part` | `negative_part` |
+| `support_blocker` | `support_blocker` |
+| `support_enforcer` | `support_enforcer` |
+| `helper_thing` (invented) | **`normal_part`** |
+
+The control is what makes the other five rows evidence. Orca does not pass unknown
+words through — it does exactly what PrusaSlicer does with `ModifierMesh`, and
+turns a role it does not recognise into printable geometry.
+
+### And it treats them as things that do not print
+
+Words are not behaviour. Two closed cubes that do not touch, written by Studio's
+own multi-part writer, the second one carrying the role under test; the plate
+sliced; the footprint Orca records for it read back.
+
+| The second cube is a | Printed footprint | Plate thumbnail |
+|---|---|---|
+| `normal_part` | 500 mm² — both cubes | one image |
+| `modifier_part` | **400 mm² — only the first cube** | a second image |
+| `negative_part` | 400 mm² | byte-identical to the modifier's |
+| `support_blocker` | 400 mm² | byte-identical |
+| `support_enforcer` | 400 mm² | byte-identical |
+
+400 mm² is the first cube alone; 500 is both. A helper volume that overlaps no
+solid changes nothing, so this is the whole of the difference between a part that
+prints and one that does not.
+
+### Painting written in PrusaSlicer's dialect does not reach it
+
+The prepared copy carries painted facets exactly as the source wrote them, in
+PrusaSlicer's `slic3rpe:mmu_segmentation`. Orca's own attribute is `paint_color`.
+Handed the copy, Orca saved it back with **no facet attributes at all**: 8 painted
+facets in, 0 out.
+
+The fidelity audit's `Painted colour` row compares the original with the copy and
+says `preserved_exact`, which is true of the two files — the bytes are identical.
+It is **not** a statement that the painting reaches the slicer, and it is currently
+easy to read as one. Translating the dialect on the way out is the obvious fix and
+is not attempted here.
+
 ## What changed in Studio
 
 **Unassigned crosses as unassigned.** Prepare wrote `extruder="1"` for an object
@@ -100,7 +187,8 @@ file was carried as an assignment. Both are now refused, and refused means
 | Volume slots that agree | **Carried** onto the object |
 | Volume slots that disagree | **Not carried** — reported per part, with both filaments named, and Studio does not choose one |
 | Instances | **Placements carried**, the copy-of-one relationship not |
-| Modifier / negative / support volumes | **Not carried** — reported, and never turned into printable geometry |
+| Modifier / negative / support volumes | **Carried** as their own parts, in the words Orca was measured to recognise |
+| A volume role Studio does not recognise | **Not carried** — the object crosses whole, and the audit says its shape will print |
 | Per-object setting overrides | **Not carried** — each one named |
 
 Nothing in the "not carried" column is silently dropped. Each produces its own
@@ -154,29 +242,40 @@ item placing the wrong object, and a malformed or non-numeric part matrix.
 triangle counts equal to the source — the split shares nothing and duplicates
 nothing.
 
-### Modifiers — still not carried, and the warning was wrong
+### Modifiers — carried, once the target's words were measured
 
-A modifier volume still declines the split, because no target representation is
-proven and writing it as `normal_part` is how a modifier becomes solid plastic.
+A modifier volume now crosses as its own part, with `subtype="modifier_part"` over
+geometry typed `other`, and the audit reports the role as kept. The same is true
+of a negative volume and of both support roles. What made that possible was not a
+new idea about the format; it was measuring what those four words mean to Snapmaker
+Orca, and having a control that shows an unknown word does not survive.
 
-But the audit's sentence was false. It said the modifier "has not been turned into
-printable geometry either" — and the object crosses whole, so its facets **are**
-in the prepared mesh and Orca will print them. Measured: 12 triangles in, 12 out.
-The row now says what actually happens and what to do about it.
+**The old behaviour was worse than "not carried" and the audit now says so.** When
+a modifier was not emitted separately, its triangles stayed inside the single
+prepared mesh — so the geometry crossed, as printable solid, and Orca printed it.
+"Not carried" describes the role. It does not describe a modifier arriving as
+plastic. A role Studio still cannot recognise takes exactly that path, and its
+fidelity row says the shape is in the object and the slicer will print it.
+
+A helper part states **no filament**. It prints nothing, so a material for it would
+be a choice about nothing, and the eight modifier parts in a genuine Orca project
+state none either. A slot the source did state is reported by the audit rather than
+dropped quietly.
 
 ## Not established in this sprint
 
 Stated plainly so the next session does not assume otherwise:
 
-- **Snapmaker Orca opened the file; its part list was not read.** Orca 2.3.5
-  loaded the prepared multi-part project with no corruption warning, recognised
-  the Snapmaker U1 printer, four nozzles and the U1 process profile, and titled
-  the window with the project. Reaching the per-object parts list needed a click
-  the application would not take from synthetic input — the same GUI-automation
-  limit already recorded for Orca — so **the evidence level achieved is "loads
-  cleanly and is recognised as a U1 project", not "Orca shows two parts on
-  filaments 2 and 5"**. That distinction is the whole point of writing it down.
-- **No slice proof.** Not attempted.
+- **Orca's object list is still invisible to UI Automation.** It is custom-drawn:
+  neither the control view nor the raw view exposes a row, at any depth. The list
+  *was* reached and photographed — the earlier synthetic click failed because the
+  script was DPI-unaware and Windows was handing it a virtualised desktop, so its
+  coordinates were two thirds of the way to where it meant to click — but a
+  photograph is not a value. Everything claimed above is read from a file Orca
+  wrote, which is why the save route rather than the list is the method.
+- **Slicing was used only as a yes-or-no.** The plate footprint Orca records after
+  slicing answers "did this part contribute material"; no toolpath was compared,
+  and no slice was sent anywhere.
 - **Per-object overrides: all category D, not established.** The real
   Orca-family projects in the fixtures carry only `name` and `extruder` at object
   level — no per-object setting override appears in the sample at all. So nothing
