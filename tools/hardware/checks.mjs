@@ -391,11 +391,19 @@ const nowhere = await callRoute(page, "/preflight",
   { path: samplePath, host: "snapstudio-no-such-host-9f3b.invalid", port: 7125 });
 const nowhereRow = (nowhere.body?.checks ?? []).find((r) => r.id === "printer.reachable");
 const nowhereText = JSON.stringify(nowhere.body ?? {});
+// The distinction is conditional versus unconditional, not whether the word
+// "touchscreen" appears. Studio may say "if it is a Snapmaker U1, its interface
+// only opens once Advanced Mode is on" about an address it knows nothing about;
+// what it may not do is instruct someone to go and change a setting on a machine
+// it has never seen, which is what the U1-hostname hint does and is right to do
+// only there.
+const nowhereAction = nowhereRow?.action ?? "";
 record("An address that answers nothing gets a generic hint",
   nowhereRow?.result === "unknown"
-    && !/touchscreen/i.test(nowhereRow?.action ?? "")
+    && !/On the U1 touchscreen/i.test(nowhereAction)
+    && /If it is a Snapmaker U1/i.test(nowhereAction)
     && !nowhereText.includes(printerHost),
-  nowhereRow?.action ?? "no reachability row");
+  nowhereAction);
 
 // --- report -------------------------------------------------------------------
 

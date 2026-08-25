@@ -27,10 +27,18 @@ real Snapmaker U1 have all passed and are recorded here.
 > upgrade from v0.7.1 — that is an installer built on this machine from `main`,
 > **not** the published v0.7.2 asset, and it is not a release.
 >
-> **`main` is not hardware verified.** It changes Moonraker, printer profiles,
-> preflight, post-slice, send-check and material planning, and the real-U1
-> read-only harness has not been run against it. v0.7.2's 26/26 is evidence about
-> v0.7.2. Before any future release, that harness has to be re-run.
+> **`main` is hardware re-verified — as a development build, not as a release.**
+> The read-only harness was run on 2026-08-25 against a physical Snapmaker U1
+> (Moonraker 1.6.0) using an installer built locally from `2d8d899`: **39/39**,
+> with every one of v0.7.2's own 26 hardware facts unchanged and thirteen checks
+> added for the paths the two unreleased sprints introduced. Report:
+> [internal/hardware-main-2d8d899.json](internal/hardware-main-2d8d899.json).
+>
+> That installer is **not** the published v0.7.2 asset — it carries the same
+> version string because the next release has not been cut, and its hash and size
+> differ. This run verifies a commit, not a version, and does not replace the
+> hardware gate a real release still has to pass against its own final installer.
+> v0.7.2's 26/26 remains evidence about v0.7.2 alone.
 
 ## v0.7.2 — ACCEPTED
 
