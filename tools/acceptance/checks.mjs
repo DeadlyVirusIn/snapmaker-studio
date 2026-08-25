@@ -494,6 +494,18 @@ else if (phase === "novice") await phaseNovice(page);
       body.includes("What Studio read from the painting"), "");
     record("No raw paint data reaches the page",
       !/paint_color="|mmu_segmentation="/.test(body), "");
+    // Bring the painting itself into the frame. The screenshot from this run is
+    // what the README shows, and a picture of the claim has to contain it.
+    const framed = await page.evaluate(() => {
+      const wanted = /painted with \d+ filament/i;
+      const leaf = Array.from(document.querySelectorAll("p, span, div"))
+        .find((node) => node.children.length === 0 && wanted.test(node.textContent || ""));
+      const card = leaf?.closest("div.rounded-md") || leaf;
+      card?.scrollIntoView({ block: "center" });
+      return Boolean(card);
+    });
+    record("The painted sentence is on screen, not below the fold", framed, "");
+    await page.waitForTimeout(800);
     await shot(page, "09-painted");
   } else if (phase === "goto-compatibility") {
     await page.evaluate(() => {

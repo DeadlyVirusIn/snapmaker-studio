@@ -238,6 +238,15 @@ def test_a_release_section_links_to_that_release_s_reports(version):
             "another release")
 
 
+# Which words identify which check, so a ratio is only read as belonging to the
+# check its own line is about.
+_SUBJECT_WORDS = {
+    "acceptance": ("acceptance", "installed application", "installed-build"),
+    "hardware": ("hardware", "real snapmaker u1", "real printer"),
+    "selfcheck": ("selfcheck", "self-check", "u1convert selfcheck"),
+}
+
+
 def test_no_older_section_carries_the_current_release_s_counts(current):
     """Stronger than the per-section check: even where a section states nothing in
     the table shapes above, the current numbers must not appear in it."""
@@ -253,9 +262,17 @@ def test_no_older_section_carries_the_current_release_s_counts(current):
             then = snap[key].get("passed")
             if then is None or then == now:
                 continue
-            if re.search(rf"\b{now}/{current[key]['total']}\b", block):
-                offenders.append(f"v{other} section quotes {now}/{current[key]['total']} "
-                                 f"for {key}; that release recorded {then}")
+            # Only on a line that is about *that* check. Two different checks can
+            # legitimately arrive at the same ratio — an older release's 27-check
+            # acceptance run and this one's 27-check self-check — and reading one
+            # as the other reports a section as stale when it is exactly right.
+            for line in block.splitlines():
+                if not any(word in line.lower() for word in _SUBJECT_WORDS[key]):
+                    continue
+                if re.search(rf"\b{now}/{current[key]['total']}\b", line):
+                    offenders.append(
+                        f"v{other} section quotes {now}/{current[key]['total']} "
+                        f"for {key}; that release recorded {then}")
     assert not offenders, "\n  " + "\n  ".join(offenders)
 
 

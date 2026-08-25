@@ -5,7 +5,81 @@ Honest, current verification state for the current release. A release is only ma
 published installer, and — from beta.24 onward — read-only verification against a
 real Snapmaker U1 have all passed and are recorded here.
 
-## v0.6.2 — ACCEPTED
+## v0.7.0 — ACCEPTED
+
+**The painting, read.** Everything below ran against *this installer* — the exact
+asset on the release page, verified by SHA256. Canonical values:
+[RELEASE_METADATA.md](RELEASE_METADATA.md). This release's own evidence is frozen
+in [internal/evidence/0.7.0.json](internal/evidence/0.7.0.json), and every earlier
+release's is frozen beside it; publishing this one changed none of them.
+
+### CI / software
+
+| Check | Command | Result |
+|---|---|---|
+| Backend tests | `pytest` | **PASS** — 1104 passed, 3 skipped |
+| Desktop tests | `npm run test` | **PASS** — 304 passed |
+| End-to-end pipeline | `u1convert selfcheck` | **PASS** — 27/27 over 15 documented routes |
+| TypeScript | `npx tsc --noEmit` | **PASS** — clean |
+| Production frontend build | `npm run build` | **PASS** |
+| Rust shell | `cargo check` | **PASS** — clean, green in CI |
+| Release-document consistency | `pytest tests/test_release_docs.py` | **PASS** |
+| Evidence integrity | `pytest tests/test_evidence_integrity.py` | **PASS** |
+| Local-first invariant | `pytest tests/test_local_first.py` | **PASS** |
+
+### The painting, checked against real slicers
+
+Studio's decoder is new, so it was not tested only against itself. Paint written
+by Studio's encoder was handed to **PrusaSlicer 2.9.6** and **OrcaSlicer 2.4.2**,
+each asked to read the project and write it back, and both reproduced every paint
+attribute byte for byte — including a subdivided facet. A slicer re-serialises
+paint from its own decoded model, so identical output is agreement, not luck.
+
+The painted fixture was then **sliced for a five-extruder printer**. The G-code
+changed tool 194 times across T0–T4 and no others, which is what proves a paint
+state names filament *N* counting from one. Fixtures, commands and the recorded
+slice: [`backend/tests/fixtures/painted/PROVENANCE.md`](../backend/tests/fixtures/painted/PROVENANCE.md).
+Cross-slicer support, cell by cell, with what each PARTIAL is missing:
+[PAINTED_COLOUR.md](PAINTED_COLOUR.md).
+
+### Installed application — 31/31, including the upgrade
+
+`pwsh -File tools/acceptance/run.ps1 -Installer <published installer> -UpgradeFrom <v0.6.2 installer>`
+Full report: [internal/acceptance-0.7.0.json](internal/acceptance-0.7.0.json).
+
+New in this release: the installed build's own frozen engine is asked to read a
+painted project — the slots it paints with, the facets it paints them on, and a
+separation the geometry proves — so the capability is verified in the artefact
+that ships rather than only in the development tree.
+
+**Upgrade path:** v0.6.2 is installed, run so it creates real state, then upgraded
+in place. The user's data survives and only one installation is registered.
+
+### Real Snapmaker U1 — read-only, 26/26
+
+`pwsh -File tools/hardware/verify.ps1 -PrinterHost <printer>`
+Full report: [internal/hardware-0.7.0.json](internal/hardware-0.7.0.json), with the
+printer's address replaced before anything reached disk.
+
+### Known limitations — stated plainly
+
+- **Windows only.** See [internal/CROSS_PLATFORM_ASSESSMENT.md](internal/CROSS_PLATFORM_ASSESSMENT.md).
+- **The installer is not code-signed.** Verify the SHA256.
+- **Purge cannot be separated from printed filament** in Snapmaker Orca output.
+- **The fitted nozzle cannot be read** from stock firmware.
+- **Free storage is not reported** by stock firmware — traced, not assumed.
+- **Painted colour is read, but a shared layer is not proven by it.** Studio reads
+  which filaments a project's painting uses, how much of the model each covers and
+  the heights each spans. Whether two colours whose heights overlap actually land
+  on the same printed layer is decided by the slice, and Studio does not slice.
+  Where a facet points outside its own mesh, or an object is placed at a tilt, the
+  slot is still read and the position is reported as unknown.
+- **Provenance is evidence, not proof.** A job with no object names and no colour
+  data can only be `unknown`, and Studio says so rather than matching on the name.
+- **Remaining filament is only known when something tracks it.** A stock U1 cannot,
+  so sufficiency is unknown unless a provider such as Spoolman is configured.
+
+## v0.6.2 — ACCEPTED (superseded by v0.7.0)
 
 **Evidence that stays true.** Everything below ran against *this installer* — the
 exact asset on the release page, verified by SHA256. Canonical values:

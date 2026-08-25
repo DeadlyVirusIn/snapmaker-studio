@@ -92,12 +92,12 @@ server, not the source tree.
 
 | What | Result | How to reproduce |
 |---|---|---|
-| Installed-application acceptance | **30/30** | `pwsh -File tools/acceptance/run.ps1` |
+| Installed-application acceptance | **31/31** | `pwsh -File tools/acceptance/run.ps1` |
 | Read-only verification against a real Snapmaker U1 | **26/26** | `pwsh -File tools/hardware/verify.ps1 -PrinterHost <ip>` |
-| End-to-end pipeline self-check | **25/25** | `u1convert selfcheck` |
+| End-to-end pipeline self-check | **27/27** | `u1convert selfcheck` |
 | Genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **36 tests** | `pytest tests/test_real_world_3mf.py` |
-| Backend | 1004 passed, 3 skipped | `pytest` |
-| Desktop | 293 passed | `npm run test` |
+| Backend | 1104 passed, 3 skipped | `pytest` |
+| Desktop | 304 passed | `npm run test` |
 | TypeScript · production build · Rust | clean | `tsc --noEmit` · `npm run build` · `cargo check` |
 
 Full records, including the raw evidence files:

@@ -74,12 +74,12 @@ Verified against the published v0.6.0 installer, not a development build.
 
 | What | Result |
 |---|---|
-| Installed-application acceptance, through the real UI | 30/30 |
+| Installed-application acceptance, through the real UI | 31/31 |
 | Read-only verification against a real Snapmaker U1 | 26/26 |
 | Regression tests against genuine Orca/Bambu/Prusa projects | 36 tests |
-| End-to-end pipeline self-check | 25/25 |
-| Backend tests | 1004 passed, 3 skipped |
-| Desktop tests | 293 passed |
+| End-to-end pipeline self-check | 27/27 |
+| Backend tests | 1104 passed, 3 skipped |
+| Desktop tests | 304 passed |
 | TypeScript · production build · Rust | clean |
 
 Reproduce any of it: [JUDGE_WALKTHROUGH.md](JUDGE_WALKTHROUGH.md).

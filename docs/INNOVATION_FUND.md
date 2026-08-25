@@ -130,9 +130,11 @@ guessing in the direction that looks better.
   deliberately wrong copy and assert Studio reports it as unverified.
 - **Deterministic classification beyond four colours.** Six colours on four
   toolheads is two problems, not one: colours that share a layer each need a
-  toolhead, colours introduced higher up may be planned swaps. Painted colour
-  cannot be read without slicing, so it is reported unclassified rather than
-  counted optimistically.
+  toolhead, colours introduced higher up may be planned swaps. Painted colour is
+  decoded from the project's own facet data — which filaments, how much area,
+  what heights — and a painted colour is called swappable only where the geometry
+  proves it never shares a height with another. Whether two overlapping colours
+  land on the same printed layer is left to the slicer, and said so.
 - **Refusal under uncertainty.** Multi-plate repositioning was implemented,
   reviewed, and **withdrawn**: plate spacing is not recorded in a project file, a
   reproduced case placed a plate off the bed while reporting success, and the
@@ -212,12 +214,12 @@ development build. Commands, counts and full reports:
 
 | What | Result |
 |---|---|
-| Installed-application acceptance, through the real UI | 30/30 |
+| Installed-application acceptance, through the real UI | 31/31 |
 | Read-only verification against a real Snapmaker U1 | 26/26 |
 | Regression tests against genuine Orca/Bambu/Prusa projects | 36 tests |
-| End-to-end pipeline self-check | 25/25 |
-| Backend tests | 1004 passed, 3 skipped |
-| Desktop tests | 293 passed |
+| End-to-end pipeline self-check | 27/27 |
+| Backend tests | 1104 passed, 3 skipped |
+| Desktop tests | 304 passed |
 | TypeScript, Rust, production build | clean |
 
 Demo: [`docs/media/snapmaker-studio-demo.mp4`](media/snapmaker-studio-demo.mp4) —

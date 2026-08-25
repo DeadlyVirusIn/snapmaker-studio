@@ -13,10 +13,10 @@ page is the status record only.
 
 | | |
 |---|---|
-| Version | **v0.6.2** — the current stable release |
+| Version | **v0.7.0** — the current stable release |
 | Installer, size, SHA256 | [RELEASE_METADATA.md](RELEASE_METADATA.md) — canonical |
 | Verification state | [TRUST_STATUS.md](TRUST_STATUS.md) — **ACCEPTED** |
-| Release | <https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.2> |
+| Release | <https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.0> |
 
 The installer is not code-signed — verify the SHA256 before installing. See
 [windows-install.md](windows-install.md) and
@@ -52,17 +52,20 @@ build. What was done about that is in
 
 ## Hardware verification
 
-**v0.6.2, 2026-08-24 — read-only, 26/26.** Printer discovered, 196 Klipper
+**v0.7.0, 2026-08-24 — read-only, 26/26.** Printer discovered, 196 Klipper
 objects enumerated, the printer's own 271 × 335 × 281 mm bed used, four loaded
 filaments read with colour and sub-type, the fitted nozzle correctly reported as
 unknown rather than unsupported, the project's materials compared both against
 toolhead count and against what is loaded, and a sliced job joined to the live
 machine: the tool it needs exists, the slot it prints from is loaded, and the
-material matches. This run also found a defect and refused it — a community-firmware
-probe that reported a stock printer as running Extended Firmware. Nothing was
-started, uploaded or queued; no temperature, motion, homing, pause, resume, cancel,
-emergency-stop or configuration call was made. Record:
-[TRUST_STATUS.md](TRUST_STATUS.md) · raw evidence
+material matches. Nothing was started, uploaded or queued; no temperature, motion,
+homing, pause, resume, cancel, emergency-stop or configuration call was made.
+Record: [TRUST_STATUS.md](TRUST_STATUS.md) · raw evidence
+[internal/hardware-0.7.0.json](internal/hardware-0.7.0.json).
+
+**v0.6.2, 2026-08-24 — read-only, 26/26**: the same checks a release earlier, and
+the run that found a community-firmware probe reporting a stock printer as running
+Extended Firmware — fixed in that release. Recorded in
 [internal/hardware-0.6.2.json](internal/hardware-0.6.2.json).
 
 **v0.6.0, 2026-08-23 — read-only, 20/20**, and **v0.4.0, 2026-08-23 — read-only,

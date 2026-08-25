@@ -20,11 +20,19 @@
     "report": "hardware-0.7.0.json",
     "total": 26
   },
-  "schema_version": "evidence/1",
+  "installer": {
+    "name": "Snapmaker.Studio_0.7.0_x64-setup.exe",
+    "sha256": "2a13d73ac19af8dc0457dbead54a2f83c14c83b1d8f74d9746950e3f7b804fbc",
+    "size_bytes": 16971405,
+    "url": "https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.0"
+  },
+  "released": "2026-08-24",
+  "schema_version": "evidence-snapshot/1",
   "screenshots_dir": "docs/screenshots/v0.7.0",
   "selfcheck": {
     "passed": 27,
     "total": 27
   },
+  "source": "recorded when this release was published",
   "version": "0.7.0"
 }

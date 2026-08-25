@@ -1,69 +1,65 @@
-# Snapmaker Studio v0.6.2 — evidence that stays true
+# Snapmaker Studio v0.7.0 — the painting, read
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-A patch release. Four defects, three of them found by attacking the project's own
-verification rather than its features.
+Multi-material painting is the part of a project most tools treat as opaque. A
+model painted in four filaments looks, to anything that is not a slicer, like a
+mesh — and Studio was one of those things. It could prove a project *had* painted
+regions, and then said painted colour "cannot be classified without slicing".
 
-## A release's evidence changed when a later release shipped
+The paint was in the file the whole time. This release reads it.
 
-Studio's public argument is "check it yourself", so its counts are load-bearing.
-There was one canonical evidence file, rewritten on every release — and because
-there was only one of it, publishing quietly restated the numbers that *every*
-document quoted, including the sections describing releases that had already
-shipped.
+## What Studio now knows about a painted project
 
-The trust record said v0.6.0 had been verified with 967 backend tests, 290 desktop
-tests, a 30-check acceptance run and 26 hardware checks. v0.6.0 shipped with 822,
-284, 28 and 20. The larger figures come from a suite and a harness that did not
-exist when it was published. v0.5.0 and v0.4.0 had their hardware counts
-overwritten the same way.
+Before anything is sliced, from the project's own per-facet data:
 
-Evidence is now one immutable snapshot per release. Past releases were
-reconstructed from what each release's own tag recorded — and where a release
-recorded nothing, the snapshot says so rather than carrying a plausible number
-backwards. Publishing adds a file; it never edits one. A test re-derives every
-published release's evidence from its own tag, so a future release cannot rewrite
-what an earlier one was verified with.
+- **Which filament slots the painting uses.** Exactly, including a slot the
+  project paints with but never lists — which is a defect in the project, and is
+  reported rather than quietly renumbered onto a filament that happens to exist.
+- **How much of the model each painted colour covers** — the number of facets it
+  touches *and* the surface area it accounts for. Those are two different facts
+  and are shown as two: a mesh's triangles are not equal in size, so 40% of the
+  facets is not 40% of the surface.
+- **The height band each painted colour occupies**, reconstructed from the
+  painted patches themselves and placed by the object's own transform, so the
+  heights are the heights on the plate.
+- **Which colour the unpainted parts print in** — from the part's own assignment,
+  or `unknown` where the project does not say.
 
-## Studio could fail to start on a machine that is short of ports
+## What that changes for a project with more colours than toolheads
 
-The loopback service spoke HTTP/1.0, which closes the connection after every
-response, and drawing a single page makes a dozen calls. Each one took a fresh
-source port and left it in TIME_WAIT.
+The old answer to a painted six-colour project was one sentence: *Studio cannot
+classify this safely*. Now each colour gets a verdict and the evidence behind it:
 
-That is invisible on a quiet machine and fatal on a busy one. The machine this was
-found on had 14,000 connections held open by Docker Desktop; Studio's own service
-could not be reached, and sometimes could not even bind — the app simply did not
-start, for a reason that had nothing to do with Studio.
+- a colour whose painting shares a height band with another **needs a toolhead**,
+  because the two can meet on a layer;
+- a colour painted only between, say, 38.2 mm and 61.0 mm, with every other
+  colour ending below it or starting above, **can be handled as a planned swap**;
+- a colour that cannot be compared — no readable height, or another colour
+  assigned to a whole object whose extent Studio has not measured — stays
+  **unclassified, with that reason attached**.
 
-It speaks HTTP/1.1 now, so a client keeps one connection. Binding retries and falls
-back to fixed ports below the dynamic range, and if even that fails the message
-says what is actually wrong.
+The colours card leads with the sentence a beginner needs — "Parts of this model
+are painted with 3 filament colours." — and keeps every number behind it one
+click away.
 
-## "This printer does not report which filaments are loaded" could be untrue
+## Where Studio still stops
 
-A dropped connection and a printer that genuinely reports nothing came back the
-same way, so a momentary network failure was reported as a fact about the user's
-machine. They are told apart now, printer reads retry before giving up, and the
-firmware page degrades to "Studio could not ask" rather than an error.
+**Two painted colours whose heights overlap can meet on a printed layer. Whether
+they do is decided when Orca slices.** Studio says the first and never the
+second. That boundary is the point of the feature, not a gap in it.
 
-## A re-slice could pass as the file that was checked
+## Fixed
 
-The send fingerprint identified a job by size and modification time. A re-slice
-that lands on the same byte count, written inside the same timestamp tick, matched
-both — which is exactly the case the fingerprint exists for. It now fingerprints
-the contents as well, at three bounded windows: the start, the middle and the end.
-
-## Also in this release
-
-Every item in the send confirmation can show what it was read from, one level down
-— the beginner never opens it, and an expert who doubts a verdict should not have
-to ask. The card says when the printer was last actually read. And the guard that
-checks public counts now reads the README's combined row, which said
-`822 · 284 · clean · clean` through an entire release because the old check only
-recognised a count next to the word "passed".
+- **Every painted project in the field was reported as unpainted.** The trait
+  looked for painting in `Metadata/model_settings.config`, where no slicer has
+  ever written it.
+- **The fidelity audit compared painting by counting markers in the bytes.** That
+  cannot tell painting that survived from painting that was rewritten: remap
+  every painted facet to a different filament, or shrink a painted region to a
+  quarter of its area, and the count is identical. It compares the painting
+  itself now.
 
 ## What has not changed
 
@@ -73,19 +69,27 @@ account, no telemetry.
 
 ## Verified against this installer
 
-- Installed-build acceptance: **30/30**, including upgrading in place from v0.6.1
+- Installed-build acceptance: **31/31**, including upgrading in place from v0.6.2
 - Real Snapmaker U1, read-only: **26/26**
-- `u1convert selfcheck`: **25/25** over 15 documented routes
-- `pytest`: **1004 passed, 3 skipped** · `npm run test`: **293 passed**
+- `u1convert selfcheck`: **27/27** over 15 documented routes
+- `pytest`: **1104 passed, 3 skipped** · `npm run test`: **304 passed**
+
+The decoding itself was checked against files two real slicers wrote: paint was
+handed to PrusaSlicer 2.9.6 and OrcaSlicer 2.4.2, and both wrote every attribute
+back byte for byte. The painted fixture was then sliced for a five-extruder
+printer, and the G-code used tools T0–T4 and no others — which is what proves a
+paint state names filament N counting from one, rather than that being asserted.
 
 Verification detail: [docs/TRUST_STATUS.md](TRUST_STATUS.md). Installer name, size
-and hash: [docs/RELEASE_METADATA.md](RELEASE_METADATA.md). Each release's evidence
-is kept separately under `docs/internal/evidence/`.
+and hash: [docs/RELEASE_METADATA.md](RELEASE_METADATA.md). What painting Studio
+reads and where it stops: [docs/PAINTED_COLOUR.md](PAINTED_COLOUR.md). Each
+release's evidence is kept separately under `docs/internal/evidence/`.
 
 ## Still true, and stated plainly
 
 Windows only. The installer is not code-signed — verify the SHA256. Purge cannot be
 separated from printed filament in Orca's output. The fitted nozzle cannot be read
 from the printer, and stays unknown. Free storage is not exposed by stock firmware.
-Painted colour cannot be classified without slicing. Remaining filament is known
+Painted colour is read from the project, but whether two painted colours share a
+printed layer is decided by the slice, not the file. Remaining filament is known
 only where something tracks it.

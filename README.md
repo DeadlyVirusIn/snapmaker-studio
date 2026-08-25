@@ -64,23 +64,23 @@ recording, so it also shows what Studio says when it cannot reach one:
 
 ## Download
 
-**[⬇ Download Snapmaker Studio v0.6.2 for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.2)**
+**[⬇ Download Snapmaker Studio v0.7.0 for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.0)**
 — one click, no Python, runs offline. Windows 10/11 x64.
 
-**v0.6.2 is the current stable release** — not a prerelease, so this is also what
+**v0.7.0 is the current stable release** — not a prerelease, so this is also what
 GitHub's [latest release](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/latest)
 points at. Every build ever published is on the
 [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
 Verify it before you run it:
 
-- Release: [v0.6.2](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.6.2)
-- Installer: `Snapmaker.Studio_0.6.2_x64-setup.exe`
-- Size: 16,923,818 bytes
-- SHA256: `687eabdddff714a614c94f46aa6a4a6a95d0e8a444fbc194c085d8ed9ee740de`
+- Release: [v0.7.0](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.0)
+- Installer: `Snapmaker.Studio_0.7.0_x64-setup.exe`
+- Size: 16,971,405 bytes
+- SHA256: `2a13d73ac19af8dc0457dbead54a2f83c14c83b1d8f74d9746950e3f7b804fbc`
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.6.2_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.7.0_x64-setup.exe
 ```
 
 The installer is not code-signed yet, so Windows SmartScreen will show "Unknown
@@ -112,11 +112,11 @@ sliced job back**.
 
 | The problem, named exactly | The fix, in a new copy — and where Studio says it can't tell |
 |---|---|
-| ![One object hangs 45 mm past the right edge](docs/screenshots/v0.6.2/problem.jpg) | ![The prepared copy, with what survived and what changed](docs/screenshots/v0.6.2/prepared.jpg) |
-| **The sliced job, picked up on its own** | **Ready to send? Blockers, warnings and unknowns kept apart** |
-| ![Studio recognises the job Orca just exported](docs/screenshots/v0.6.2/picked-up.jpg) | ![The send verdict, with every unknown named](docs/screenshots/v0.6.2/ready-to-send.jpg) |
+| ![One object hangs 45 mm past the right edge](docs/screenshots/v0.7.0/problem.jpg) | ![The prepared copy, with what survived and what changed](docs/screenshots/v0.7.0/prepared.jpg) |
+| **Painted colour, read before slicing** | **Ready to send? Blockers, warnings and unknowns kept apart** |
+| ![Which filaments the painting uses, and what that means for four toolheads](docs/screenshots/v0.7.0/painted.jpg) | ![The send verdict, with every unknown named](docs/screenshots/v0.7.0/ready-to-send.jpg) |
 
-From the v0.6.2 build, on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission package: [docs/innovation-fund/FINAL_SUBMISSION.md](docs/innovation-fund/FINAL_SUBMISSION.md).
+From the v0.7.0 build's own installed-application run, on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission package: [docs/innovation-fund/FINAL_SUBMISSION.md](docs/innovation-fund/FINAL_SUBMISSION.md).
 
 ## Why this isn't a slicer, a dashboard, or a converter
 
@@ -149,17 +149,17 @@ its licence in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Evidence
 
-Everything below was verified against the published v0.6.2 installer, not
+Everything below was verified against the published v0.7.0 installer, not
 against a development build. Commands, counts and full reports:
 [docs/TRUST_STATUS.md](docs/TRUST_STATUS.md).
 
 | What | Result |
 |---|---|
-| Installed-application acceptance, driven through the real UI | **30/30** |
+| Installed-application acceptance, driven through the real UI | **31/31** |
 | Read-only verification against a real Snapmaker U1 | **26/26** |
 | Regression tests against genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **36 tests** |
-| End-to-end pipeline self-check (`u1convert selfcheck`) | **25/25** |
-| Backend / desktop / TypeScript / Rust | 1004 · 293 · clean · clean |
+| End-to-end pipeline self-check (`u1convert selfcheck`) | **27/27** |
+| Backend / desktop / TypeScript / Rust | 1104 · 304 · clean · clean |
 
 Reproduce any of it yourself:
 [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md).
@@ -170,34 +170,34 @@ files produced structurally valid U1 profile copies ([PROOF.md](PROOF.md)); that
 number measures structure, not print success, and the checks above are the
 stronger evidence.
 
-## What's new in v0.6.2 — evidence that stays true
+## What's new in v0.7.0 — the painting, read
 
-**A release's evidence no longer changes when a later one ships.** Studio kept one
-canonical evidence file and rewrote it on every release, so publishing silently
-restated the numbers *every* document quoted — including the sections describing
-releases that had already shipped. This page's verification table, and
-TRUST_STATUS's history, said v0.6.0 had been verified with 967 tests and 26
-hardware checks. It shipped with 822 and 20. Evidence is now one immutable
-snapshot per release, the historical sections are restored from the releases that
-wrote them, and a test re-derives every published release's evidence from its own
-tag so this cannot happen again.
+**Studio reads a project's multi-material painting before anything is sliced.**
+A painted model used to be opaque to everything that is not a slicer, Studio
+included: it could prove a project *had* painted regions and then said painted
+colour "cannot be classified without slicing". It now reads which filament slots
+the painting uses, how many facets carry each, how much surface area each covers,
+and the height band each occupies on the plate.
 
-**Studio could fail to start on a busy machine.** The loopback service spoke
-HTTP/1.0, closing its connection after every call, and a page makes a dozen calls.
-On a machine short of ports — one here had 14,000 held open by Docker Desktop —
-the service could not be reached, and sometimes could not even bind. It speaks
-HTTP/1.1 now, retries, and falls back to fixed ports.
+**Colours are classified instead of shrugged at.** A painted colour whose height
+band overlaps another's needs a toolhead, because the two can meet on a layer.
+One painted only above a height every other colour ends below can be handled as a
+planned swap. One that cannot be compared stays unclassified *with the reason*.
+A separation is claimed only when the geometry proves it.
 
-**"Your printer does not report which filaments are loaded" could be untrue.** A
-dropped connection and a printer that genuinely says nothing both came back the
-same way, so a momentary network failure was reported as a statement about the
-user's machine. They are told apart now, printer reads retry, and the firmware
-route degrades to "Studio could not ask" instead of an error.
+**What still needs the slicer is stated, not hidden.** Two colours whose painted
+heights overlap *can* meet on a printed layer; whether they do is decided when
+Orca slices. Studio says the first and never the second.
 
-**A re-slice could pass as the file that was checked.** The send fingerprint
-identified a job by size and modification time; a re-slice that lands on the same
-byte count within the same timestamp tick matched both. It now fingerprints the
-contents at three bounded windows.
+**Every painted project in the field was reported as unpainted.** The trait looked
+for painting in a settings file no slicer writes it to. And the fidelity audit
+compared painting by counting markers in the bytes, which cannot tell painting
+that survived from painting that was rewritten — remap every painted facet to
+another filament and the count is identical. Both are fixed, and the audit now
+compares the painting itself.
+
+Full boundary, cross-slicer support and how it was proven:
+[docs/PAINTED_COLOUR.md](docs/PAINTED_COLOUR.md).
 
 ## Works with the open U1 ecosystem
 
@@ -380,7 +380,7 @@ validation is mandatory and never removed. Full detail in
 
 ## Roadmap
 
-**Shipped (stable, v0.6.2):** the whole loop — read a project, diagnose it,
+**Shipped (stable, v0.7.0):** the whole loop — read a project, diagnose it,
 compare it against the printer, prepare a copy, prove what survived, hand it to
 Snapmaker Orca, then read the sliced G-code back and check what the printer will
 actually execute against the printer as it is right now, with cost from the

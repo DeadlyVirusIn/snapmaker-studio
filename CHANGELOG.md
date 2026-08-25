@@ -6,6 +6,61 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-24
+
+**The painting, read.**
+
+Multi-material painting is the part of a project most tools treat as opaque, and
+Studio was one of them: it could prove a project *had* painted regions and then
+said painted colour "cannot be classified without slicing". The paint was in the
+file the whole time.
+
+### Added
+
+- **Painted colour is read before anything is sliced.** Which filament slots the
+  painting uses, how many facets carry each, how much surface each covers, and
+  the height band each occupies once the object is placed. Facet counts and areas
+  are reported as the two different facts they are — a mesh's triangles are not
+  equal in size, so 40% of the facets is not 40% of the surface.
+- **Colour planning answers instead of shrugging.** A painted colour whose height
+  band overlaps another's needs a toolhead, because the two can meet on a layer.
+  One painted only between, say, 38.2 mm and 61.0 mm, with every other colour
+  ending below it or starting above, is offered as a planned swap. One that
+  cannot be compared stays unclassified and says why. A separation is only
+  claimed when it is proven.
+- **The colours card leads with a sentence a beginner can act on** — "Parts of
+  this model are painted with 3 filament colours." — and keeps every number
+  behind it one click away: the attribute it was read from, the painting format
+  version the project declares or fails to, per-mesh facet counts, and which slot
+  the unpainted area falls back to.
+- **A project that paints with a filament it never lists is reported**, rather
+  than renumbered onto a filament that happens to exist.
+- **Two self-checks**, so the capability is provable from a frozen install: paint
+  decoded from a project built at runtime, and a prepared copy audited to show the
+  painting survived. 25 checks became 27.
+
+### Fixed
+
+- **Every painted project in the field was reported as unpainted.** The trait
+  looked for painting in `Metadata/model_settings.config`, where no slicer has
+  ever written it. It reads the mesh parts now, in both dialects.
+- **Fidelity compared painting by counting markers in the bytes**, which cannot
+  tell painting that survived from painting that was rewritten: remap every
+  painted facet to another filament, or shrink a painted region to a quarter of
+  its area, and the count is identical. It compares the painting itself now —
+  byte-identical, or the same meaning written differently, or changed with what
+  changed, or removed.
+
+### Verified
+
+Studio's decoding was checked against files two real slicers wrote: paint was
+handed to PrusaSlicer 2.9.6 and OrcaSlicer 2.4.2, and both wrote every attribute
+back byte for byte, including a subdivided facet. The painted fixture was then
+sliced for a five-extruder printer, and the G-code used tools T0-T4 and no
+others — which is what proves a paint state names filament N counting from one,
+rather than that being asserted.
+
+
 ## [0.6.2] - 2026-08-24
 
 **Evidence that stays true, and a service that answers on a busy machine.**
@@ -52,8 +107,12 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
-- Every item in the send confirmation can show what it was read from, one level
-  down, and the card says when the printer was last actually read.
+- Every item in the send confirmation can now show what it was read from, one
+  level down: the beginner never opens it, and an expert who doubts a verdict
+  should not have to ask.
+- The send card says when the printer was last actually read. The send path
+  already re-reads before uploading; this is so a page drawn four minutes ago
+  cannot be mistaken for what the machine is doing now.
 - An evidence-integrity guard: current documents against the current snapshot,
   every historical section against *that release's* snapshot, and a regression test
   that re-derives each published release's evidence from its own tag.
@@ -62,15 +121,6 @@ All notable changes to this project are documented here. The format is based on
 
 pytest 1004 passed / 3 skipped · vitest 293 · self-check 25/25 · installed-build
 acceptance 30/30 including the v0.6.1 upgrade · real Snapmaker U1 read-only 26/26.
-
-### Added
-
-- Every item in the send confirmation can now show what it was read from, one
-  level down: the beginner never opens it, and an expert who doubts a verdict
-  should not have to ask.
-- The send card says when the printer was last actually read. The send path
-  already re-reads before uploading; this is so a page drawn four minutes ago
-  cannot be mistaken for what the machine is doing now.
 
 ## [0.6.1] - 2026-08-24
 
