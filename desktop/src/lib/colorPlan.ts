@@ -2,8 +2,9 @@
 //
 // Free of JSX so the rule that matters stays testable: the optimistic answer is
 // only ever shown when the engine granted it. Telling someone a seven-colour
-// project can be swapped when the colours actually share layers costs them a
-// whole print.
+// project can be swapped when its colours were never proven separate costs them
+// a whole print — and the opposite overclaim, calling an unproven overlap a
+// proven shared layer, is just as wrong and is what "reserve a toolhead" avoids.
 
 import type { ColorPlan, ColorUse, ColorVerdict } from "@/api";
 
@@ -23,7 +24,7 @@ export function verdictBanner(verdict: ColorVerdict): string {
     case "possible_with_swaps":
       return "Possible without repainting";
     case "needs_reduction":
-      return "Needs colour reduction";
+      return "More colours than toolheads to reserve";
     default:
       return "Studio can’t classify this safely";
   }

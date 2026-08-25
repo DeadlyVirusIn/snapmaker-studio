@@ -21,9 +21,13 @@ import {
  * Colours against toolheads.
  *
  * "Too many colours" is a count, not an answer. The two reasons a project has
- * more colours than toolheads need completely different fixes: colours that
- * share layers each need a toolhead, and colours introduced part-way up are
- * already sequential and may be handled as planned swaps.
+ * more colours than toolheads need completely different fixes: colours Studio
+ * cannot prove avoid each other need a toolhead reserved for each, and colours
+ * whose heights are provably separate may be handled as planned swaps.
+ *
+ * The distinction the copy has to keep: overlapping heights show two colours
+ * *can* meet on a layer. Only the slice shows whether one really does, so the
+ * card says "not proven separable", never "share the same layers".
  *
  * Painted colour is read from the project's own facet data: which slots it uses,
  * how much surface each covers, and the heights each spans. A painted colour is
@@ -114,7 +118,7 @@ export function ColorPlanCard({ path, toolheads }: { path: string; toolheads?: n
             </p>
 
             <ColorGroup
-              title="Share the same layers — need a toolhead each"
+              title="Not proven separable — reserve a toolhead each"
               uses={g.simultaneous}
             />
             <ColorGroup

@@ -48,9 +48,10 @@ Long form: [../INNOVATION_FUND.md](../INNOVATION_FUND.md).
 
 ## 3. What is being submitted
 
-**Release:** [v0.4.0](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0)
-— the first build verified against a real Snapmaker U1. Installer name, size and
-SHA256: [../RELEASE_METADATA.md](../RELEASE_METADATA.md). Verification record:
+**Release:** [v0.7.0](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.0)
+— the current stable build; v0.4.0 was the first verified against a real Snapmaker
+U1, and every release since has been. Installer name, size and SHA256:
+[../RELEASE_METADATA.md](../RELEASE_METADATA.md). Verification record:
 [../TRUST_STATUS.md](../TRUST_STATUS.md).
 
 **Demo:** [`docs/media/snapmaker-studio-demo.mp4`](../media/snapmaker-studio-demo.mp4)
@@ -70,7 +71,7 @@ Practicality & Adaptability. The remaining 20% is a community vote.
 
 ## 5. Evidence, in one table
 
-Verified against the published v0.6.0 installer, not a development build.
+Verified against the published v0.7.0 installer, not a development build.
 
 | What | Result |
 |---|---|

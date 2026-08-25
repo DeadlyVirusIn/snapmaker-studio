@@ -5,9 +5,11 @@ every tool in this space says the same unhelpful thing: *too many colours*. That
 is a count, not an answer. The useful question is **why** there are more, because
 the two reasons have completely different fixes:
 
-* **Colours that coexist within the same layers** — painted regions, or several
-  objects on one plate printed layer by layer — need a toolhead each. More of
-  those than toolheads means the palette has to come down.
+* **Colours that cannot be proven to avoid each other** — their painted or
+  printed heights overlap, so a layer *may* contain both. Each has to have a
+  toolhead reserved for it. More of those than toolheads means the palette has to
+  come down. Note what this is not: overlapping heights show two colours *can*
+  meet on a layer, and only the slice shows whether one really does.
 * **Colours introduced part-way up** — a colour change recorded at a specific
   height — are already sequential. They may be handled as planned swaps instead
   of costing a toolhead.
@@ -56,7 +58,7 @@ MODEL_SETTINGS = "Metadata/model_settings.config"
 CUSTOM_GCODE = "Metadata/custom_gcode_per_layer.xml"
 
 # How a colour is used.
-SIMULTANEOUS = "simultaneous"   # needs a toolhead: it shares layers with others
+SIMULTANEOUS = "simultaneous"   # reserve a toolhead: separation is not proven
 LAYER_BASED = "layer_based"     # introduced at a height; a planned swap is possible
 UNCLASSIFIED = "unclassified"   # Studio cannot tell, and says so
 
@@ -292,13 +294,15 @@ def _summary(verdict: str, tools: int, simultaneous: list, layer_based: list,
         heights = ", ".join(
             f"{c['from_z_mm']:.1f} mm" for c in layer_based
             if c.get("from_z_mm") is not None) or "a later height"
-        return (f"{len(simultaneous)} colour(s) share layers and need a toolhead each. "
-                f"{len(layer_based)} appear only from {heights}, so they may be handled "
-                "as planned swaps rather than by reducing the painted palette.")
+        return (f"{len(simultaneous)} colour(s) could not be proven to avoid each "
+                f"other, so reserve a toolhead for each. {len(layer_based)} appear only "
+                f"from {heights}, so they may be handled as planned swaps rather than by "
+                "reducing the palette.")
     if verdict == NEEDS_REDUCTION:
-        return (f"{len(simultaneous)} colours share the same layers and each needs its own "
-                f"toolhead, which is more than the {tools} available. Some of them have to "
-                "be merged before this can print as one job.")
+        return (f"{len(simultaneous)} colours could not be proven to avoid each other, so "
+                f"each needs a toolhead reserved — more than the {tools} available. Either "
+                "merge some of them, split the job across plates, or slice in Orca to see "
+                "which of them really do meet.")
     return (f"{len(unclassified)} colour(s) could not be classified, so Studio will not "
             "tell you whether swaps would work. The reason is on each colour below; "
             "opening the project in Snapmaker Orca settles it.")
@@ -311,7 +315,7 @@ def _guidance(verdict: str, painted: bool = False,
         lines = ["Load the colours in the order the project lists them."]
     elif verdict == POSSIBLE_WITH_SWAPS:
         lines = [
-            "Assign the colours that share layers to your toolheads.",
+            "Give a toolhead to each colour that could not be proven separate.",
             "Plan the remaining colour(s) as a swap at the height shown.",
             "Confirm in Snapmaker Orca before printing — Studio does not slice.",
         ]
@@ -392,8 +396,8 @@ def _height_usage(slot: int, bucket: dict | None, assigned: bool, pairs: list,
         if assigned:
             return SIMULTANEOUS, (
                 "an object on the plate is assigned this colour and Studio could "
-                "not measure where that object sits, so it must be assumed to "
-                "share layers with the others"), {}
+                "not measure where that object sits, so it cannot be shown to "
+                "avoid the others and a toolhead is reserved for it"), {}
         return UNCLASSIFIED, (
             "this project paints with this colour, but the painted facets carry "
             "no readable height, so Studio cannot say whether it shares layers "
@@ -403,8 +407,10 @@ def _height_usage(slot: int, bucket: dict | None, assigned: bool, pairs: list,
         return SIMULTANEOUS, (
             f"used between {low:.2f} mm and {high:.2f} mm, where "
             f"slot{'s' if len(overlapping) > 1 else ''} {names} "
-            f"{'are' if len(overlapping) > 1 else 'is'} used too, so the two can "
-            "meet on a layer and each needs a toolhead"), {}
+            f"{'are' if len(overlapping) > 1 else 'is'} used too — so Studio cannot "
+            "prove they avoid each other, and a toolhead has to be reserved for "
+            "this one. Whether a printed layer really carries both is settled by "
+            "the slice"), {}
     others = [other for other in unmeasured if other != slot]
     if others:
         names = ", ".join(str(other) for other in others)

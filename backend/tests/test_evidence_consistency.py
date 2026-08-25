@@ -11,6 +11,13 @@ entire argument is "check it yourself".
 Every current-state document is checked against it here.
 
 Historical documents are exempt, and say so.
+
+The reading itself lives in `doc_truth.py`, which works on blocks — a paragraph, a
+table row, a list item — rather than lines. Three false claims shipped in v0.7.0
+because the old line-by-line reading could not see a sentence that wrapped, a call
+to action outside the Download section, or a "published vX installer" line sitting
+above the current numbers. Those three are regression-tested in
+test_doc_truth_guard.py against the guard itself, not only against today's files.
 """
 from __future__ import annotations
 
@@ -19,6 +26,9 @@ import re
 from pathlib import Path
 
 import pytest
+
+from doc_truth import (count_offenders, demo_offenders, release_offenders,
+                       suite_offenders)
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE = ROOT / "docs" / "internal" / "evidence.json"
@@ -87,50 +97,42 @@ def test_the_canonical_version_is_the_released_version(evidence):
 
 @pytest.mark.parametrize("doc", CURRENT_DOCS, ids=lambda p: p.name)
 def test_public_counts_match_the_canonical_evidence(doc, evidence):
-    """No current-state line may quote a ratio for a capability that is not its
-    real one."""
+    """No present-tense claim may quote a ratio, or an "n-check" count, that is not
+    the real one for the capability the claim is about."""
     assert doc.exists(), f"missing document: {doc}"
-    offenders = []
-    for number, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), start=1):
-        lowered = line.lower()
-        if any(marker in lowered for marker in _HISTORICAL):
-            continue
-        for key, words in SUBJECTS.items():
-            if not any(word in lowered for word in words):
-                continue
-            expected = f"{evidence[key]['passed']}/{evidence[key]['total']}"
-            total = evidence[key]["total"]
-            for found in _RATIO.finditer(line):
-                ratio = f"{int(found.group(1))}/{int(found.group(2))}"
-                if ratio != expected:
-                    offenders.append(f"{doc.name}:{number} says {ratio} for {key}, "
-                                     f"canonical is {expected}")
-            # Prose: "a 15-check pass/fail table", "27 checks over the real window".
-            for found in _PROSE_COUNT.finditer(line):
-                if int(found.group(1)) != total:
-                    offenders.append(f"{doc.name}:{number} says "
-                                     f"{found.group(0)!r} for {key}, canonical total is {total}")
-    assert not offenders, "\n  " + "\n  ".join(offenders)
+    offenders = count_offenders(doc.read_text(encoding="utf-8"), evidence,
+                                name=doc.name)
+    assert not offenders, _report(offenders)
 
 
 @pytest.mark.parametrize("doc", CURRENT_DOCS, ids=lambda p: p.name)
 def test_public_suite_counts_match(doc, evidence):
-    """Backend and desktop pass counts, wherever a current-state document quotes
-    them next to the word that identifies them."""
-    backend = str(evidence["backend"]["passed"])
-    desktop = str(evidence["desktop"]["passed"])
-    offenders = []
-    for number, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), start=1):
-        lowered = line.lower()
-        if any(marker in lowered for marker in _HISTORICAL):
-            continue
-        if "backend" in lowered and "passed" in lowered:
-            if backend not in line:
-                offenders.append(f"{doc.name}:{number} quotes a backend count that is not {backend}")
-        if "desktop" in lowered and "passed" in lowered:
-            if desktop not in line:
-                offenders.append(f"{doc.name}:{number} quotes a desktop count that is not {desktop}")
-    assert not offenders, "\n  " + "\n  ".join(offenders)
+    """Backend and desktop counts, including the combined row that once carried
+    `822 · 284` through an entire release."""
+    offenders = suite_offenders(doc.read_text(encoding="utf-8"), evidence,
+                                name=doc.name)
+    assert not offenders, _report(offenders)
+
+
+@pytest.mark.parametrize("doc", CURRENT_DOCS, ids=lambda p: p.name)
+def test_current_documents_point_at_the_current_release(doc, evidence):
+    """Every download link, release link, "published vX installer" credit and
+    screenshot path in present-tense prose names the release being shipped.
+
+    Not only the ones inside a section called Download: v0.7.0 shipped with the
+    README's top call to action still pointing at v0.6.2, which is the link most
+    readers actually use.
+    """
+    offenders = release_offenders(doc.read_text(encoding="utf-8"), evidence,
+                                  name=doc.name)
+    assert not offenders, _report(offenders)
+
+
+@pytest.mark.parametrize("doc", CURRENT_DOCS, ids=lambda p: p.name)
+def test_the_demo_length_is_the_demo_s_length(doc, evidence):
+    offenders = demo_offenders(doc.read_text(encoding="utf-8"), evidence,
+                               name=doc.name)
+    assert not offenders, _report(offenders)
 
 
 def test_current_documents_do_not_call_the_release_a_beta(evidence):

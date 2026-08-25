@@ -275,12 +275,12 @@ def test_a_painted_colour_that_never_shares_a_height_is_offered_as_a_swap(tmp_pa
     assert swap[0]["painted_area_mm2"] > 0
 
 
-def test_two_painted_colours_sharing_a_height_each_need_a_toolhead(tmp_path):
+def test_two_painted_colours_at_the_same_height_each_reserve_a_toolhead(tmp_path):
     p = _project(tmp_path, colours=["#1", "#2", "#3", "#4"],
                  painted=[(_paint(2), (0.0, 20.0)), (_paint(3), (10.0, 30.0))])
     out = cp.analyse(p, toolheads=4)
     assert slots(out["simultaneous"]) == [2, 3]
-    assert "can meet on a layer" in out["simultaneous"][0]["evidence"]
+    assert "cannot prove they avoid each other" in out["simultaneous"][0]["evidence"]
 
 
 def test_a_painted_colour_cannot_be_proven_separate_from_an_unmeasured_object(tmp_path):
@@ -366,3 +366,49 @@ def test_the_plan_is_json_the_way_the_service_sends_it(tmp_path):
     out = cp.analyse(p, toolheads=4)
     json.dumps(out)
     assert out["toolheads_measured"] is True
+
+
+# --- what an overlap is allowed to claim -------------------------------------
+#
+# Overlapping heights prove two colours *can* meet on a layer, and Studio plans
+# for that conservatively — a toolhead is reserved either way. What it must not
+# do is tell the user the shared layer was proven, because only the slice proves
+# that. The plan is unchanged; the claim is.
+
+def test_an_overlap_reserves_a_toolhead_without_claiming_a_shared_layer(tmp_path):
+    p = _project(tmp_path, colours=["#1", "#2", "#3", "#4"],
+                 painted=[(_paint(2), (0.0, 20.0)), (_paint(3), (10.0, 30.0))])
+    out = cp.analyse(p, toolheads=4)
+    entry = [e for e in out["simultaneous"] if e["slot"] == 2][0]
+    assert "cannot prove they avoid each other" in entry["evidence"]
+    assert "reserved" in entry["evidence"]
+    assert "settled by the slice" in entry["evidence"]
+    assert "share" not in entry["evidence"].lower()
+
+
+def test_no_user_facing_string_claims_colours_share_a_layer(tmp_path):
+    import re
+
+    banned = re.compile(r"share (the same )?layers?|shares a layer", re.I)
+    for objects, painted in (((1, 2, 3, 4, 5), False),
+                             ((), [(_paint(2), (0.0, 20.0)), (_paint(3), (10.0, 30.0))]),
+                             ((), [(_paint(2), (0.0, 5.0)), (_paint(3), (30.0, 40.0))])):
+        out = cp.analyse(_project(tmp_path, name=f"p{len(objects)}{bool(painted)}.3mf",
+                                  colours=["#1", "#2", "#3", "#4", "#5", "#6"],
+                                  objects=objects, painted=painted), toolheads=4)
+        strings = [out["headline"], out["summary"], out["disclaimer"], *out["guidance"]]
+        strings += [c["evidence"] for group in ("simultaneous", "layer_based", "unclassified")
+                    for c in out[group]]
+        offenders = [text for text in strings if banned.search(text or "")]
+        assert not offenders, offenders
+
+
+def test_the_conservative_plan_is_unchanged_by_the_new_wording(tmp_path):
+    # Two colours that overlap still cost two toolheads, and are still never
+    # offered as a swap.
+    p = _project(tmp_path, colours=["#1", "#2", "#3", "#4"],
+                 painted=[(_paint(2), (0.0, 20.0)), (_paint(3), (10.0, 30.0))])
+    out = cp.analyse(p, toolheads=1)
+    assert slots(out["simultaneous"]) == [2, 3]
+    assert out["layer_based"] == []
+    assert out["verdict"] == cp.NEEDS_REDUCTION

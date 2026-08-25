@@ -167,10 +167,10 @@ guessing in the direction that looks better.
   request against a JSON file; the rules that fire it are declarative, and a test
   proves every entry is reachable. See [EXTENDING.md](EXTENDING.md).
 - **One command anyone can run.** `u1convert selfcheck` runs the real pipeline end
-  to end and prints a 25-check pass/fail table, so the claims can be verified
+  to end and prints a 27-check pass/fail table, so the claims can be verified
   without reading the source. It runs in CI on every pull request.
 - **An acceptance harness that drives the installed application**, not a dev
-  server: 30 checks over the real window and the frozen engine, including that the
+  server: 31 checks over the real window and the frozen engine, including that the
   input file is byte-identical afterwards and that uninstalling leaves nothing
   behind.
 - **Regression tests against genuine slicer output** — real OrcaSlicer,
@@ -208,7 +208,7 @@ simply the machine it is verified against.
 
 ## Evidence
 
-Everything below was verified against the **published v0.6.2 installer**, not a
+Everything below was verified against the **published v0.7.0 installer**, not a
 development build. Commands, counts and full reports:
 [TRUST_STATUS.md](TRUST_STATUS.md).
 

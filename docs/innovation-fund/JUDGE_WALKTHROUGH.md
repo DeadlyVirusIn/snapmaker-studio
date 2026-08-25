@@ -171,10 +171,10 @@ pwsh -File tools/acceptance/run.ps1
 
 It installs into an isolated directory with its own WebView2 profile and engine
 data directory, drives the real application window over the Chrome DevTools
-Protocol, and uninstalls. 30 checks, including that the input file is byte-identical
+Protocol, and uninstalls. 31 checks, including that the input file is byte-identical
 afterwards and that uninstalling leaves nothing behind. It stops only processes it
 started, and restores any pre-existing installation's registry entry. Last result:
-**27/27** — [../internal/acceptance-0.4.0.json](../internal/acceptance-0.5.0.json).
+**31/31** — [../internal/acceptance-0.7.0.json](../internal/acceptance-0.7.0.json).
 
 **A real printer.** With a Snapmaker U1 on the same network:
 

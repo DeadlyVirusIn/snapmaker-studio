@@ -86,7 +86,7 @@ honest fix was to remove it, not to tune a number Studio cannot observe.
 
 ## What is verified, and how
 
-Everything below ran against the **published v0.6.0 installer** — installed,
+Everything below ran against the **published v0.7.0 installer** — installed,
 launched, driven through the real window, then uninstalled. Not a development
 server, not the source tree.
 
@@ -156,4 +156,4 @@ SHA256 before running it. Why, and what is being done:
 | Technical depth | [TECHNICAL_DEPTH.md](TECHNICAL_DEPTH.md) |
 | Where Studio sits in the field | [COMPETITOR_MATRIX.md](COMPETITOR_MATRIX.md) · [DIFFERENTIATION_STRATEGY.md](DIFFERENTIATION_STRATEGY.md) |
 | The ecosystem story | [OPEN_ECOSYSTEM.md](OPEN_ECOSYSTEM.md) |
-| Download | [Releases](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.4.0) · hash in [../RELEASE_METADATA.md](../RELEASE_METADATA.md) |
+| Download | [Releases](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.0) · hash in [../RELEASE_METADATA.md](../RELEASE_METADATA.md) |

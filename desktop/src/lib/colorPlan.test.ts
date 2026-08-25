@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { ColorPlan, ColorUse, ColorVerdict } from "@/api";
 import {
+  COLOR_PLAN_TITLE,
+  TOOLHEAD_EXPLAINER,
   groups,
   paintedDisclosure,
   paintedHeadline,
@@ -49,7 +51,7 @@ describe("verdictBanner", () => {
     const all: ColorVerdict[] = ["fits", "possible_with_swaps", "needs_reduction", "cannot_classify"];
     for (const v of all) expect(verdictBanner(v).length).toBeGreaterThan(0);
     expect(verdictBanner("possible_with_swaps")).toBe("Possible without repainting");
-    expect(verdictBanner("needs_reduction")).toBe("Needs colour reduction");
+    expect(verdictBanner("needs_reduction")).toBe("More colours than toolheads to reserve");
   });
 
   it("never presents an unclassifiable project as workable", () => {
@@ -261,5 +263,25 @@ describe("painted colour", () => {
       },
     });
     expect(paintedLimit(plan)).toBeNull();
+  });
+});
+
+// --- what an overlap is allowed to claim ------------------------------------
+//
+// Overlapping heights prove two colours *can* meet on a layer. Studio plans
+// conservatively for that — a toolhead is reserved either way — but the copy
+// must not tell the user a shared layer was proven, because it was not.
+
+describe("overlap wording", () => {
+  it("never tells the user that colours share layers", () => {
+    const banned = /share (the same )?layers?|shares a layer|are on the same layer/i;
+    expect(banned.test(verdictBanner("needs_reduction"))).toBe(false);
+    expect(banned.test(verdictBanner("possible_with_swaps"))).toBe(false);
+    expect(banned.test(TOOLHEAD_EXPLAINER)).toBe(false);
+  });
+
+  it("keeps the conservative plan: an overlap is never offered as a swap", () => {
+    expect(suggestsSwaps(plan({ verdict: "needs_reduction" }))).toBe(false);
+    expect(suggestsSwaps(plan({ verdict: "cannot_classify" }))).toBe(false);
   });
 });
