@@ -97,9 +97,24 @@ _PRUSA_META = re.compile(
 _BAMBU_META = re.compile(r'<metadata\s+key="([^"]+)"\s+value="([^"]*)"')
 
 
+#: Beyond this a value is not a filament slot, it is a corrupted number. Slicers
+#: cap filaments far below it; nothing sane lands here, and an unbounded integer
+#: from someone else's file has no business being carried as an assignment.
+MAX_SLOT = 999
+
+
 def _int(value: str):
+    """A slot number, or nothing.
+
+    `str.isdigit()` is true for Unicode digits, so "٣" would arrive as slot 3 —
+    a silent normalisation of a value no slicer wrote, which is exactly the class
+    of quiet wrongness this module exists to avoid. ASCII only, and bounded.
+    """
     value = (value or "").strip()
-    return int(value) if value.isdigit() else None
+    if not value or not all("0" <= c <= "9" for c in value):
+        return None
+    number = int(value)
+    return number if 0 <= number <= MAX_SLOT else None
 
 
 def _read(tm: ThreeMF, part: str) -> str | None:
@@ -120,7 +135,8 @@ def _prusa(text: str) -> list[dict]:
         entry = {"object_id": found.group(1) if found else str(position + 1),
                  "index": position, "name": None, "slot": None,
                  "source": DEFAULT, "volume_slots": [], "volumes": [],
-                 "instances": _int(_INSTANCES.search(head).group(1))
+                 # Zero placements is not a statement, it is a broken one.
+                 "instances": (_int(_INSTANCES.search(head).group(1)) or None)
                               if _INSTANCES.search(head) else None,
                  "overrides": {}}
         for kind, key, value in _PRUSA_META.findall(chunk.split("<volume", 1)[0]):
@@ -197,16 +213,25 @@ def _bambu(text: str) -> list[dict]:
 
 
 MODEL_PART = "3D/3dmodel.model"
-_BUILD_ITEM = re.compile(r'<item[^>]*objectid="([^"]+)"')
+_BUILD_ITEM = re.compile(r'<item\s[^>]*objectid="([^"]+)"')
 
 
 def _instances_from_build(tm: ThreeMF) -> dict[str, int]:
-    """How many times each object is actually placed on the plate.
+    """How many times each object id appears in the build, when that is readable.
 
-    The build items own this. PrusaSlicer proves it: given a config claiming three
-    instances and a build holding one item, 2.9.6 wrote back a count of one — the
-    config's `instances_count` mirrors the build rather than deciding it. So the
-    items are counted, and the config's number is only a fallback.
+    Two facts, both measured against PrusaSlicer 2.9.6, and they pull in different
+    directions:
+
+    * a config claiming three instances against a build holding one item came back
+      claiming one — so the config cannot invent placements the build does not
+      have;
+    * three build items came back as three *separate* objects with their own ids,
+      not as one object placed three times — so the build's object ids do not map
+      one-to-one onto the config's.
+
+    The slicer maintains `instances_count` truthfully against the build it has, so
+    that is the statement to believe. This counting is the fallback for a file that
+    does not carry one, and it is only meaningful when the ids line up.
     """
     text = _read(tm, MODEL_PART)
     if text is None:
@@ -218,7 +243,10 @@ def _instances_from_build(tm: ThreeMF) -> dict[str, int]:
 
 
 def _with_instances(objects: list[dict], counts: dict[str, int]) -> list[dict]:
+    """Fill in a placement count only where the file did not state one."""
     for entry in objects:
+        if entry.get("instances") is not None:
+            continue
         placed = counts.get(str(entry.get("object_id")))
         if placed is not None:
             entry["instances"] = placed

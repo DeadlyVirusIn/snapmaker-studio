@@ -26,7 +26,7 @@ that the test suite re-checks.
 | Is a slot beyond the filament count clamped? | **No.** `extruder="6"` came back as 6. | `M_object_slot6_out.3mf` |
 | Can one object hold volumes on different filaments? | **Yes, ordinarily.** Two volumes on filaments 2 and 5 round-tripped exactly. | `H_two_volumes_different_slots_out.3mf` |
 | Do object-level and volume-level assignments coexist? | **Yes, independently.** Object 2 with a volume saying 4 kept both. | `N_object_and_volume_disagree_out.3mf` |
-| Where do instances live? | **In the build items.** A config claiming three instances against one build item came back claiming one; three build items came back as `instances_count="3"`. The config mirrors the build. | `inst3_out.3mf` |
+| Where do instances live? | **The build decides; the config states it.** A config claiming three instances against one build item came back claiming one, so the config cannot invent placements. But three build items came back as three *separate objects with their own ids*, not one object placed three times — so build object ids do not map onto config object ids. The slicer keeps `instances_count` true against the build it has, and that is the statement to read. | `inst3_out.3mf` |
 | What are the volume roles? | `ModelPart`, `ParameterModifier`, `NegativeVolume`, `SupportEnforcer`, `SupportBlocker` — all round-trip. | `vt_*_out.3mf` |
 | What happens to a role it does not recognise? | **It becomes printable geometry.** Handed the old Slic3r word `ModifierMesh`, 2.9.6 wrote back `ModelPart`. A modifier silently became solid. | `vt_ModifierMesh_out.3mf` |
 | Do per-object setting overrides survive? | **Yes.** `layer_height`, `fill_density` and `support_material` all round-tripped. | `J_per_object_override_out.3mf` |
@@ -57,8 +57,17 @@ print from filament 1 today, but the copy now claims a choice the project never
 made.
 
 **The reader carries three facts it used to drop**: how many times an object is
-placed (counted from the build items, since those own it), what each volume is
-*for* in a normalised vocabulary, and any per-object setting overrides.
+placed (from the count the slicer maintains, with build items as a fallback for a
+file that states none), what each volume is *for* in a normalised vocabulary, and
+any per-object setting overrides.
+
+That precedence was itself corrected mid-sprint. The first implementation counted
+build items and preferred them — and a malformed-input test found that its regex
+had never matched anything, so every count had silently come from the fallback it
+was supposed to override. Fixing the regex then showed the build ids do not line
+up with the config ids, which is what settled the precedence the other way. Both
+the bug and the wrong assumption were invisible until something deliberately
+hostile was fed in.
 
 **Fidelity answers each fact for itself.** A volume's filament, a modifier's role,
 the instance count and an overridden setting are four separate claims and get four
@@ -70,11 +79,17 @@ passes an audit while the structure underneath it changed.
 object placed three times into three objects placed once. Every copy is still on
 the plate and the arrangement is identical; what is lost is the record that they
 were copies of one thing. That is `preserved_semantic` — neither a clean pass nor
-a loss, and it was briefly reported as `changed` before the reader learned to
-count build items, which is exactly the false alarm an audit must not raise.
+a loss. Before the reader could see instances at all it was reported as
+`changed`, which is exactly the false alarm an audit must not raise.
 
 **An unrecognised role is unknown, never a part.** Studio does not repeat
 PrusaSlicer's own silent promotion of an unknown `volume_type` to `ModelPart`.
+
+**A slot number is ASCII and bounded.** `str.isdigit()` is true for Unicode
+digits, so a file containing `extruder="٣"` was arriving as slot 3 — a value no
+slicer wrote, normalised silently. And an unbounded integer from someone else's
+file was carried as an assignment. Both are now refused, and refused means
+*unknown*, not slot 1.
 
 ## What is carried, and what is not
 
