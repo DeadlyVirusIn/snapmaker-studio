@@ -15,7 +15,9 @@ to the U1 via Printer Hub.
 - **Studio does not slice** — Snapmaker Orca does. One-way handoff only.
 - **Studio never takes autonomous control.** Printer Hub provides local, user-confirmed
   actions (monitor, send, pause, resume, cancel); it never auto-starts a print.
-- **Local-first.** No cloud, no account, nothing uploaded.
+- **Local-first.** No cloud, no account, no telemetry, nothing uploaded off the
+  user's local network. Printer Hub may transfer a sliced job to the user's own
+  printer on the LAN, and only after they confirm it.
 - **Originals are never modified** — preparing a model always writes a new copy.
 - **Advisory, not guarantees.** Never claim "100% print success" or a guaranteed print.
 - **No secrets** in the repo (tokens, keys, credentials). **No private data** (real IPs,

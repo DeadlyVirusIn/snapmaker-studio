@@ -69,7 +69,7 @@ export default function DoctorLanding() {
         </p>
         <p className="text-sm text-muted-foreground">
           The {doc.name} runs on a model. Open an STL or 3MF and Studio checks it
-          automatically in the workspace — nothing leaves your computer.
+          automatically in the workspace — your file stays on your computer.
         </p>
 
         <div className="flex flex-wrap gap-2">
@@ -87,7 +87,7 @@ export default function DoctorLanding() {
           <p className="text-xs text-muted-foreground">
             Open a 3MF or STL to check it for your U1. New here? See the demo on the{" "}
             <Link to="/" className="text-primary hover:underline">Dashboard</Link> to
-            see how Studio works — nothing leaves your computer.
+            see how Studio works — your file stays on your computer.
           </p>
         )}
 

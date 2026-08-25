@@ -14,8 +14,8 @@
 what is likely to go wrong, fixes what it can prove, and shows you exactly what
 changed. Snapmaker Orca still does the slicing.**
 
-Free, open source, and entirely on your computer. No account, no cloud, nothing
-uploaded. Your original file is never modified.
+Free, open source, and local. No account, no cloud, nothing uploaded off your
+local network. Your original file is never modified.
 
 ### [▶ Watch it work — 66 seconds](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4) · [⬇ Download for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.8.0) · [What it is, in 5 minutes](docs/innovation-fund/JUDGE_OVERVIEW.md)
 
@@ -143,7 +143,8 @@ registry is a data file: adding a tool is a small pull request, not a code chang
 See [docs/EXTENDING.md](docs/EXTENDING.md) and
 [docs/innovation-fund/OPEN_ECOSYSTEM.md](docs/innovation-fund/OPEN_ECOSYSTEM.md).
 
-MIT licensed. Local-first: no cloud, no account, no telemetry, nothing uploaded.
+MIT licensed. Local-first: no cloud, no account, no telemetry, nothing uploaded
+off your local network.
 Every third-party project Studio recommends or interoperates with is listed with
 its licence in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
@@ -298,7 +299,9 @@ is the first printer target; the workflow is built to grow across ecosystems.
 
 - **Design-first and novice-friendly.** It explains a design in plain language and
   surfaces likely print risks — before you ever open a slicer.
-- **Local-first.** Everything runs on your machine. No cloud, no account, no upload.
+- **Local-first.** Everything runs on your machine. No cloud, no account, no
+  telemetry. The only thing Studio ever sends anywhere is a sliced job to your own
+  printer, on your own network, when you press the button and confirm it.
 - **Multi-ecosystem.** Bambu, OrcaSlicer, Snapmaker Orca, PrusaSlicer and plain STL
   are all read properly — a PrusaSlicer project's printer, bed, filaments, colours,
   layer heights, supports and per-object assignments are read from its own config,

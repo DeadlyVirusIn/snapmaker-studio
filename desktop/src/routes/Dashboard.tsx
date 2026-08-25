@@ -142,7 +142,7 @@ export default function Dashboard() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-base font-medium">Open a model to begin</p>
-              <p className="text-sm text-muted-foreground">Drag in or browse for a <b>.stl</b> or <b>.3mf</b> · nothing leaves your computer</p>
+              <p className="text-sm text-muted-foreground">Drag in or browse for a <b>.stl</b> or <b>.3mf</b> · your file stays on your computer</p>
             </div>
             <span className="hidden shrink-0 sm:block">
               <span className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm">

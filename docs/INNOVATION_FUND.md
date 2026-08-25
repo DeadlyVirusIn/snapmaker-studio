@@ -160,7 +160,7 @@ guessing in the direction that looks better.
 - **MIT**, with every interoperating project listed by licence in
   [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). AGPL and GPL neighbours are
   interoperated with, never vendored.
-- **No account, no cloud, no telemetry, nothing uploaded.**
+- **No account, no cloud, no telemetry, nothing uploaded off the local network.**
 - **A documented CLI** (`u1convert`) and a **documented local HTTP API**, so the
   engine is usable without the app.
 - **An ecosystem registry that is data, not code.** Adding a tool is a small pull

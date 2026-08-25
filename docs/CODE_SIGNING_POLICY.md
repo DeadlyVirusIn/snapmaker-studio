@@ -134,7 +134,7 @@ submission that legally represents the maintainer, which is theirs to send.
   explains the print risks it can prove, compares the project against the user's
   own Snapmaker U1 over the local network, prepares a corrected copy without
   modifying the original, and hands that copy to a slicer. No account, no cloud,
-  no telemetry.
+  no telemetry, and nothing sent off the user's local network.
 - **Artifacts to be signed:** the Windows NSIS installer
   (`Snapmaker.Studio_<version>_x64-setup.exe`) and the two executables it
   contains, `snapmaker-studio-desktop.exe` and `snapstudio-api.exe`.

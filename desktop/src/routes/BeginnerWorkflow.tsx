@@ -12,7 +12,7 @@ const STEPS: Step[] = [
   { n: 1, title: "Find a model", inStudio: true, to: "/find-models", link: "Find Models",
     body: "Search model sites and check the license. Download manually from the source site (v1 doesn't import for you)." },
   { n: 2, title: "Open it in Studio", inStudio: true, to: "/", link: "Open a model",
-    body: "Drag an STL or 3MF in. Studio reads it locally — nothing leaves your computer." },
+    body: "Drag an STL or 3MF in. Studio reads it locally — your file stays on your computer." },
   { n: 3, title: "Run the Project Doctor", inStudio: true, to: "/doctor/project", link: "Project Doctor",
     body: "Check fit, geometry and printability before you waste filament." },
   { n: 4, title: "Fix compatibility / colour / scale", inStudio: true, to: "/compatibility", link: "Compatibility Doctor",

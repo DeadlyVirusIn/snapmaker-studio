@@ -21,7 +21,8 @@ const POLL_MS = 5000;
  * actually ties it to the project in hand. Anything less certain is a list to
  * choose from, not a decision made on the user's behalf.
  *
- * Studio still does not slice, and nothing here is uploaded anywhere.
+ * Studio still does not slice, and nothing here leaves the machine — sending a
+ * sliced job to the printer is Printer Hub's job, and only when the user says so.
  */
 export function OrcaRoundTrip() {
   const folder = useWatch((s) => s.folder);

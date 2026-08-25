@@ -84,7 +84,8 @@ theirs to do — it is their name on it. The text needs no editing to be usable.
 >   FOrcaSlicer, u1hub, the U1 toolkit or one of the converters, Studio says so
 >   and links them. I would rather you use the right tool than mine.
 >
-> Everything is local. No account, no cloud, nothing uploaded, MIT licensed.
+> Everything is local. No account, no cloud, nothing uploaded off your own
+> network, MIT licensed.
 > Your original files are never modified. Studio never starts a print.
 >
 > A 66-second recording of it working, the Windows installer with its SHA256, and

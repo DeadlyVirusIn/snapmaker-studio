@@ -1,11 +1,20 @@
-"""U1 Printer Hub — read-only Moonraker client (spike).
+"""Printer Hub — the Moonraker client.
 
 The Snapmaker U1 runs stock Moonraker on :7125, LAN-trusted (no auth), mDNS
-`U1.local` (see docs/design/PRINTER_HUB.md). This module talks to it **read-only**:
-discover, connect, and read status / temperatures / toolheads / print state.
+`U1.local` (see docs/design/PRINTER_HUB.md). Everything above the control section
+below is read-only: discover, connect, and read status / temperatures / toolheads
+/ print state / history / capabilities.
 
-HARD CONSTRAINT: GET requests only. No uploads, no print start/stop, no config
-or printer modification of any kind. Every function here is non-destructive.
+**The split, and why the file is ordered this way.** Everything down to
+`capabilities()` issues GET only and cannot change a machine. Below the CONTROL
+banner are the functions that can — pause, resume, cancel, start, emergency stop
+and `upload_gcode` — and each of them exists only to serve an explicit,
+user-confirmed action in the UI. Nothing there runs on a timer, automatically, or
+as a side effect of monitoring, and Studio never starts a print by itself.
+
+`upload_gcode` is the only thing Studio sends anywhere. It goes to a printer whose
+address the user supplied, on their own network. There is no other destination and
+no cloud.
 """
 from __future__ import annotations
 import json

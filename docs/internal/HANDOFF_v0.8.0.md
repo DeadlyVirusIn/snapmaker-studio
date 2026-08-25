@@ -184,8 +184,10 @@ the finding.
 
 ## Standing rules that bite most often
 
-- Studio never slices, never takes autonomous control of a printer, never uploads
-  anything anywhere, and never modifies an original file.
+- Studio never slices, never takes autonomous control of a printer, never sends
+  anything off the user's local network, and never modifies an original file.
+  Printer Hub *does* transfer a sliced job to the user's own printer on the LAN —
+  only when they press the button and confirm it.
 - Never force-kill a slicer, printer or user GUI process. Only processes this
   session started, tracked by PID.
 - No local paths, usernames, hostnames, printer addresses or private model names

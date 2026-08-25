@@ -42,8 +42,9 @@ Snapmaker Studio operates in, and it widens as the ecosystem fragments.
 
 ## 3. Core Principles
 
-1. **Local-first.** No account, no cloud, no telemetry required. Files never
-   leave the machine. Privacy and offline reliability are features, not promises.
+1. **Local-first.** No account, no cloud, no telemetry required. Your project
+   files never leave the machine, and nothing Studio does leaves your local
+   network. Privacy and offline reliability are features, not promises.
 2. **Preserve, never destroy.** Geometry, painting, and color are sacred. The
    engine fails safe: a conversion is rejected on any change it cannot account for,
 and a fidelity report states per project what was preserved, changed or unverified. Inputs

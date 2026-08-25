@@ -12,7 +12,7 @@ export function StatusBar() {
         {online ? "Ready" : status === "pending" ? "Starting up…" : "Reconnecting…"}
       </span>
       <span>v{__APP_VERSION__}</span>
-      <span className="ml-auto">Local-only · nothing leaves your computer</span>
+      <span className="ml-auto">Local-only · nothing leaves your network</span>
     </footer>
   );
 }

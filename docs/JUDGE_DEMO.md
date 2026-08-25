@@ -3,8 +3,8 @@
 > Independent open-source project — not affiliated with or endorsed by Snapmaker.
 
 Audience: a beginner who has never used a Snapmaker U1. Everything runs locally — no
-cloud, no account, nothing uploaded. Findings are advisory readiness estimates, not
-guarantees of print success.
+cloud, no account, nothing uploaded off the local network. Findings are advisory
+readiness estimates, not guarantees of print success.
 
 ## The story (one line)
 Studio takes a beginner from "I found a model" to "it's printing on my U1" — checking,

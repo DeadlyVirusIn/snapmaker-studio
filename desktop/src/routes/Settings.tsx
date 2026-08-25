@@ -129,7 +129,8 @@ export default function Settings() {
           <div className="flex items-center gap-2 text-sm font-semibold"><Info className="h-4 w-4" /> About</div>
           <div className="mt-2 space-y-1 text-sm text-muted-foreground">
             <p>Snapmaker Studio · v{__APP_VERSION__}</p>
-            <p>Local-first. No account, no cloud — nothing leaves your computer.</p>
+            <p>Local-first. No account, no cloud — nothing leaves your network. Printer Hub
+            sends a sliced job to your own printer only when you confirm it.</p>
             <p>Independent open-source project — not affiliated with or endorsed by Snapmaker.</p>
           </div>
         </CardContent>

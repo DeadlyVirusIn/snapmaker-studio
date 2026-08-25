@@ -61,8 +61,9 @@ from somewhere other than the official release — do not continue.
 3. Choose **Uninstall** and confirm. You can also use the uninstall entry in the
    Start menu folder, if present.
 
-Studio is local-first: it runs entirely on your machine and does not upload
-anything automatically, so removing the app leaves nothing behind in the cloud.
+Studio is local-first: it runs on your machine, has no account and no cloud, and
+sends nothing off your local network, so removing the app leaves nothing behind
+anywhere else.
 
 ## Code signing (planned)
 
@@ -73,4 +74,4 @@ signed files can still take time to build SmartScreen reputation, so a warning
 may persist for a while even after signing. Microsoft Store distribution may also
 be evaluated later as an additional trusted channel.
 
-_This build is a beta and is local-first; nothing leaves your computer._
+_This build is a beta and is local-first; nothing leaves your local network._

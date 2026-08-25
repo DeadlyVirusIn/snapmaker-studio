@@ -118,7 +118,7 @@ openness, and the comparison it performs is not possible on a closed printer.
 
 ## Openness
 
-MIT. No account, no cloud, no telemetry, nothing uploaded. A documented CLI and a
+MIT. No account, no cloud, no telemetry, nothing uploaded off the local network. A documented CLI and a
 documented local HTTP API, so the engine is usable without the app. The ecosystem
 registry is a data file — adding a tool is a small pull request, and a test proves
 every entry is reachable. AGPL and GPL neighbours are interoperated with, never

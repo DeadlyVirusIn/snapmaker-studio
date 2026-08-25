@@ -1,8 +1,12 @@
 # Security model & hardening status
 
 Snapmaker Studio is a local-first desktop app: a Tauri (Rust) shell + a webview UI
-talking to a Python engine over **loopback HTTP only** (`127.0.0.1`). Nothing leaves
-the machine; there is no account, cloud, or upload.
+talking to a Python engine over **loopback HTTP only** (`127.0.0.1`). There is no
+account, no cloud and no telemetry, and nothing leaves the user's local network.
+
+The one outbound transfer Studio makes is Printer Hub sending a sliced job to a
+printer the user gave it the address of, on their own network, after they confirm
+it. It is not automatic and there is no other destination.
 
 ## Current protections
 - **Loopback bind only** — the engine binds `127.0.0.1` (`server.py`, `ThreadingHTTPServer`); not reachable off-host.
