@@ -196,21 +196,49 @@ def wrap_stl(stl_path, colors=DEFAULT_COLORS, profile_name: str = "snapmaker_u1"
 
 # ---- geometry-only / foreign-slicer 3MF (no project_settings.config) ----
 
-def build_model_settings_multi(object_ids, name: str = "object", extruder: int = 1) -> bytes:
-    """model_settings.config for an arbitrary set of build objects: map each to a
-    filament/extruder slot and list them on plate 1."""
+def build_model_settings_multi(object_ids, name: str = "object", extruder: int = 1,
+                               assignments: dict | None = None) -> bytes:
+    """model_settings.config for an arbitrary set of build objects.
+
+    ``assignments`` maps a build object id to what the *source project* said about
+    it — ``{"extruder": int | None, "name": str | None}``. A project that put an
+    object on filament 3 meant it, and writing 1 instead is a different print of
+    the same shape. That is what this did for every PrusaSlicer project Studio
+    prepared, silently.
+
+    A slot number is never renumbered to fit four toolheads. A project may
+    legitimately reference more colours than the machine has; what to do about
+    that is colour planning's question, answered with the user in the loop.
+    """
     name = _attr(name)
-    objs = "".join(
-        f'  <object id="{oid}">\n'
-        f'    <metadata key="name" value="{name}_{oid}"/>\n'
-        f'    <metadata key="extruder" value="{extruder}"/>\n'
-        '    <part id="1" subtype="normal_part">\n'
-        f'      <metadata key="name" value="{name}_{oid}"/>\n'
-        '      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>\n'
-        '      <mesh_stat edges_fixed="0" degenerate_facets="0" facets_removed="0" '
-        'facets_reversed="0" backwards_edges="0"/>\n'
-        '    </part>\n  </object>\n'
-        for oid in object_ids)
+    assignments = assignments or {}
+
+    def block(oid: int) -> str:
+        stated = assignments.get(oid) or {}
+        slot = stated.get("extruder")
+        if not slot:
+            # An object with no slot of its own takes its volumes' — but only
+            # when they agree. A U1 object here is one part, so volumes that
+            # disagree cannot all be represented, and guessing which one wins
+            # would be inventing the user's intent. That case keeps the default
+            # and is reported by the fidelity audit as not carried.
+            volumes = {v for v in (stated.get("volume_extruders") or []) if v}
+            if len(volumes) == 1:
+                slot = volumes.pop()
+        slot = slot or extruder
+        label = _attr(stated.get("name") or f"{name}_{oid}")
+        return (
+            f'  <object id="{oid}">\n'
+            f'    <metadata key="name" value="{label}"/>\n'
+            f'    <metadata key="extruder" value="{slot}"/>\n'
+            '    <part id="1" subtype="normal_part">\n'
+            f'      <metadata key="name" value="{label}"/>\n'
+            '      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>\n'
+            '      <mesh_stat edges_fixed="0" degenerate_facets="0" facets_removed="0" '
+            'facets_reversed="0" backwards_edges="0"/>\n'
+            '    </part>\n  </object>\n')
+
+    objs = "".join(block(oid) for oid in object_ids)
     instances = "".join(
         '    <model_instance>\n'
         f'      <metadata key="object_id" value="{oid}"/>\n'
@@ -239,6 +267,47 @@ def _build_object_ids(model_xml: bytes) -> list[int]:
             seen.add(i)
             ids.append(i)
     return ids or [1]
+
+
+def source_assignments(src: ThreeMF) -> dict:
+    """What the source project says each build object prints in.
+
+    The PrusaSlicer dialect only, because that is the one Studio wraps: its model
+    config lists objects by the same id the 3MF uses, so the correlation is the
+    file's own rather than an assumption about ordering. Volume-level slots are
+    collected too, so a caller can tell an object whose volumes disagree from one
+    that speaks with a single voice.
+    """
+    part = "Metadata/Slic3r_PE_model.config"
+    if not src.has_part(part):
+        return {}
+    try:
+        raw = src.read_part(part).decode("utf-8", "ignore")
+    except Exception:
+        return {}
+    out: dict = {}
+    for chunk in re.split(r"<object\b", raw)[1:]:
+        head = chunk.split(">", 1)[0]
+        found = re.search(r'id="(\d+)"', head)
+        if not found:
+            continue
+        entry = {"extruder": None, "name": None, "volume_extruders": []}
+        for kind, key, value in re.findall(
+                r'<metadata\s+type="(object|volume)"\s+key="([^"]+)"\s+value="([^"]*)"',
+                chunk.split("<volume", 1)[0]):
+            if key == "extruder" and value.strip().isdigit():
+                entry["extruder"] = int(value)
+            elif key == "name":
+                entry["name"] = value
+        for volume in re.split(r"<volume\b", chunk)[1:]:
+            slot = None
+            for key, value in re.findall(
+                    r'<metadata\s+type="volume"\s+key="([^"]+)"\s+value="([^"]*)"', volume):
+                if key == "extruder" and value.strip().isdigit():
+                    slot = int(value)
+            entry["volume_extruders"].append(slot)
+        out[int(found.group(1))] = entry
+    return out
 
 
 def wrap_geometry_3mf(path, colors=DEFAULT_COLORS, profile_name: str = "snapmaker_u1") -> ThreeMF:
@@ -271,7 +340,9 @@ def wrap_geometry_3mf(path, colors=DEFAULT_COLORS, profile_name: str = "snapmake
         put("_rels/.rels", RELS)
 
     # Inject a clean U1 project around the preserved geometry.
-    put("Metadata/model_settings.config", build_model_settings_multi(object_ids, name=Path(path).stem))
+    put("Metadata/model_settings.config",
+        build_model_settings_multi(object_ids, name=Path(path).stem,
+                                   assignments=source_assignments(src)))
     put("Metadata/slice_info.config", build_slice_info(eff))
     put("Metadata/project_settings.config", dump_project_settings(_base_settings(eff, profile_name)))
     return ThreeMF(parts, order)

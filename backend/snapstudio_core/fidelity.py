@@ -412,6 +412,7 @@ def audit(original: str, prepared: str) -> dict:
     rows += _settings_rows(a, b)
     rows += _semantic_rows(a, b)
     rows += _painted_rows(a, b)
+    rows += _assignment_rows(a, b)
     rows += _optional_rows(a, b)
     rows += _unsupported_rows(a)
 
@@ -612,4 +613,50 @@ def _painted_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
     rows.append(_row("Painted colour", CHANGED,
                      detail="; ".join(differences) or "the paint data differs",
                      reason="Studio does not repaint models — report this as a bug"))
+    return rows
+
+
+# --- which filament each object prints in ------------------------------------
+#
+# The quietest thing a converter can destroy. Studio reassigned every PrusaSlicer
+# object to filament 1 while reporting the geometry byte-identical and nothing
+# removed, which is exactly the shape of failure this audit exists to catch.
+
+def _assignment_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
+    from . import assignments
+
+    before = assignments.read(a)
+    after = assignments.read(b)
+    if not before.get("available"):
+        return []
+    if not after.get("available"):
+        return [_row("Which filament each object uses", REMOVED,
+                     detail="the source assigns filaments per object; the copy "
+                            "records no assignments at all",
+                     reason="Studio does not drop object assignments — report this as a bug")]
+
+    verdict = assignments.compare(before, after)
+    if not verdict.get("available"):
+        return [_row("Which filament each object uses", UNVERIFIED,
+                     detail=verdict.get("reason", "the two sides cannot be compared"))]
+
+    rows = []
+    for entry in verdict["rows"]:
+        label = f"Filament for {entry['object']}"
+        status = entry["status"]
+        if status == assignments.PRESERVED:
+            rows.append(_row(label, PRESERVED_SEMANTIC, detail=entry["detail"]))
+        elif status == assignments.NOT_REPRESENTABLE:
+            rows.append(_row(label, UNSUPPORTED, detail=entry["detail"],
+                             reason="a prepared U1 object is a single part"))
+        elif status == assignments.LOST:
+            rows.append(_row(label, REMOVED, detail=entry["detail"],
+                             reason="Studio does not drop object assignments — "
+                                    "report this as a bug"))
+        elif status == assignments.CHANGED:
+            rows.append(_row(label, CHANGED, detail=entry["detail"],
+                             reason="Studio does not renumber object assignments — "
+                                    "report this as a bug"))
+        else:
+            rows.append(_row(label, UNVERIFIED, detail=entry["detail"]))
     return rows
