@@ -5,6 +5,16 @@ Honest, current verification state for the current release. A release is only ma
 published installer, and — from beta.24 onward — read-only verification against a
 real Snapmaker U1 have all passed and are recorded here.
 
+> **Unreleased work on `main`, after v0.7.2.** The printer-intelligence layer now
+> reads a printer profile rather than assuming a U1, and a second machine — a
+> VORON 2.4 250 — was run through the same path as an architecture proof. That is
+> **not a release**, has no installer, and is not accepted here; v0.7.2 remains the
+> current release and everything below still describes it. The second printer is
+> **profile verified — hardware not tested by this project**, and no VORON has
+> been connected to Studio. See [PRINTER_COMPATIBILITY.md](PRINTER_COMPATIBILITY.md)
+> and `internal/SECOND_PRINTER_PROOF.md`. The U1's own hardware verification is
+> unchanged at 26/26 against v0.7.2 and was not re-run for this work.
+
 ## v0.7.2 — ACCEPTED
 
 **A Prusa object's filament survives the crossing.** Everything below ran against

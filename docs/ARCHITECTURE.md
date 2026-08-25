@@ -72,8 +72,12 @@ processes** on graceful close, crash, or force-kill.
   Preset."
 - **`fingerprint` / `config_io` / `container` / `rules`** — geometry hashing,
   JSON/XML (hardened lxml) IO, 3MF (OPC ZIP) read/replace, clamp rules.
+- **`printer_profiles`** — facts about a machine (build volume, tool count, what
+  it reports about its own materials) with a source and a verification level for
+  each, plus the capability resolver that lets live evidence beat a profile.
 - **`data/`** — `templates/` (known-good U1 project_settings), `profiles/`,
-  `u1_rules.json`, `u1_filament_arrays.json` — the declarative knowledge base.
+  `printer_profiles/` (U1 + one second machine), `u1_rules.json`,
+  `u1_filament_arrays.json` — the declarative knowledge base.
 
 ### 4. Validation corpus (`validation/`)
 `validate_corpus.py` scans a directory of **real** files (referenced by path,
@@ -108,6 +112,35 @@ reliability backbone and the future CI gate for plugins.
 The refactor is incremental: extract stable contracts behind the existing
 functions, then move U1 specifics into the first profile pack + adapter. No
 rewrite — the proven kernel stays; the seams become public.
+
+### Printer profiles — the first seam actually extracted
+
+`printer_profiles.py` + `data/printer_profiles/*.json` is the kernel/plugin split
+above, done for one layer rather than described. A profile holds **facts** about a
+machine — build volume, tool count, what it reports about its own materials, what
+it is known not to report — with a source for each and a verification level saying
+how well established they are. It holds no behaviour: there is no per-printer
+function in the package, and a test parses the generic printer modules and fails
+the build on a conditional that branches on a model name.
+
+Two rules make it more than a lookup table:
+
+- **Live evidence beats the profile.** A profile says what a machine of this kind
+  is expected to be; the machine says what it is. `resolve()` records which source
+  won and reports a disagreement rather than correcting the hardware.
+- **A capability is proved by a Klipper object, not by a manufacturer.** With no
+  live object list a profile can say only what is *expected*, in those words.
+
+The layer above it — Preflight, the Post-Slice Doctor, the send check, the
+material plan, the firmware capability interpreter — reads what a printer reported
+and never asks which printer it is. Two profiles ship: the Snapmaker U1
+(hardware verified) and a VORON 2.4 250 (profile verified, no hardware tested).
+See [PRINTER_COMPATIBILITY.md](PRINTER_COMPATIBILITY.md) for what each level
+claims, and `internal/SECOND_PRINTER_PROOF.md` for what the exercise found.
+
+The prepare path — `convert`, `repair`, `u1_identity`, `stl_wrap` — is
+deliberately untouched by this. Studio prepares U1 copies for Snapmaker Orca; that
+is the product, not an assumption to be abstracted away.
 
 ## Tech stack
 

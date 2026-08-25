@@ -62,6 +62,27 @@ published symptom rather than taken on trust.
 U1 reference profile values in `snapstudio_core/data/` are derived from Snapmaker
 Orca's own bundled defaults, exported directly.
 
+### Printer profile facts
+
+`snapstudio_core/data/printer_profiles/` records facts about machines: build
+volume, tool count, what a printer reports about its own materials. Each profile
+names where every fact came from in its own `source_refs`.
+
+`voron_2_4_250.json` is derived from `config/kit-voron2-250mm.cfg` in
+[Klipper](https://github.com/Klipper3d/klipper) (GPL-3.0), read at blob
+`e82ee28a152ed61599e0422c1c353d13e0c3453e` on 2026-08-25. What was taken is
+factual: the axis limits its steppers declare, the single `[extruder]` it
+declares, and which optional modules it does and does not declare. **No
+configuration text was copied into this repository**, and the profile is data
+about a machine rather than a derivative of Klipper's work.
+
+The same holds for the test fixture built from it,
+`backend/tests/fixtures/printers/voron_2_4_250_moonraker.json`, whose own
+`_provenance` block states the derivation of every field and states plainly that
+it is not evidence from hardware. VORON Design's machines and documentation are
+credited in that profile's `source_refs`; Studio is not affiliated with, or
+endorsed by, VORON Design.
+
 ---
 
 ## Corrections
