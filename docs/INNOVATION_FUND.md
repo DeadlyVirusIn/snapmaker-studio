@@ -208,7 +208,7 @@ simply the machine it is verified against.
 
 ## Evidence
 
-Everything below was verified against the **published v0.7.1 installer**, not a
+Everything below was verified against the **published v0.7.2 installer**, not a
 development build. Commands, counts and full reports:
 [TRUST_STATUS.md](TRUST_STATUS.md).
 
@@ -218,7 +218,7 @@ development build. Commands, counts and full reports:
 | Read-only verification against a real Snapmaker U1 | 26/26 |
 | Regression tests against genuine Orca/Bambu/Prusa projects | 36 tests |
 | End-to-end pipeline self-check | 27/27 |
-| Backend tests | 1153 passed, 3 skipped |
+| Backend tests | 1185 passed, 3 skipped |
 | Desktop tests | 306 passed |
 | TypeScript, Rust, production build | clean |
 

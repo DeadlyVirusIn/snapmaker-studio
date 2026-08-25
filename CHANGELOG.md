@@ -6,6 +6,29 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-08-25
+
+**A Prusa object's filament survives the crossing.**
+
+### Fixed
+
+- **Every PrusaSlicer project Studio prepared came out with all of its objects on
+  filament 1.** An object the user had assigned to filament 3 was written as
+  filament 1 in the U1 copy — a different print of the same shape — while the
+  geometry was reported byte-identical and nothing was reported removed. Prepare
+  now carries what the source says each object prints in, including a slot above
+  four, which is never renumbered to fit the machine's toolheads. An object with
+  no assignment of its own takes its volumes' slot when they agree, and the
+  object's own name comes across with it.
+
+- **The fidelity audit could not see it.** It compared per-object assignments only
+  when both files spoke the same dialect, and a PrusaSlicer source never does. It
+  reads the assignment from either dialect now and reports one row per object:
+  preserved, changed with "slot 3 → slot 1", lost, or — for volumes on different
+  filaments, which a single-part U1 object cannot represent — not representable,
+  with the slots named.
+
+
 ## [0.7.1] - 2026-08-25
 
 **What a real brush writes, and what an overlap really means.** A patch

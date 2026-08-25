@@ -5,7 +5,57 @@ Honest, current verification state for the current release. A release is only ma
 published installer, and — from beta.24 onward — read-only verification against a
 real Snapmaker U1 have all passed and are recorded here.
 
-## v0.7.1 — ACCEPTED
+## v0.7.2 — ACCEPTED
+
+**A Prusa object's filament survives the crossing.** Everything below ran against
+*this installer* — the exact asset on the release page, verified by SHA256.
+Canonical values: [RELEASE_METADATA.md](RELEASE_METADATA.md). This release's own
+evidence is frozen in [internal/evidence/0.7.2.json](internal/evidence/0.7.2.json).
+
+### CI / software
+
+| Check | Command | Result |
+|---|---|---|
+| Backend tests | `pytest` | **PASS** — 1185 passed, 4 skipped |
+| Desktop tests | `npm run test` | **PASS** — 306 passed |
+| End-to-end pipeline | `u1convert selfcheck` | **PASS** — 27/27 over 15 documented routes |
+| TypeScript | `npx tsc --noEmit` | **PASS** — clean |
+| Production frontend build | `npm run build` | **PASS** |
+| Rust shell | `cargo check` | **PASS** — clean, green in CI |
+| Object assignment audit | `pytest tests/test_object_assignments.py` | **PASS** — seven corruption cases and twelve adversarial inputs |
+| Evidence integrity | `pytest tests/test_evidence_integrity.py` | **PASS** |
+| Local-first invariant | `pytest tests/test_local_first.py` | **PASS** |
+
+### Installed application — 31/31, including the upgrade
+
+`pwsh -File tools/acceptance/run.ps1 -Installer <published installer> -UpgradeFrom <v0.7.1 installer>`
+Full report: [internal/acceptance-0.7.2.json](internal/acceptance-0.7.2.json).
+
+### Real Snapmaker U1 — read-only, 26/26
+
+`pwsh -File tools/hardware/verify.ps1 -PrinterHost <printer>`
+Full report: [internal/hardware-0.7.2.json](internal/hardware-0.7.2.json), with the
+printer's address replaced before anything reached disk.
+
+### Known limitations — stated plainly
+
+- **Windows only.** See [internal/CROSS_PLATFORM_ASSESSMENT.md](internal/CROSS_PLATFORM_ASSESSMENT.md).
+- **The installer is not code-signed.** Verify the SHA256.
+- **Purge cannot be separated from printed filament** in Snapmaker Orca output.
+- **The fitted nozzle cannot be read** from stock firmware.
+- **Free storage is not reported** by stock firmware — traced, not assumed.
+- **Painted colour is read, but a shared layer is not proven by it.** Overlapping
+  heights show two colours can meet on a layer; the slice decides whether one does,
+  so such colours have a toolhead reserved rather than being called simultaneous.
+- **A paint state names filament N, proven by slicing in PrusaSlicer only.**
+- **A PrusaSlicer object whose volumes use different filaments cannot be fully
+  carried.** A prepared U1 object is a single part, so the object's own slot is
+  carried and the audit reports the rest as not representable rather than picking
+  one.
+- **Provenance is evidence, not proof.**
+- **Remaining filament is only known when something tracks it.**
+
+## v0.7.1 — ACCEPTED (superseded by v0.7.2)
 
 **What a real brush writes.** Everything below ran against *this installer* — the
 exact asset on the release page, verified by SHA256. Canonical values:
