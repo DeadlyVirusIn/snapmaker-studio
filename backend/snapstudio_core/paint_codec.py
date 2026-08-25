@@ -61,8 +61,15 @@ _EXTENDED_ESCAPE = 0b1110
 # file claiming far more is either broken or hostile, and either way Studio stops
 # and says so instead of allocating.
 MAX_DEPTH = 24
-MAX_LEAVES_PER_TRIANGLE = 4096
-MAX_ATTRIBUTE_CHARS = 4096
+# A facet painted with a fine brush subdivides a long way: a single facet of a
+# 180 mm slab, painted in Snapmaker Orca itself, came back as 35,460 characters
+# and some ten thousand patches. The old caps here were 4096 of each, chosen
+# before any slicer-authored file had been seen, and they made Studio report a
+# real project as partly undecodable. The bound that matters is the total work
+# per project, which painted_color enforces; these only stop one facet from
+# consuming all of it.
+MAX_LEAVES_PER_TRIANGLE = 65_536
+MAX_ATTRIBUTE_CHARS = 1_000_000
 
 
 class PaintFormatError(ValueError):
@@ -86,58 +93,66 @@ class Leaf:
     points: tuple[tuple[float, float, float], ...]
 
 
-def _bits(attribute: str) -> list[int]:
-    """The bit stream a paint attribute stands for.
-
-    The string is written most-significant nibble first and each nibble is
-    least-significant bit first, so the stream is recovered by walking the
-    characters backwards.
-    """
-    if len(attribute) > MAX_ATTRIBUTE_CHARS:
-        raise PaintFormatError(
-            f"paint attribute is {len(attribute)} characters, "
-            f"more than the {MAX_ATTRIBUTE_CHARS} Studio will decode")
-    out: list[int] = []
-    for char in reversed(attribute):
-        if "0" <= char <= "9":
-            nibble = ord(char) - 48
-        elif "A" <= char <= "F":
-            nibble = ord(char) - 55
-        elif "a" <= char <= "f":
-            # Lower case is not what the slicers write, but a file that carries
-            # it is unambiguous, and refusing it would lose real data.
-            nibble = ord(char) - 87
-        else:
-            raise PaintFormatError(
-                f"paint attribute contains {char!r}, which is not a hex digit")
-        for shift in range(4):
-            out.append((nibble >> shift) & 1)
-    return out
+_HEX = {}
+for _index, _char in enumerate("0123456789ABCDEF"):
+    _HEX[_char] = _index
+    _HEX[_char.lower()] = _index
 
 
 class _Reader:
-    __slots__ = ("bits", "pos")
+    """Bits of a paint attribute, read straight off the string.
 
-    def __init__(self, bits: list[int]):
-        self.bits = bits
+    The string is written most-significant nibble first and each nibble is
+    least-significant bit first, so the stream runs backwards through the
+    characters. Nothing is materialised: a real slicer writes attributes tens of
+    thousands of characters long for a finely painted facet — one of Snapmaker
+    Orca's own came to 35,460 — and turning those into a list of bits was both
+    unnecessary and the reason Studio used to refuse them.
+    """
+
+    __slots__ = ("text", "length", "pos")
+
+    def __init__(self, attribute: str):
+        if len(attribute) > MAX_ATTRIBUTE_CHARS:
+            raise PaintFormatError(
+                f"paint attribute is {len(attribute)} characters, "
+                f"more than the {MAX_ATTRIBUTE_CHARS} Studio will decode")
+        self.text = attribute
+        self.length = len(attribute) * 4
         self.pos = 0
+
+    def _bit(self, index: int) -> int:
+        char = self.text[len(self.text) - 1 - (index >> 2)]
+        nibble = _HEX.get(char)
+        if nibble is None:
+            raise PaintFormatError(
+                f"paint attribute contains {char!r}, which is not a hex digit")
+        return (nibble >> (index & 3)) & 1
 
     def take(self, count: int) -> int:
         """`count` bits, least significant first."""
         end = self.pos + count
-        if end > len(self.bits):
+        if end > self.length:
             raise PaintFormatError(
                 "paint attribute ends part-way through a triangle")
         value = 0
         for offset in range(count):
-            value |= self.bits[self.pos + offset] << offset
+            value |= self._bit(self.pos + offset) << offset
         self.pos = end
         return value
 
     def exhausted(self) -> bool:
         # A trailing partial nibble is normal: the stream is padded up to whole
         # hex digits, so leftover zero bits mean "nothing more", not a fault.
-        return all(bit == 0 for bit in self.bits[self.pos:])
+        return all(self._bit(index) == 0 for index in range(self.pos, self.length))
+
+
+def validate(attribute: str) -> None:
+    """Refuse an attribute that is not hexadecimal, before anything is decoded."""
+    for char in attribute:
+        if char not in _HEX:
+            raise PaintFormatError(
+                f"paint attribute contains {char!r}, which is not a hex digit")
 
 
 def _midpoint(a: tuple[float, float, float],
@@ -221,7 +236,7 @@ def decode(attribute: str,
     whole = _WHOLE_FACET.get(attribute)
     if whole is not None:
         return [Leaf(whole, 1.0, tuple(points) if points is not None else ())], False
-    reader = _Reader(_bits(attribute))
+    reader = _Reader(attribute)
     geometry = points is not None
     if geometry and len(points) != 3:
         raise PaintFormatError("a triangle needs exactly three corners")

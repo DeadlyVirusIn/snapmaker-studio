@@ -36,8 +36,9 @@ A project with six colours and four toolheads used to produce one answer:
 *Studio cannot classify this safely*. Now each colour gets a verdict with the
 evidence behind it:
 
-- a colour whose height band overlaps another's **needs a toolhead**, because the
-  two can meet on a layer;
+- a colour whose height band overlaps another's **has a toolhead reserved**,
+  because Studio cannot prove the two avoid each other — the overlap shows they
+  *can* meet on a layer, not that they do;
 - a colour used only between, say, 38.2 mm and 61.0 mm, with every other colour
   ending below or starting above, **can be a planned swap**;
 - a colour that cannot be compared — no readable height, or another colour's
@@ -73,8 +74,19 @@ a short string of hexadecimal digits on each painted `<triangle>`, encoding a
 subdivision tree whose leaves each name a filament. A facet may be split at its
 edge midpoints, recursively, so the paint boundary can fall inside a triangle.
 State 0 means "not painted here"; state *N* means the project's filament *N*,
-counting from one. The dialects differ in the attribute's name —
-`slic3rpe:mmu_segmentation` and `paint_color` — and in nothing else.
+counting from one.
+
+The dialects differ in the attribute's name — `slic3rpe:mmu_segmentation` and
+`paint_color` — and in nothing Studio has found. That is a claim with two
+different kinds of evidence behind it, and they are worth keeping apart. Files
+painted in **Snapmaker Orca**, **Bambu Studio**, **OrcaSlicer** and
+**PrusaSlicer** all decode with one decoder, and none has needed a special case:
+that is demonstrated. The two families' published sources also describe the same
+serialisation, which is corroboration rather than proof. What has *not* been
+tested is every state range in every dialect — the extended encoding above
+filament 16, for instance, has only been seen from PrusaSlicer — so "nothing
+else" is what the files have shown so far, not a guarantee about files nobody has
+looked at.
 
 Studio's implementation is independent: `paint_codec` decodes the bits and
 replays the subdivision on the facet's own corners, and `painted_color` reads the
@@ -86,31 +98,37 @@ Every SUPPORTED cell below is something a test asserts against a file a real
 slicer wrote. PARTIAL and UNKNOWN mean the evidence is not there yet — never that
 a dialect is unsupported.
 
-| | Snapmaker Orca 2.3.5 | OrcaSlicer 2.4.2 | BambuStudio | PrusaSlicer 2.9.6 |
+| | Snapmaker Orca 2.3.5 | OrcaSlicer 2.4.2 | Bambu Studio 02.08.02.61 | PrusaSlicer 2.9.6 |
 |---|---|---|---|---|
 | Painting detected | SUPPORTED | SUPPORTED | SUPPORTED | SUPPORTED |
-| Slot assignments decoded | PARTIAL | SUPPORTED | PARTIAL | SUPPORTED |
+| Slot assignments decoded | SUPPORTED | SUPPORTED | SUPPORTED | SUPPORTED |
 | Slot mapping proven against a real slice | PARTIAL | PARTIAL | PARTIAL | SUPPORTED |
-| Painted geometry and area mapped | PARTIAL | SUPPORTED | PARTIAL | SUPPORTED |
-| Height evidence available | PARTIAL | SUPPORTED | PARTIAL | SUPPORTED |
+| Painted geometry and area mapped | SUPPORTED | SUPPORTED | SUPPORTED | SUPPORTED |
+| Height evidence available | SUPPORTED | SUPPORTED | SUPPORTED | SUPPORTED |
 | Preserved through Prepare | SUPPORTED | SUPPORTED | SUPPORTED | SUPPORTED |
 | Preservation verified by Fidelity | SUPPORTED | SUPPORTED | SUPPORTED | SUPPORTED |
 
-What the two non-obvious columns rest on:
+What each column rests on:
 
-- **Snapmaker Orca 2.3.5** writes the same dialect as OrcaSlicer, which it is
-  built from, and Studio's prepare and fidelity paths are exercised against that
-  dialect in every run of the self-check. What is missing is a painted project
-  written by Snapmaker Orca *itself*: its command line terminates with an access
-  violation on every project it is given, including BambuStudio's own sample, so
-  no file could be produced from it headlessly.
-- **BambuStudio** is the same dialect again, and real BambuStudio projects are in
-  the test suite — but none of them is painted, so decoding its painting is
-  inherited from the shared encoding rather than demonstrated.
-- **Slot mapping** — that paint state *N* is filament *N* — was proven by
-  slicing a painted fixture for a five-extruder printer and reading the tools the
-  G-code actually used. That slice was run by PrusaSlicer, so the proof is direct
-  in that dialect and inherited in the others.
+- **Snapmaker Orca 2.3.5** and **Bambu Studio 02.08.02.61**: a project *painted in
+  that slicer's own interface* — its gizmo, its brush, its filament palette — and
+  saved by it. Studio reads three filament slots from the Snapmaker Orca file and
+  the exact area of the painted face from the Bambu Studio one, with nothing
+  malformed in either, and Fidelity proves the painting survives Prepare. Neither
+  file was sliced, so the mapping row stays PARTIAL for both.
+- **OrcaSlicer 2.4.2**: a round trip — Studio wrote the paint, the slicer read it
+  and wrote it back byte for byte. Its own authorship was not needed once
+  Snapmaker Orca, which is built from it, had been driven directly.
+- **PrusaSlicer 2.9.6**: the same round trip, *and* a real slice. Painting states
+  1–5 drove tools T0–T4 and no others, which is the only direct proof anywhere
+  here that a paint state names filament *N* counting from one. The other three
+  dialects inherit that mapping from the shared encoding, and say so.
+
+Two things the matrix deliberately does not claim. No cell says UNSUPPORTED:
+where evidence is missing the cell is PARTIAL and the paragraph above says what is
+missing. And "slot mapping proven against a real slice" is PARTIAL in three
+columns even though the decoded slots plainly line up, because lining up is not
+the same as being demonstrated.
 
 The fixtures, the commands that produced them and the recorded slice are in
 [`backend/tests/fixtures/painted/PROVENANCE.md`](../backend/tests/fixtures/painted/PROVENANCE.md).

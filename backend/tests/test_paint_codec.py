@@ -174,3 +174,36 @@ def test_encoding_a_state_the_format_cannot_hold_is_refused():
 def test_a_split_into_one_child_is_not_a_split():
     with pytest.raises(codec.PaintFormatError):
         codec.encode_tree((0, [1]))
+
+
+# --- what a real brush actually writes ---------------------------------------
+
+def test_an_attribute_far_longer_than_the_old_cap_decodes():
+    """Studio refused any attribute over 4,096 characters. A single facet of a
+    180 mm slab, painted with Snapmaker Orca's own round brush, is 35,460 — so
+    the cap made a real project partly undecodable. The bound that matters is the
+    work per project, not the length of one string."""
+    node = 1
+    for _ in range(7):
+        node = (0, [node, node, node, node])
+    attribute = codec.encode_tree(node)
+    assert len(attribute) > 20_000
+    leaves, truncated = codec.decode(attribute, TRIANGLE)
+    assert not truncated
+    assert len(leaves) == 4 ** 7
+    assert sum(leaf.fraction for leaf in leaves) == pytest.approx(1.0)
+
+
+def test_the_length_bound_still_exists_and_is_reported():
+    with pytest.raises(codec.PaintFormatError) as excinfo:
+        codec.decode("0" * (codec.MAX_ATTRIBUTE_CHARS + 1))
+    assert "more than" in str(excinfo.value)
+
+
+def test_a_long_attribute_costs_no_memory_before_it_is_read():
+    # The reader walks the string; it does not turn it into a list of bits. A
+    # 35,000-character attribute became 140,000 list entries under the old
+    # reader, for a facet that might be discarded a moment later.
+    reader = codec._Reader("0" * 30_000)
+    assert reader.length == 120_000
+    assert not hasattr(reader, "bits")
