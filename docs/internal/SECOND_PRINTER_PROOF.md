@@ -140,7 +140,10 @@ generically.
 No U1 behaviour was changed to make the abstraction tidier.
 
 - Backend **1247 passed / 4 skipped**, including every U1 preflight, loaded
-  filament, send-check and hardware-fixture test.
+  filament, send-check and hardware-fixture test. Measured against the same tree
+  at `c98ab12`, which passes 1186 / skips 4; `docs/internal/evidence/0.7.2.json`
+  records 1185 for the environment that release was verified in. Collection is
+  the environment-independent comparison: **1190 tests before, 1251 after**.
 - `test_printer_real_shapes.py` gained six tests that replay the shape a real U1
   reported — four extruders, 271 × 335 × 281 mm, `print_task_config` — through the
   *new* profile layer, and assert every value still resolves from the machine
@@ -161,16 +164,23 @@ what this sprint adds.
 
 ## Tests
 
-| | Before | After |
+| | Before (`c98ab12`) | After |
 |---|---|---|
-| Backend | 1185 passed / 4 skipped | **1247 passed / 4 skipped** |
+| Backend, collected | 1190 | **1251** (+61) |
+| Backend, run in this tree | 1186 passed / 4 skipped | **1247 passed / 4 skipped** |
 | Desktop | 306 | **311** |
 | selfcheck | 27/27 | **27/27** |
 | Real U1 | 26/26 (v0.7.2) | not re-run — see above |
 
-New: `test_second_printer.py` (19), `test_second_printer_failures.py` (24),
-`test_no_printer_model_branching.py` (12), six added to
-`test_printer_real_shapes.py`, and `PrinterVerificationLabels.test.ts` (5).
+The +61 accounts exactly: `test_second_printer.py` (19),
+`test_second_printer_failures.py` (24), `test_no_printer_model_branching.py`
+(12), and six added to `test_printer_real_shapes.py`. Desktop gains
+`PrinterVerificationLabels.test.ts` (5).
+
+`docs/internal/evidence/0.7.2.json` records 1185 backend tests for the
+environment v0.7.2 was verified in, one fewer than the same commit passes here.
+That snapshot is immutable history and is not edited; the row above is measured
+rather than copied from it, which is why both numbers appear.
 
 ## Release decision
 
