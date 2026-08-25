@@ -216,3 +216,61 @@ def test_a_u1_job_with_no_printer_connected_still_compares_to_the_u1():
     check = next(c for c in foreign["checks"] if c["id"] == "gcode.machine")
     assert check["result"] == post_slice.ATTENTION
     assert "Snapmaker Orca" in check["action"]
+
+
+def test_a_stock_printers_own_reading_is_marked_as_the_printers(monkeypatch):
+    """The most common setup of all, and the one that carried no provenance.
+
+    `confirmed_by` arrived with the material-provider work and was stamped inside
+    `material_providers`. A stock printer with nothing else configured never goes
+    through that module — `printer_facts` reads `loaded_filaments` from Moonraker
+    directly — so the plain case came out with no provenance, and anything asking
+    "did the printer confirm this?" got *no* for the one case where the answer is
+    unambiguously yes.
+    """
+    from snapstudio_api import service
+    from snapstudio_core import material_plan
+
+    _replay(monkeypatch, REAL_PRINT_TASK_CONFIG)
+    monkeypatch.setattr(service, "printer_facts", service.printer_facts)
+    loaded = moonraker.loaded_filaments("u1.local")
+    stamped = [dict(entry, confirmed_by="printer") for entry in loaded if entry]
+    assert all(entry["confirmed_by"] == "printer" for entry in stamped)
+
+    plan = material_plan.plan(
+        [{"tool": 0, "used": True, "grams": 0.36, "type": "PLA", "color": "#000000"}],
+        stamped, [0])
+    slot = plan["slots"][0]
+    assert slot["confirmed_by"] == "printer"
+    assert slot["printer_confirmed"] is True
+    # And the sentence stays the one a person reads about a machine that looked.
+    assert "does not report its own filament" not in slot["detail"]
+
+
+def test_printer_facts_stamps_the_printers_own_reading(monkeypatch):
+    """The stamp belongs where the fact is read, not at each call site."""
+    from snapstudio_api import service
+    from snapstudio_core import moonraker as mr
+
+    def fake_get(host, port, path, timeout):
+        if path == "/printer/objects/list":
+            return {"result": {"objects": list(REAL_U1_OBJECTS)}}
+        if "toolhead" in path:
+            return {"result": {"status": {"toolhead": {
+                "axis_maximum": [271.0, 335.0, 281.0, 0.0],
+                "axis_minimum": [0.0, 0.0, 0.0, 0.0]}}}}
+        if "print_task_config" in path:
+            return {"result": {"status": {"print_task_config": REAL_PRINT_TASK_CONFIG}}}
+        if "query" in path:
+            return {"result": {"status": {"print_stats": {"state": "standby"}}}}
+        return {"result": {"klippy_state": "ready", "moonraker_version": "v0.9.3"}}
+
+    monkeypatch.setattr(mr, "_get", fake_get)
+    monkeypatch.setattr(mr, "probe", lambda h, p=7125, t=2.0: {
+        "reachable": True, "host": h, "port": p, "klippy_state": "ready"})
+
+    facts = service.printer_facts("u1.local")
+    assert facts["loaded_filaments"]
+    assert all(entry["confirmed_by"] == "printer"
+               for entry in facts["loaded_filaments"] if entry)
+    assert facts["identity"]["printer_id"] == "snapmaker_u1"

@@ -52,6 +52,17 @@ for (const route of READ_ONLY_ROUTES) {
   }
 }
 
+// Print the gate before the first request, so what this run is allowed to do is
+// on the record rather than inferred from the code afterwards. `callRoute` is
+// then held to the same list at the moment of the call: a route added to the
+// script without being added here does not reach the printer.
+console.log("READ-ONLY GATE — POST is the only method used, to these routes only:");
+for (const route of READ_ONLY_ROUTES) console.log(`  ${route}`);
+console.log(`  refused if the tail matches: ${FORBIDDEN.join(", ")}`);
+console.log("  no upload, start, pause, resume, cancel, emergency stop, gcode script,");
+console.log("  heating, motion, homing, configuration write, deletion or queue change.");
+console.log("");
+
 const results = [];
 const record = (name, ok, detail = "") => {
   results.push({ name, ok, detail });
@@ -71,6 +82,10 @@ async function appPage(browser) {
 }
 
 async function callRoute(page, route, body) {
+  // The gate, enforced where it matters rather than only where it is declared.
+  if (!READ_ONLY_ROUTES.includes(route)) {
+    throw new Error(`refusing to call ${route}: not in the read-only list`);
+  }
   return page.evaluate(
     async ([route, body]) => {
       const info = await window.__TAURI_INTERNALS__.invoke("get_api_info");
@@ -274,6 +289,113 @@ record("Not finding a firmware marker is never called stock",
   typeof firmwareBody.extended_firmware_evidence === "string"
   && /not the same as/i.test(firmwareBody.extended_firmware_evidence),
   firmwareBody.extended_firmware_evidence ?? "");
+
+// --- what the two unreleased sprints added, against the real machine ----------
+//
+// `main` carries the printer-profile architecture and user-facing material
+// providers. Both changed load-bearing code on the path between this machine and
+// what Studio says about it, and neither had ever been run against hardware. A
+// count of 26 that skipped these would be a number, not a verification.
+
+const facts = pre.body?.printer ?? {};
+evidence.identity = anonymise(facts.identity ?? null);
+evidence.resolved = anonymise(facts.resolved ?? null);
+evidence.profile = anonymise(facts.profile ?? null);
+
+// Identification is inference from what the machine reported. `print_task_config`
+// is not in mainline Klipper, so a machine carrying it is a Snapmaker — and this
+// is the first time that inference has met a real one.
+const identity = facts.identity ?? {};
+record("The real machine is identified as a Snapmaker U1",
+  identity.matched === true && identity.printer_id === "snapmaker_u1"
+    && identity.confidence === "confirmed",
+  `${identity.printer_id ?? "no match"} (${identity.confidence ?? "-"})`);
+record("Identification is drawn from the printer's own vendor object",
+  typeof identity.evidence === "string" && identity.evidence.includes("print_task_config"),
+  identity.evidence ?? "");
+
+// The U1 must still read as the one printer this project has put on a wire.
+record("The U1 profile still reads as hardware verified",
+  facts.profile?.verification_level === "hardware_verified",
+  facts.profile?.verification_label ?? "no profile");
+
+// The rule the whole abstraction stands on: the machine wins, always.
+const resolved = facts.resolved ?? {};
+record("The live toolhead count is used, not the profile's",
+  resolved.tool_count === 4 && resolved.sources?.tool_count === "live",
+  `${resolved.tool_count} from ${resolved.sources?.tool_count}`);
+record("The live bed is used, not the profile's",
+  resolved.sources?.build_volume_mm === "live"
+    && Number(resolved.build_volume_mm?.y) > 300,
+  `${resolved.build_volume_mm?.x} × ${resolved.build_volume_mm?.y} × ${resolved.build_volume_mm?.z} from ${resolved.sources?.build_volume_mm}`);
+
+// The U1 travels 335 mm in Y over a 270 mm plate. Live axis range and profile
+// printable area answer different questions, so a difference between them is not
+// a disagreement — and reporting one at the user would be noise on every launch.
+record("Travel beyond the printable plate is not called a conflict",
+  Array.isArray(resolved.conflicts) && resolved.conflicts.length === 0,
+  `${(resolved.conflicts ?? []).length} conflict(s)`);
+
+// The U1 is unusual in reporting its own filament. That has to stay an
+// observation and be marked as one, now that a provider mapping can supply the
+// same shape without the machine having looked.
+record("Loaded filament is recorded as the printer's own observation",
+  resolved.material_state?.known === true
+    && resolved.material_state?.source === "live"
+    && resolved.material_state?.slots === 4,
+  `${resolved.material_state?.slots ?? "?"} slot(s) from ${resolved.material_state?.source ?? "-"}`);
+
+// The extruder objects `status()` asks for are now derived from the printer's own
+// tool count rather than a fixed list of four. On a four-toolhead machine the
+// answer must be unchanged — this is the truncation regression check.
+const channels = status.body?.toolheads ?? [];
+record("All four toolhead temperature channels still come back",
+  channels.length === 4 && channels.every((t) => typeof t.temperature === "number"),
+  `${channels.length} channel(s)`);
+
+// The sliced-machine check was hard-coded to the string "u1" and now compares the
+// job against the printer Studio identified. A U1 job on this U1 must still match.
+record("A U1-targeted job matches this identified U1",
+  check("gcode.machine")?.result === "ok",
+  check("gcode.machine")?.evidence ?? "");
+
+// Genericising the wording must not cost the U1 its name where the name is known.
+record("The firmware summary names this machine, having identified it",
+  typeof firmwareBody.summary === "string" && /U1/.test(firmwareBody.summary),
+  firmwareBody.summary ?? "");
+
+// Material providers are reachable in `main`. With none configured, the provider
+// path must not execute at all.
+//
+// This is asserted on `/material_plan`, not on `/preflight`: preflight never
+// consults a provider whatever the settings say, so asserting it there would
+// pass without proving anything. `material_sources` and `remaining_known` are
+// written onto the printer facts only when the provider path actually runs, so
+// their absence is the evidence that no provider was contacted.
+const planPrinter = plan.body?.printer ?? {};
+record("No material provider ran, and none was contacted",
+  planPrinter.material_sources === undefined && !planPrinter.remaining_known
+    && plan.body?.remaining_known === false,
+  `sources=${JSON.stringify(planPrinter.material_sources)} remaining_known=${plan.body?.remaining_known}`);
+
+// And the U1's own reading still reaches the plan, marked as the machine's.
+const planSlots = plan.body?.slots ?? [];
+record("What the plan compares against came from the printer itself",
+  planSlots.some((slot) => slot.confirmed_by === "printer")
+    && !planSlots.some((slot) => slot.confirmed_by === "provider"),
+  planSlots.map((slot) => `${slot.label}:${slot.confirmed_by ?? "-"}`).join(", "));
+
+// An address that answers nothing is not this machine, and Studio must not tell
+// whoever typed it to go and change a setting on a printer it has never seen.
+const nowhere = await callRoute(page, "/preflight",
+  { path: samplePath, host: "snapstudio-no-such-host-9f3b.invalid", port: 7125 });
+const nowhereRow = (nowhere.body?.checks ?? []).find((r) => r.id === "printer.reachable");
+const nowhereText = JSON.stringify(nowhere.body ?? {});
+record("An address that answers nothing gets a generic hint",
+  nowhereRow?.result === "unknown"
+    && !/touchscreen/i.test(nowhereRow?.action ?? "")
+    && !nowhereText.includes(printerHost),
+  nowhereRow?.action ?? "no reachability row");
 
 // --- report -------------------------------------------------------------------
 

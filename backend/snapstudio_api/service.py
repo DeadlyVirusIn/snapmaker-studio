@@ -337,7 +337,16 @@ def printer_facts(host: str | None = None, port: int = 7125) -> dict:
         facts["loaded_filaments_error"] = str(exc)
         loaded = None
     if loaded is not None:
-        facts["loaded_filaments"] = loaded
+        # The printer looked, so say so on every entry. Provenance was added with
+        # the provider work and stamped inside `material_providers`, but a stock
+        # setup never goes through that module — `loaded_filaments` is read here
+        # directly — so the most common configuration of all carried no
+        # provenance at all, and anything asking "did the printer confirm this?"
+        # got no for the one case where the answer is unambiguously yes.
+        facts["loaded_filaments"] = [
+            dict(entry, confirmed_by="printer") if isinstance(entry, dict) else entry
+            for entry in loaded
+        ]
 
     # Identification is inference from what the machine reported, and it is
     # deliberately the last thing done rather than the first: every check above
