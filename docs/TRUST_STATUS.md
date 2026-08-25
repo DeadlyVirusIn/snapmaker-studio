@@ -5,7 +5,77 @@ Honest, current verification state for the current release. A release is only ma
 published installer, and — from beta.24 onward — read-only verification against a
 real Snapmaker U1 have all passed and are recorded here.
 
-## v0.7.0 — ACCEPTED
+## v0.7.1 — ACCEPTED
+
+**What a real brush writes.** Everything below ran against *this installer* — the
+exact asset on the release page, verified by SHA256. Canonical values:
+[RELEASE_METADATA.md](RELEASE_METADATA.md). This release's own evidence is frozen
+in [internal/evidence/0.7.1.json](internal/evidence/0.7.1.json), and every earlier
+release's is frozen beside it; publishing this one changed none of them.
+
+### CI / software
+
+| Check | Command | Result |
+|---|---|---|
+| Backend tests | `pytest` | **PASS** — 1153 passed, 3 skipped |
+| Desktop tests | `npm run test` | **PASS** — 306 passed |
+| End-to-end pipeline | `u1convert selfcheck` | **PASS** — 27/27 over 15 documented routes |
+| TypeScript | `npx tsc --noEmit` | **PASS** — clean |
+| Production frontend build | `npm run build` | **PASS** |
+| Rust shell | `cargo check` | **PASS** — clean, green in CI |
+| Release-document consistency | `pytest tests/test_release_docs.py` | **PASS** |
+| Evidence integrity | `pytest tests/test_evidence_integrity.py` | **PASS** |
+| Public-claim guard | `pytest tests/test_doc_truth_guard.py` | **PASS** — each false claim v0.7.0 shipped is fed back in and must be caught |
+| Local-first invariant | `pytest tests/test_local_first.py` | **PASS** |
+
+### Painting authored by the slicers themselves
+
+v0.7.0's evidence for the Bambu/Orca dialect was a round trip: Studio wrote the
+paint, the slicer wrote it back. For this release the painting was done **in
+Snapmaker Orca 2.3.5 and Bambu Studio 02.08.02.61**, through their own gizmos and
+brushes, and their saved projects are fixtures. Reading them found the defect this
+release fixes: a single facet painted with a round brush is written as a
+35,460-character attribute, and Studio refused anything over 4,096.
+
+Cross-slicer support, cell by cell, and what each PARTIAL is still missing:
+[PAINTED_COLOUR.md](PAINTED_COLOUR.md).
+
+### Installed application — 31/31, including the upgrade
+
+`pwsh -File tools/acceptance/run.ps1 -Installer <published installer> -UpgradeFrom <v0.7.0 installer>`
+Full report: [internal/acceptance-0.7.1.json](internal/acceptance-0.7.1.json).
+
+**Upgrade path:** v0.7.0 is installed, run so it creates real state, then upgraded
+in place. The user's data survives and only one installation is registered.
+
+### Real Snapmaker U1 — read-only, 26/26
+
+`pwsh -File tools/hardware/verify.ps1 -PrinterHost <printer>`
+Full report: [internal/hardware-0.7.1.json](internal/hardware-0.7.1.json), with the
+printer's address replaced before anything reached disk.
+
+### Known limitations — stated plainly
+
+- **Windows only.** See [internal/CROSS_PLATFORM_ASSESSMENT.md](internal/CROSS_PLATFORM_ASSESSMENT.md).
+- **The installer is not code-signed.** Verify the SHA256.
+- **Purge cannot be separated from printed filament** in Snapmaker Orca output.
+- **The fitted nozzle cannot be read** from stock firmware.
+- **Free storage is not reported** by stock firmware — traced, not assumed.
+- **Painted colour is read, but a shared layer is not proven by it.** Studio reads
+  which filaments a project's painting uses, how much of the model each covers and
+  the heights each spans. Whether two colours whose heights overlap actually land
+  on the same printed layer is decided by the slice, and Studio does not slice —
+  so those colours have a toolhead reserved rather than being called simultaneous.
+- **A paint state names filament N, proven by slicing in PrusaSlicer only.** The
+  Bambu, Snapmaker Orca and OrcaSlicer dialects decode identically and are read
+  from files those slicers authored, but no slice of theirs has been used to
+  demonstrate the mapping.
+- **Provenance is evidence, not proof.** A job with no object names and no colour
+  data can only be `unknown`, and Studio says so rather than matching on the name.
+- **Remaining filament is only known when something tracks it.** A stock U1 cannot,
+  so sufficiency is unknown unless a provider such as Spoolman is configured.
+
+## v0.7.0 — ACCEPTED (superseded by v0.7.1)
 
 **The painting, read.** Everything below ran against *this installer* — the exact
 asset on the release page, verified by SHA256. Canonical values:

@@ -6,6 +6,45 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-08-25
+
+**What a real brush writes, and what an overlap really means.** A patch
+release: one defect found by painting in the slicers themselves, and one
+overclaim found by reading Studio's own copy.
+
+### Fixed
+
+- **A genuine painted project could be reported as partly undecodable.** Studio
+  capped a paint attribute at 4,096 characters — a number chosen before any
+  slicer-authored file had been seen. Snapmaker Orca's own round brush writes
+  35,460 characters for a single facet of a large surface, so two facets of a
+  real project came back as malformed and lost their slot, area and height. The
+  cap is now a million characters, the reader walks the string instead of
+  building a list of bits, and the bound that matters — the total work one
+  project may ask for — is unchanged.
+
+- **The colours card said two colours "share the same layers".** Studio cannot
+  prove that: overlapping heights show two colours *can* meet on a layer, and
+  only the slice shows whether one really does. The plan is unchanged and still
+  conservative — a toolhead is reserved either way — but the claim now matches
+  the evidence: "not proven separable — reserve a toolhead each".
+
+- **Four public claims about the current release were false.** The README's top
+  download button pointed at v0.6.2; the self-check was described as a 25-check
+  table and the acceptance harness as 30 checks; and the evidence section
+  credited "the published v0.6.2 installer" above v0.7.0's numbers. The guard
+  that should have caught them read one line at a time, so a wrapped sentence or
+  a link outside the Download section was invisible to it. It reads whole blocks
+  now, and each of those four claims is a regression test against the guard
+  itself.
+
+### Verified
+
+Painting was authored in **Snapmaker Orca 2.3.5** and **Bambu Studio
+02.08.02.61** through their own gizmos and saved by them; both files are
+fixtures, and reading them is what found the attribute-length defect.
+
+
 ## [0.7.0] - 2026-08-24
 
 **The painting, read.**

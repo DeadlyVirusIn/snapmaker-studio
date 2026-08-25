@@ -86,7 +86,7 @@ honest fix was to remove it, not to tune a number Studio cannot observe.
 
 ## What is verified, and how
 
-Everything below ran against the **published v0.7.0 installer** — installed,
+Everything below ran against the **published v0.7.1 installer** — installed,
 launched, driven through the real window, then uninstalled. Not a development
 server, not the source tree.
 
@@ -96,8 +96,8 @@ server, not the source tree.
 | Read-only verification against a real Snapmaker U1 | **26/26** | `pwsh -File tools/hardware/verify.ps1 -PrinterHost <ip>` |
 | End-to-end pipeline self-check | **27/27** | `u1convert selfcheck` |
 | Genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **36 tests** | `pytest tests/test_real_world_3mf.py` |
-| Backend | 1104 passed, 3 skipped | `pytest` |
-| Desktop | 304 passed | `npm run test` |
+| Backend | 1153 passed, 3 skipped | `pytest` |
+| Desktop | 306 passed | `npm run test` |
 | TypeScript · production build · Rust | clean | `tsc --noEmit` · `npm run build` · `cargo check` |
 
 Full records, including the raw evidence files:
@@ -156,4 +156,4 @@ SHA256 before running it. Why, and what is being done:
 | Technical depth | [TECHNICAL_DEPTH.md](TECHNICAL_DEPTH.md) |
 | Where Studio sits in the field | [COMPETITOR_MATRIX.md](COMPETITOR_MATRIX.md) · [DIFFERENTIATION_STRATEGY.md](DIFFERENTIATION_STRATEGY.md) |
 | The ecosystem story | [OPEN_ECOSYSTEM.md](OPEN_ECOSYSTEM.md) |
-| Download | [Releases](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.0) · hash in [../RELEASE_METADATA.md](../RELEASE_METADATA.md) |
+| Download | [Releases](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.1) · hash in [../RELEASE_METADATA.md](../RELEASE_METADATA.md) |

@@ -17,7 +17,7 @@ changed. Snapmaker Orca still does the slicing.**
 Free, open source, and entirely on your computer. No account, no cloud, nothing
 uploaded. Your original file is never modified.
 
-### [▶ Watch it work — 66 seconds](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4) · [⬇ Download for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.0) · [What it is, in 5 minutes](docs/innovation-fund/JUDGE_OVERVIEW.md)
+### [▶ Watch it work — 66 seconds](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4) · [⬇ Download for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.1) · [What it is, in 5 minutes](docs/innovation-fund/JUDGE_OVERVIEW.md)
 
 [![Watch the Snapmaker Studio demo](docs/media/demo-poster.jpg)](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4)
 
@@ -64,23 +64,23 @@ recording, so it also shows what Studio says when it cannot reach one:
 
 ## Download
 
-**[⬇ Download Snapmaker Studio v0.7.0 for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.0)**
+**[⬇ Download Snapmaker Studio v0.7.1 for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.1)**
 — one click, no Python, runs offline. Windows 10/11 x64.
 
-**v0.7.0 is the current stable release** — not a prerelease, so this is also what
+**v0.7.1 is the current stable release** — not a prerelease, so this is also what
 GitHub's [latest release](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/latest)
 points at. Every build ever published is on the
 [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
 Verify it before you run it:
 
-- Release: [v0.7.0](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.0)
-- Installer: `Snapmaker.Studio_0.7.0_x64-setup.exe`
-- Size: 16,971,405 bytes
-- SHA256: `2a13d73ac19af8dc0457dbead54a2f83c14c83b1d8f74d9746950e3f7b804fbc`
+- Release: [v0.7.1](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.1)
+- Installer: `Snapmaker.Studio_0.7.1_x64-setup.exe`
+- Size: 16,969,943 bytes
+- SHA256: `dddd577dcbd958794f43050c2f1b49687e26952ee0a7ef81c8ff6c04872f5baa`
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.7.0_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.7.1_x64-setup.exe
 ```
 
 The installer is not code-signed yet, so Windows SmartScreen will show "Unknown
@@ -112,11 +112,11 @@ sliced job back**.
 
 | The problem, named exactly | The fix, in a new copy — and where Studio says it can't tell |
 |---|---|
-| ![One object hangs 45 mm past the right edge](docs/screenshots/v0.7.0/problem.jpg) | ![The prepared copy, with what survived and what changed](docs/screenshots/v0.7.0/prepared.jpg) |
+| ![One object hangs 45 mm past the right edge](docs/screenshots/v0.7.1/problem.jpg) | ![The prepared copy, with what survived and what changed](docs/screenshots/v0.7.1/prepared.jpg) |
 | **Painted colour, read before slicing** | **Ready to send? Blockers, warnings and unknowns kept apart** |
-| ![Which filaments the painting uses, and what that means for four toolheads](docs/screenshots/v0.7.0/painted.jpg) | ![The send verdict, with every unknown named](docs/screenshots/v0.7.0/ready-to-send.jpg) |
+| ![Which filaments the painting uses, and what that means for four toolheads](docs/screenshots/v0.7.1/painted.jpg) | ![The send verdict, with every unknown named](docs/screenshots/v0.7.1/ready-to-send.jpg) |
 
-From the v0.7.0 build's own installed-application run, on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission package: [docs/innovation-fund/FINAL_SUBMISSION.md](docs/innovation-fund/FINAL_SUBMISSION.md).
+From the v0.7.1 build's own installed-application run, on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission package: [docs/innovation-fund/FINAL_SUBMISSION.md](docs/innovation-fund/FINAL_SUBMISSION.md).
 
 ## Why this isn't a slicer, a dashboard, or a converter
 
@@ -149,7 +149,7 @@ its licence in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Evidence
 
-Everything below was verified against the published v0.7.0 installer, not
+Everything below was verified against the published v0.7.1 installer, not
 against a development build. Commands, counts and full reports:
 [docs/TRUST_STATUS.md](docs/TRUST_STATUS.md).
 
@@ -159,7 +159,7 @@ against a development build. Commands, counts and full reports:
 | Read-only verification against a real Snapmaker U1 | **26/26** |
 | Regression tests against genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **36 tests** |
 | End-to-end pipeline self-check (`u1convert selfcheck`) | **27/27** |
-| Backend / desktop / TypeScript / Rust | 1104 · 304 · clean · clean |
+| Backend / desktop / TypeScript / Rust | 1153 · 306 · clean · clean |
 
 Reproduce any of it yourself:
 [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md).
@@ -170,33 +170,38 @@ files produced structurally valid U1 profile copies ([PROOF.md](PROOF.md)); that
 number measures structure, not print success, and the checks above are the
 stronger evidence.
 
-## What's new in v0.7.0 — the painting, read
+## What's new in v0.7.1 — what a real brush writes
 
-**Studio reads a project's multi-material painting before anything is sliced.**
-A painted model used to be opaque to everything that is not a slicer, Studio
-included: it could prove a project *had* painted regions and then said painted
-colour "cannot be classified without slicing". It now reads which filament slots
-the painting uses, how many facets carry each, how much surface area each covers,
-and the height band each occupies on the plate.
+**A genuine painted project could be reported as partly undecodable.** v0.7.0
+read painting from files Studio's own encoder had written and slicers had echoed
+back. This release painted *inside* Snapmaker Orca and Bambu Studio — their
+gizmos, their brushes — and read what those slicers saved. That found the defect:
+one facet painted with a round brush is written as a 35,460-character attribute,
+and Studio refused anything over 4,096, losing that facet's filament, area and
+height. It reads them now.
 
-**Colours are classified instead of shrugged at.** A painted colour whose height
-band overlaps another's needs a toolhead, because the two can meet on a layer.
-One painted only above a height every other colour ends below can be handled as a
-planned swap. One that cannot be compared stays unclassified *with the reason*.
-A separation is claimed only when the geometry proves it.
+**"Share the same layers" was more than Studio can prove.** Two colours whose
+heights overlap *can* meet on a printed layer; whether one does is decided when
+Orca slices. The plan is unchanged — a toolhead is reserved either way — but the
+card now says *not proven separable* rather than claiming a shared layer.
 
-**What still needs the slicer is stated, not hidden.** Two colours whose painted
-heights overlap *can* meet on a printed layer; whether they do is decided when
-Orca slices. Studio says the first and never the second.
+**Four claims on this project's own pages were false**, including the download
+button at the top of this README, which pointed at the previous release for an
+entire version. The guard that checks public claims read one line at a time, so a
+wrapped sentence or a link outside the Download section was invisible to it. It
+reads whole blocks now, and each of those four claims is a test against the guard
+itself.
 
-**Every painted project in the field was reported as unpainted.** The trait looked
-for painting in a settings file no slicer writes it to. And the fidelity audit
-compared painting by counting markers in the bytes, which cannot tell painting
-that survived from painting that was rewritten — remap every painted facet to
-another filament and the count is identical. Both are fixed, and the audit now
-compares the painting itself.
+### And what v0.7.0 brought
 
-Full boundary, cross-slicer support and how it was proven:
+**Studio reads a project's multi-material painting before anything is sliced** —
+which filament slots the painting uses, how many facets carry each, how much
+surface area each covers, and the height band each occupies on the plate. Colours
+are classified from that evidence: one whose height band overlaps another's has a
+toolhead reserved, one that never shares a height can be a planned swap, and one
+that cannot be compared says why.
+
+Full boundary, cross-slicer support and how each row was proven:
 [docs/PAINTED_COLOUR.md](docs/PAINTED_COLOUR.md).
 
 ## Works with the open U1 ecosystem
@@ -380,7 +385,7 @@ validation is mandatory and never removed. Full detail in
 
 ## Roadmap
 
-**Shipped (stable, v0.7.0):** the whole loop — read a project, diagnose it,
+**Shipped (stable, v0.7.1):** the whole loop — read a project, diagnose it,
 compare it against the printer, prepare a copy, prove what survived, hand it to
 Snapmaker Orca, then read the sliced G-code back and check what the printer will
 actually execute against the printer as it is right now, with cost from the
