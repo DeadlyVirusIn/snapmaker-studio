@@ -21,6 +21,7 @@ report, and a person decides.
 from __future__ import annotations
 
 from . import material_plan, post_slice
+from .post_slice import _profile
 
 SCHEMA_VERSION = "sendcheck/1"
 
@@ -151,21 +152,28 @@ def evaluate(gcode_facts: dict, printer: dict | None,
                     action="Delete some jobs from the printer first.",
                     source="printer storage"))
         else:
+            # Why nothing could be read is evidence, and evidence belongs to the
+            # machine it was gathered on. The U1 sentence below was traced on a
+            # real U1; offered for any printer it becomes a claim about hardware
+            # nobody looked at. An unidentified printer gets the plain fact that
+            # Studio read no figure, which is all that is actually known.
+            profile = _profile(printer)
+            note = (profile or {}).get("storage_note")
+            explain = (note if (profile or {}).get("reports_free_storage") is False and note
+                       else "Studio read no free-space figure from this printer")
             items.append(_item(
                 UNKNOWN, "Free space on the printer",
-                f"This job is {size / 1e6:.0f} MB. This firmware does not report how much "
-                "room is left, so Studio cannot tell you whether it will fit.",
+                f"This job is {size / 1e6:.0f} MB. Studio cannot tell you whether it will fit, "
+                "because nothing it can read says how much room is left.",
                 action="If uploads have failed before, clear some old jobs first.",
-                source=("traced on a real U1: /machine/system_info reports total_bytes 0 "
-                        "and /server/files/roots reports no sizes, so there is "
-                        "nothing to read")))
+                source=explain))
 
     if not reachable:
         items.append(_item(
             UNKNOWN, "No printer to check against",
             "Studio checked the job on its own. Everything that depends on the machine "
             "stays unknown until it can reach one.",
-            action="Connect your U1 in Printer Hub.",
+            action="Connect your printer in Printer Hub.",
             source="no printer reachable"))
 
     # A job that stops for a person is worth knowing about before you walk away.
@@ -213,7 +221,7 @@ def _headline(verdict: str, counts: dict, reachable: bool) -> str:
                 "settling before you send it.")
     if verdict == UNKNOWN:
         if not reachable:
-            return ("Nothing in the job itself looks wrong. Connect your U1 to check it "
+            return ("Nothing in the job itself looks wrong. Connect your printer to check it "
                     "against the machine you will print on.")
         return (f"Nothing Studio can check is wrong. {counts[UNKNOWN]} thing(s) it cannot "
                 "check for you are listed below.")

@@ -1,0 +1,90 @@
+{
+  "schema": "printer-profile/1",
+  "printer_id": "voron_2_4_250",
+  "manufacturer": "VORON Design",
+  "model": "VORON 2.4 (250 mm)",
+  "display_name": "VORON 2.4 250",
+  "verification_level": "profile_verified",
+  "verification_note": "Every fact here is derived from the configuration Klipper itself publishes for this machine. No VORON 2.4 has been connected to Studio, and nothing here has been observed on physical hardware by this project.",
+  "is_prepare_target": false,
+
+  "identity": {
+    "model_tokens": ["voron 2.4", "voron2.4", "voron2", "voron"],
+    "default_hostnames": [],
+    "moonraker_ports": [7125]
+  },
+
+  "build_volume_mm": {"x": 250.0, "y": 250.0, "z": 250.0},
+  "build_volume_source": "stepper_x/stepper_y/stepper_z position_max: 250 in Klipper's config/kit-voron2-250mm.cfg",
+
+  "observed_axis_range_mm": null,
+  "observed_axis_range_note": "stepper_z declares position_min: -2, headroom for quad_gantry_level rather than printable depth, so a live axis range would read 250 x 250 x 252 while only 250 mm of Z is printable.",
+
+  "tool_count": 1,
+  "tool_count_source": "exactly one [extruder] section in config/kit-voron2-250mm.cfg; no [extruder1] and no toolchanger",
+
+  "nozzle_diameter_mm": [0.4],
+  "nozzle_diameter_source": "extruder nozzle_diameter: 0.400 in config/kit-voron2-250mm.cfg — the value the config declares, not a reading of the nozzle actually fitted",
+  "reports_fitted_nozzle": false,
+  "reports_free_storage": null,
+  "storage_note": "unknown — this project has never asked a VORON what storage it reports.",
+
+  "kinematics": "corexy",
+
+  "expected_capabilities": {
+    "bed_mesh": {"expected": false, "confidence": "config_derived"},
+    "exclude_object": {"expected": false, "confidence": "config_derived"},
+    "input_shaper": {"expected": false, "confidence": "config_derived"},
+    "pause_resume": {"expected": false, "confidence": "config_derived"},
+    "eddy_probe": {"expected": false, "confidence": "config_derived"},
+    "filament_runout": {"expected": false, "confidence": "config_derived"},
+    "quad_gantry_level": {"expected": true, "confidence": "config_derived"}
+  },
+  "expected_capabilities_note": "These say what the published base configuration declares, and nothing more. That file is an example a builder edits, and owners routinely add bed_mesh, exclude_object, input_shaper and pause_resume to it. An absence here is therefore never evidence that a particular VORON lacks the feature — only live evidence from the machine settles that.",
+
+  "material_state": {
+    "source": "none",
+    "object": null,
+    "slot_semantics": null,
+    "confidence": "config_derived",
+    "note": "Mainline Klipper publishes no object describing which filament is loaded, and this configuration declares none. What is on the spool is therefore unknown unless a material provider such as Spoolman is configured."
+  },
+
+  "known_unknowns": [
+    "which filament is loaded — nothing on the machine reports it",
+    "which nozzle is physically fitted",
+    "how much filament is left on the spool",
+    "what storage the printer reports",
+    "which optional Klipper modules a particular build has added"
+  ],
+
+  "source_refs": [
+    {
+      "kind": "config",
+      "detail": "Klipper3d/klipper, config/kit-voron2-250mm.cfg — the base configuration Klipper ships for this machine, which its header says 'matches the manual/build guide exactly'",
+      "url": "https://github.com/Klipper3d/klipper/blob/master/config/kit-voron2-250mm.cfg",
+      "blob_sha": "e82ee28a152ed61599e0422c1c353d13e0c3453e",
+      "commit": "6773ab074b132d6dc417e91b379d5a7b8d986b8d",
+      "license": "GPL-3.0",
+      "read_on": "2026-08-25"
+    },
+    {
+      "kind": "documentation",
+      "detail": "VORON documentation, Software Installation: 'All stock Voron printers run on the Klipper firmware', and the project recommends Mainsail or Fluidd",
+      "url": "https://docs.vorondesign.com/build/software/",
+      "read_on": "2026-08-25"
+    },
+    {
+      "kind": "documentation",
+      "detail": "Mainsail README: 'Without Moonraker, Mainsail would not be possible.' — the recommended interface is a Moonraker client, which is what makes this machine reachable by the same path Studio already uses",
+      "url": "https://github.com/mainsail-crew/mainsail",
+      "read_on": "2026-08-25"
+    }
+  ],
+
+  "not_verified": [
+    "no VORON 2.4 has been connected to Studio",
+    "no Moonraker response has been captured from a physical VORON by this project",
+    "the 300 mm and 350 mm variants of this machine are not described by this profile"
+  ]
+}

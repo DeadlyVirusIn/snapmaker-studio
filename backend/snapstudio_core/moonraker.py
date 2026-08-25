@@ -17,8 +17,22 @@ import urllib.request
 
 DEFAULT_PORT = 7125
 SCHEMA_VERSION = "printer/1"
-# 4 toolheads on the U1 (klipper extruder objects).
+
+# Klipper names its extruders `extruder`, then `extruder1` upward. Moonraker omits
+# any object a query asks for and the printer does not have, so asking for more
+# than exist is harmless — but asking for a fixed four means a machine with more
+# than four is silently truncated, and a single-extruder machine is described by a
+# list written for the U1. `status()` derives the list from the printer's own
+# object list when it has one, and falls back to this only when it does not.
 _TOOLHEAD_OBJECTS = ["extruder", "extruder1", "extruder2", "extruder3"]
+
+
+def toolhead_objects(count: int | None = None) -> list[str]:
+    """The Klipper extruder object names for a printer with `count` tools."""
+    if not count or int(count) < 1:
+        return list(_TOOLHEAD_OBJECTS)
+    n = int(count)
+    return ["extruder"] + [f"extruder{i}" for i in range(1, n)]
 
 # A printer address is a bare hostname / mDNS name / IPv4, or a bracketed IPv6
 # literal. The host is interpolated straight into a URL, so anything carrying a
@@ -135,17 +149,49 @@ NOT_FOUND_HINT = (
     "Then check the IP address shown there and enter it here."
 )
 
+# The hint above is advice about a U1, and it is the right advice while Studio is
+# looking for one at the U1's own hostnames. It is the wrong advice about an
+# address a person typed, because Studio does not know what is at that address
+# and telling someone to go and change a setting on a machine they may not own is
+# a guess dressed as instruction.
+GENERIC_NOT_FOUND_HINT = (
+    "Nothing answered Moonraker at that address. Check the printer is powered on "
+    "and on this network, and that the address and port are the ones it shows. If "
+    "it is a Snapmaker U1, its network interface only opens once Advanced Mode is "
+    "turned on under Settings → Maintenance on the touchscreen."
+)
+
+
+def not_found_hint(host: str | None = None, searched_defaults: bool = False) -> str:
+    """What to tell someone when nothing answered, without assuming their machine."""
+    return NOT_FOUND_HINT if searched_defaults else GENERIC_NOT_FOUND_HINT
+
 
 def discover(hosts: list[str] | None = None, port: int | None = None,
              timeout: float = 1.5) -> list[dict]:
-    """Probe candidate hosts on the ports a U1 actually listens on. Read-only.
+    """Probe candidate hosts for a Moonraker printer. Read-only.
+
+    This is **transport discovery** and nothing else: it answers "is something
+    speaking Moonraker at this address", which is a different question from "what
+    printer is this". Identification is
+    :func:`snapstudio_core.printer_profiles.identify`, and it runs on what the
+    machine reports once it has answered. Keeping the two apart is what stops
+    Studio from calling every Moonraker host a U1, and from calling a machine that
+    did not answer "not a U1" when all it did was not answer.
+
+    With no hosts given, the shipped profiles' own default hostnames are tried —
+    today only the U1 publishes any. Studio does not scan the network: a printer
+    that publishes no discoverable name is reached by typing its address, which is
+    a supported way to connect and not a degraded one.
 
     Returns one entry per host: the first port that answered, or the last failure
     for that host so the caller can show a real reason. Passing an explicit `port`
     checks only that port (used when the user typed one).
     """
-    candidates = hosts or ["U1.local", "snapmaker-u1.local"]
+    searched_defaults = not hosts
+    candidates = hosts or default_hostnames()
     ports = (port,) if port else CANDIDATE_PORTS
+    hint = not_found_hint(searched_defaults=searched_defaults)
     out: list[dict] = []
     for h in candidates:
         last: dict | None = None
@@ -156,17 +202,36 @@ def discover(hosts: list[str] | None = None, port: int | None = None,
                 break
             last = res
         if last is not None and not last.get("reachable"):
-            last["hint"] = NOT_FOUND_HINT
-        out.append(last or {"reachable": False, "host": h, "hint": NOT_FOUND_HINT})
+            last["hint"] = hint
+        out.append(last or {"reachable": False, "host": h, "hint": hint})
     return out
 
 
-def status(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:
+def default_hostnames() -> list[str]:
+    """Hostnames the shipped printer profiles say their machines publish."""
+    from . import printer_profiles
+
+    names: list[str] = []
+    for profile in printer_profiles.load_all():
+        for name in (profile.get("identity") or {}).get("default_hostnames") or ():
+            if name not in names:
+                names.append(name)
+    return names or ["U1.local", "snapmaker-u1.local"]
+
+
+def status(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0,
+           tool_count: int | None = None) -> dict:
     """Read-only live status: print state, progress, layers, bed + per-toolhead
     temperatures, live message and motion factors.
+
+    `tool_count`, when the caller already knows it from the printer's object list,
+    makes the temperature channels follow the machine rather than a list sized for
+    a four-toolhead U1.
+
     GET /printer/objects/query only — no subscriptions are persisted, nothing written."""
+    heads = toolhead_objects(tool_count)
     objs = "&".join(["print_stats", "heater_bed", "toolhead", "virtual_sdcard",
-                     "display_status", "gcode_move", *_TOOLHEAD_OBJECTS])
+                     "display_status", "gcode_move", *heads])
     st = _get(host, port, "/printer/objects/query?" + objs, timeout).get("result", {}).get("status", {})
     ps = st.get("print_stats", {}) or {}
     bed = st.get("heater_bed", {}) or {}
@@ -175,7 +240,7 @@ def status(host: str, port: int = DEFAULT_PORT, timeout: float = 3.0) -> dict:
     gmove = st.get("gcode_move", {}) or {}
     info = ps.get("info", {}) or {}
     toolheads = []
-    for i, key in enumerate(_TOOLHEAD_OBJECTS):
+    for i, key in enumerate(heads):
         e = st.get(key)
         if isinstance(e, dict):
             toolheads.append({

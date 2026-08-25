@@ -14,10 +14,17 @@ The rule that matters most:
 
     **Not detected is not the same as not supported.**
 
-Stock U1 firmware does not report which nozzle is fitted. That makes the nozzle
-check `unknown`, and `unknown` is a real answer that tells the user to go and look —
-it is never quietly rewritten as a pass or a failure. Every check here can return
-`unknown`, and several usually do.
+Stock Snapmaker U1 firmware does not report which nozzle is fitted — which was
+established by looking, on a U1. That makes the nozzle check `unknown`, and
+`unknown` is a real answer that tells the user to go and look; it is never quietly
+rewritten as a pass or a failure. Every check here can return `unknown`, and
+several usually do.
+
+Nothing in this module is written for one printer. Every check reads what the
+machine reported — its toolheads, its axis limits, its Klipper objects, its
+filament state if it has any — so a machine that reports fewer toolheads, a
+different bed, or no filament state at all is described as it is rather than as a
+U1 with parts missing.
 
 Read-only: this module never contacts a printer itself. It is a pure function over
 facts gathered elsewhere, which is what makes every branch testable without hardware.
@@ -55,6 +62,13 @@ def _check(cid: str, title: str, result: str, *, evidence: str | None,
     }
 
 
+def _fallback_name() -> str:
+    """The machine Studio compares against when no printer answered."""
+    from . import printer_profiles
+
+    return printer_profiles.display_name(printer_profiles.prepare_target())
+
+
 def _trait(project: dict, key: str):
     """Value of a graded trait, or None when it was never measured."""
     entry = (project or {}).get(key)
@@ -86,10 +100,12 @@ def _printer_found(printer: dict) -> dict:
         consequence=("Studio can still check the project, but it cannot compare it "
                      "against your printer — everything below that needs the printer "
                      "stays unknown."),
+        # The printer's own hint when there is one. The fallback stays generic:
+        # Studio does not know what machine failed to answer, so telling someone
+        # to change a setting on a specific model would be a guess.
         action=(printer.get("hint")
-                or "On the U1 touchscreen open Settings → Maintenance and turn on "
-                   "Advanced Mode. It will show an IP address — put that into "
-                   "Printer Hub."),
+                or "Check the printer is powered on and on this network, then put the "
+                   "address it shows into Printer Hub."),
         source="Moonraker /server/info")
 
 
@@ -184,7 +200,8 @@ def _bed(project: dict, printer: dict, placement: dict | None) -> dict:
             "bed.fit", "Fits the printer's bed", UNKNOWN,
             evidence="the printer did not report its bed size",
             confidence=INFORMATIONAL,
-            consequence="Studio checked the project against the published U1 volume instead.",
+            consequence=("Studio checked the project against the recorded volume of the "
+                         f"{_fallback_name()} instead."),
             action="Connect the printer to check against its real bed.",
             source="Klipper toolhead axis limits")
     size = f"{bed.get('x')} × {bed.get('y')} × {bed.get('z')} mm"
@@ -371,7 +388,7 @@ def evaluate(project: dict, printer: dict, placement: dict | None = None) -> dic
 def _summary(counts: dict, printer: dict) -> str:
     if not printer.get("reachable"):
         return ("Studio could not reach a printer, so it checked the project on its own. "
-                "Connect your U1 to compare this project against the actual machine.")
+                "Connect your printer to compare this project against the actual machine.")
     attention = counts[BLOCKED] + counts[ATTENTION]
     unknown = counts[UNKNOWN]
     if attention == 0 and unknown == 0:

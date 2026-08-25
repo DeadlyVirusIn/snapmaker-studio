@@ -122,7 +122,7 @@ def plan(job_slots: list[dict], loaded: list | None,
         if loaded is None:
             entry["state"] = "unknown"
             entry["detail"] = "Studio could not read what is loaded."
-            entry["action"] = "Connect your U1 in Printer Hub, or check the spool yourself."
+            entry["action"] = "Connect your printer in Printer Hub, or check the spool yourself."
             out["unknowns"] += 1
             out["slots"].append(entry)
             continue
@@ -209,7 +209,7 @@ def plan(job_slots: list[dict], loaded: list | None,
 def _summary(out: dict) -> str:
     if not out["printer_known"]:
         needed = len(out.get("needed") or [])
-        return (f"This job prints from {needed} slot(s). Connect your U1 to see whether the "
+        return (f"This job prints from {needed} slot(s). Connect your printer to see whether the "
                 "right filament is in them.")
 
     change = out["to_change"]

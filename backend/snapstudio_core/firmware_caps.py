@@ -1,11 +1,16 @@
-"""Firmware Capability Intelligence — read what THIS U1's firmware can actually do.
+"""Firmware Capability Intelligence — read what THIS printer's firmware can do.
 
-The U1 is open Klipper/Moonraker, so its loaded object list is a truthful manifest
-of real features: mesh levelling, input shaping, eddy-current probing, runout
-sensing, object exclusion, pause/resume, multi-toolhead, and any custom macros the
-owner (or extended/community firmware) has added. This turns that raw list into a
+A Klipper machine's loaded object list is a truthful manifest of real features:
+mesh levelling, input shaping, eddy-current probing, runout sensing, object
+exclusion, pause/resume, multi-toolhead, and any custom macros the owner (or
+extended/community firmware) has added. This turns that raw list into a
 plain-language capability set, and flags when the firmware looks extended beyond
 stock.
+
+Nothing in here is particular to one manufacturer. Every feature is concluded from
+a Klipper object being present, which is the same evidence on any printer running
+Klipper behind Moonraker — the Snapmaker U1 that Studio was built against, and a
+VORON, and anything else on that stack.
 
 Read-only and honest: it reports only what the object list proves is present, and
 never claims a capability it can't see.
@@ -14,7 +19,8 @@ from __future__ import annotations
 
 SCHEMA_VERSION = "firmwarecaps/1"
 
-# Stock U1 firmware exposes a handful of gcode_macros. Well beyond that means
+# A stock printer exposes a handful of gcode_macros — the U1 does, and so does the
+# base VORON configuration, which declares five. Well beyond that means
 # somebody has added their own — which may be a community firmware build, and may
 # equally be the owner, who is entitled to write macros on their own printer.
 # Counting them is a fact; concluding "extended firmware" from the count was not,
@@ -27,11 +33,17 @@ def _prefix(obj: str) -> str:
     return obj.split(" ", 1)[0].strip().lower()
 
 
-def interpret(objects, toolhead_count=None, bed_mm=None, extended_probe=None) -> dict:
+def interpret(objects, toolhead_count=None, bed_mm=None, extended_probe=None,
+              printer_name: str | None = None) -> dict:
     """Map a klipper object list to a plain-language capability set.
 
     objects: the GET /printer/objects/list result (a list of strings).
     toolhead_count, bed_mm: already-derived values from capabilities(), if known.
+    printer_name: what to call this machine in the summary. Every capability below
+        is read from the object list and holds on any Klipper printer; only the
+        name of the machine in the sentence is specific to one, and when Studio
+        has not identified the printer it says "this printer" rather than naming
+        a model it has no evidence for.
     """
     objs = [str(o) for o in (objects or [])]
     if not objs:
@@ -50,7 +62,7 @@ def interpret(objects, toolhead_count=None, bed_mm=None, extended_probe=None) ->
                          "detail": "compensates for an uneven bed across the whole plate"})
     if has_prefix("probe_eddy_current") or has("eddy", "probe_eddy_current"):
         features.append({"name": "Eddy-current bed probing",
-                         "detail": "the U1's contactless, fast auto-levelling probe"})
+                         "detail": "a contactless eddy-current probe — fast auto-levelling"})
     elif has("probe", "bltouch"):
         features.append({"name": "Auto bed probing", "detail": "automatic Z/level probing"})
     if has("input_shaper"):
@@ -90,7 +102,8 @@ def interpret(objects, toolhead_count=None, bed_mm=None, extended_probe=None) ->
                if isinstance(bed_mm, dict) and bed_mm.get("x") else None)
     head_txt = f"{tc} toolhead{'s' if (tc or 0) != 1 else ''}" if tc else None
     bits = [b for b in (head_txt, bed_txt) if b]
-    summary = ("Your U1 reports " + ", ".join(bits) + "; " if bits else "Your U1 reports ") + \
+    who = printer_name or "This printer"
+    summary = (f"{who} reports " + ", ".join(bits) + "; " if bits else f"{who} reports ") + \
               f"{len(features)} capabilit{'ies' if len(features) != 1 else 'y'} detected" + \
               (" (community firmware answered on this printer)." if extended
                else f" ({macro_count} custom macros on it)." if many_macros else ".")

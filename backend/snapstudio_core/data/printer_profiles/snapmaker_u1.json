@@ -1,0 +1,58 @@
+{
+  "schema": "printer-profile/1",
+  "printer_id": "snapmaker_u1",
+  "manufacturer": "Snapmaker",
+  "model": "U1",
+  "display_name": "Snapmaker U1",
+  "verification_level": "hardware_verified",
+  "verification_note": "Read read-only from a physical Snapmaker U1 on a LAN during the beta.23 and v0.7.x acceptance work.",
+  "is_prepare_target": true,
+
+  "identity": {
+    "model_tokens": ["snapmaker u1", "snapmaker_u1", "u1"],
+    "default_hostnames": ["U1.local", "snapmaker-u1.local"],
+    "moonraker_ports": [7125, 80]
+  },
+
+  "build_volume_mm": {"x": 270.0, "y": 270.0, "z": 270.05},
+  "build_volume_source": "printable_area 0.5x1 -> 270.5x271 and printable_height 270.05 in data/profiles/snapmaker_u1.json, the known-good U1 machine preset",
+
+  "observed_axis_range_mm": {"x": 271.0, "y": 335.0, "z": 281.0},
+  "observed_axis_range_note": "Klipper toolhead axis_maximum minus axis_minimum as reported by a real U1. Larger than the printable area because the toolhead travels past the plate to change and purge; it is motion range, not printable volume.",
+
+  "tool_count": 4,
+  "tool_count_source": "four Klipper extruder objects (extruder, extruder1, extruder2, extruder3) observed on a real U1",
+
+  "nozzle_diameter_mm": null,
+  "reports_fitted_nozzle": false,
+  "reports_free_storage": false,
+  "storage_note": "traced on a real U1: /machine/system_info reports total_bytes 0 and /server/files/roots reports no sizes, so there is nothing to read",
+
+  "expected_capabilities": {
+    "bed_mesh": {"expected": true, "confidence": "hardware_observed"},
+    "exclude_object": {"expected": true, "confidence": "hardware_observed"},
+    "input_shaper": {"expected": true, "confidence": "hardware_observed"},
+    "pause_resume": {"expected": true, "confidence": "hardware_observed"},
+    "eddy_probe": {"expected": true, "confidence": "hardware_observed"},
+    "filament_runout": {"expected": true, "confidence": "hardware_observed"}
+  },
+
+  "material_state": {
+    "source": "klipper_object",
+    "object": "print_task_config",
+    "slot_semantics": "parallel_arrays_per_toolhead",
+    "confidence": "hardware_observed",
+    "note": "Snapmaker-specific: filament_type / filament_sub_type / filament_color_rgba / filament_exist, one entry per toolhead."
+  },
+
+  "known_unknowns": [
+    "which nozzle is physically fitted — stock firmware publishes no diameter",
+    "free storage on the printer — the firmware reports no sizes",
+    "how much filament is left on a loaded spool — the printer tracks which spool, not what remains"
+  ],
+
+  "source_refs": [
+    {"kind": "hardware", "detail": "read-only LAN session against a physical Snapmaker U1 on Moonraker port 7125", "recorded": "docs/internal/evidence/0.7.2.json (hardware 26/26)"},
+    {"kind": "repository", "detail": "backend/snapstudio_core/data/profiles/snapmaker_u1.json — the known-good U1 machine preset extracted from a reference project"}
+  ]
+}

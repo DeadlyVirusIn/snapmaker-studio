@@ -20,6 +20,18 @@ function fmtDur(s: number | null | undefined): string {
 }
 const FAILED = new Set(["error", "cancelled", "klippy_shutdown", "klippy_disconnect", "interrupted"]);
 
+// How each printer Studio ships a profile for may be described, and no more.
+// The U1 is the only machine this project has connected to; every other entry
+// keeps the qualifier, because "profile verified" and "verified" are different
+// claims and only one of them is true here.
+const PRINTER_LABELS: Record<string, { name: string; level: string }> = {
+  snapmaker_u1: { name: "Snapmaker U1", level: "hardware verified" },
+  voron_2_4_250: {
+    name: "VORON 2.4 250",
+    level: "profile verified — hardware not tested by this project",
+  },
+};
+
 // U1 Printer Hub: discover + read-only live status over the U1's open Moonraker,
 // plus user-confirmed controls (send/pause/resume/cancel) — never auto-started.
 // Monitor + send files + controls — all dangerous actions confirmed.
@@ -120,14 +132,18 @@ export default function Printers() {
                 <li key={p.host} className="flex items-center gap-2 py-1">
                   {p.reachable ? <CheckCircle2 className="h-4 w-4 text-ready" /> : <AlertTriangle className="h-4 w-4 text-muted-foreground" />}
                   <span className="font-medium">{p.host}</span>
-                  <span className="text-xs text-muted-foreground">{p.reachable ? "U1 found — ready" : "not a U1"}</span>
+                  {/* What answered is a Moonraker printer. Naming it as a specific
+                      model was a claim about hardware Studio had not identified, and
+                      saying a silent host was not that model described a machine that
+                      had said nothing at all. */}
+                  <span className="text-xs text-muted-foreground">{p.reachable ? "printer found — ready" : "no answer"}</span>
                   {p.reachable && (
                     <Button size="sm" className="ml-auto" onClick={() => { setHost(p.host); connect(p.host); }}>Use this printer</Button>
                   )}
                 </li>
               ))}
               {discover.data.every((p) => !p.reachable) && (
-                <li className="pt-1 text-xs text-muted-foreground">No U1 found. Make sure it’s powered on and on the same Wi-Fi, then try typing its IP address above.</li>
+                <li className="pt-1 text-xs text-muted-foreground">No printer answered. Make sure it’s powered on and on the same Wi-Fi, then try typing its IP address above.</li>
               )}
             </ul>
           )}
@@ -244,7 +260,7 @@ export default function Printers() {
         <Card>
           <CardContent className="space-y-3 p-5">
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2 text-sm font-semibold"><Cpu className="h-4 w-4 text-primary" /> What your U1 can do</span>
+              <span className="flex items-center gap-2 text-sm font-semibold"><Cpu className="h-4 w-4 text-primary" /> What this printer can do</span>
               {firmware.data.extended_firmware ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"
                       title={firmware.data.extended_firmware_evidence ?? undefined}>
@@ -267,6 +283,17 @@ export default function Printers() {
                 </li>
               ))}
             </ul>
+            {/* Which machine this is, and on what evidence. Shown only when the
+                printer actually identified itself: an unnamed printer is checked
+                just as thoroughly, and inventing a model to fill the space would
+                be the assumption this card exists to avoid. */}
+            {firmware.data.identity?.matched && firmware.data.identity.printer_id && (
+              <p className="text-[11px] text-muted-foreground">
+                Identified as <span className="font-medium text-foreground">{PRINTER_LABELS[firmware.data.identity.printer_id]?.name ?? firmware.data.identity.printer_id}</span>
+                {" — "}{PRINTER_LABELS[firmware.data.identity.printer_id]?.level ?? "verification not established"}.
+                {firmware.data.identity.evidence ? <span className="opacity-70"> {firmware.data.identity.evidence}.</span> : null}
+              </p>
+            )}
             {firmware.data.summary && <p className="text-[11px] text-muted-foreground opacity-70">{firmware.data.summary} Read-only.</p>}
           </CardContent>
         </Card>

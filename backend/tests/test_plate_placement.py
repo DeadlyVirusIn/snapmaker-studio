@@ -94,7 +94,7 @@ def test_object_on_the_plate_is_reported_clean(tmp_path):
     out = pp.assess(p)
     assert out["available"] is True
     assert out["off_plate"] == []
-    assert "inside the U1" in out["summary"]
+    assert "inside the Snapmaker U1's printable area" in out["summary"]
 
 
 def test_small_object_placed_off_the_plate_is_caught(tmp_path):
@@ -330,7 +330,7 @@ def test_a_plate_whose_contents_are_too_big_is_reported(tmp_path):
     out = pp.assess(p)
     oversized = out["oversized_plates"]
     assert [row["plate"] for row in oversized] == [2]
-    assert "larger than the U1" in oversized[0]["reason"]
+    assert "larger than the Snapmaker U1's" in oversized[0]["reason"]
     # The objects on that plate are flagged, the ones on plate 1 are not.
     flagged = {row["object_id"] for row in out["off_plate"]}
     assert flagged == {"2", "3"}

@@ -12,11 +12,32 @@ import math
 import re
 
 from .geometry import load_mesh, build_item_dims
-from .bed_fit import U1_BED
 from .cost_estimate import estimate as cost_estimate
 from .container import ThreeMF
 
 _MODEL_SETTINGS = "Metadata/model_settings.config"
+
+
+def _bed(printer_id: str | None = None) -> dict:
+    """The printable volume to scale against, from the printer's own profile.
+
+    This used to be `bed_fit.U1_BED`, a module constant, which meant the size
+    ladder was measured against a U1 whatever printer the caller named. The beds
+    now come from the shipped profiles, so `printer` is a real parameter rather
+    than a label on a fixed answer.
+    """
+    from . import printer_profiles
+
+    try:
+        profile = (printer_profiles.load(printer_id) if printer_id
+                   else printer_profiles.prepare_target())
+    except KeyError:
+        profile = printer_profiles.prepare_target()
+    volume = profile.get("build_volume_mm") or {}
+    if not all(volume.get(k) for k in ("x", "y", "z")):
+        volume = printer_profiles.prepare_target().get("build_volume_mm") or {}
+    return {"x": float(volume["x"]), "y": float(volume["y"]), "z": float(volume["z"]),
+            "name": printer_profiles.display_name(profile)}
 
 SCHEMA_VERSION = 1
 # Solid-volume material model (no infill modelled): PLA ~1.24 g/cm^3.
@@ -76,7 +97,8 @@ def preview(path: str, scale_percent: float) -> dict:
     cost_amt = co.get("cost") if co.get("available") else None
     cost_delta = None if cost_amt is None else round(cost_amt * (1 if delta_grams >= 0 else -1), 2)
 
-    fits = _fits(scaled, U1_BED)
+    bed = _bed()
+    fits = _fits(scaled, bed)
 
     risks = [
         "Fit by SIZE only — Snapmaker Orca can still reject a scale because where the object "
@@ -86,8 +108,8 @@ def preview(path: str, scale_percent: float) -> dict:
         "Thin-wall safety check is not available here — verify wall thickness after scaling (approximate).",
     ]
     if not fits:
-        risks.insert(0, f"Scaled size exceeds the U1 build volume "
-                        f"({U1_BED['x']:.0f}x{U1_BED['y']:.0f}x{U1_BED['z']:.0f} mm).")
+        risks.insert(0, f"Scaled size exceeds the {bed['name']} build volume "
+                        f"({bed['x']:.0f}x{bed['y']:.0f}x{bed['z']:.0f} mm).")
     if s < 1.0:
         risks.append("Scaling down can make small text/details too fine to print cleanly.")
 
@@ -140,14 +162,15 @@ def _plate_map(path: str) -> dict:
     return out
 
 
-_PRINTER_BEDS = {"snapmaker_u1": U1_BED}
+#: Beds are looked up per call from the shipped printer profiles, so adding a
+#: profile adds a printer here without touching this module.
 
 
 def scale_options(path: str, printer: str = "snapmaker_u1", margin_mm: float = 5.0) -> dict:
     """Beginner-friendly 'size options ladder': several uniform-scale choices (safe,
     tight, theoretical, absolute) for fitting the model on the printer, with per-part
     dimensions. Read-only — never scales, exports, or writes anything."""
-    bv = _PRINTER_BEDS.get(printer, U1_BED)
+    bv = _bed(printer)
     try:
         margin = float(margin_mm)
     except (TypeError, ValueError):

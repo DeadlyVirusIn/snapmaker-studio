@@ -215,7 +215,8 @@ def test_no_printer_means_unknown_not_a_shopping_list(multi):
     plan = material_plan.plan(facts["slots"], None, facts["tools_used"])
     assert plan["printer_known"] is False
     assert all(s["state"] in ("unknown", "unused") for s in plan["slots"])
-    assert "Connect your U1" in plan["summary"] or "Connect your U1" in plan["slots"][0]["action"]
+    assert ("Connect your printer" in plan["summary"]
+            or "Connect your printer" in plan["slots"][0]["action"])
 
 
 # --- ready to send ----------------------------------------------------------

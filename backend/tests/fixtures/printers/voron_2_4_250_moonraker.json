@@ -1,0 +1,70 @@
+{
+  "_provenance": {
+    "kind": "derived_from_authoritative_config",
+    "not_hardware_evidence": true,
+    "statement": "These are NOT responses captured from a physical VORON 2.4. No VORON has been connected to this project. Every value below is derived from the configuration Klipper itself publishes for this machine, shaped into the response Moonraker would return for it. Read as: 'this is what a machine built to that configuration would report', never as 'this is what a machine reported'.",
+    "derived_from": {
+      "repo": "Klipper3d/klipper",
+      "path": "config/kit-voron2-250mm.cfg",
+      "url": "https://github.com/Klipper3d/klipper/blob/master/config/kit-voron2-250mm.cfg",
+      "blob_sha": "e82ee28a152ed61599e0422c1c353d13e0c3453e",
+      "commit": "6773ab074b132d6dc417e91b379d5a7b8d986b8d",
+      "license": "GPL-3.0",
+      "read_on": "2026-08-25"
+    },
+    "derivation": [
+      "objects: one entry per [section] the config declares, in the naming Klipper uses for its object list. No object was added that the file does not declare.",
+      "toolhead.axis_maximum: [stepper_x position_max 250, stepper_y position_max 250, stepper_z position_max 250, 0].",
+      "toolhead.axis_minimum: [0, 0, stepper_z position_min -2, 0].",
+      "print_task_config is absent because mainline Klipper has no such object and the config declares none. That absence is the point of this fixture.",
+      "print_stats/heater_bed/extruder values are plausible idle readings, not measurements, and no test asserts on their exact numbers."
+    ]
+  },
+
+  "objects_list": [
+    "mcu",
+    "mcu z",
+    "printer",
+    "stepper_x",
+    "stepper_y",
+    "stepper_z",
+    "stepper_z1",
+    "stepper_z2",
+    "stepper_z3",
+    "extruder",
+    "probe",
+    "fan",
+    "heater_fan hotend_fan",
+    "heater_fan controller_fan",
+    "heater_fan exhaust_fan",
+    "heater_bed",
+    "homing_override",
+    "quad_gantry_level",
+    "display",
+    "gcode_macro G32",
+    "gcode_macro PRINT_START",
+    "gcode_macro PRINT_END",
+    "gcode_macro UNLOAD_FILAMENT",
+    "gcode_macro LOAD_FILAMENT",
+    "gcode_move",
+    "toolhead"
+  ],
+
+  "toolhead": {
+    "axis_maximum": [250.0, 250.0, 250.0, 0.0],
+    "axis_minimum": [0.0, 0.0, -2.0, 0.0]
+  },
+
+  "print_stats": {"state": "standby", "filename": "", "info": {}},
+  "heater_bed": {"temperature": 23.4, "target": 0.0},
+  "extruder": {"temperature": 24.1, "target": 0.0},
+  "virtual_sdcard": {},
+  "display_status": {},
+  "gcode_move": {"speed_factor": 1.0, "extrude_factor": 1.0},
+
+  "server_info": {
+    "klippy_state": "ready",
+    "moonraker_version": "v0.9.3",
+    "api_version_string": "1.5.0"
+  }
+}

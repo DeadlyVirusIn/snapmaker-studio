@@ -76,6 +76,12 @@ def parse_printable_area(area) -> dict | None:
     return {"min_x": min(xs), "min_y": min(ys), "max_x": max(xs), "max_y": max(ys)}
 
 
+def _prepare_target_name() -> str:
+    from . import printer_profiles
+
+    return printer_profiles.display_name(printer_profiles.prepare_target())
+
+
 def u1_bed_rect() -> dict:
     """The U1's printable rectangle, from Studio's own U1 profile template."""
     rect = parse_printable_area(_u1_printable_area())
@@ -205,8 +211,9 @@ def _group_items_by_plate(items: list[dict], plates: list[dict]):
     return grouped, unresolved
 
 
-def _plate_fit(grouped: dict[int, list[dict]], bed: dict) -> list[dict]:
-    """Does each plate's own content fit a U1 plate? Position-independent."""
+def _plate_fit(grouped: dict[int, list[dict]], bed: dict,
+               whose: str = "the plate") -> list[dict]:
+    """Does each plate's own content fit the plate? Position-independent."""
     usable_x = bed["max_x"] - bed["min_x"] - 2 * EDGE_MARGIN_MM
     usable_y = bed["max_y"] - bed["min_y"] - 2 * EDGE_MARGIN_MM
     out = []
@@ -223,16 +230,25 @@ def _plate_fit(grouped: dict[int, list[dict]], bed: dict) -> list[dict]:
             "object_ids": [i["object_id"] for i in grouped[number]],
             "reason": None if fits else (
                 f"the objects on this plate span {width:.0f} × {depth:.0f} mm, which is "
-                f"larger than the U1's {usable_x:.0f} × {usable_y:.0f} mm plate"),
+                f"larger than {whose} {usable_x:.0f} × {usable_y:.0f} mm plate"),
         })
     return out
 
 
-def assess(path: str, bed: dict | None = None) -> dict:
-    """Where every object sits relative to the U1 bed. Read-only, never raises."""
+def assess(path: str, bed: dict | None = None, bed_name: str | None = None) -> dict:
+    """Where every object sits relative to the bed. Read-only, never raises.
+
+    `bed` is the printer's real printable rectangle when one has been read from a
+    connected machine; without it the check falls back to the plate of the printer
+    Studio prepares copies for. `bed_name` is what to call that plate in the
+    sentences below — because a summary that says "the U1's printable area" while
+    measuring against a rectangle a different printer reported is describing the
+    wrong machine.
+    """
     from . import geometry, project_traits
 
     target = bed or u1_bed_rect()
+    whose = bed_name or ("this printer's" if bed else f"the {_prepare_target_name()}'s")
 
     try:
         tm = ThreeMF.open(path)
@@ -258,7 +274,7 @@ def assess(path: str, bed: dict | None = None) -> dict:
         plates = _plates_from_model_settings(tm)
         grouped, unresolved_items = _group_items_by_plate(items, plates)
         unresolved = [{"object_id": i["object_id"]} for i in unresolved_items]
-        plate_fit = _plate_fit(grouped, target)
+        plate_fit = _plate_fit(grouped, target, whose)
 
     reported = []
     for item in items:
@@ -303,30 +319,30 @@ def assess(path: str, bed: dict | None = None) -> dict:
     fixable = (not multi_plate) and bool(off_plate) and would_fit
 
     if multi_plate and not off_plate:
-        summary = (f"All {len(plate_fit)} plates fit the U1's printable area. Studio does "
+        summary = (f"All {len(plate_fit)} plates fit {whose} printable area. Studio does "
                    "not reposition multi-plate projects — open the project in Snapmaker "
                    "Orca to arrange the plates.")
     elif multi_plate and oversized_plates:
         names = ", ".join(str(p["plate"]) for p in oversized_plates)
-        summary = (f"Plate {names} does not fit the U1's printable area: "
+        summary = (f"Plate {names} does not fit {whose} printable area: "
                    f"{oversized_plates[0]['reason']}. Scale it down or split it. "
                    + MULTI_PLATE_REFUSAL)
     elif multi_plate:
         summary = MULTI_PLATE_REFUSAL
     elif not off_plate:
-        summary = ("Every object sits inside the U1's printable area."
+        summary = (f"Every object sits inside {whose} printable area."
                    if len(reported) > 1 else
-                   "The object sits inside the U1's printable area.")
+                   f"The object sits inside {whose} printable area.")
     elif too_wide:
-        summary = (f"{len(off_plate)} object(s) fall outside the U1's plate, and the "
+        summary = (f"{len(off_plate)} object(s) fall outside {whose} plate, and the "
                    "whole arrangement is wider than the plate — moving it cannot fix "
                    "this. Scale it down or split it across plates.")
     elif would_fit:
-        summary = (f"{len(off_plate)} object(s) fall outside the U1's plate, but the "
+        summary = (f"{len(off_plate)} object(s) fall outside {whose} plate, but the "
                    "whole arrangement fits — moving it as one piece brings everything "
                    "back on, keeping the creator's layout, rotation and scale.")
     else:
-        summary = (f"{len(off_plate)} object(s) fall outside the U1's plate and one "
+        summary = (f"{len(off_plate)} object(s) fall outside {whose} plate and one "
                    "move will not fix it. Open it in Snapmaker Orca and use Arrange.")
 
     return {

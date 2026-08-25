@@ -1,24 +1,22 @@
-"""Bed-Fit / Out-of-Bounds Doctor — the #1 cryptic U1 failure, explained.
+"""Bed-Fit / Out-of-Bounds Doctor — the #1 cryptic slicer failure, explained.
 
 When a model is too big or badly placed, Snapmaker Orca refuses to slice with a
 bare "out of bounds" and no reason — the single most common U1 friction in the
 community, usually answered with "ask Facebook". This catches it BEFORE Orca, from
-the model's geometry vs the U1 bed, and says exactly what's wrong and how to fix
+the model's geometry vs the printer's bed, and says exactly what's wrong and how to fix
 it: the precise scale-to-fit percentage, a rotate suggestion when the diagonal
 fits, a height/split warning, and — in multi-material mode — whether there's room
 left for the prime/wipe tower.
 
-Read-only and offline-capable: it uses the connected U1's REAL bed when known, else
-the Snapmaker U1's published 220-class printable volume. Honest: it explains only
-what the geometry proves, and returns unavailable when there are no dimensions.
+Read-only and offline-capable: it uses the connected printer's REAL bed when
+known, else the printable volume recorded in the profile of the machine the file
+is being prepared for. Honest: it explains only what the geometry proves, returns
+unavailable when there are no dimensions, and says which bed it measured against
+so a profile figure never reads as a measurement.
 """
 from __future__ import annotations
 
 SCHEMA_VERSION = "bedfit/1"
-
-# Snapmaker U1 printable volume, from data/profiles/snapmaker_u1.json
-# (printable_area 0.5→270.5 / 1→271, printable_height 270.05).
-U1_BED = {"x": 270.0, "y": 270.0, "z": 270.0}
 
 # A typical multi-material prime/wipe tower footprint side (mm) — the clearance the
 # model must leave on the plate or Orca pushes the tower out of bounds.
@@ -34,23 +32,35 @@ def _f(level: str, text: str) -> dict:
 
 
 def assess(dims, bed=None, bed_known: bool = False, object_count: int = 1,
-           multi_material: bool = False) -> dict:
-    """Diagnose whether a model fits the U1 bed and explain any "out of bounds".
+           multi_material: bool = False, profile: dict | None = None) -> dict:
+    """Diagnose whether a model fits the bed and explain any "out of bounds".
 
     dims: object bounding box {x, y, z} in mm (from geometry).
-    bed:  the printer's real bed {x, y, z}; falls back to the known U1 bed.
+    bed:  the printer's real bed {x, y, z}; falls back to the profile's volume.
     bed_known: True when `bed` came from a connected printer.
     object_count: parts on the plate (the whole arrangement must fit).
     multi_material: reserve prime/wipe-tower clearance when True.
+    profile: the printer profile to fall back on. Defaults to the machine Studio
+        prepares copies for.
     """
+    from . import printer_profiles
+
+    profile = profile or printer_profiles.prepare_target()
     if not dims or any(dims.get(k) is None for k in ("x", "y", "z")):
         return {"schema_version": SCHEMA_VERSION, "available": False,
                 "reason": "no model dimensions available to check against the bed"}
 
     x, y, z = float(dims["x"]), float(dims["y"]), float(dims["z"])
-    b = bed if (bed and all(bed.get(k) for k in ("x", "y", "z"))) else U1_BED
+    fallback = profile.get("build_volume_mm") or {"x": 0.0, "y": 0.0, "z": 0.0}
+    b = bed if (bed and all(bed.get(k) for k in ("x", "y", "z"))) else fallback
+    if not all(b.get(k) for k in ("x", "y", "z")):
+        return {"schema_version": SCHEMA_VERSION, "available": False,
+                "reason": ("no bed size to check against — no printer answered and the "
+                           f"{printer_profiles.display_name(profile)} profile records no "
+                           "build volume")}
     bx, by, bz = float(b["x"]), float(b["y"]), float(b["z"])
-    source = "your connected U1" if bed_known else "the Snapmaker U1"
+    name = printer_profiles.display_name(profile)
+    source = "your connected printer" if bed_known else f"the {name}"
 
     findings: list[dict] = []
     fixes: list[str] = []
@@ -64,10 +74,10 @@ def assess(dims, bed=None, bed_known: bool = False, object_count: int = 1,
 
     over_x, over_y, over_z = x > bx, y > by, z > bz
 
-    # Too tall — the U1 can't reach the height.
+    # Too tall — the machine cannot reach the height.
     if over_z:
         bump("risk")
-        findings.append(_f("risk", f"Taller than the U1 can print: {z:.0f} mm vs the "
+        findings.append(_f("risk", f"Taller than {source} can print: {z:.0f} mm vs the "
                                    f"{bz:.0f} mm max height — Orca reports this as out of bounds. "
                                    f"Scale to {bz / z * 100:.0f}% or split it into shorter parts."))
         fixes.append(f"Scale to {bz / z * 100:.0f}% to fit the height, or split into parts.")
@@ -118,7 +128,7 @@ def assess(dims, bed=None, bed_known: bool = False, object_count: int = 1,
                                      f"with room to spare ({x:.0f}×{y:.0f}×{z:.0f} mm)."))
 
     overall_text = {
-        "ok": "This model fits the U1 bed.",
+        "ok": f"This model fits {source}'s bed.",
         "warn": "It fits, but the edges are tight — see below before slicing.",
         "risk": "It won't fit as-is — this is the out-of-bounds error, with the fix below.",
     }[worst]
@@ -128,6 +138,8 @@ def assess(dims, bed=None, bed_known: bool = False, object_count: int = 1,
         "available": True,
         "bed_known": bool(bed_known),
         "bed_source": source,
+        "bed_mm_source": "live" if bed_known else "profile",
+        "measured_against": printer_profiles.summarise(None if bed_known else profile),
         "bed_mm": {"x": bx, "y": by, "z": bz},
         "dims_mm": {"x": round(x, 1), "y": round(y, 1), "z": round(z, 1)},
         "overall_level": worst,

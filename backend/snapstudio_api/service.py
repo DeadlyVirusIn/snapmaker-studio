@@ -298,11 +298,11 @@ def printer_facts(host: str | None = None, port: int = 7125) -> dict:
     """
     import time as _time
 
-    from snapstudio_core import moonraker
+    from snapstudio_core import moonraker, printer_profiles
 
     if not host:
         return {"reachable": False, "error": "no printer address configured",
-                "hint": moonraker.NOT_FOUND_HINT, "observed_at": _time.time()}
+                "hint": moonraker.not_found_hint(), "observed_at": _time.time()}
     probe = moonraker.probe(host, port)
     # Every live fact is only true as of the moment it was read. Stamping that
     # here is what lets the send path say "this was checked four minutes ago"
@@ -311,7 +311,8 @@ def printer_facts(host: str | None = None, port: int = 7125) -> dict:
                    "port": probe.get("port", port), "observed_at": _time.time()}
     if not facts["reachable"]:
         facts["error"] = probe.get("error")
-        facts["hint"] = moonraker.NOT_FOUND_HINT
+        # The address came from the user, so Studio does not know what is at it.
+        facts["hint"] = moonraker.not_found_hint(host)
         return facts
     try:
         caps = moonraker.capabilities(host, port)
@@ -321,7 +322,10 @@ def printer_facts(host: str | None = None, port: int = 7125) -> dict:
     except Exception:
         facts["klipper_objects"] = []
     try:
-        facts["print_state"] = moonraker.status(host, port).get("print_state")
+        # The temperature channels follow the printer's own extruder count rather
+        # than a list sized for four toolheads.
+        facts["print_state"] = moonraker.status(
+            host, port, tool_count=facts.get("toolhead_count")).get("print_state")
     except Exception:
         pass
     try:
@@ -334,6 +338,22 @@ def printer_facts(host: str | None = None, port: int = 7125) -> dict:
         loaded = None
     if loaded is not None:
         facts["loaded_filaments"] = loaded
+
+    # Identification is inference from what the machine reported, and it is
+    # deliberately the last thing done rather than the first: every check above
+    # works on a printer Studio cannot name, and nothing below is allowed to
+    # override a live fact. `identify` returns no match far more often than a
+    # match, which is the correct answer — Moonraker publishes no model name.
+    identity = printer_profiles.identify(facts)
+    facts["identity"] = identity
+    profile = None
+    if identity.get("printer_id"):
+        try:
+            profile = printer_profiles.load(identity["printer_id"])
+        except KeyError:
+            profile = None
+    facts["profile"] = printer_profiles.summarise(profile)
+    facts["resolved"] = printer_profiles.resolve(facts, profile)
     return facts
 
 
@@ -377,7 +397,11 @@ def preflight(path: str, host: str | None = None, port: int = 7125) -> dict:
         bed = {"min_x": 0.0, "min_y": 0.0,
                "max_x": float(dims["x"]), "max_y": float(dims["y"])}
     try:
-        placement = plate_placement.assess(path, bed=bed)
+        # Name the plate after whatever supplied it, so a summary never describes a
+        # live bed as though it were the U1's.
+        placement = plate_placement.assess(
+            path, bed=bed,
+            bed_name=("this printer's" if bed else None))
     except Exception:
         placement = None
 
@@ -1058,8 +1082,25 @@ def printer_firmware(host: str, port: int = 7125) -> dict:
     # that serves its own page is announcing itself. No answer means Studio does
     # not know, never that the printer is running stock.
     probe = moonraker.extended_firmware(host)
-    return fwc.interpret(caps.get("klipper_objects"), caps.get("toolhead_count"),
-                         caps.get("bed_mm"), extended_probe=probe)
+    # Name the machine only when Studio has evidence of which one it is. An
+    # unidentified printer is "This printer", not a model Studio assumed.
+    from snapstudio_core import printer_profiles
+    identity = printer_profiles.identify({
+        "reachable": True,
+        "toolhead_count": caps.get("toolhead_count"),
+        "klipper_objects": caps.get("klipper_objects") or [],
+    })
+    name = None
+    if identity.get("printer_id"):
+        try:
+            name = "Your " + printer_profiles.display_name(
+                printer_profiles.load(identity["printer_id"]))
+        except KeyError:
+            name = None
+    out = fwc.interpret(caps.get("klipper_objects"), caps.get("toolhead_count"),
+                        caps.get("bed_mm"), extended_probe=probe, printer_name=name)
+    out["identity"] = identity
+    return out
 
 
 def community_knowledge(query: str = "", risks: list | None = None) -> dict:

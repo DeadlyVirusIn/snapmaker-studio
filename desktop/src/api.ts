@@ -607,10 +607,49 @@ export function printerHealth(host: string, port = 7125): Promise<PrinterHealth>
   return printerPost("/printer/health", { host, port });
 }
 
-// Firmware Capability Intelligence: what the U1's firmware actually exposes.
+/** Which printer Studio believes it is talking to, and how sure it is.
+ *
+ *  Moonraker publishes no model name, so `matched` is false far more often than
+ *  true — and that is a correct answer, not a degraded one. Every check in
+ *  Printer Hub works on a machine Studio cannot name. */
+export interface PrinterIdentity {
+  matched: boolean;
+  printer_id?: string | null;
+  confidence?: string | null;
+  evidence?: string | null;
+  matched_on?: string[];
+}
+
+/** How well established the facts about a printer are.
+ *
+ *  `hardware_verified` means a physical machine of this kind answered. Anything
+ *  weaker must keep its qualifier: a profile-verified printer is never shown as
+ *  "supported", "tested" or "verified" on its own. */
+export type VerificationLevel =
+  | "hardware_verified" | "profile_verified" | "simulated" | "unknown";
+
+export interface PrinterProfileSummary {
+  printer_id: string;
+  display_name: string;
+  manufacturer?: string | null;
+  model?: string | null;
+  verification_level: VerificationLevel;
+  /** The exact words this level is allowed to be shown as. The backend owns this
+   *  string so one place decides how a verification level reads. */
+  verification_label: string;
+  verification_meaning: string;
+  verification_note?: string | null;
+  tool_count?: number | null;
+  build_volume_mm?: { x: number; y: number; z: number } | null;
+  known_unknowns?: string[];
+  not_verified?: string[];
+}
+
+// Firmware Capability Intelligence: what this printer's firmware actually exposes.
 export interface FirmwareFeature { name: string; detail?: string; }
 export interface PrinterFirmware {
   available: boolean;
+  identity?: PrinterIdentity;
   toolhead_count?: number | null;
   bed_mm?: { x: number; y: number; z: number } | null;
   macro_count?: number;

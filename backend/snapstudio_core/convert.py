@@ -405,7 +405,7 @@ def prepare_scaled_copy(path: str, scale_percent: float,
 
     from .stl_wrap import wrap_stl
     from .geometry import load_mesh
-    from .scale_doctor import _fits, U1_BED
+    from .scale_doctor import _fits, _bed
 
     mesh = load_mesh(str(src))
     if mesh is None or not mesh.verts:
@@ -427,5 +427,7 @@ def prepare_scaled_copy(path: str, scale_percent: float,
     result.scale_percent = pct
     result.original_mm = [round(d, 2) for d in orig]
     result.scaled_mm = [round(d, 2) for d in scaled]
-    result.fits_u1 = bool(_fits({"x": scaled[0], "y": scaled[1], "z": scaled[2]}, U1_BED))
+    # `fits_u1` is exactly what its name says: this is the prepare path, and the
+    # copy being written is a U1 copy.
+    result.fits_u1 = bool(_fits({"x": scaled[0], "y": scaled[1], "z": scaled[2]}, _bed()))
     return result

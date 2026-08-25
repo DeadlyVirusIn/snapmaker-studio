@@ -68,34 +68,77 @@ def _slot_word(index: int) -> str:
 # --- individual checks ------------------------------------------------------
 
 def _machine_match(g: dict, printer: dict) -> dict:
+    """Was this job sliced for the machine it is about to run on?
+
+    This check used to be the clearest U1 assumption in Studio: it asked whether
+    the model name in the file contained "u1" or "snapmaker", so a job correctly
+    sliced for any other printer was reported as wrong, and a job sliced for a
+    *different Snapmaker* was reported as right. The question it should ask is
+    whether the job's machine and the connected machine are the same machine.
+
+    When no printer has been identified there is no connected machine to compare
+    with, so the comparison falls back to the one Studio prepares copies for — and
+    says so in those words, because "this is not the printer Studio prepares for"
+    and "this is not the printer you are about to use" are different statements.
+    """
+    from . import printer_profiles
+
     sliced_for = g.get("printer_model")
+    identity = (printer or {}).get("identity") or {}
+    target_id = identity.get("printer_id")
+    live = bool(target_id)
+    if not live:
+        target_id = printer_profiles.PREPARE_TARGET_ID
+    try:
+        target = printer_profiles.load(target_id)
+    except KeyError:
+        target = printer_profiles.prepare_target()
+    target_name = printer_profiles.display_name(target)
+    against = ("the printer Studio has identified" if live
+               else f"the {target_name} Studio prepares copies for")
+
     if not sliced_for:
         return _check(
             "gcode.machine", "Which machine this was sliced for", UNKNOWN,
             evidence="the file does not name a printer model",
             confidence=CONFIRMED,
-            consequence="Studio cannot tell whether this job was made for your U1 or for another printer.",
+            consequence=("Studio cannot tell whether this job was made for the machine you "
+                         "are about to print on or for another printer."),
             action="Check in your slicer which printer profile produced this file.",
             source="G-code configuration block")
 
-    looks_u1 = "u1" in sliced_for.lower() or "snapmaker" in sliced_for.lower()
-    if not looks_u1:
+    stated = printer_profiles.identify_model_string(sliced_for)
+    if stated.get("matched") and stated["printer_id"] == target_id:
         return _check(
-            "gcode.machine", "Sliced for a different printer", ATTENTION,
+            "gcode.machine",
+            "Sliced for this machine" if live else "Sliced for the machine Studio prepares for",
+            OK,
             evidence=f"the file says it was sliced for {sliced_for}",
             confidence=CONFIRMED,
-            consequence=("Toolpaths, temperatures and machine commands are generated for one "
-                         "specific machine. Sending another printer's job to a U1 usually fails "
-                         "immediately and can crash the toolhead."),
-            action="Re-slice this model in Snapmaker Orca with a U1 profile.",
+            consequence=f"The job's commands were generated for a {target_name}.",
             source="G-code configuration block")
 
+    if stated.get("matched"):
+        other = printer_profiles.display_name(printer_profiles.load(stated["printer_id"]))
+        detail = f"the file says it was sliced for {sliced_for}, which is a {other}"
+    else:
+        # Studio does not recognise the name. That is not proof of a mismatch —
+        # but it is not this machine's name either, and a job carrying another
+        # machine's toolpaths is the failure this check exists for.
+        detail = (f"the file says it was sliced for {sliced_for}, which is not a name "
+                  f"Studio recognises as {target_name}")
+
     return _check(
-        "gcode.machine", "Sliced for this machine", OK,
-        evidence=f"the file says it was sliced for {sliced_for}",
-        confidence=CONFIRMED,
-        consequence="The job's commands were generated for a U1.",
-        source="G-code configuration block")
+        "gcode.machine", "Sliced for a different printer", ATTENTION,
+        evidence=detail,
+        confidence=CONFIRMED if stated.get("matched") else LIKELY,
+        consequence=("Toolpaths, temperatures and machine commands are generated for one "
+                     f"specific machine. Sending another printer's job to a {target_name} "
+                     "usually fails immediately and can crash the toolhead."),
+        action=(f"Re-slice this model with a {target_name} profile."
+                if target_id != printer_profiles.PREPARE_TARGET_ID
+                else "Re-slice this model in Snapmaker Orca with a U1 profile."),
+        source=f"G-code configuration block, compared against {against}")
 
 
 def _bed_fit(g: dict, printer: dict) -> dict | None:
@@ -110,7 +153,7 @@ def _bed_fit(g: dict, printer: dict) -> dict | None:
                      "Studio could not reach a printer to compare",
             confidence=CONFIRMED,
             consequence="Studio cannot confirm the job fits the machine you will print on.",
-            action="Connect your U1 in Printer Hub to compare.",
+            action="Connect your printer in Printer Hub to compare.",
             source="G-code configuration block")
 
     too_wide = sliced_bed["x"] > float(live.get("x", 0)) + 1
@@ -154,7 +197,7 @@ def _tools_available(g: dict, printer: dict) -> dict | None:
             evidence=f"the job prints from {listed}; Studio could not ask a printer how many toolheads it has",
             confidence=CONFIRMED,
             consequence="Studio cannot confirm your printer has the toolheads this job expects.",
-            action="Connect your U1 in Printer Hub to compare.",
+            action="Connect your printer in Printer Hub to compare.",
             source="G-code summary block")
 
     if needed > int(count):
@@ -185,7 +228,7 @@ def _slots_loaded(g: dict, printer: dict) -> dict | None:
             evidence="Studio could not read the printer's loaded filament",
             confidence=CONFIRMED,
             consequence="A job that starts with an empty slot stops at the first tool change.",
-            action="Connect your U1 in Printer Hub, or check the spools yourself.",
+            action="Connect your printer in Printer Hub, or check the spools yourself.",
             source="printer filament state")
 
     empty = [t for t in tools if t >= len(loaded) or not loaded[t]]
@@ -267,14 +310,45 @@ def _nozzle(g: dict, printer: dict) -> dict:
             consequence="Printing with a different nozzle than the job expects changes every line width.",
             action="Check the nozzle on the printer before starting.",
             source="G-code configuration block")
+    # "Stock firmware does not report which nozzle is fitted" is a fact about the
+    # U1, established by looking. Stated flatly it becomes a claim about every
+    # machine Studio is pointed at, which this project has not checked. So that
+    # evidence is only offered for a printer it was actually established on.
+    profile = _profile(printer)
+    if profile is not None and profile.get("reports_fitted_nozzle") is False:
+        why = "this printer's firmware does not report which nozzle is fitted"
+        source = "G-code configuration block; this printer's firmware exposes no nozzle diameter"
+    else:
+        why = "Studio has no reading of which nozzle is fitted"
+        source = "G-code configuration block; no nozzle diameter was read from the printer"
     return _check(
         "gcode.nozzle", "Nozzle size — check this yourself", UNKNOWN,
-        evidence=f"the job was sliced for {stated}; stock firmware does not report which nozzle is fitted",
+        evidence=f"the job was sliced for {stated}; {why}",
         confidence=CONFIRMED,
         consequence=("Printing with a different nozzle than the job was sliced for changes line "
                      "width and can ruin fine detail — and Studio has no way to see which one is installed."),
         action=f"Check the nozzle on the printer is {stated} before starting.",
-        source="G-code configuration block; the firmware exposes no nozzle diameter")
+        source=source)
+
+
+def _profile(printer: dict | None) -> dict | None:
+    """The profile of the printer that actually answered, or None.
+
+    None is the common case and the correct one: Moonraker publishes no model
+    name, so most machines stay unidentified, and every check here works without
+    knowing which machine it is talking to. Identification only ever adds
+    evidence — it never gates a check.
+    """
+    from . import printer_profiles
+
+    identity = (printer or {}).get("identity") or {}
+    pid = identity.get("printer_id")
+    if not pid:
+        return None
+    try:
+        return printer_profiles.load(pid)
+    except KeyError:
+        return None
 
 
 def _busy(printer: dict) -> dict | None:
@@ -309,7 +383,7 @@ def _exclusion(g: dict, printer: dict) -> dict | None:
                      "Studio could not read the firmware's object list",
             confidence=CONFIRMED,
             consequence="Without firmware support the exclusion commands are ignored, which is harmless.",
-            action="Connect your U1 in Printer Hub to confirm.",
+            action="Connect your printer in Printer Hub to confirm.",
             source="EXCLUDE_OBJECT_DEFINE in the job")
     has = any("exclude_object" in str(o) for o in objects)
     return _check(
@@ -434,7 +508,7 @@ def _summary(checks: list[dict], reachable: bool) -> str:
         parts.append(f"{len(unknown)} thing(s) Studio cannot check for you")
     if not parts:
         if not reachable:
-            return ("Nothing in the job itself looks wrong. Connect your U1 to check it "
+            return ("Nothing in the job itself looks wrong. Connect your printer to check it "
                     "against the machine you will actually print on.")
         return "Everything Studio can check about this job against this printer looks right."
     text = " and ".join(parts)
