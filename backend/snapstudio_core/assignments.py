@@ -339,7 +339,15 @@ def compare(before: dict, after: dict) -> dict:
                "status": status, "detail": detail,
                "from_source": source["source"]}
         stated = {slot for slot in source.get("volume_slots") or [] if slot}
-        if len(stated) > 1:
+        carried = {slot for slot in prepared.get("volume_slots") or [] if slot}
+        if len(stated) > 1 and carried == stated:
+            # The copy holds real parts with these filaments. The object's own
+            # slot is a separate fact and has already been judged above; this
+            # object is not the "cannot be represented" case any more, and saying
+            # it is would report a loss that did not happen.
+            row["detail"] = (row["detail"] + "; each part keeps its own filament "
+                             + f"({sorted(stated)})")
+        elif len(stated) > 1:
             # A U1 object is one part. Volumes that disagree cannot all be
             # represented, and that is a fact about the crossing, not a defect.
             row["status"] = NOT_REPRESENTABLE
@@ -445,9 +453,10 @@ def _semantic_rows(source_objects: list[dict], prepared_objects: list[dict]) -> 
                     "status": PRESERVED_EXACT if kept else UNSUPPORTED,
                     "detail": (f"part {volume['index'] + 1} is a {volume['role']}"
                                + ("" if kept else
-                                  " and the prepared copy has no such part — it is not "
-                                  "carried, and it has not been turned into printable "
-                                  "geometry either"))})
+                                  " and the prepared copy has no such part. Its shape is "
+                                  "still in the object, so Snapmaker Orca will treat it as "
+                                  "solid and print it. Remove it there, or keep slicing "
+                                  "this one in PrusaSlicer"))})
 
         # --- instances -------------------------------------------------------
         before, after = source.get("instances"), prepared.get("instances")

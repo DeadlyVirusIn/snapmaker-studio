@@ -133,7 +133,10 @@ def test_a_modifier_becoming_a_normal_part_is_detected():
     rows = [r for r in A.compare(before, after)["semantics"] if r["kind"] == "volume_role"]
     assert rows and rows[0]["status"] == A.UNSUPPORTED
     assert "modifier" in rows[0]["detail"]
-    assert "not been turned into printable geometry" in rows[0]["detail"]
+    # And the warning has to say what actually happens. The modifier's shape is
+    # still in the object — measured, not assumed — so it prints as solid unless
+    # the user removes it. An earlier version of this row claimed the opposite.
+    assert "will treat it as solid and print it" in rows[0]["detail"]
 
 
 def test_a_carried_modifier_is_preserved():

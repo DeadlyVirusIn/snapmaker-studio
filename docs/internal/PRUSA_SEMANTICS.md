@@ -106,18 +106,81 @@ file was carried as an assignment. Both are now refused, and refused means
 Nothing in the "not carried" column is silently dropped. Each produces its own
 fidelity row naming the object, the part and the fact.
 
+## Multi-part output — implemented 2026-08-25
+
+The boundary moved. A source object whose volumes carry facts of their own now
+crosses as **real parts**, not as one mesh with metadata over it.
+
+PrusaSlicer stores volumes as **triangle ranges inside one mesh**
+(`<volume firstid="0" lastid="5">`). The prepared copy splits that mesh along those
+ranges and emits the structure two genuine Orca-family projects proved:
+
+    3D/3dmodel.model            one <object> holding one <component> per part,
+                                zero meshes — it references geometry, never holds it
+    3D/Objects/object_1.model   one mesh object per part, ids from 1
+    3D/_rels/…rels              the object file declared as a relationship
+    model_settings.config       <part id="N"> per component, each with its extruder
+
+`part id` in the metadata, `objectid` on the component and the object id in the
+Objects file are **the same number**. That identity is what makes the metadata
+describe the geometry instead of decorating it.
+
+Measured on the PrusaSlicer fixture with volumes on filaments 2 and 5:
+
+| Claim | Result |
+|---|---|
+| Triangles | 12 in, 12 out, 6 per part, none duplicated anywhere in the archive |
+| Geometry | the parts recombined hash **identical** to the source solid, facet by facet in winding order |
+| Parts differ | the two part digests differ — a split that copied one mesh twice would not be a split |
+| Filament | part 1 = 2, part 2 = 5; slot 5 **not** clamped to four |
+| Object slot | still `extruder="0"`; the object's own assignment stays a separate fact |
+| Painting | 8 painted facets in, 8 out, values identical, 6 on one part and 2 on the other |
+| Fidelity | `volume_filament` flipped from `unsupported` to **`preserved_exact`** |
+
+The split is deliberately narrow: one source object, one mesh, volumes as ranges
+over it. Anything else declines and the object crosses whole, which is always
+safe — the audit still reports what could not be carried. A single volume, or
+volumes that all say the same thing, stay on the path that has been shipping.
+
+A structural validator checks that the three descriptions agree, so Snapmaker Orca
+is not the first thing to notice a disagreement. It catches a component pointing
+at a missing mesh, a part record with no geometry, part ids that do not match
+component ids, a duplicated part id, an object file that is not declared, a build
+item placing the wrong object, and a malformed or non-numeric part matrix.
+
+### Scale
+
+100 parts over 10,000 triangles split in 25 ms, with the output vertex and
+triangle counts equal to the source — the split shares nothing and duplicates
+nothing.
+
+### Modifiers — still not carried, and the warning was wrong
+
+A modifier volume still declines the split, because no target representation is
+proven and writing it as `normal_part` is how a modifier becomes solid plastic.
+
+But the audit's sentence was false. It said the modifier "has not been turned into
+printable geometry either" — and the object crosses whole, so its facets **are**
+in the prepared mesh and Orca will print them. Measured: 12 triangles in, 12 out.
+The row now says what actually happens and what to do about it.
+
 ## Not established in this sprint
 
 Stated plainly so the next session does not assume otherwise:
 
-- **Multi-part output is not implemented.** The format can hold it and Studio's
-  prepare path still writes one part per object. The boundary is now described
-  correctly; it has not moved.
+- **Snapmaker Orca opened the file; its part list was not read.** Orca 2.3.5
+  loaded the prepared multi-part project with no corruption warning, recognised
+  the Snapmaker U1 printer, four nozzles and the U1 process profile, and titled
+  the window with the project. Reaching the per-object parts list needed a click
+  the application would not take from synthetic input — the same GUI-automation
+  limit already recorded for Orca — so **the evidence level achieved is "loads
+  cleanly and is recognised as a U1 project", not "Orca shows two parts on
+  filaments 2 and 5"**. That distinction is the whole point of writing it down.
+- **No slice proof.** Not attempted.
+- **Per-object overrides: all category D, not established.** The real
+  Orca-family projects in the fixtures carry only `name` and `extruder` at object
+  level — no per-object setting override appears in the sample at all. So nothing
+  proves a target equivalent for `layer_height`, `fill_density` or
+  `support_material`, and a matching name is not evidence of matching semantics.
+  They stay reported as not carried.
 - **Modifier and override carrying are not implemented** — only reported.
-- **No prepared output was opened in Snapmaker Orca** for this work. The
-  target-side facts come from a file Orca wrote, not from Orca reading Studio's.
-- **No slice proof.** File semantics were deterministic enough not to need one,
-  and it was not attempted.
-- **Per-object override categorisation** (which Prusa settings have a true U1
-  equivalent) was not done. Everything is currently reported as not carried, which
-  is true today and is the safe direction.

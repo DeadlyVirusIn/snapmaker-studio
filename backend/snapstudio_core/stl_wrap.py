@@ -353,10 +353,132 @@ def wrap_geometry_3mf(path, colors=DEFAULT_COLORS, profile_name: str = "snapmake
     if "_rels/.rels" not in parts:
         put("_rels/.rels", RELS)
 
-    # Inject a clean U1 project around the preserved geometry.
-    put("Metadata/model_settings.config",
-        build_model_settings_multi(object_ids, name=Path(path).stem,
-                                   assignments=source_assignments(src)))
+    # A source object whose volumes carry facts of their own becomes real parts
+    # rather than one mesh with a metadata row over it. Only when the split earns
+    # itself: a single volume, or volumes that all say the same thing, stay on the
+    # path that has been shipping.
+    split = _try_multipart(src, model, Path(path).stem)
+    if split is not None:
+        for name, data in split["parts"].items():
+            put(name, data)
+        put("Metadata/model_settings.config", split["model_settings"])
+    else:
+        put("Metadata/model_settings.config",
+            build_model_settings_multi(object_ids, name=Path(path).stem,
+                                       assignments=source_assignments(src)))
     put("Metadata/slice_info.config", build_slice_info(eff))
     put("Metadata/project_settings.config", dump_project_settings(_base_settings(eff, profile_name)))
     return ThreeMF(parts, order)
+
+
+# ---- one source object, several real parts ----------------------------------
+
+def _try_multipart(src: ThreeMF, model: bytes, stem: str):
+    """Emit a component-based object when the source's volumes earn it.
+
+    Returns the archive parts to write, or None to leave the caller on the
+    existing single-mesh path. Refusing is always safe: the object still crosses,
+    and the fidelity audit still reports what could not be carried.
+
+    Deliberately narrow for now — one source object, one mesh, volumes expressed
+    as triangle ranges over it. That is what PrusaSlicer writes, and widening it
+    without a file that needs it would be guessing.
+    """
+    from . import multipart
+
+    config = "Metadata/Slic3r_PE_model.config"
+    if not src.has_part(config):
+        return None
+    try:
+        volumes_by_object = multipart.source_volumes(
+            src.read_part(config).decode("utf-8", "ignore"))
+    except Exception:
+        return None
+    if len(volumes_by_object) != 1:
+        return None
+    (source_id, volumes), = volumes_by_object.items()
+    if not multipart.worth_splitting(volumes):
+        return None
+
+    text = model.decode("utf-8", "replace")
+    objects = re.findall(r"<object[^>]*>.*?</object>", text, re.S)
+    if len(objects) != 1:
+        return None
+    item = re.search(r"<item[^>]*/>", text)
+    transform = "1 0 0 0 1 0 0 0 1 0 0 0"
+    if item:
+        found = re.search(r'transform="([^"]*)"', item.group(0))
+        if found:
+            transform = found.group(1)
+
+    try:
+        vertices, triangles = multipart.read_mesh(objects[0])
+        parts = multipart.split_triangles(
+            vertices, triangles, [v["range"] for v in volumes])
+    except multipart.Unsplittable:
+        # The ranges do not describe this mesh. Carrying the object whole is
+        # honest; inventing a split is not.
+        return None
+
+    slots = [v["slot"] for v in volumes]
+    roles = [v["role"] for v in volumes]
+    if any(role not in multipart.TARGET_ROLES for role in roles):
+        # A role Studio cannot prove the target represents. It is not written as
+        # a normal part — that is how a modifier becomes solid plastic — so the
+        # object stays whole and the audit reports the role as not carried.
+        return None
+
+    assignments = source_assignments(src)
+    stated = (assignments.get(int(source_id)) if str(source_id).isdigit() else None) or {}
+    object_slot = stated.get("extruder")
+
+    objects_path = "3D/Objects/object_1.model"
+    return {
+        "parts": {
+            "3D/3dmodel.model": multipart.root_model_xml(len(parts), transform),
+            objects_path: multipart.objects_model_xml(parts),
+            "3D/_rels/3dmodel.model.rels": multipart.object_rels_xml(),
+        },
+        "model_settings": _multipart_settings(stem, parts, slots, roles, object_slot),
+    }
+
+
+def _multipart_settings(stem: str, parts, slots, roles, object_slot) -> bytes:
+    """model_settings.config for one composite object and its real parts.
+
+    Built by joining lines rather than by embedding escapes, because a newline
+    that has to survive several layers of quoting is a newline that eventually
+    does not.
+    """
+    from . import multipart
+
+    name = _attr(stem)
+    slot = object_slot if object_slot else UNASSIGNED
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        "<config>",
+        '  <object id="2">',
+        f'    <metadata key="name" value="{name}"/>',
+        f'    <metadata key="extruder" value="{slot}"/>',
+    ]
+    body = multipart.part_records(parts, name, slots, roles)
+    lines.extend(line for line in body.split(chr(10)) if line.strip())
+    lines.extend([
+        "  </object>",
+        "  <plate>",
+        '    <metadata key="plater_id" value="1"/>',
+        '    <metadata key="plater_name" value=""/>',
+        '    <metadata key="locked" value="false"/>',
+        '    <metadata key="filament_map_mode" value="Auto For Flush"/>',
+        '    <metadata key="filament_maps" value="1"/>',
+        "    <model_instance>",
+        '      <metadata key="object_id" value="2"/>',
+        '      <metadata key="instance_id" value="0"/>',
+        "    </model_instance>",
+        "  </plate>",
+        "  <assemble>",
+        "  </assemble>",
+        "</config>",
+        "",
+    ])
+    return chr(10).join(lines).encode("utf-8")
