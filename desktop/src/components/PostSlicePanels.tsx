@@ -8,6 +8,7 @@ import { materialPlan, printerUploadGcode, printPlan, sendCheck } from "@/api";
 import type { MaterialPlan, PrintPlan, SendCheck, SendItem, UploadResult } from "@/api";
 import { ProvenanceNote } from "@/components/ProvenanceNote";
 import { usePrinter } from "@/store/printer";
+import { providerArgs, useProvider } from "@/store/provider";
 import {
   MATERIALS_SUBTITLE, MATERIALS_TITLE, PLAN_SUBTITLE, PLAN_TITLE, SEND_TITLE,
   changeCount, itemLabel, itemsOfKind, materialsHeadline, orderedSlots, planHeadline,
@@ -27,17 +28,24 @@ import {
  */
 export function SendReadyCard({ path, projectPath }: { path: string; projectPath?: string }) {
   const host = usePrinter((s) => s.host);
+  // Whatever tracks the user's filament, if anything. Without it every question
+  // about how much is left comes back unknown, which is the honest answer and
+  // exactly what happened before this was wired up.
+  const provider = useProvider();
+  const args = providerArgs(provider);
+  const argsKey = JSON.stringify(args);
   const [check, setCheck] = useState<SendCheck | null>(null);
 
   useEffect(() => {
     let alive = true;
     setCheck(null);
-    sendCheck(path, host, 7125, true, projectPath).then(
+    sendCheck(path, host, 7125, true, projectPath, args).then(
       (r) => { if (alive) setCheck(r); },
       () => { /* the post-slice card already reports an unreadable file */ },
     );
     return () => { alive = false; };
-  }, [path, host, projectPath]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [path, host, projectPath, argsKey]);
 
   const tone = sendTone(check?.verdict);
   const Icon = tone === "ready" ? CheckCircle2
@@ -154,6 +162,10 @@ function SendToPrinter({ path, check, projectPath, onRechecked }: {
   onRechecked: (check: SendCheck) => void;
 }) {
   const host = usePrinter((s) => s.host);
+  // The upload re-runs the send check server-side and refuses if anything moved.
+  // It has to re-run it against the same provider the user was shown, or it
+  // would be comparing against a different set of facts than the one on screen.
+  const args = providerArgs(useProvider());
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<UploadResult | null>(null);
 
@@ -181,7 +193,7 @@ function SendToPrinter({ path, check, projectPath, onRechecked }: {
   async function send() {
     setBusy(true);
     try {
-      const sent = await printerUploadGcode(host!, path, 7125, check.state, projectPath);
+      const sent = await printerUploadGcode(host!, path, 7125, check.state, projectPath, args);
       setResult(sent);
       // A refusal comes back with the answer that replaced the stale one, so the
       // page a person is looking at is the page they are deciding from.
@@ -248,17 +260,21 @@ function UploadOutcome({ result }: { result: UploadResult }) {
 /** What to load, slot by slot. An intelligence layer over spool state, not an inventory. */
 export function MaterialPlanCard({ path }: { path: string }) {
   const host = usePrinter((s) => s.host);
+  const provider = useProvider();
+  const args = providerArgs(provider);
+  const argsKey = JSON.stringify(args);
   const [plan, setPlan] = useState<MaterialPlan | null>(null);
 
   useEffect(() => {
     let alive = true;
     setPlan(null);
-    materialPlan(path, host).then(
+    materialPlan(path, host, 7125, args).then(
       (r) => { if (alive) setPlan(r); },
       () => { /* silent: the send card already carries the important half */ },
     );
     return () => { alive = false; };
-  }, [path, host]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [path, host, argsKey]);
 
   const changes = changeCount(plan);
 

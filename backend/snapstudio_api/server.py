@@ -266,6 +266,17 @@ def _make_handler(token: str):
                     self._send(400, {"error": str(e)})
                 except Exception:
                     self._send(500, {"error": "internal error"})
+            elif self.path == "/provider/test":
+                # Read-only, and the address is validated inside the engine before
+                # anything is opened. A provider that is not there is an answer,
+                # not a 500.
+                try:
+                    self._send(200, service.provider_test(
+                        rv.optional_str(data, "url", "")))
+                except ValidationError as e:
+                    self._send(400, {"error": str(e)})
+                except Exception:
+                    self._send(500, {"error": "internal error"})
             elif self.path == "/material_plan":
                 try:
                     slot_map = data.get("slot_map")
@@ -274,7 +285,8 @@ def _make_handler(token: str):
                         host=rv.optional_str(data, "host", "") or None,
                         port=rv.require_port(data),
                         spoolman=rv.optional_str(data, "spoolman", "") or None,
-                        slot_map=slot_map if isinstance(slot_map, dict) else None))
+                        slot_map=slot_map if isinstance(slot_map, dict) else None,
+                        slot_base=rv.optional_int(data, "slot_base", 0)))
                 except ValidationError as e:
                     self._send(400, {"error": str(e)})
                 except Exception:
@@ -289,7 +301,8 @@ def _make_handler(token: str):
                         include_timeline=bool(data.get("include_timeline")),
                         project_path=rv.optional_str(data, "project_path", "") or None,
                         spoolman=rv.optional_str(data, "spoolman", "") or None,
-                        slot_map=slot_map if isinstance(slot_map, dict) else None))
+                        slot_map=slot_map if isinstance(slot_map, dict) else None,
+                        slot_base=rv.optional_int(data, "slot_base", 0)))
                 except ValidationError as e:
                     self._send(400, {"error": str(e)})
                 except Exception:
@@ -668,7 +681,8 @@ def _make_handler(token: str):
                             expect_state=expect if isinstance(expect, dict) else None,
                             project_path=rv.optional_str(data, "project_path", "") or None,
                             spoolman=rv.optional_str(data, "spoolman", "") or None,
-                            slot_map=slot_map if isinstance(slot_map, dict) else None)
+                            slot_map=slot_map if isinstance(slot_map, dict) else None,
+                            slot_base=rv.optional_int(data, "slot_base", 0))
                     self._send(200, out)
                 except (ValidationError, ValueError) as e:
                     self._send(400, {"error": str(e)})

@@ -6,6 +6,7 @@ import { useTheme } from "@/store/theme";
 import { useMode } from "@/store/mode";
 import { usePrinter } from "@/store/printer";
 import { useFilament } from "@/store/filament";
+import MaterialProviderSettings from "@/components/MaterialProviderSettings";
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -27,6 +28,8 @@ export default function Settings() {
   return (
     <div className="max-w-2xl space-y-6">
       <PageHeader icon={SettingsIcon} title="Settings" subtitle="Personalize Studio for your setup." />
+
+      <MaterialProviderSettings />
 
       <Card>
         <CardContent className="divide-y divide-border p-5">

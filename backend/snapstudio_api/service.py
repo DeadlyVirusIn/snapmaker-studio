@@ -475,7 +475,8 @@ def slice_provenance(project_path: str, gcode_path: str) -> dict:
 
 
 def _with_providers(printer: dict, host: str | None, port: int,
-                    spoolman: str | None, slot_map: dict | None) -> dict:
+                    spoolman: str | None, slot_map: dict | None,
+                    slot_base: int | None = None) -> dict:
     """Fold optional material providers into the printer's own report.
 
     The printer stays authoritative about what is in a slot; a provider can only
@@ -489,7 +490,11 @@ def _with_providers(printer: dict, host: str | None, port: int,
     states = []
     if host:
         states.append(providers.stock_u1(host, port))
-    states.append(providers.spoolman(spoolman, slot_map))
+    # Whether the user counted their slots from 0 or from 1 is a fact only they
+    # have. Guessing it puts every spool one slot out and then reports the wrong
+    # material with complete confidence, so the app states it rather than leaving
+    # the engine to infer it from the shape of the map.
+    states.append(providers.spoolman(spoolman, slot_map, slot_base=slot_base))
     combined = providers.combine(*states)
     loaded = providers.as_loaded_filaments(combined)
     if loaded is not None:
@@ -498,6 +503,71 @@ def _with_providers(printer: dict, host: str | None, port: int,
         printer["material_sources"] = combined.get("sources")
         printer["remaining_known"] = combined.get("remaining_known", False)
     return printer
+
+
+def provider_test(url: str) -> dict:
+    """Can Studio read this material provider, and what does it see?
+
+    The one thing a person needs before trusting any of this: press a button, get
+    a straight answer. It reports the number of spools and how many of them carry
+    a remaining weight something is actually keeping — because "connected" and
+    "useful" are different, and a provider full of spools nothing has printed from
+    answers no question about whether a print will finish.
+
+    Read-only, and it never raises: a provider that is not there is an answer.
+    """
+    from snapstudio_core import freshness, material_providers as providers
+
+    try:
+        normalised = providers.validate_provider_url(url)
+    except providers.InvalidProviderAddress as exc:
+        return {"schema_version": providers.SCHEMA_VERSION, "ok": False,
+                "reason": str(exc), "spools": 0}
+
+    state = providers.spoolman(normalised)
+    if not state.get("available"):
+        return {"schema_version": providers.SCHEMA_VERSION, "ok": False,
+                "reason": state.get("error") or "Spoolman did not answer.", "spools": 0}
+
+    spools = state.get("spools") or []
+    tracked = [s for s in spools
+               if s.get("remaining_quality") == providers.TRACKED
+               and freshness.assess(s.get("remaining_as_of"))["trustworthy"]]
+    return {
+        "schema_version": providers.SCHEMA_VERSION,
+        "ok": True,
+        "spools": len(spools),
+        "with_tracked_weight": len(tracked),
+        "archived": sum(1 for s in spools if s.get("archived")),
+        # Deliberately not the address: this response is rendered in the app and
+        # can end up in a screenshot.
+        "detail": _provider_detail(len(spools), len(tracked)),
+        "choices": [
+            {"id": s.get("id"),
+             "label": " ".join(x for x in (s.get("vendor"), s.get("name") or s.get("material"))
+                               if x) or f"spool {s.get('id')}",
+             "material": s.get("material"),
+             "color": s.get("color"),
+             "remaining_g": s.get("remaining_g"),
+             "remaining_quality": s.get("remaining_quality"),
+             "archived": bool(s.get("archived"))}
+            for s in spools
+        ],
+    }
+
+
+def _provider_detail(total: int, tracked: int) -> str:
+    if not total:
+        return ("Spoolman answered, but has no spools in it yet. Add your spools there "
+                "and Studio will see them.")
+    plural = "s" if total != 1 else ""
+    if not tracked:
+        return (f"Spoolman answered with {total} spool{plural}. None of them has a weight "
+                "Spoolman is keeping track of yet — it reports what a spool started with "
+                "until something prints from it, so Studio will treat those figures as "
+                "estimates rather than facts.")
+    return (f"Spoolman answered with {total} spool{plural}, {tracked} of them with a "
+            "recent tracked weight Studio can use.")
 
 
 def print_plan(path: str) -> dict:
@@ -529,13 +599,14 @@ EVENT_SAMPLE = 200
 
 
 def material_plan(path: str, host: str | None = None, port: int = 7125,
-                  spoolman: str | None = None, slot_map: dict | None = None) -> dict:
+                  spoolman: str | None = None, slot_map: dict | None = None,
+                  slot_base: int | None = None) -> dict:
     """What to load, and what can stay, for this sliced job."""
     from snapstudio_core import gcode, material_plan as mp
 
     facts = gcode.read_facts(path)
     printer = printer_facts(host, port) if host else {"reachable": False}
-    printer = _with_providers(printer, host, port, spoolman, slot_map)
+    printer = _with_providers(printer, host, port, spoolman, slot_map, slot_base)
     out = mp.from_facts(facts, printer)
     out["printer"] = {k: v for k, v in printer.items() if k != "klipper_objects"}
     return out
@@ -543,13 +614,14 @@ def material_plan(path: str, host: str | None = None, port: int = 7125,
 
 def send_check(path: str, host: str | None = None, port: int = 7125,
                include_timeline: bool = False, project_path: str | None = None,
-               spoolman: str | None = None, slot_map: dict | None = None) -> dict:
+               spoolman: str | None = None, slot_map: dict | None = None,
+               slot_base: int | None = None) -> dict:
     """Ready to send? Blockers, warnings and unknowns, kept apart."""
     from snapstudio_core import gcode, send_check as sc
 
     facts = gcode.read_facts(path)
     printer = printer_facts(host, port) if host else {"reachable": False}
-    printer = _with_providers(printer, host, port, spoolman, slot_map)
+    printer = _with_providers(printer, host, port, spoolman, slot_map, slot_base)
 
     timeline = None
     if include_timeline:
@@ -733,7 +805,7 @@ def printer_job_queue(host: str, port: int = 7125) -> dict:
 def printer_upload_gcode(host: str, path: str, port: int = 7125,
                          confirm: bool = True, expect_state: dict | None = None,
                          project_path: str | None = None, spoolman: str | None = None,
-                         slot_map: dict | None = None) -> dict:
+                         slot_map: dict | None = None, slot_base: int | None = None) -> dict:
     """Upload a sliced gcode file (chosen by the user) to the printer.
 
     Two things happen before any bytes are sent. The file is checked against what
@@ -753,7 +825,7 @@ def printer_upload_gcode(host: str, path: str, port: int = 7125,
 
     if expect_state:
         fresh = send_check(path, host=host, port=port, project_path=project_path,
-                           spoolman=spoolman, slot_map=slot_map)
+                           spoolman=spoolman, slot_map=slot_map, slot_base=slot_base)
         moved = send_state.changes(expect_state, fresh.get("state"))
         if moved:
             return {

@@ -855,11 +855,15 @@ export function printerUploadGcode(
   // What the user was shown when they decided to send. The engine re-reads the
   // same things and refuses rather than uploading against a stale answer.
   expectState?: SendState | null, projectPath?: string,
+  // The same provider the send check used. Re-reading the check without it would
+  // compare against a different set of facts than the one the user was shown.
+  provider: ProviderArgs = {},
 ): Promise<UploadResult> {
   return printerPost("/printer/upload_gcode", {
     host, path, port,
     expect_state: expectState ?? null,
     project_path: projectPath ?? "",
+    ...provider,
   });
 }
 
@@ -1505,16 +1509,61 @@ export function printPlan(path: string): Promise<PrintPlan> {
   return post("/print_plan", { path }, "print plan");
 }
 
-export function materialPlan(path: string, host?: string, port = 7125): Promise<MaterialPlan> {
-  return post("/material_plan", { path, host: host ?? "", port }, "material plan");
+/** What a material provider adds to a request, or nothing when none is set up.
+ *
+ *  Built by `providerArgs` in the provider store, so a screen never has to know
+ *  the wire names. Sending nothing is the normal case and a complete one: a
+ *  stock printer with no other software answers every question here except how
+ *  much filament is left. */
+export interface ProviderArgs {
+  spoolman?: string;
+  slot_map?: Record<string, number>;
+  slot_base?: number;
+}
+
+/** Can Studio read this provider? Read-only, and the address is validated in the
+ *  engine before anything is opened — a public host is refused rather than
+ *  fetched. */
+export interface ProviderTest {
+  ok: boolean;
+  reason?: string;
+  spools: number;
+  /** How many spools carry a weight something is actually keeping track of.
+   *  Spoolman reports what a spool started with until something prints from it,
+   *  so "connected" and "useful" are different numbers. */
+  with_tracked_weight?: number;
+  archived?: number;
+  detail?: string;
+  choices?: ProviderSpool[];
+}
+
+export interface ProviderSpool {
+  id: number;
+  label: string;
+  material?: string | null;
+  color?: string | null;
+  remaining_g?: number | null;
+  remaining_quality?: string | null;
+  archived?: boolean;
+}
+
+export function providerTest(url: string): Promise<ProviderTest> {
+  return post("/provider/test", { url }, "provider test");
+}
+
+export function materialPlan(
+  path: string, host?: string, port = 7125, provider: ProviderArgs = {},
+): Promise<MaterialPlan> {
+  return post("/material_plan", { path, host: host ?? "", port, ...provider }, "material plan");
 }
 
 export function sendCheck(
   path: string, host?: string, port = 7125, includeTimeline = false, projectPath?: string,
+  provider: ProviderArgs = {},
 ): Promise<SendCheck> {
   return post("/send_check", {
     path, host: host ?? "", port, include_timeline: includeTimeline,
-    project_path: projectPath ?? "",
+    project_path: projectPath ?? "", ...provider,
   }, "send check");
 }
 
