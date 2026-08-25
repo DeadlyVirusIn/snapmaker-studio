@@ -277,16 +277,35 @@ def test_12_a_part_record_with_no_geometry_is_caught(prepared, tmp_path):
     assert any("carries no geometry" in p for p in problems(broken))
 
 
-# --- roles: refuse rather than fake ------------------------------------------
+# --- roles: carry what is proven, refuse the rest ----------------------------
 
-def test_a_modifier_object_is_not_split_into_parts():
-    """No proven target representation, so no split — and never a normal_part.
+def unknown_role_source(tmp_path: Path) -> Path:
+    """The modifier fixture with a role word no slicer defines.
 
-    Writing the modifier as `normal_part` is how a modifier becomes solid plastic
-    with the file claiming everything is fine. Studio declines instead: the object
-    crosses whole and the audit says what that means.
+    PrusaSlicer promotes a word it does not recognise to `ModelPart`, turning a
+    modifier into solid plastic. Studio meets the same word here and must not.
     """
-    source = FIXTURES / "vt_ParameterModifier_out.3mf"
+    target = tmp_path / "unknown_role.3mf"
+    with zipfile.ZipFile(FIXTURES / "vt_ParameterModifier_out.3mf") as src, \
+            zipfile.ZipFile(target, "w") as dst:
+        for item in src.infolist():
+            data = src.read(item.filename)
+            if item.filename == "Metadata/Slic3r_PE_model.config":
+                data = data.decode("utf-8").replace(
+                    'value="ParameterModifier"', 'value="SomeRoleNobodyDefined"'
+                ).encode("utf-8")
+            dst.writestr(item, data)
+    return target
+
+
+def test_an_unknown_role_is_never_written_as_a_part(tmp_path):
+    """No proven target meaning, so no split — and never a normal_part.
+
+    Writing an unrecognised role as `normal_part` is how a modifier becomes solid
+    plastic with the file claiming everything is fine. Studio declines instead:
+    the object crosses whole and the audit says what that means.
+    """
+    source = unknown_role_source(tmp_path)
     out = convert_to_u1(str(source), out_dir=tempfile.mkdtemp()).output_path
     with zipfile.ZipFile(out) as z:
         assert OBJECTS not in z.namelist()
@@ -298,13 +317,13 @@ def test_a_modifier_object_is_not_split_into_parts():
     assert rows and rows[0]["status"] == A.UNSUPPORTED
 
 
-def test_the_modifier_warning_says_what_actually_happens():
+def test_the_unknown_role_warning_says_what_actually_happens(tmp_path):
     """Its geometry does cross, and it will print. Measured, not assumed."""
-    source = FIXTURES / "vt_ParameterModifier_out.3mf"
+    source = unknown_role_source(tmp_path)
     out = convert_to_u1(str(source), out_dir=tempfile.mkdtemp()).output_path
     before = read(str(source), ROOT).count("<triangle ")
     after = read(out, ROOT).count("<triangle ")
-    assert before == after == 12, "the modifier's facets cross with the object"
+    assert before == after == 12, "the volume's facets cross with the object"
 
     result = A.compare(A.read(ThreeMF.open(str(source))), A.read(ThreeMF.open(out)))
     detail = [r for r in result["semantics"] if r["kind"] == "volume_role"][0]["detail"]

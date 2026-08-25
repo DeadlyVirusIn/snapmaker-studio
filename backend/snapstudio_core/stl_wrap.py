@@ -436,7 +436,7 @@ def _try_multipart(src: ThreeMF, model: bytes, stem: str):
     return {
         "parts": {
             "3D/3dmodel.model": multipart.root_model_xml(len(parts), transform),
-            objects_path: multipart.objects_model_xml(parts),
+            objects_path: multipart.objects_model_xml(parts, roles=roles),
             "3D/_rels/3dmodel.model.rels": multipart.object_rels_xml(),
         },
         "model_settings": _multipart_settings(stem, parts, slots, roles, object_slot),

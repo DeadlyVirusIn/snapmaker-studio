@@ -163,18 +163,23 @@ _PROD_NS = ('xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" '
             'xmlns:p="http://schemas.microsoft.com/3dmanufacturing/production/2015/06"')
 
 
-def objects_model_xml(parts: list[dict], uuids: list[str] | None = None) -> bytes:
+def objects_model_xml(parts: list[dict], uuids: list[str] | None = None,
+                      roles: list | None = None) -> bytes:
     """`3D/Objects/object_1.model` — one mesh object per part, ids from 1.
 
     The id given here is the number the root's component references and the number
     the metadata calls a part. Keeping the three the same is the whole point.
+
+    A helper volume's mesh is not a model to print, and its own `type` says so.
     """
     uuids = uuids or [""] * len(parts)
+    roles = roles or ["part"] * len(parts)
     body = []
-    for part, uuid in zip(parts, uuids):
+    for part, uuid, role in zip(parts, uuids, roles):
         stamp = f' p:UUID="{uuid}"' if uuid else ""
         body.append(
-            f'<object id="{part["index"] + 1}"{stamp} type="model"><mesh>'
+            f'<object id="{part["index"] + 1}"{stamp} '
+            f'type="{object_type_for(role)}"><mesh>'
             f'<vertices>{"".join(part["vertices"])}</vertices>'
             f'<triangles>{"".join(part["triangles"])}</triangles>'
             "</mesh></object>")
@@ -219,11 +224,42 @@ def object_rels_xml(objects_path: str = "/3D/Objects/object_1.model") -> bytes:
             '</Relationships>').encode("utf-8")
 
 
-#: Roles Studio will write into a prepared copy, and the word the target uses.
-#: Only `normal_part` is proven here — `modifier_part` appears in a genuine
-#: Orca-family project, but nothing has yet proved Studio can *produce* one that
-#: Snapmaker Orca reads correctly, so nothing else is emitted.
-TARGET_ROLES = {"part": "normal_part"}
+#: Studio's normalised role, and the word Snapmaker Orca uses for it.
+#:
+#: Every pairing here was measured against Snapmaker Orca 2.3.5 rather than read
+#: off a matching name: a project claiming the role was handed to Orca, Orca saved
+#: the project back, and the saved file was read. A made-up role word came back
+#: rewritten to `normal_part`, so surviving that round trip means Orca recognises
+#: the word rather than that it copies whatever it is given. All four helper roles
+#: survived; the nonsense one did not.
+TARGET_ROLES = {
+    "part": "normal_part",
+    "modifier": "modifier_part",
+    "negative": "negative_part",
+    "support_enforcer": "support_enforcer",
+    "support_blocker": "support_blocker",
+}
+
+#: The roles that print nothing, which is the claim that actually matters.
+#: Measured the same way: two cubes that do not touch, the second one carrying the
+#: role under test. As a `normal_part` Snapmaker Orca sliced a plate covering both
+#: — 500 mm² — and as any of these four it sliced a plate covering only the first
+#: — 400 mm², with byte-identical plate thumbnails. None of them becomes plastic.
+HELPER_ROLES = frozenset(TARGET_ROLES) - {"part"}
+
+
+def object_type_for(role: str) -> str:
+    """The `type` on the mesh object a part points at.
+
+    A genuine Orca project writes `type="other"` on the geometry behind a
+    `modifier_part` and `type="model"` behind a `normal_part`. Orca normalises the
+    attribute to `model` when it saves, so it does not *require* `other` — but
+    `other` is the form measured to load correctly, and matching what the target
+    writes is the safer of two answers that both work.
+    """
+    if role not in TARGET_ROLES:
+        raise Unsplittable(f"no proven target representation for the role {role!r}")
+    return "model" if role == "part" else "other"
 
 
 def part_records(parts: list[dict], name: str, slots: list, roles: list | None = None) -> str:
@@ -236,9 +272,18 @@ def part_records(parts: list[dict], name: str, slots: list, roles: list | None =
     roles = roles or ["part"] * len(parts)
     out = []
     for part, slot, role in zip(parts, slots, roles):
-        subtype = TARGET_ROLES.get(role, "normal_part")
+        if role not in TARGET_ROLES:
+            # Never fall back to `normal_part`. That fallback is precisely how a
+            # modifier becomes solid plastic, and Snapmaker Orca already does it
+            # to a word it does not know — Studio must not hand it one.
+            raise Unsplittable(f"no proven target representation for the role {role!r}")
+        subtype = TARGET_ROLES[role]
         extruder = (f'      <metadata key="extruder" value="{int(slot)}"/>\n'
-                    if slot else "")
+                    # A helper volume prints nothing, so a filament on it
+                    # would choose a material for something no material is made
+                    # from; the target's own projects state none on one. A slot
+                    # the source did state is reported by the audit, not dropped.
+                    if slot and role == "part" else "")
         out.append(
             f'    <part id="{part["index"] + 1}" subtype="{subtype}">\n'
             f'      <metadata key="name" value="{name}_{part["index"] + 1}"/>\n'
@@ -314,6 +359,7 @@ def validate_archive(tm) -> dict:
     lose the file.
     """
     problems: list[str] = []
+    mesh_types: dict[str, str] = {}
 
     def read(name: str) -> str:
         try:
@@ -346,6 +392,8 @@ def validate_archive(tm) -> dict:
         body = read(name)
         found = re.findall(r'<object id="(\d+)"', body)
         mesh_ids.extend(found)
+        for object_id, kind in re.findall(r'<object id="(\d+)"[^>]*type="([^"]*)"', body):
+            mesh_types[object_id] = kind
         for object_id in found:
             block = re.search(rf'<object id="{object_id}".*?</object>', body, re.S)
             if block and "<triangle" not in block.group(0):
@@ -365,6 +413,20 @@ def validate_archive(tm) -> dict:
         problems.append(
             f"the build places object(s) {sorted(set(items))} and the composite object "
             f"is {sorted(set(roots))}")
+
+    # a part's role and the geometry under it must say the same thing
+    subtypes = dict(re.findall(r'<part id="(\d+)"[^>]*subtype="([^"]*)"', settings))
+    for part_id, subtype in sorted(subtypes.items()):
+        if subtype not in TARGET_ROLES.values():
+            problems.append(f"part {part_id} claims the role {subtype!r}, which is not "
+                            "one Studio has proven the target represents")
+            continue
+        wanted = "model" if subtype == "normal_part" else "other"
+        found = mesh_types.get(part_id)
+        if found is not None and found != wanted:
+            problems.append(
+                f"part {part_id} is a {subtype} and the geometry under it is typed "
+                f"{found!r}; a {subtype} is described by type {wanted!r}")
 
     # metadata parts must match the components one for one
     parts = re.findall(r'<part id="(\d+)"', settings)

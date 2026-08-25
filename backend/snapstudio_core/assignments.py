@@ -445,18 +445,30 @@ def _semantic_rows(source_objects: list[dict], prepared_objects: list[dict]) -> 
         # --- roles -----------------------------------------------------------
         special = [v for v in source_volumes if v.get("role") not in (PART, None)]
         if special:
-            prepared_roles = [v.get("role") for v in prepared_volumes]
+            # Position matters. Asking only whether the role appears *somewhere*
+            # in the copy passes a file where two parts swapped roles — the
+            # modifier printing and the solid vanishing — which is the exact
+            # failure the row exists to catch.
+            by_position = {v.get("index"): v.get("role") for v in prepared_volumes}
+            elsewhere = {v.get("role") for v in prepared_volumes}
             for volume in special:
-                kept = volume["role"] in prepared_roles
-                rows.append({
-                    "object": name, "index": index, "kind": "volume_role",
-                    "status": PRESERVED_EXACT if kept else UNSUPPORTED,
-                    "detail": (f"part {volume['index'] + 1} is a {volume['role']}"
-                               + ("" if kept else
-                                  " and the prepared copy has no such part. Its shape is "
-                                  "still in the object, so Snapmaker Orca will treat it as "
-                                  "solid and print it. Remove it there, or keep slicing "
-                                  "this one in PrusaSlicer"))})
+                here = by_position.get(volume["index"])
+                if here == volume["role"]:
+                    status, detail = PRESERVED_EXACT, (
+                        f"part {volume['index'] + 1} is a {volume['role']} in both")
+                elif volume["role"] in elsewhere:
+                    status, detail = CHANGED, (
+                        f"part {volume['index'] + 1} is a {volume['role']} in the source "
+                        f"and a {here or 'part with no role'} in the copy; the role is on "
+                        "a different part there")
+                else:
+                    status, detail = UNSUPPORTED, (
+                        f"part {volume['index'] + 1} is a {volume['role']} and the prepared "
+                        "copy has no such part. Its shape is still in the object, so "
+                        "Snapmaker Orca will treat it as solid and print it. Remove it "
+                        "there, or keep slicing this one in PrusaSlicer")
+                rows.append({"object": name, "index": index, "kind": "volume_role",
+                             "status": status, "detail": detail})
 
         # --- instances -------------------------------------------------------
         before, after = source.get("instances"), prepared.get("instances")

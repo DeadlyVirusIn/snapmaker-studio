@@ -124,7 +124,7 @@ def _text(tm: ThreeMF, part: str) -> str:
 # --- part-by-part -----------------------------------------------------------
 
 def _classify_part(part: str, before: bytes, after: bytes | None,
-                   placement_applied: bool) -> dict:
+                   placement_applied: bool, moved: tuple = (b"", b"")) -> dict:
     name = _human(part)
     if after is None:
         if _PLATE_GCODE_RE.match(part):
@@ -139,7 +139,7 @@ def _classify_part(part: str, before: bytes, after: bytes | None,
         return _row(name, PRESERVED_EXACT, part=part,
                     detail="byte-for-byte identical")
     if part == ROOT_MODEL:
-        return _model_part_row(part, before, after, placement_applied)
+        return _model_part_row(part, before, after, placement_applied, moved)
     if part in _INTENTIONAL:
         return _row(name, CHANGED, part=part, detail="rewritten by Studio",
                     reason=_INTENTIONAL[part])
@@ -158,9 +158,17 @@ _PAINT_RE = re.compile(rb"paint_color|paint_supports|mmu_segmentation|paint_seam
 
 
 def _model_part_row(part: str, before: bytes, after: bytes,
-                    placement_applied: bool) -> dict:
+                    placement_applied: bool, moved: tuple = (b"", b"")) -> dict:
     """The root model changes only when placement was rewritten. Geometry itself
-    must be identical either way, and that is checked rather than assumed."""
+    must be identical either way, and that is checked rather than assumed.
+
+    A multi-part copy moves the meshes out of the root and into their own object
+    file, so counting only the root sees every facet disappear and reports a copy
+    that is perfectly intact as unverified. The parts that hold the geometry are
+    counted with it, wherever the geometry ended up.
+    """
+    moved_before, moved_after = moved
+    before, after = before + moved_before, after + moved_after
     counts_before = (len(_VERTEX_RE.findall(before)), len(_TRIANGLE_RE.findall(before)),
                      len(_ITEM_RE.findall(before)), len(_PAINT_RE.findall(before)))
     counts_after = (len(_VERTEX_RE.findall(after)), len(_TRIANGLE_RE.findall(after)),
@@ -174,6 +182,12 @@ def _model_part_row(part: str, before: bytes, after: bytes,
         return _row(_human(part), CHANGED, part=part,
                     detail="the same geometry, moved to different coordinates",
                     reason="a placement fix moved the objects onto the U1 plate")
+    if moved_after and not moved_before:
+        return _row(_human(part), PRESERVED_SEMANTIC, part=part,
+                    detail="the same geometry, split into one mesh per part",
+                    reason=("the copy holds each part's mesh in its own object file "
+                            "and the root references them; the facet, vertex and "
+                            "painted-marker counts are unchanged"))
     return _row(_human(part), PRESERVED_SEMANTIC, part=part,
                 detail="the same geometry, re-serialised",
                 reason="the mesh, object count and painted markers are unchanged")
@@ -396,12 +410,18 @@ def audit(original: str, prepared: str) -> dict:
     if a.has_part(ROOT_MODEL) and b.has_part(ROOT_MODEL):
         placement_applied = _placement_moved(a.read_part(ROOT_MODEL), b.read_part(ROOT_MODEL))
 
+    # Geometry a multi-part copy moved out of the root, on each side, so the
+    # row about the root model can count what the root no longer holds.
+    moved = (b"".join(a.read_part(p) for p in parts_a if p.startswith(OBJECTS_DIR)),
+             b"".join(b.read_part(p) for p in parts_b if p.startswith(OBJECTS_DIR)))
+
     rows: list[dict] = []
     for part in parts_a:
         if part.endswith("/") or part == PROJECT_SETTINGS:
             continue
         after = b.read_part(part) if part in set_b else None
-        rows.append(_classify_part(part, a.read_part(part), after, placement_applied))
+        rows.append(_classify_part(part, a.read_part(part), after, placement_applied,
+                                   moved))
     for part in parts_b:
         if part.endswith("/") or part in set(parts_a):
             continue
@@ -410,6 +430,7 @@ def audit(original: str, prepared: str) -> dict:
                          reason="added while preparing the U1 copy"))
 
     rows += _settings_rows(a, b)
+    rows += _part_shape_rows(a, b)
     rows += _semantic_rows(a, b)
     rows += _painted_rows(a, b)
     rows += _assignment_rows(a, b)
@@ -439,6 +460,101 @@ def audit(original: str, prepared: str) -> dict:
                        "could not identify is listed as unverified rather than assumed to "
                        "be fine."),
     }
+
+
+#: Splitting a mesh costs about what preparing it did, so a project far larger
+#: than anything a person hands a slicer is reported rather than re-split here.
+_MAX_FACETS_TO_RESPLIT = 200_000
+OBJECTS_DIR = "3D/Objects/"
+PRUSA_MODEL_CONFIG = "Metadata/Slic3r_PE_model.config"
+
+
+def _prepared_part_digests(tm: ThreeMF) -> list[str] | None:
+    """Each part's shape in a prepared multi-part copy, in part order."""
+    from . import multipart
+
+    names = [p for p in tm.list_parts() if p.startswith(OBJECTS_DIR)]
+    if not names:
+        return None
+    digests: list[tuple[int, str]] = []
+    for name in sorted(names):
+        body = tm.read_part(name).decode("utf-8", "ignore")
+        for object_id in re.findall(r'<object id="(\d+)"', body):
+            block = re.search(rf'<object id="{object_id}".*?</object>', body, re.S)
+            if not block:
+                continue
+            vertices, triangles = multipart.read_mesh(block.group(0))
+            digests.append((int(object_id), multipart.geometry_digest(vertices, triangles)))
+    return [digest for _id, digest in sorted(digests)] or None
+
+
+def _source_part_digests(tm: ThreeMF) -> tuple[str, list[str]] | None:
+    """Each source volume's shape, cut out of the one mesh PrusaSlicer wrote.
+
+    The source states its volumes as triangle ranges over a single mesh, so the
+    only way to compare a part with the volume it came from is to cut the same
+    ranges again and hash what falls out. Vertex numbering is renumbered by the
+    split on both sides, which is why the digest hashes coordinates.
+    """
+    from . import multipart
+
+    if not tm.has_part(PRUSA_MODEL_CONFIG) or not tm.has_part(ROOT_MODEL):
+        return None
+    config = tm.read_part(PRUSA_MODEL_CONFIG).decode("utf-8", "ignore")
+    volumes_by_object = multipart.source_volumes(config)
+    if len(volumes_by_object) != 1:
+        return None
+    (_source_id, volumes), = volumes_by_object.items()
+    if len(volumes) < 2:
+        return None
+    name = "the object"
+    found = re.search(r'<metadata type="object" key="name" value="([^"]*)"', config)
+    if found:
+        name = found.group(1)
+
+    root = tm.read_part(ROOT_MODEL).decode("utf-8", "ignore")
+    objects = re.findall(r"<object[^>]*>.*?</object>", root, re.S)
+    if len(objects) != 1:
+        return None
+    vertices, triangles = multipart.read_mesh(objects[0])
+    if len(triangles) > _MAX_FACETS_TO_RESPLIT:
+        return None
+    parts = multipart.split_triangles(vertices, triangles, [v["range"] for v in volumes])
+    return name, [multipart.geometry_digest(part["vertices"], part["triangles"])
+                  for part in parts]
+
+
+def _part_shape_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
+    """Does each carried part hold the shape of the volume it came from?
+
+    A part record and a mesh can agree with each other and still describe the
+    wrong solid. This compares the two shapes directly, facet by facet in winding
+    order, so a part that quietly picked up someone else's geometry is a finding
+    rather than a clean row.
+    """
+    try:
+        source = _source_part_digests(a)
+        prepared = _prepared_part_digests(b)
+    except Exception:
+        return []
+    if source is None or prepared is None:
+        return []
+    name, wanted = source
+    label = f"The shape of each part of {name}"
+    if len(wanted) != len(prepared):
+        return [_row(label, CHANGED,
+                     detail=(f"the source has {len(wanted)} volume(s) and the copy "
+                             f"{len(prepared)} part(s)"),
+                     reason="Studio writes one part per source volume")]
+    wrong = [str(i + 1) for i, (x, y) in enumerate(zip(wanted, prepared)) if x != y]
+    if wrong:
+        return [_row(label, CHANGED,
+                     detail=f"part(s) {', '.join(wrong)} hold different geometry",
+                     reason=("each part must hold the facets of the volume it came "
+                             "from — report this as a bug"))]
+    return [_row(label, PRESERVED_EXACT,
+                 detail=(f"all {len(wanted)} part(s) hold the facets of the volume "
+                         "they came from, in winding order"))]
 
 
 def _settings_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
