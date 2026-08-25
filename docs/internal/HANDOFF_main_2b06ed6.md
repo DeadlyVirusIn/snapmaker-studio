@@ -1,5 +1,10 @@
 # Handoff — unreleased work on `main` after v0.8.0
 
+> **Superseded by `HANDOFF_main_e418dc0.md`.** `main` has moved on: the Orca
+> evidence gap this document calls the next task is closed, and modifier
+> volumes are carried. Read this for how the multi-part work was arrived at,
+> not for the current state.
+
 Written 2026-08-25 at a context limit, mid-stream. This is the state a fresh
 session should start from. **Nothing here is released.**
 
