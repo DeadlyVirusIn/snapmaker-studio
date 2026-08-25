@@ -2,8 +2,40 @@
 
 **To:** the U1Hub maintainer
 **From:** Snapmaker Studio (independent open-source project, MIT)
-**Status:** proposal. Studio depends on nothing in U1Hub today, and will not until an
-interface exists that U1Hub means to offer.
+**Status:** proposal, still open. Studio depends on nothing in U1Hub today.
+
+> ## Re-audited 2026-08-25 — Studio is not integrating, and here is why
+>
+> U1Hub's `main` was read again on 2026-08-25 rather than trusting this document.
+> Two things were checked: whether an interface exists that U1Hub *means* to offer,
+> and whether it carries the numbers this proposal is actually about.
+>
+> **`GET /api/spools` and `GET /api/slots` do exist**, in `rfid.js`. That is close to
+> what is asked for below, and worth saying plainly.
+>
+> **They are not an external contract, on the evidence available.** They carry no
+> schema or version field; they return internal state spread directly into the
+> response; the README documents user-facing features and nowhere offers an API to
+> other tools; the routes sit behind the same password gate as every page; and the
+> code comments describe them in terms of "the UI" they serve. An Express route
+> that a project's own frontend calls is not a promise to anyone else, and treating
+> it as one would produce breakage that looks like U1Hub's fault and is Studio's.
+>
+> **More decisively, U1Hub does not track remaining filament weight.** Its spool
+> registry is an RFID/QR *identity* store — brand, material, colour — and the words
+> `remaining`, `weight` and `grams` do not appear in that module at all. The three
+> fields this proposal names as carrying most of the value (`remaining_g`,
+> `remaining_quality`, `remaining_as_of`) have nothing to map to. So even with a
+> blessed, versioned API, integrating would not answer the question Studio is
+> asking: *will this print run out of filament?*
+>
+> Studio therefore continues with Spoolman, which does track consumption, and this
+> proposal stays open rather than being withdrawn — the offer is unchanged if an
+> interface and a weight ever exist. Nothing in U1Hub's internal files has been
+> read, then or now.
+>
+> Evidence: `dlgambill/u1hub`, MIT, default branch `main`, last pushed
+> 2026-08-17. Reviewed files: `README.md`, `server.js`, `rfid.js`, `BETA-TESTING.md`.
 
 ## Why this is a proposal and not a pull request
 
@@ -94,11 +126,17 @@ Three details carry most of the value:
 
 ## What already exists on the Studio side
 
-The seam is built and shipped: `material_providers.py` normalises any source into
-one shape, and Spoolman is supported through it today, read-only, over the local
-network. Adding U1Hub would be one provider function against a documented route —
-roughly forty lines, no changes anywhere else, and nothing else in Studio would
-know or care where the number came from.
+The seam is built: `material_providers.py` normalises any source into one shape,
+and Spoolman is read through it, read-only, over the local network. As of
+2026-08-25 that is reachable from the app itself — Settings carries a materials
+provider section, an address, a connection test and an explicit slot-to-spool
+mapping. Before that date the engine could read a provider and nothing in the
+desktop ever sent it one, which is worth stating plainly: this paragraph used to
+say "shipped", and for a user of the published build it was not.
+
+Adding U1Hub would be one provider function against a documented route — roughly
+forty lines, no changes anywhere else, and nothing else in Studio would know or
+care where the number came from.
 
 ## Contact
 

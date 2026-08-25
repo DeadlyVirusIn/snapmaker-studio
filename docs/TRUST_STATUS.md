@@ -14,6 +14,23 @@ real Snapmaker U1 have all passed and are recorded here.
 > been connected to Studio. See [PRINTER_COMPATIBILITY.md](PRINTER_COMPATIBILITY.md)
 > and `internal/SECOND_PRINTER_PROOF.md`. The U1's own hardware verification is
 > unchanged at 26/26 against v0.7.2 and was not re-run for this work.
+>
+> **Also unreleased: material providers are reachable.** Studio's engine has read
+> Spoolman for several releases and nothing in the app ever sent it an address, so
+> the capability was real and no user could use it. Settings now carries a
+> materials provider section, and running a real Spoolman locally found three
+> defects the mocked tests had agreed with, plus two sufficiency rules that could
+> refuse a send on evidence too weak to support one. See
+> [MATERIAL_PROVIDERS.md](MATERIAL_PROVIDERS.md) and
+> `internal/PROVIDER_AUDIT.md`. Installed-build acceptance for this work is
+> **31/31** against a locally built v0.7.2 installer including the in-place
+> upgrade from v0.7.1 — that is an installer built on this machine from `main`,
+> **not** the published v0.7.2 asset, and it is not a release.
+>
+> **`main` is not hardware verified.** It changes Moonraker, printer profiles,
+> preflight, post-slice, send-check and material planning, and the real-U1
+> read-only harness has not been run against it. v0.7.2's 26/26 is evidence about
+> v0.7.2. Before any future release, that harness has to be re-run.
 
 ## v0.7.2 — ACCEPTED
 
