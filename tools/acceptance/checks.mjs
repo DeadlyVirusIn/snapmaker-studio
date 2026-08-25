@@ -17,7 +17,14 @@ import { chromium } from "playwright-core";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const [, , phase, cdpUrl, outDir, samplePath, gcodePath, paintedPath] = process.argv;
+const [, , phase, cdpUrl, outDir, samplePath, gcodePath, paintedPath, spoolmanUrl] = process.argv;
+
+// A material provider is optional everywhere in Studio, so it is optional here.
+// Without one, the checks below still prove the important half: that the frozen
+// sidecar carries the provider code, refuses an address that is not on the
+// user's own network, and answers "unknown" rather than inventing a figure.
+// Given one — pass a local Spoolman address as the last argument — they also
+// prove the whole path end to end inside the installed build.
 mkdirSync(outDir, { recursive: true });
 
 const results = [];
@@ -127,9 +134,46 @@ async function phaseRoutes(page) {
              && b.narration.every((line) => Boolean(line.evidence))],
     ["/material_plan", { path: gcodePath, host: "", port: 7125 },
       (b) => b.available === true && b.printer_known === false],
+    // The frozen sidecar carries the provider route at all. Before this sprint
+    // the engine had provider support and nothing shipped could reach it, which
+    // is exactly the class of gap an installed-build check exists to catch.
+    ["/provider/test", { url: "" },
+      (b) => b.ok === false && typeof b.reason === "string" && b.reason.length > 0],
+    // Local-first is a promise about where requests go. The installed build must
+    // refuse a public address rather than fetching it.
+    ["/provider/test", { url: "http://example.com" },
+      (b) => b.ok === false && /your own network/.test(b.reason ?? "")],
+    ["/provider/test", { url: "file:///c:/windows/win.ini" },
+      (b) => b.ok === false],
+    // And a provider that is simply not there is an answer, not a crash.
+    ["/provider/test", { url: "http://127.0.0.1:1" },
+      (b) => b.ok === false && b.spools === 0],
+    // With no provider configured, nothing about remaining filament is claimed.
+    ["/send_check", { path: gcodePath, host: "", port: 7125, spoolman: "" },
+      (b) => b.available === true
+             && (b.materials?.slots ?? []).every(
+                  (s) => (s.sufficiency?.verdict ?? "unknown") === "unknown")],
     ["/send_check", { path: gcodePath, host: "", port: 7125 },
       (b) => b.available === true && b.counts.blocker === 0
              && b.items.some((i) => i.kind === "unknown")],
+    // Only when a provider address was supplied: the whole path, in the frozen
+    // build. Reading a real Spoolman, mapping a spool to a slot, and getting a
+    // figure back with the provenance that decides how hard Studio may lean on it.
+    ...(spoolmanUrl ? [
+      ["/provider/test", { url: spoolmanUrl },
+        (b) => b.ok === true && b.spools > 0 && Array.isArray(b.choices)],
+      // The sample job prints from the second slot, so the mapping names the
+      // second slot as a person counting from 1 would. Getting that wrong maps a
+      // spool into a slot the job never touches, which is exactly the mistake the
+      // stated slot numbering exists to prevent.
+      ["/material_plan", { path: gcodePath, host: "", port: 7125,
+                           spoolman: spoolmanUrl, slot_map: { "2": 2 }, slot_base: 1 },
+        (b) => b.available === true && b.printer_known === true
+               && (b.slots ?? []).some((s) => s.needed === true
+                                              && s.remaining_g !== null
+                                              && s.confirmed_by === "provider"
+                                              && s.printer_confirmed === false)],
+    ] : []),
     // The round-trip: the folder holding the job is watched, and a job that did
     // not come from the open project must never be claimed as a match.
     ["/watch_folder", { folder: outDir },

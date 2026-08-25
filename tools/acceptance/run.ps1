@@ -31,7 +31,12 @@ param(
     # A previous installer. When given, it is installed first and its settings and
     # library are checked for survival across the upgrade - the path every existing
     # user actually takes to a new release.
-    [string]$UpgradeFrom
+    [string]$UpgradeFrom,
+    # A material provider on this network, when one is available to test against.
+    # Optional: without it the provider checks still prove the frozen build carries
+    # the route, refuses an address that is not local, and claims nothing about
+    # remaining filament. With it they prove the whole path inside the installed app.
+    [string]$SpoolmanUrl
 )
 
 $ErrorActionPreference = "Stop"
@@ -236,7 +241,7 @@ try {
     $node = Join-Path $PSScriptRoot "checks.mjs"
 
     function Invoke-Phase($phase, $arg = "", $arg2 = "", $arg3 = "") {
-        $out = & node $node $phase $cdp $outDir $arg $arg2 $arg3 2>&1
+        $out = & node $node $phase $cdp $outDir $arg $arg2 $arg3 $SpoolmanUrl 2>&1
         $out | ForEach-Object { Write-Host "    $_" }
         return $LASTEXITCODE
     }

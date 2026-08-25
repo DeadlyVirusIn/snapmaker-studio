@@ -110,6 +110,12 @@ def plan(job_slots: list[dict], loaded: list | None,
             "state": None,
             "detail": None,
             "colour_distance": None,
+            # Who established that something is in this slot: the printer, which
+            # is looking at it, or a provider mapping, which is the user's own
+            # note. Set here rather than further down, because it is true of the
+            # slot whatever this particular job does with it.
+            "confirmed_by": (have or {}).get("confirmed_by"),
+            "printer_confirmed": (have or {}).get("confirmed_by") == "printer",
         }
 
         if not needed:
@@ -136,14 +142,9 @@ def plan(job_slots: list[dict], loaded: list | None,
             out["slots"].append(entry)
             continue
 
-        # Who actually saw this spool. On a printer that reports its own filament
-        # state the machine has looked; on one that reports none, a provider
-        # mapping is the user's own note about what they loaded. Both are useful.
-        # Only one of them is an observation, and the sentences must not read the
-        # same.
-        entry["confirmed_by"] = have.get("confirmed_by")
+        # One of these is an observation and the other is a note somebody wrote,
+        # and the sentences below must not read the same.
         assumed = have.get("confirmed_by") == "provider"
-        entry["printer_confirmed"] = not assumed
 
         want_family = family(slot.get("type"))
         have_family = family(have.get("material"))
