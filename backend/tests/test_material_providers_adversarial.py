@@ -26,8 +26,20 @@ import pytest
 
 from snapstudio_core import material_plan, material_providers as providers, send_check
 
+
+def _hours_ago(hours: float) -> str:
+    import datetime
+
+    return (datetime.datetime.now(datetime.timezone.utc)
+            - datetime.timedelta(hours=hours)).isoformat()
+
+#: A spool something has actually been printing from. Both fields matter: a real
+#: Spoolman always computes a `remaining_weight`, so it is `used_weight` together
+#: with `last_used` that distinguishes bookkeeping somebody is keeping from a
+#: figure that is simply the spool's declared size.
 SPOOL = {
-    "id": 7, "remaining_weight": 431.5, "archived": False, "last_used": "2026-08-20T10:00:00Z",
+    "id": 7, "remaining_weight": 431.5, "archived": False,
+    "last_used": "2026-08-20T10:00:00Z", "used_weight": 568.5,
     "filament": {"material": "PLA Silk", "color_hex": "2D9E59", "name": "Green",
                  "weight": 1000, "vendor": {"name": "Snapmaker"}},
 }
@@ -239,18 +251,19 @@ def test_a_nonsense_slot_key_is_ignored_not_guessed(monkeypatch):
 
 # --- what Studio is then allowed to say -----------------------------------------
 
-def job_needing(grams, *, loaded_grams=None, quality=providers.TRACKED):
+def job_needing(grams, *, loaded_grams=None, quality=providers.TRACKED, as_of=None):
     facts = {"available": True,
              "slots": [{"tool": 0, "used": True, "grams": grams, "type": "PLA",
                         "color": "#2D9E59"}],
              "tools_used": [0]}
     loaded = [{"material": "PLA", "color": "#2D9E59", "remaining_g": loaded_grams,
-               "remaining_quality": quality}]
+               "remaining_quality": quality, "remaining_as_of": as_of}]
     return facts, {"reachable": True, "loaded_filaments": loaded}
 
 
 def test_a_tracked_shortfall_blocks_the_send():
-    facts, printer = job_needing(87.0, loaded_grams=43.0)
+    """The strongest sentence Studio says, and what it takes to earn it."""
+    facts, printer = job_needing(87.0, loaded_grams=43.0, as_of=_hours_ago(2))
     result = send_check.evaluate(facts, printer)
     blockers = [i for i in result["items"] if i["kind"] == send_check.BLOCKER]
     assert any("Not enough filament" in i["title"] for i in blockers)
@@ -266,7 +279,7 @@ def test_a_shortfall_on_an_unlabelled_figure_only_warns():
 
 def test_a_shortfall_within_the_drift_of_the_tracking_only_warns():
     """Two grams short on a bookkeeping figure is not a fact about a print."""
-    facts, printer = job_needing(87.0, loaded_grams=85.0)
+    facts, printer = job_needing(87.0, loaded_grams=85.0, as_of=_hours_ago(2))
     result = send_check.evaluate(facts, printer)
     assert not [i for i in result["items"] if i["kind"] == send_check.BLOCKER]
 
@@ -280,12 +293,45 @@ def test_nothing_tracking_the_spool_is_unknown_not_enough():
     assert not [i for i in result["items"] if i["kind"] == send_check.BLOCKER]
 
 
-def test_a_derived_weight_is_trusted_enough_to_block_but_says_it_is_derived():
-    facts, printer = job_needing(87.0, loaded_grams=12.0, quality=providers.DERIVED)
+def test_a_derived_weight_warns_rather_than_blocks_and_says_it_is_derived():
+    """A derived weight is arithmetic, not a record of consumption.
+
+    This used to block a send. Spoolman always answers with a remaining weight,
+    computing it from the spool's declared size minus what has been recorded
+    used — so a spool registered five minutes ago and never printed from reports
+    a full kilogram, and a spool whose usage nothing has updated reports whatever
+    it reported last time. Refusing to send on that is stopping someone over
+    bookkeeping rather than over filament.
+    """
+    facts, printer = job_needing(87.0, loaded_grams=12.0, quality=providers.DERIVED,
+                                 as_of=_hours_ago(1))
     plan = material_plan.from_facts(facts, printer)
     sufficiency = plan["slots"][0]["sufficiency"]
-    assert sufficiency["verdict"] == "insufficient"
+    assert sufficiency["verdict"] == "probably_short"
+    assert sufficiency["trusted"] is False
     assert "worked out" in sufficiency["source"]
+
+    result = send_check.evaluate(facts, printer)
+    assert not [i for i in result["items"] if i["kind"] == send_check.BLOCKER]
+
+
+def test_a_tracked_but_stale_weight_warns_rather_than_blocks():
+    """Bookkeeping nobody has touched in a fortnight is not grounds for a refusal."""
+    facts, printer = job_needing(87.0, loaded_grams=43.0, as_of=_hours_ago(24 * 14))
+    plan = material_plan.from_facts(facts, printer)
+    sufficiency = plan["slots"][0]["sufficiency"]
+    assert sufficiency["verdict"] == "probably_short"
+    assert sufficiency["freshness"] == "stale"
+    assert not [i for i in send_check.evaluate(facts, printer)["items"]
+                if i["kind"] == send_check.BLOCKER]
+
+
+def test_an_undated_weight_never_blocks_however_it_is_labelled():
+    """Without a date there is no way to know the figure is still true."""
+    facts, printer = job_needing(87.0, loaded_grams=43.0, as_of=None)
+    sufficiency = material_plan.from_facts(facts, printer)["slots"][0]["sufficiency"]
+    assert sufficiency["verdict"] == "probably_short"
+    assert sufficiency["freshness"] == "unknown"
 
 
 def test_a_job_that_does_not_state_its_weight_is_never_short():

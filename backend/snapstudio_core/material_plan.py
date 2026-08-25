@@ -136,6 +136,15 @@ def plan(job_slots: list[dict], loaded: list | None,
             out["slots"].append(entry)
             continue
 
+        # Who actually saw this spool. On a printer that reports its own filament
+        # state the machine has looked; on one that reports none, a provider
+        # mapping is the user's own note about what they loaded. Both are useful.
+        # Only one of them is an observation, and the sentences must not read the
+        # same.
+        entry["confirmed_by"] = have.get("confirmed_by")
+        assumed = have.get("confirmed_by") == "provider"
+        entry["printer_confirmed"] = not assumed
+
         want_family = family(slot.get("type"))
         have_family = family(have.get("material"))
         distance = colour_distance(slot.get("color"), have.get("color"))
@@ -157,8 +166,13 @@ def plan(job_slots: list[dict], loaded: list | None,
 
         if want_family and have_family and want_family != have_family:
             entry["state"] = "wrong_material"
-            entry["detail"] = (f"The job was sliced for {want_family}; the printer reports "
-                               f"{have.get('material')} loaded here.")
+            entry["detail"] = (
+                f"The job was sliced for {want_family}; your mapping puts "
+                f"{have.get('material')} in this slot, and this printer does not report "
+                "its own filament to check that against."
+                if assumed else
+                f"The job was sliced for {want_family}; the printer reports "
+                f"{have.get('material')} loaded here.")
             entry["action"] = f"Swap this slot to {want_family}, or re-slice for {have_family}."
             out["changes_needed"] += 1
         elif not want_family or not have_family:
@@ -186,8 +200,14 @@ def plan(job_slots: list[dict], loaded: list | None,
             entry["action"] = "Check what is on this spool before you start."
         else:
             entry["state"] = "ready"
-            base = (f"{have.get('material')} is loaded and matches what the job expects."
-                    if have.get("material") else "Loaded and matching.")
+            if assumed:
+                base = (f"{have.get('material')} is mapped to this slot and matches what "
+                        "the job expects. This printer does not report its own filament, "
+                        "so that is your mapping rather than something the machine has "
+                        "confirmed.")
+            else:
+                base = (f"{have.get('material')} is loaded and matches what the job expects."
+                        if have.get("material") else "Loaded and matching.")
             if entry["sufficiency"]["verdict"] in ("enough", "probably_enough"):
                 base += " " + entry["sufficiency"]["detail"]
             entry["detail"] = base
@@ -282,34 +302,62 @@ def _sufficiency(needed, remaining, quality: str = "unknown", as_of=None) -> dic
                 "source": "no provider reports remaining weight",
                 "quality": "unknown", "trusted": False}
 
+    from . import freshness as fr
+
     known = "tracked" if quality in ("tracked", "derived") else "unknown"
-    trusted = known == "tracked"
+    age = fr.assess(as_of)
+
+    # Only a figure that is *both* something a tool has been keeping and recent
+    # enough to still be true may block a send. Two rules, and each was being
+    # broken:
+    #
+    #  * a DERIVED weight is arithmetic from a declared initial weight, not a
+    #    record of consumption, and it used to map to "tracked" and block a print;
+    #  * a TRACKED weight nobody has updated in a fortnight used to block one too,
+    #    which is being stopped over bookkeeping rather than over filament.
+    #
+    # Both now warn. A warning that turns out to be right costs someone a glance
+    # at the spool; a blocker that turns out to be wrong costs them the print they
+    # were told not to start.
+    trusted = quality == "tracked" and age["state"] in (fr.FRESH, fr.AGEING)
     where = ("tracked spool weight" if quality == "tracked" else
              "spool weight worked out from what the spool held and what has been used"
              if quality == "derived" else "a remaining weight of unstated origin")
     since = ""
-    if as_of:
+    if age["state"] not in (fr.UNKNOWN,):
+        since = " " + age["detail"]
+    elif as_of:
         since = f" Last updated {as_of}."
 
     if remaining >= needed * MARGIN:
         return {"verdict": "enough",
-                "detail": f"{remaining:g} g tracked, {needed:g} g needed.",
-                "source": where, "quality": known, "trusted": trusted}
+                "detail": f"{remaining:g} g recorded, {needed:g} g needed." + since,
+                "source": where, "quality": known, "trusted": trusted,
+                "freshness": age["state"], "age_s": age["age_s"]}
     if remaining >= needed:
         return {"verdict": "probably_enough",
-                "detail": (f"{remaining:g} g tracked and {needed:g} g needed — enough on paper, "
-                           "with little to spare. Tracked weights are not exact." + since),
-                "source": where, "quality": known, "trusted": trusted}
+                "detail": (f"{remaining:g} g recorded and {needed:g} g needed — enough on paper, "
+                           "with little to spare. Recorded weights are not exact." + since),
+                "source": where, "quality": known, "trusted": trusted,
+                "freshness": age["state"], "age_s": age["age_s"]}
 
     shortfall = needed - remaining
     marginal = shortfall <= max(needed * DOUBT, 5.0)
     if marginal or not trusted:
+        why = ("a figure that is bookkeeping rather than a measurement"
+               if quality == "tracked" and age["state"] != fr.STALE else
+               "a figure nothing has updated recently" if age["state"] == fr.STALE else
+               "a figure worked out from what the spool held rather than one anything "
+               "has been keeping" if quality == "derived" else
+               "a figure of unstated origin")
         return {"verdict": "probably_short",
-                "detail": (f"{remaining:g} g tracked and the job needs {needed:g} g — "
-                           f"{shortfall:g} g short on a figure that is bookkeeping rather than "
-                           "a measurement, so check the spool before you start." + since),
-                "source": where, "quality": known, "trusted": trusted}
+                "detail": (f"{remaining:g} g recorded and the job needs {needed:g} g — "
+                           f"{shortfall:g} g short on {why}, so check the spool before "
+                           "you start." + since),
+                "source": where, "quality": known, "trusted": trusted,
+                "freshness": age["state"], "age_s": age["age_s"]}
     return {"verdict": "insufficient",
             "detail": (f"{remaining:g} g tracked but the job needs {needed:g} g. "
                        "It will run out part-way through." + since),
-            "source": where, "quality": known, "trusted": trusted}
+            "source": where, "quality": known, "trusted": trusted,
+            "freshness": age["state"], "age_s": age["age_s"]}

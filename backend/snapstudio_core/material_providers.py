@@ -26,11 +26,101 @@ exactly like the printer. Studio still makes no outbound internet requests.
 """
 from __future__ import annotations
 
+import ipaddress
 import json
+import re
 import urllib.error
+import urllib.parse
 import urllib.request
 
 SCHEMA_VERSION = "materials/2"
+
+
+class InvalidProviderAddress(ValueError):
+    """A provider address Studio will not turn into a request."""
+
+
+#: Name suffixes that mean "a machine on this network". A bare single-label name
+#: (`spoolman`) is a LAN name too. Anything else with a dot in it is a public DNS
+#: name, and Studio does not make requests to those.
+_LOCAL_SUFFIXES = (".local", ".lan", ".home", ".internal", ".home.arpa")
+
+_HOSTNAME_RE = re.compile(
+    r"\A(?!-)[A-Za-z0-9_-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9_-]{1,63}(?<!-))*\.?\Z")
+
+
+def _host_is_local(host: str) -> bool:
+    """Is this address on the user's own network?
+
+    Studio is local-first, and that is a promise about where requests go rather
+    than a description of its architecture. A provider address is typed by the
+    user into a settings box, so without this check that box is a way to make
+    Studio fetch an arbitrary URL on the public internet — which is exactly what
+    it says it never does.
+    """
+    name = host.strip().strip("[]").rstrip(".").lower()
+    if not name:
+        return False
+    try:
+        address = ipaddress.ip_address(name)
+    except ValueError:
+        if name == "localhost" or "." not in name:
+            return True
+        return name.endswith(_LOCAL_SUFFIXES)
+    # 100.64/10 is carrier-grade NAT, which is also what Tailscale hands out; a
+    # tailnet is the user's own network by any reasonable reading.
+    return bool(
+        address.is_loopback or address.is_private or address.is_link_local
+        or address in ipaddress.ip_network("100.64.0.0/10")
+        or (address.version == 6 and address.is_site_local))
+
+
+def validate_provider_url(value: str) -> str:
+    """Return a normalised provider base URL, or raise InvalidProviderAddress.
+
+    Accepts `http://spoolman.local:7912`, `http://192.168.1.9:7912`, a bare
+    `spoolman:7912`. Refuses another scheme, credentials in the URL, a path,
+    query or fragment, and any host that is not on the local network.
+
+    The refusals are not paranoia about the user. `file://` made Studio read a
+    local file, `ftp://` made it open an FTP connection, and a public hostname
+    made it fetch a page from the internet — all three demonstrated against this
+    function's predecessor, which passed the string straight to urllib.
+    """
+    text = (value or "").strip()
+    if not text:
+        raise InvalidProviderAddress("Enter the address of your Spoolman server.")
+    if len(text) > 255:
+        raise InvalidProviderAddress("That address is too long to be a server address.")
+    if "://" not in text:
+        text = "http://" + text
+    parts = urllib.parse.urlsplit(text)
+    if parts.scheme not in ("http", "https"):
+        raise InvalidProviderAddress(
+            "Studio only reads providers over http or https on your own network.")
+    if parts.username or parts.password:
+        raise InvalidProviderAddress(
+            "Put the server's address here on its own — Studio does not send a "
+            "username or password in a URL.")
+    if parts.query or parts.fragment or parts.path.strip("/"):
+        raise InvalidProviderAddress(
+            "Enter just the server's address and port, without a path.")
+    host = parts.hostname
+    if not host:
+        raise InvalidProviderAddress("That doesn't look like a server address.")
+    if not _HOSTNAME_RE.match(host) and ":" not in host:
+        raise InvalidProviderAddress("That doesn't look like a server address.")
+    if not _host_is_local(host):
+        raise InvalidProviderAddress(
+            f"{host} is not an address on your own network. Studio reads material "
+            "providers running on your network only — it makes no requests to the "
+            "internet.")
+    try:
+        port = parts.port
+    except ValueError as exc:
+        raise InvalidProviderAddress("That port is not a number.") from exc
+    authority = f"[{host}]" if ":" in host else host
+    return f"{parts.scheme}://{authority}" + (f":{port}" if port else "")
 
 STOCK = "stock-u1"
 SPOOLMAN = "spoolman"
@@ -51,14 +141,25 @@ UNTRACKED = "unknown"      # nothing knows
 IMPLAUSIBLE_GRAMS = 25_000
 
 
+#: Who established that something is in this slot. The distinction the whole
+#: multi-printer story turns on: a printer that reports its own filament state has
+#: *looked*, while a provider mapping is a person writing down what they believe
+#: they loaded. On a machine that reports no filament state at all — most Klipper
+#: printers — a provider is the only source, and it must not be dressed up as the
+#: machine having confirmed anything.
+BY_PRINTER = "printer"
+BY_PROVIDER = "provider"
+
+
 def _slot(index: int, *, material=None, subtype=None, color=None, vendor=None,
           spool_id=None, remaining_g=None, source=STOCK, confidence=CONFIRMED,
           present=True, remaining_quality=UNTRACKED, remaining_as_of=None,
-          notes=None) -> dict:
+          notes=None, confirmed_by=None) -> dict:
     """One normalised slot. Absent facts stay absent."""
     return {
         "slot": index,
         "present": present,
+        "confirmed_by": confirmed_by,
         "material": material,          # family, e.g. "PLA"
         "subtype": subtype,            # e.g. "Matte", when the source says so
         "color": color,
@@ -111,12 +212,13 @@ def stock_u1(host: str, port: int = 7125) -> dict:
     out["available"] = True
     for index, entry in enumerate(loaded):
         if not entry:
-            out["slots"].append(_slot(index, present=False))
+            out["slots"].append(_slot(index, present=False, confirmed_by=BY_PRINTER))
             continue
         family, subtype = _family_and_subtype(entry.get("material"))
         out["slots"].append(_slot(
             index, material=family, subtype=subtype, color=entry.get("color"),
-            vendor=entry.get("vendor"), source=STOCK, confidence=CONFIRMED))
+            vendor=entry.get("vendor"), source=STOCK, confidence=CONFIRMED,
+            confirmed_by=BY_PRINTER))
     # A printer knows what is loaded and nothing about how much is left on it.
     out["remaining_known"] = False
     return out
@@ -149,9 +251,19 @@ def spoolman(base_url: str, slot_map: dict | None = None, timeout: float = 4.0,
         out["error"] = "no Spoolman address configured"
         return out
 
-    root = str(base_url).rstrip("/")
     try:
-        spools = _get_json(f"{root}/api/v1/spool", timeout=timeout)
+        root = validate_provider_url(base_url)
+    except InvalidProviderAddress as exc:
+        out["error"] = str(exc)
+        return out
+    try:
+        # Spoolman leaves archived spools out of this list unless asked. Studio
+        # asks for them: a slot mapped to a spool somebody archived last week
+        # should read as "that spool is archived", not as "there is no such
+        # spool", which is what it said while this parameter was missing — and
+        # which every mocked test agreed with, because a mock returns whatever
+        # it was handed.
+        spools = _get_json(f"{root}/api/v1/spool?allow_archived=true", timeout=timeout)
     except TimeoutError:
         out["error"] = (f"Spoolman did not answer within {timeout:g} seconds — Studio carried "
                         "on without it")
@@ -183,7 +295,13 @@ def spoolman(base_url: str, slot_map: dict | None = None, timeout: float = 4.0,
             "vendor": vendor,
             "remaining_g": remaining,
             "remaining_quality": quality,
-            "remaining_as_of": spool.get("last_used") or spool.get("updated"),
+            # When this figure was last true. `last_used` is the only field a
+            # real Spoolman has that means that; `registered` is when the spool
+            # was added, which is not the same thing and must not stand in for
+            # it. A spool nothing has printed from has no such date, and that is
+            # the common case rather than the odd one.
+            "remaining_as_of": spool.get("last_used") or None,
+            "registered": spool.get("registered") or None,
             "notes": notes,
             "name": filament.get("name"),
             "archived": bool(spool.get("archived")),
@@ -197,7 +315,7 @@ def spoolman(base_url: str, slot_map: dict | None = None, timeout: float = 4.0,
         spool = by_id.get(spool_id)
         if not spool:
             out["slots"].append(_slot(slot_index, present=False, source=SPOOLMAN,
-                                      confidence=UNKNOWN,
+                                      confidence=UNKNOWN, confirmed_by=BY_PROVIDER,
                                       notes=[f"no spool with id {spool_id} in Spoolman"]))
             continue
         notes = list(spool["notes"])
@@ -211,7 +329,7 @@ def spoolman(base_url: str, slot_map: dict | None = None, timeout: float = 4.0,
             remaining_as_of=spool["remaining_as_of"], notes=notes,
             # The user told Studio which spool is in which slot. That is a
             # statement of intent, not a measurement the printer confirmed.
-            confidence=LIKELY))
+            confidence=LIKELY, confirmed_by=BY_PROVIDER))
     return out
 
 
@@ -270,7 +388,7 @@ def _remaining(spool: dict, filament: dict) -> tuple[float | None, str, list[str
     """
     notes: list[str] = []
     value = _number(spool.get("remaining_weight"))
-    quality = TRACKED
+    quality = _quality(spool)
     if value is None:
         # Spoolman does not always store a remaining weight; when it stores the
         # spool's net weight and what has been used, the difference is honest
@@ -298,6 +416,26 @@ def _remaining(spool: dict, filament: dict) -> tuple[float | None, str, list[str
                      f"({net:g} g), so Studio cannot use it")
         return None, UNTRACKED, notes
     return value, quality, notes
+
+
+def _quality(spool: dict) -> str:
+    """Is this remaining weight bookkeeping something has kept, or arithmetic?
+
+    Spoolman always answers with a `remaining_weight`, because it computes one
+    from the spool's initial weight minus what has been recorded used. That means
+    the field being present proves nothing on its own — a spool registered five
+    minutes ago and never printed from reports a full kilogram, and the previous
+    version of this function called that `tracked`, the highest confidence Studio
+    has, which is what a blocker is built on.
+
+    So the distinction is drawn where the evidence actually is: a figure is
+    tracked when something has been recording consumption against this spool, and
+    derived when it is initial weight minus a used weight nothing has updated.
+    """
+    used = _number(spool.get("used_weight"))
+    if spool.get("last_used") and used:
+        return TRACKED
+    return DERIVED
 
 
 def _number(value):
@@ -361,6 +499,12 @@ def combine(*states: dict) -> dict:
                     existing.setdefault("disagreed", {})[what] = {
                         "printer": mine, slot["source"]: theirs}
 
+            # A provider filling gaps never changes who saw the slot. If the
+            # printer reported it, the printer confirmed it; if only a provider
+            # ever spoke, nothing confirmed it.
+            if existing.get("confirmed_by") != BY_PRINTER and slot.get("confirmed_by") == BY_PRINTER:
+                existing["confirmed_by"] = BY_PRINTER
+
             if slot.get("present") and not existing.get("present"):
                 # One source says empty, another says a spool is there. That is a
                 # disagreement, not a fact, and it is reported as one.
@@ -397,6 +541,7 @@ def as_loaded_filaments(state: dict) -> list | None:
             continue
         material = " ".join(x for x in (slot.get("material"), slot.get("subtype")) if x)
         out[slot["slot"]] = {
+            "confirmed_by": slot.get("confirmed_by"),
             "color": slot.get("color"),
             "material": material or None,
             "vendor": slot.get("vendor"),

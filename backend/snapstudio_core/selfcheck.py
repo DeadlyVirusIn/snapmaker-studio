@@ -764,10 +764,16 @@ def _providers() -> str:
 
     printer = {"source": mp.STOCK, "available": True, "remaining_known": False,
                "slots": [mp._slot(0, material="PLA", subtype="Matte", color="#000000")]}
+    # A tracked figure now has to say when it was last true before it may stop a
+    # send. A weight nothing has updated in a fortnight is bookkeeping, and
+    # refusing a print over it teaches people to ignore the refusals that matter.
+    import datetime as _dt
+    recent = (_dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(hours=2)).isoformat()
     tracker = {"source": mp.SPOOLMAN, "available": True, "remaining_known": True,
                "slots": [mp._slot(0, material="PETG", color="#FFFFFF", spool_id=7,
                                   remaining_g=40.0, source=mp.SPOOLMAN,
-                                  remaining_quality=mp.TRACKED)]}
+                                  remaining_quality=mp.TRACKED,
+                                  remaining_as_of=recent)]}
     combined = mp.combine(printer, tracker)
     slot = combined["slots"][0]
     if slot["material"] != "PLA" or slot["color"] != "#000000":
@@ -792,8 +798,29 @@ def _providers() -> str:
                                [{"material": "PLA", "remaining_g": 40.0}], [0])
     if vague["slots"][0]["state"] != "maybe_not_enough":
         raise AssertionError("an unlabelled remaining weight was treated as a fact")
-    return ("printer stays authoritative; tracked weight can block; unlabelled weight "
-            "only warns; untracked stays unknown")
+
+    # And the same shortfall again on a tracked figure nobody has touched for a
+    # fortnight. Stale bookkeeping warns; it never refuses.
+    old = (_dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(days=14)).isoformat()
+    stale = material_plan.plan(
+        [{"tool": 0, "used": True, "grams": 87.0, "type": "PLA"}],
+        [{"material": "PLA", "remaining_g": 40.0, "remaining_quality": mp.TRACKED,
+          "remaining_as_of": old}], [0])
+    if stale["slots"][0]["state"] != "maybe_not_enough":
+        raise AssertionError("a stale tracked weight was treated as grounds for a refusal")
+
+    # A provider mapping on a printer that reports no filament of its own is the
+    # user's note, not the machine's observation, and must not read as one.
+    assumed = mp.as_loaded_filaments(mp.combine(
+        {"source": mp.SPOOLMAN, "available": True, "remaining_known": True,
+         "slots": [mp._slot(0, material="PLA", source=mp.SPOOLMAN, spool_id=7,
+                            confirmed_by=mp.BY_PROVIDER)]}))
+    if assumed[0].get("confirmed_by") != mp.BY_PROVIDER:
+        raise AssertionError("a provider mapping was presented as printer-confirmed")
+
+    return ("printer stays authoritative; a fresh tracked weight can block; stale, "
+            "derived and unlabelled weights only warn; untracked stays unknown; a "
+            "provider mapping is never presented as an observation")
 
 
 def _painted_fixture(workdir: Path) -> Path:
