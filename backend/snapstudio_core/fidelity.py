@@ -659,4 +659,26 @@ def _assignment_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
                                     "report this as a bug"))
         else:
             rows.append(_row(label, UNVERIFIED, detail=entry["detail"]))
+
+    # The facts underneath the assignment get their own rows. One line saying
+    # "objects preserved" is how a copy passes an audit while a part's filament,
+    # a modifier's role or a per-object setting quietly went missing beneath it.
+    labels = {
+        "volume_filament": "Filament for each part of {object}",
+        "volume_role": "Part roles in {object}",
+        "instances": "Copies of {object}",
+        "override": "Settings set on {object}",
+    }
+    mapping = {
+        assignments.PRESERVED_EXACT: PRESERVED_EXACT,
+        assignments.PRESERVED_SEMANTIC: PRESERVED_SEMANTIC,
+        assignments.CHANGED: CHANGED,
+        assignments.UNSUPPORTED: UNSUPPORTED,
+        assignments.UNVERIFIED: UNVERIFIED,
+    }
+    for entry in verdict.get("semantics") or ():
+        template = labels.get(entry["kind"], "{object}")
+        rows.append(_row(template.format(object=entry["object"]),
+                         mapping.get(entry["status"], UNVERIFIED),
+                         detail=entry["detail"]))
     return rows

@@ -4,6 +4,11 @@ from pathlib import Path
 from xml.sax.saxutils import escape as _xml_escape
 
 
+#: What Snapmaker Orca writes for an object nobody has assigned to a filament.
+#: Not slot zero — the absence of a choice, said in the target's own words.
+UNASSIGNED = 0
+
+
 def _attr(value: str) -> str:
     """Escape a string for safe use inside an XML attribute value."""
     return _xml_escape(value, {'"': "&quot;"})
@@ -225,7 +230,16 @@ def build_model_settings_multi(object_ids, name: str = "object", extruder: int =
             volumes = {v for v in (stated.get("volume_extruders") or []) if v}
             if len(volumes) == 1:
                 slot = volumes.pop()
-        slot = slot or extruder
+        if not slot and oid in assignments:
+            # The source project exists and says nobody assigned this object.
+            # Writing 1 would state a choice the project never made, and both
+            # slicers treat that as a different fact: PrusaSlicer round-trips an
+            # absent extruder as absent and an explicit 1 as explicit, and
+            # Snapmaker Orca writes `extruder="0"` for an object nobody assigned
+            # — seen in a file Orca 2.3.5 wrote itself. So unassigned crosses as
+            # unassigned, in the target's own vocabulary.
+            slot = UNASSIGNED
+        slot = slot if slot is not None else extruder
         label = _attr(stated.get("name") or f"{name}_{oid}")
         return (
             f'  <object id="{oid}">\n'

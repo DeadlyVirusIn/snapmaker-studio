@@ -126,10 +126,22 @@ def test_a_slot_beyond_four_is_carried_rather_than_renumbered(tmp_path):
     assert prepared_slots(prepared) == ["6"]
 
 
-def test_an_object_with_no_assignment_lands_on_the_first_filament(tmp_path):
+def test_an_object_with_no_assignment_crosses_as_unassigned(tmp_path):
+    """"Nobody chose" is not "somebody chose filament 1".
+
+    This used to write slot 1, and the fidelity audit called that preserved. Both
+    slicers disagree. Round-tripped through PrusaSlicer 2.9.6, a project with no
+    extruder metadata comes back with none, and one with `extruder="1"` comes back
+    with that stated explicitly — it does not drop it as redundant. Snapmaker Orca
+    2.3.5 says the same thing in its own dialect, writing `extruder="0"` for an
+    object nobody has assigned, in a file Orca itself wrote.
+
+    Both print from filament 1 under today's defaults. They are still different
+    claims about the project, and the copy must not invent the second one.
+    """
     project = prusa_project(tmp_path, [{"name": "left"}])
     prepared = convert_to_u1(project, out_dir=str(tmp_path / "out")).output_path
-    assert prepared_slots(prepared) == ["1"]
+    assert prepared_slots(prepared) == ["0"]
 
 
 def test_a_volume_assignment_is_carried_when_the_volumes_agree(tmp_path):
@@ -228,8 +240,12 @@ def test_volumes_that_disagree_are_reported_as_not_representable(tmp_path):
     prepared = convert_to_u1(project, out_dir=str(tmp_path / "out")).output_path
     row = assignment_rows(fidelity.audit(project, prepared))[0]
     assert row["status"] == fidelity.UNSUPPORTED
-    assert "[2, 5]" in row["detail"]
-    assert "cannot be represented" in row["detail"]
+    # The card names each part and its filament rather than printing a set, so a
+    # person can see which half of their object is not coming across.
+    assert "part 1 uses filament 2" in row["detail"]
+    assert "part 2 uses filament 5" in row["detail"]
+    assert "does not choose one for you" in row["detail"]
+    assert "cannot carry both" in row["detail"]
 
 
 def test_a_copy_with_no_assignments_at_all_is_reported_as_removed(tmp_path):

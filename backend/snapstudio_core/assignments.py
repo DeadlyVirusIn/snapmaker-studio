@@ -37,10 +37,61 @@ EXPLICIT = "explicit"      # the object says so itself
 FROM_VOLUME = "from_volume"  # its volumes agree and the object is silent
 DEFAULT = "default"        # nothing says, so the project's first filament
 
+# What a volume is *for*. Both dialects record this and both have their own
+# vocabulary for it, so it is normalised here — a modifier is a modifier whether
+# the file calls it a ParameterModifier or a modifier_part.
+#
+# The names on each side were established by round-tripping files through the
+# slicers themselves (see docs/internal/PRUSA_SEMANTICS.md), not read off a wiki:
+# PrusaSlicer 2.9.6 writes ModelPart / ParameterModifier / NegativeVolume /
+# SupportEnforcer / SupportBlocker, and silently rewrites anything it does not
+# recognise to ModelPart. Snapmaker Orca 2.3.5 writes `subtype="normal_part"`.
+PART = "part"
+MODIFIER = "modifier"
+NEGATIVE = "negative"
+SUPPORT_ENFORCER = "support_enforcer"
+SUPPORT_BLOCKER = "support_blocker"
+ROLE_UNKNOWN = "unknown"
+
+_ROLES = {
+    # PrusaSlicer
+    "modelpart": PART,
+    "parametermodifier": MODIFIER,
+    "negativevolume": NEGATIVE,
+    "supportenforcer": SUPPORT_ENFORCER,
+    "supportblocker": SUPPORT_BLOCKER,
+    # Bambu / Orca / Snapmaker Orca
+    "normal_part": PART,
+    "modifier_part": MODIFIER,
+    "negative_part": NEGATIVE,
+    "support_enforcer": SUPPORT_ENFORCER,
+    "support_blocker": SUPPORT_BLOCKER,
+}
+
+#: Object-level keys that are the assignment itself or the object's identity,
+#: rather than a setting somebody overrode on this object.
+_NOT_AN_OVERRIDE = {"extruder", "name", "matrix", "source_file", "source_object_id",
+                    "source_volume_id", "source_offset_x", "source_offset_y",
+                    "source_offset_z", "volume_type", "subtype"}
+
+
+def role_of(value: str | None) -> str:
+    """Normalise a dialect's volume-role word, or say it is not one Studio knows.
+
+    An unrecognised role is *not* quietly a part. PrusaSlicer itself converts an
+    unknown `volume_type` into `ModelPart`, which turns a modifier into printable
+    geometry — exactly the failure this vocabulary exists to make visible.
+    """
+    if value is None:
+        return ROLE_UNKNOWN
+    return _ROLES.get(str(value).strip().lower(), ROLE_UNKNOWN)
+
 _OBJECT = re.compile(r"<object\b")
 _VOLUME = re.compile(r"<volume\b")
 _PART = re.compile(r"<part\b")
 _ID = re.compile(r'id="([^"]+)"')
+_INSTANCES = re.compile(r'instances_count="(\d+)"')
+_SUBTYPE = re.compile(r'subtype="([^"]+)"')
 _PRUSA_META = re.compile(
     r'<metadata\s+type="(object|volume|part)"\s+key="([^"]+)"\s+value="([^"]*)"')
 _BAMBU_META = re.compile(r'<metadata\s+key="([^"]+)"\s+value="([^"]*)"')
@@ -68,7 +119,10 @@ def _prusa(text: str) -> list[dict]:
         found = _ID.search(head)
         entry = {"object_id": found.group(1) if found else str(position + 1),
                  "index": position, "name": None, "slot": None,
-                 "source": DEFAULT, "volume_slots": []}
+                 "source": DEFAULT, "volume_slots": [], "volumes": [],
+                 "instances": _int(_INSTANCES.search(head).group(1))
+                              if _INSTANCES.search(head) else None,
+                 "overrides": {}}
         for kind, key, value in _PRUSA_META.findall(chunk.split("<volume", 1)[0]):
             if key == "extruder":
                 slot = _int(value)
@@ -76,12 +130,25 @@ def _prusa(text: str) -> list[dict]:
                     entry["slot"], entry["source"] = slot, EXPLICIT
             elif key == "name" and entry["name"] is None:
                 entry["name"] = value
-        for volume in re.split(_VOLUME, chunk)[1:]:
+            elif key not in _NOT_AN_OVERRIDE:
+                # A setting somebody changed on this object alone. Recorded as a
+                # fact; whether it can cross is decided later and separately.
+                entry["overrides"][key] = value
+        for order, volume in enumerate(re.split(_VOLUME, chunk)[1:]):
             slot = None
+            name = None
+            role_word = None
             for _kind, key, value in _PRUSA_META.findall(volume):
                 if key == "extruder":
                     slot = _int(value) or slot
+                elif key == "name" and name is None:
+                    name = value
+                elif key == "volume_type":
+                    role_word = value
             entry["volume_slots"].append(slot)
+            entry["volumes"].append({"index": order, "name": name, "slot": slot,
+                                     "role": role_of(role_word),
+                                     "role_word": role_word})
         if entry["slot"] is None:
             stated = {slot for slot in entry["volume_slots"] if slot}
             if len(stated) == 1:
@@ -97,32 +164,78 @@ def _bambu(text: str) -> list[dict]:
         found = _ID.search(head)
         entry = {"object_id": found.group(1) if found else str(position + 1),
                  "index": position, "name": None, "slot": None,
-                 "source": DEFAULT, "volume_slots": []}
+                 "source": DEFAULT, "volume_slots": [], "volumes": [],
+                 "instances": None, "overrides": {}}
         for key, value in _BAMBU_META.findall(chunk.split("<part", 1)[0]):
             if key == "extruder":
+                # Snapmaker Orca writes `extruder="0"` for an object nobody has
+                # assigned — its own way of saying default, seen in a file Orca
+                # 2.3.5 wrote itself. Zero is therefore not slot zero.
                 slot = _int(value)
                 if slot:
                     entry["slot"], entry["source"] = slot, EXPLICIT
             elif key == "name" and entry["name"] is None:
                 entry["name"] = value
-        for part in re.split(_PART, chunk)[1:]:
+            elif key not in _NOT_AN_OVERRIDE:
+                entry["overrides"][key] = value
+        for order, part in enumerate(re.split(_PART, chunk)[1:]):
+            head_part = part.split(">", 1)[0]
+            subtype = _SUBTYPE.search(head_part)
             slot = None
+            name = None
             for key, value in _BAMBU_META.findall(part):
                 if key == "extruder":
                     slot = _int(value) or slot
+                elif key == "name" and name is None:
+                    name = value
             entry["volume_slots"].append(slot)
+            entry["volumes"].append({"index": order, "name": name, "slot": slot,
+                                     "role": role_of(subtype.group(1) if subtype else None),
+                                     "role_word": subtype.group(1) if subtype else None})
         out.append(entry)
     return out
 
 
+MODEL_PART = "3D/3dmodel.model"
+_BUILD_ITEM = re.compile(r'<item[^>]*objectid="([^"]+)"')
+
+
+def _instances_from_build(tm: ThreeMF) -> dict[str, int]:
+    """How many times each object is actually placed on the plate.
+
+    The build items own this. PrusaSlicer proves it: given a config claiming three
+    instances and a build holding one item, 2.9.6 wrote back a count of one — the
+    config's `instances_count` mirrors the build rather than deciding it. So the
+    items are counted, and the config's number is only a fallback.
+    """
+    text = _read(tm, MODEL_PART)
+    if text is None:
+        return {}
+    counts: dict[str, int] = {}
+    for object_id in _BUILD_ITEM.findall(text):
+        counts[object_id] = counts.get(object_id, 0) + 1
+    return counts
+
+
+def _with_instances(objects: list[dict], counts: dict[str, int]) -> list[dict]:
+    for entry in objects:
+        placed = counts.get(str(entry.get("object_id")))
+        if placed is not None:
+            entry["instances"] = placed
+    return objects
+
+
 def read(tm: ThreeMF) -> dict:
     """Every object's filament assignment, from whichever dialect the file speaks."""
+    counts = _instances_from_build(tm)
     prusa = _read(tm, PRUSA_CONFIG)
     if prusa is not None:
-        return {"available": True, "dialect": DIALECT_PRUSA, "objects": _prusa(prusa)}
+        return {"available": True, "dialect": DIALECT_PRUSA,
+                "objects": _with_instances(_prusa(prusa), counts)}
     bambu = _read(tm, BAMBU_CONFIG)
     if bambu is not None:
-        return {"available": True, "dialect": DIALECT_BAMBU, "objects": _bambu(bambu)}
+        return {"available": True, "dialect": DIALECT_BAMBU,
+                "objects": _with_instances(_bambu(bambu), counts)}
     return {"available": False, "dialect": None, "objects": [],
             "reason": "this project records no per-object filament assignment"}
 
@@ -163,9 +276,26 @@ def compare(before: dict, after: dict) -> dict:
         wanted = source["slot"]
         got = prepared["slot"]
         if wanted is None and source["source"] == DEFAULT:
-            status = PRESERVED if got in (None, 1) else CHANGED
-            detail = ("left on the project's default filament" if status == PRESERVED
-                      else f"the source stated no filament; the copy assigns slot {got}")
+            # "Nobody assigned this" and "somebody chose filament 1" are different
+            # source facts, and PrusaSlicer keeps them apart: given a file with no
+            # extruder metadata it writes none back, and given `extruder="1"` it
+            # writes that explicitly rather than dropping it as redundant. Both
+            # were verified by round-tripping through PrusaSlicer 2.9.6 itself.
+            # Snapmaker Orca says the same thing its own way, writing
+            # `extruder="0"` for an object nobody has assigned.
+            #
+            # So a copy that turns the first into the second has changed what the
+            # project says, even though both happen to print from filament 1 under
+            # today's defaults. Calling that "preserved" is how an assignment
+            # silently becomes a decision Studio made.
+            if got is None:
+                status = PRESERVED
+                detail = "no filament was assigned, and none is assigned in the copy"
+            else:
+                status = CHANGED
+                detail = (f"the source assigns no filament; the copy states slot {got}. "
+                          "Both print from filament 1 today, but the copy now claims a "
+                          "choice the project never made")
         elif wanted == got:
             status = PRESERVED
             detail = (f"slot {wanted} carried over"
@@ -191,6 +321,8 @@ def compare(before: dict, after: dict) -> dict:
                 f"({wanted}) is carried and the rest cannot be represented")
         rows.append(row)
 
+    semantics = _semantic_rows(source_objects, prepared_objects)
+
     for index in range(len(source_objects), len(prepared_objects)):
         prepared = prepared_objects[index]
         rows.append({"object": prepared.get("name") or f"object {index + 1}",
@@ -201,7 +333,130 @@ def compare(before: dict, after: dict) -> dict:
     counts: dict[str, int] = {}
     for row in rows:
         counts[row["status"]] = counts.get(row["status"], 0) + 1
-    return {"available": True, "rows": rows, "counts": counts,
+    return {"available": True, "rows": rows, "semantics": semantics, "counts": counts,
             "all_preserved": all(row["status"] == PRESERVED for row in rows),
             "source_dialect": before.get("dialect"),
             "prepared_dialect": after.get("dialect")}
+
+
+# --- the facts underneath the assignment -------------------------------------
+
+PRESERVED_EXACT = "preserved_exact"
+PRESERVED_SEMANTIC = "preserved_semantic"
+UNSUPPORTED = "unsupported"
+UNVERIFIED = "unverified"
+
+
+def _flattened(source_objects: list[dict], prepared_objects: list[dict]) -> bool:
+    """Did the copy turn instances into separate objects, keeping every placement?
+
+    True only when the arithmetic works out exactly: the prepared side holds one
+    object per source placement, each placed once. Anything else is a genuine
+    difference in count and is reported as one.
+    """
+    placements = sum((entry.get("instances") or 1) for entry in source_objects)
+    if len(prepared_objects) != placements or placements == len(source_objects):
+        return False
+    return all((entry.get("instances") or 1) == 1 for entry in prepared_objects)
+
+
+def _semantic_rows(source_objects: list[dict], prepared_objects: list[dict]) -> list[dict]:
+    """Volumes, roles, instances and overrides, each answered for itself.
+
+    One row saying "objects preserved" is how a copy passes an audit while the
+    structure underneath it has changed. A volume's filament, a modifier's role,
+    how many instances were on the plate and a setting somebody overrode are four
+    separate claims, and each is either carried or it is not.
+
+    Nothing here decides *what to do* about a loss. It reports what happened, in
+    the vocabulary the fidelity card and the tests both read.
+    """
+    rows: list[dict] = []
+    for index, source in enumerate(source_objects):
+        prepared = prepared_objects[index] if index < len(prepared_objects) else None
+        name = source.get("name") or f"object {index + 1}"
+        if prepared is None:
+            continue
+
+        # --- volumes ---------------------------------------------------------
+        source_volumes = source.get("volumes") or []
+        prepared_volumes = prepared.get("volumes") or []
+        stated = [v for v in source_volumes if v.get("slot")]
+        if stated:
+            carried = {v.get("slot") for v in prepared_volumes if v.get("slot")}
+            wanted = {v["slot"] for v in stated}
+            if wanted == carried:
+                status, detail = PRESERVED_EXACT, (
+                    f"every part keeps its filament ({sorted(wanted)})")
+            elif len(wanted) > 1 and len(prepared_volumes) <= 1:
+                # The target format can hold this — a Snapmaker Orca project can
+                # carry many parts on different filaments, seen in files Orca
+                # wrote. What cannot is Studio's own prepare path, which writes
+                # one part per object. That is a limit of this tool, and it is
+                # reported as one rather than as a limit of the format.
+                status, detail = UNSUPPORTED, (
+                    ", ".join(f"part {v['index'] + 1} uses filament {v['slot']}"
+                              for v in stated)
+                    + ". The prepared U1 copy holds one part per object, so it cannot "
+                      "carry both — Studio does not choose one for you")
+            else:
+                status, detail = CHANGED, (
+                    f"the source parts use filaments {sorted(wanted)}; "
+                    f"the copy uses {sorted(carried) or 'none'}")
+            rows.append({"object": name, "index": index, "kind": "volume_filament",
+                         "status": status, "detail": detail})
+
+        # --- roles -----------------------------------------------------------
+        special = [v for v in source_volumes if v.get("role") not in (PART, None)]
+        if special:
+            prepared_roles = [v.get("role") for v in prepared_volumes]
+            for volume in special:
+                kept = volume["role"] in prepared_roles
+                rows.append({
+                    "object": name, "index": index, "kind": "volume_role",
+                    "status": PRESERVED_EXACT if kept else UNSUPPORTED,
+                    "detail": (f"part {volume['index'] + 1} is a {volume['role']}"
+                               + ("" if kept else
+                                  " and the prepared copy has no such part — it is not "
+                                  "carried, and it has not been turned into printable "
+                                  "geometry either"))})
+
+        # --- instances -------------------------------------------------------
+        before, after = source.get("instances"), prepared.get("instances")
+        if before is not None and before > 1 and _flattened(source_objects, prepared_objects):
+            # Prepare writes one object per placement: a source holding one object
+            # placed three times becomes three objects placed once each. The plate
+            # is the same and every copy is still there — what is lost is the
+            # record that they were copies of one thing. That is a real change to
+            # the project's structure and a real preservation of what will print,
+            # so it is neither "exact" nor "changed".
+            rows.append({
+                "object": name, "index": index, "kind": "instances",
+                "status": PRESERVED_SEMANTIC,
+                "detail": (f"{before} copies of this object are all on the plate, but the "
+                           "copy records them as separate objects rather than as copies "
+                           "of one")})
+        elif before is not None and before > 1:
+            rows.append({
+                "object": name, "index": index, "kind": "instances",
+                "status": (PRESERVED_EXACT if after == before else
+                           UNVERIFIED if after is None else CHANGED),
+                "detail": (f"{before} copies on the plate"
+                           if after == before else
+                           "Studio could not count the copies in the prepared file"
+                           if after is None else
+                           f"the source places {before} copies; the copy places {after}")})
+
+        # --- per-object overrides --------------------------------------------
+        overrides = source.get("overrides") or {}
+        if overrides:
+            kept = prepared.get("overrides") or {}
+            for key, value in sorted(overrides.items()):
+                carried = kept.get(key) == value
+                rows.append({
+                    "object": name, "index": index, "kind": "override",
+                    "status": PRESERVED_EXACT if carried else UNSUPPORTED,
+                    "detail": (f"{key} = {value}" if carried else
+                               f"{key} was set to {value} on this object and the "
+                               "prepared copy does not carry it")})
+    return rows

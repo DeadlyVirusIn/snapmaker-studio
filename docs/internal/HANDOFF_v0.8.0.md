@@ -122,8 +122,10 @@ weight ever exists. No internal file of U1Hub's has ever been read.
   does, so such colours have a toolhead **reserved**.
 - **A paint state names filament N — proven by slicing in PrusaSlicer only.**
 - **A PrusaSlicer object whose volumes use different filaments cannot be fully
-  carried**; the audit reports the rest as not representable rather than picking
-  one.
+  carried by Studio** — the audit names each part and its filament and does not
+  pick one. This is a limit of Studio's prepare path, not of the target format:
+  Snapmaker-Orca-family projects hold many parts on different filaments, and two
+  such files are in the test fixtures. See .
 - **The VORON profile describes the 250 mm variant only**, and an absence in the
   published base configuration is not evidence that a particular VORON lacks a
   feature — only a live object list settles that.

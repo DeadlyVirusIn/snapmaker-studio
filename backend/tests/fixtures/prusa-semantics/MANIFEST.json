@@ -1,0 +1,62 @@
+{
+  "_provenance": {
+    "kind": "authored_by_the_slicer",
+    "statement": "Every file here was written by PrusaSlicer 2.9.6 itself. A candidate model config was placed in a genuine PrusaSlicer project and handed back with --export-3mf; what the slicer wrote is what is stored. One variable per file. Nothing was hand-edited afterwards.",
+    "slicer": "PrusaSlicer 2.9.6 (prusa-slicer-console.exe --export-3mf)",
+    "base_project": "backend/tests/fixtures/painted/prusaslicer-2.9.6-painted-cube.3mf",
+    "geometry": "a 12-facet cube \u2014 synthetic, no private model",
+    "captured": "2026-08-25"
+  },
+  "files": {
+    "A_no_assignment_out.3mf": {
+      "note": "no extruder metadata at all \u2014 PrusaSlicer wrote none back",
+      "size_bytes": 2159,
+      "sha256": "ebf72496333a1c70e946f581f212b378d1a5dfe97186927edf8a8aa7cddf6a3f"
+    },
+    "B_object_slot1_out.3mf": {
+      "note": "explicit extruder=1 \u2014 PrusaSlicer kept it explicit rather than dropping it",
+      "size_bytes": 2169,
+      "sha256": "9d4b41480d78488bc271644ec8c44804384f5f3071db6827f7083e8d3871feb3"
+    },
+    "C_object_slot3_out.3mf": {
+      "note": "explicit extruder=3",
+      "size_bytes": 2169,
+      "sha256": "d540dca2636b2286967e9821813faa4085c2224305a643f1e59e1b5c2fb59aa6"
+    },
+    "M_object_slot6_out.3mf": {
+      "note": "extruder=6 on a four-filament machine \u2014 not clamped",
+      "size_bytes": 2169,
+      "sha256": "82e13b6d5d0ce73141ef753667bd101e84c01021f81982d6ea3fead67f1e366d"
+    },
+    "inst3_out.3mf": {
+      "note": "three build items \u2014 instances_count came back as 3",
+      "size_bytes": 2199,
+      "sha256": "091396c79e3b1f83053883f77c571224c30cfbbea9d76772dfcdc99f141cd00a"
+    },
+    "H_two_volumes_different_slots_out.3mf": {
+      "note": "one object, two volumes on filaments 2 and 5",
+      "size_bytes": 2236,
+      "sha256": "cb33563ff00077dc5c5f06a0c8d67e821e4512cba8a67095eedf0e09cf1b1916"
+    },
+    "vt_ParameterModifier_out.3mf": {
+      "note": "a ModelPart and a ParameterModifier in one object",
+      "size_bytes": 2222,
+      "sha256": "2c8cc7b378e28d89b9d7feef54c19d9d6437a09de72df42587eebcf0b9b0a7bd"
+    },
+    "vt_ModifierMesh_out.3mf": {
+      "note": "the old Slic3r role word \u2014 PrusaSlicer rewrote it to ModelPart",
+      "size_bytes": 2200,
+      "sha256": "dbfe22539b14d52fdd114b9c7cca3a58c150062f14abf50a0cc05dd6829e8b6b"
+    },
+    "N_object_and_volume_disagree_out.3mf": {
+      "note": "object extruder=2 with a volume saying 4 \u2014 both kept",
+      "size_bytes": 2186,
+      "sha256": "2919d3f68d983bf26759362d947bdc1c611f25c563f7116f0927979de1c2e357"
+    },
+    "J_per_object_override_out.3mf": {
+      "note": "layer_height, fill_density and support_material set on the object",
+      "size_bytes": 2211,
+      "sha256": "59487bb6d43d43da428a54992cf72f3f67bfb2a626429b832c71f4b9945b9d5a"
+    }
+  }
+}
