@@ -675,6 +675,36 @@ def _paint_shape(result: dict) -> dict:
     }
 
 
+def _paint_dialect_reason(tm: ThreeMF) -> str | None:
+    """Will the target act on this painting, or only carry it?
+
+    Studio copies a facet's paint attribute exactly as the source wrote it, which
+    is right for the file and not the whole story for the person. PrusaSlicer
+    writes `slic3rpe:mmu_segmentation`; Snapmaker Orca reads `paint_color`. Handed
+    a copy in the first dialect, Orca 2.3.5 opened it and saved it back with no
+    facet attributes at all — eight painted facets in, none out. A row saying the
+    painting is byte-identical is true of the two files and is easy to read as a
+    promise about the plate.
+    """
+    from . import painted_color
+
+    for part in sorted(tm.list_parts()):
+        if not part.lower().endswith(".model"):
+            continue
+        try:
+            blob = tm.read_part(part)
+        except Exception:
+            continue
+        if b'slic3rpe:mmu_segmentation="' in blob:
+            return ("this is PrusaSlicer's way of writing painted colour and "
+                    "Snapmaker Orca reads its own; measured against Orca 2.3.5, the "
+                    "copy opens with no painting. The colours are in the file — paint "
+                    "them again in Orca, or keep slicing this one in PrusaSlicer")
+        if b'paint_color="' in blob:
+            return None
+    return None
+
+
 def _painted_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
     from . import painted_color
 
@@ -706,7 +736,8 @@ def _painted_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
         rows.append(_row("Painted colour", PRESERVED_EXACT,
                          detail=f"{len(before)} painted facet(s), byte-identical, "
                                 f"using slot(s) "
-                                f"{', '.join(str(s) for s in original['slots_referenced'])}"))
+                                f"{', '.join(str(s) for s in original['slots_referenced'])}",
+                         reason=_paint_dialect_reason(b)))
         return rows
 
     shape_a, shape_b = _paint_shape(original), _paint_shape(copy)
@@ -737,6 +768,38 @@ def _painted_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
 # The quietest thing a converter can destroy. Studio reassigned every PrusaSlicer
 # object to filament 1 while reporting the geometry byte-identical and nothing
 # removed, which is exactly the shape of failure this audit exists to catch.
+
+def _filament_count(tm: ThreeMF) -> int | None:
+    """How many filaments the prepared copy's profile configures."""
+    settings = _json_or_none(tm, PROJECT_SETTINGS)
+    if not isinstance(settings, dict):
+        return None
+    for key in ("filament_settings_id", "filament_colour", "filament_type"):
+        value = settings.get(key)
+        if isinstance(value, list) and value:
+            return len(value)
+    return None
+
+
+def _slots_beyond_the_profile(source: dict, prepared: ThreeMF) -> list[int]:
+    """Slots the source states that the prepared printer has no filament for.
+
+    Carrying the number is still right — PrusaSlicer round-trips a slot beyond its
+    own filament count, so the source really does say it and a copy saying anything
+    else would be a different project. What is not right is letting "preserved"
+    stand alone: handed a part on filament 5 against a four-filament U1 profile,
+    Snapmaker Orca 2.3.5 discarded the assignment to unassigned rather than
+    clamping it. The same file with the part on filament 4 kept it exactly.
+    """
+    count = _filament_count(prepared)
+    if not count:
+        return []
+    slots = {volume.get("slot")
+             for entry in source.get("objects") or []
+             for volume in (entry.get("volumes") or [])
+             if volume.get("slot")}
+    return sorted(slot for slot in slots if slot > count)
+
 
 def _assignment_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
     from . import assignments
@@ -792,9 +855,18 @@ def _assignment_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
         assignments.UNSUPPORTED: UNSUPPORTED,
         assignments.UNVERIFIED: UNVERIFIED,
     }
+    beyond = _slots_beyond_the_profile(before, b)
     for entry in verdict.get("semantics") or ():
         template = labels.get(entry["kind"], "{object}")
+        reason = None
+        if entry["kind"] == "volume_filament" and beyond:
+            listed = ", ".join(str(slot) for slot in beyond)
+            reason = (f"the copy states filament {listed}, which this printer profile "
+                      f"does not have — it configures {_filament_count(b)}. Measured "
+                      "against Snapmaker Orca 2.3.5, a slot above the count is dropped "
+                      "to unassigned when the project is opened, so set that part's "
+                      "filament in Orca before slicing")
         rows.append(_row(template.format(object=entry["object"]),
                          mapping.get(entry["status"], UNVERIFIED),
-                         detail=entry["detail"]))
+                         detail=entry["detail"], reason=reason))
     return rows
