@@ -319,6 +319,20 @@ try {
     $code = Invoke-Phase "painted"
     Add-Check "Painted colour is shown in the installed build" ($code -eq 0)
 
+    # --- the material provider, through the installed UI ----------------------
+    #
+    # Only when an address was supplied. The default and the restart are what
+    # matter most: an upgrading v0.7.2 user never had a provider setting, so the
+    # app must open with none and contact nothing, and a setting a person typed
+    # has to survive closing the app.
+    if ($SpoolmanUrl) {
+        $code = Invoke-Phase "provider-default"
+        Add-Check "A new install offers the provider setting and configures none" ($code -eq 0)
+
+        $code = Invoke-Phase "provider-configure" $sampleWork $gcodeWork
+        Add-Check "The provider can be configured in the installed app" ($code -eq 0)
+    }
+
     # --- close and prove no orphan -------------------------------------------
     Stop-Tracked
     $script:started = @()
@@ -332,6 +346,12 @@ try {
     $script:started += $again.Id
     Start-Sleep -Seconds 8
     Add-Check "Reopens cleanly" ($null -ne (Get-Process -Id $again.Id -ErrorAction SilentlyContinue))
+
+    if ($SpoolmanUrl) {
+        $code = Invoke-Phase "provider-restored" $sampleWork $gcodeWork
+        Add-Check "Provider settings survive a restart and reach the send decision" ($code -eq 0)
+    }
+
     Stop-Tracked
     $script:started = @()
 }

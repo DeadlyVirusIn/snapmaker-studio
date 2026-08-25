@@ -17,7 +17,7 @@ changed. Snapmaker Orca still does the slicing.**
 Free, open source, and entirely on your computer. No account, no cloud, nothing
 uploaded. Your original file is never modified.
 
-### [▶ Watch it work — 66 seconds](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4) · [⬇ Download for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.2) · [What it is, in 5 minutes](docs/innovation-fund/JUDGE_OVERVIEW.md)
+### [▶ Watch it work — 66 seconds](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4) · [⬇ Download for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.8.0) · [What it is, in 5 minutes](docs/innovation-fund/JUDGE_OVERVIEW.md)
 
 [![Watch the Snapmaker Studio demo](docs/media/demo-poster.jpg)](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/main/docs/media/snapmaker-studio-demo.mp4)
 
@@ -64,23 +64,23 @@ recording, so it also shows what Studio says when it cannot reach one:
 
 ## Download
 
-**[⬇ Download Snapmaker Studio v0.7.2 for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.2)**
+**[⬇ Download Snapmaker Studio v0.8.0 for Windows](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.8.0)**
 — one click, no Python, runs offline. Windows 10/11 x64.
 
-**v0.7.2 is the current stable release** — not a prerelease, so this is also what
+**v0.8.0 is the current stable release** — not a prerelease, so this is also what
 GitHub's [latest release](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/latest)
 points at. Every build ever published is on the
 [Releases page](https://github.com/DeadlyVirusIn/snapmaker-studio/releases).
 
 Verify it before you run it:
 
-- Release: [v0.7.2](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.7.2)
-- Installer: `Snapmaker.Studio_0.7.2_x64-setup.exe`
-- Size: 16,980,253 bytes
-- SHA256: `23298efe76a91dab6c026fab49f48d6c953c89cac587c8f76337e9de2ee47d0c`
+- Release: [v0.8.0](https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.8.0)
+- Installer: `Snapmaker.Studio_0.8.0_x64-setup.exe`
+- Size: 17,011,290 bytes
+- SHA256: `67776cd1db9f620d3c38e656bf831b0f976e0669ce91398caa998e40cf929af6`
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.7.2_x64-setup.exe
+Get-FileHash -Algorithm SHA256 .\Snapmaker.Studio_0.8.0_x64-setup.exe
 ```
 
 The installer is not code-signed yet, so Windows SmartScreen will show "Unknown
@@ -112,11 +112,11 @@ sliced job back**.
 
 | The problem, named exactly | The fix, in a new copy — and where Studio says it can't tell |
 |---|---|
-| ![One object hangs 45 mm past the right edge](docs/screenshots/v0.7.2/problem.jpg) | ![The prepared copy, with what survived and what changed](docs/screenshots/v0.7.2/prepared.jpg) |
-| **Painted colour, read before slicing** | **Ready to send? Blockers, warnings and unknowns kept apart** |
-| ![Which filaments the painting uses, and what that means for four toolheads](docs/screenshots/v0.7.2/painted.jpg) | ![The send verdict, with every unknown named](docs/screenshots/v0.7.2/ready-to-send.jpg) |
+| ![One object hangs 45 mm past the right edge](docs/screenshots/v0.8.0/problem.png) | ![The prepared copy, with what survived and what changed](docs/screenshots/v0.8.0/prepared.png) |
+| **Painted colour, read before slicing** | **What to load — and where Studio says it cannot tell** |
+| ![Which filaments the painting uses, and what that means for four toolheads](docs/screenshots/v0.8.0/painted.png) | ![Each slot named, with the unknowns marked as unknown](docs/screenshots/v0.8.0/what-to-load.png) |
 
-From the v0.7.2 build's own installed-application run, on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission package: [docs/innovation-fund/FINAL_SUBMISSION.md](docs/innovation-fund/FINAL_SUBMISSION.md).
+From the v0.8.0 build's own installed-application run, on the sample project in [`examples/demo_u1_showcase.3mf`](examples/demo_u1_showcase.3mf) — reproduce them with [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md). Submission package: [docs/innovation-fund/FINAL_SUBMISSION.md](docs/innovation-fund/FINAL_SUBMISSION.md).
 
 ## Why this isn't a slicer, a dashboard, or a converter
 
@@ -149,17 +149,17 @@ its licence in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Evidence
 
-Everything below was verified against the published v0.7.2 installer, not
+Everything below was verified against the published v0.8.0 installer, not
 against a development build. Commands, counts and full reports:
 [docs/TRUST_STATUS.md](docs/TRUST_STATUS.md).
 
 | What | Result |
 |---|---|
-| Installed-application acceptance, driven through the real UI | **31/31** |
-| Read-only verification against a real Snapmaker U1 | **26/26** |
+| Installed-application acceptance, driven through the real UI | **34/34** |
+| Read-only verification against a real Snapmaker U1 | **39/39** |
 | Regression tests against genuine OrcaSlicer / BambuStudio / PrusaSlicer projects | **36 tests** |
 | End-to-end pipeline self-check (`u1convert selfcheck`) | **27/27** |
-| Backend / desktop / TypeScript / Rust | 1185 · 306 · clean · clean |
+| Backend / desktop / TypeScript / Rust | 1346 · 321 · clean · clean |
 
 Reproduce any of it yourself:
 [docs/innovation-fund/JUDGE_WALKTHROUGH.md](docs/innovation-fund/JUDGE_WALKTHROUGH.md).
@@ -170,7 +170,34 @@ files produced structurally valid U1 profile copies ([PROOF.md](PROOF.md)); that
 number measures structure, not print success, and the checks above are the
 stronger evidence.
 
-## What's new in v0.7.2 — what a real brush writes
+## What's new in v0.8.0 — the spool, the printer, and the evidence
+
+**Studio can tell you whether a job has enough filament to finish.** A printer
+knows which spool is in a slot and nothing about how much is left on it. If you
+run Spoolman on your network, Studio now reads it — Settings → Materials
+provider, an address, a connection test, and a spool mapped to each slot. Read
+only: Studio never creates a spool and never decrements anyone's remaining
+weight.
+
+How hard it leans on a figure depends on the figure. A short, tracked, recent
+weight stops a send. A stale one, a weight worked out from a spool's declared
+size, and a weight with no date all warn instead. Nothing tracking the spool
+stays unknown — which is still the honest answer on a stock setup.
+
+**Printer intelligence is no longer written around one machine.** The bed and
+toolhead fallbacks were constants named after the U1, and a sliced job was checked
+against the text "u1" rather than against the printer on the other end of the
+wire. That knowledge is now data, and to prove it a second profile ships — a
+**VORON 2.4 250**: one extruder against the U1's four, a 250 mm cube, no object
+exclusion, and nothing reporting loaded filament, so what is loaded comes back
+unknown rather than being invented from a tool count.
+
+**Snapmaker U1 — hardware verified. VORON 2.4 250 — profile verified, hardware
+not tested by this project.** No VORON has been connected to Studio. The U1
+remains the only printer this project has put on a wire.
+
+### And what v0.8.0 brought
+
 
 **A genuine painted project could be reported as partly undecodable.** v0.7.0
 read painting from files Studio's own encoder had written and slicers had echoed
@@ -385,7 +412,7 @@ validation is mandatory and never removed. Full detail in
 
 ## Roadmap
 
-**Shipped (stable, v0.7.2):** the whole loop — read a project, diagnose it,
+**Shipped (stable, v0.8.0):** the whole loop — read a project, diagnose it,
 compare it against the printer, prepare a copy, prove what survived, hand it to
 Snapmaker Orca, then read the sliced G-code back and check what the printer will
 actually execute against the printer as it is right now, with cost from the

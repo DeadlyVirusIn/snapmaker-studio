@@ -551,6 +551,195 @@ else if (phase === "novice") await phaseNovice(page);
     record("The painted sentence is on screen, not below the fold", framed, "");
     await page.waitForTimeout(800);
     await shot(page, "09-painted");
+  } else if (phase === "provider-default") {
+    // A person upgrading from v0.7.2 had no way to configure a provider, so the
+    // upgraded app must open with none — and must not quietly contact anything.
+    await page.evaluate(() => {
+      window.history.pushState({}, "", "/settings");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    await page.waitForTimeout(1500);
+    const stored = await page.evaluate(() => ({
+      kind: localStorage.getItem("materialProviderKind"),
+      url: localStorage.getItem("materialProviderUrl"),
+    }));
+    record("A fresh or upgraded install has no provider configured",
+      stored.kind === null && stored.url === null,
+      `kind=${stored.kind} url=${stored.url}`);
+    const heading = await page.getByText(/Materials provider/i).count();
+    record("The materials provider setting is on screen", heading > 0, `${heading} match(es)`);
+    // With none chosen, the address box is not even offered.
+    const boxes = await page.getByPlaceholder(/spoolman/i).count();
+    record("No address is asked for until a provider is chosen", boxes === 0,
+      `${boxes} address box(es)`);
+
+  } else if (phase === "provider-configure") {
+    // The whole user path, in the installed build: choose, type, test, map.
+    await page.evaluate(() => {
+      window.history.pushState({}, "", "/settings");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    await page.waitForTimeout(1200);
+    await page.getByRole("button", { name: /^Spoolman$/ }).first().click();
+    await page.waitForTimeout(400);
+
+    const box = page.getByPlaceholder(/spoolman/i).first();
+    await box.fill(spoolmanUrl);
+    await page.getByRole("button", { name: /Test connection/i }).first().click();
+    await page.waitForTimeout(4000);
+
+    const said = await page.getByText(/Spoolman answered with/i).count();
+    record("Test connection reports what it found", said > 0, `${said} match(es)`);
+
+    // Two numbers, not one: Spoolman reports a spool's declared size until
+    // something prints from it, so "connected" and "useful" differ.
+    const tracked = await page.getByText(/with a recent tracked weight Studio can use/i).count();
+    record("The report separates spools from usable tracked weights", tracked > 0);
+
+    const options = await page.locator("select option").count();
+    record("The spools Spoolman holds are offered for mapping", options > 1,
+      `${options} option(s)`);
+
+    // Map the short spool into the slot the sample job actually prints from.
+    const shortId = Number(process.env.SNAPSTUDIO_SPOOL_SHORT || 0);
+    const mapped = await page.evaluate(([id]) => {
+      const selects = [...document.querySelectorAll("select")];
+      const target = selects[1] || selects[0];
+      if (!target) return false;
+      const option = [...target.options].find((o) => o.value === String(id));
+      if (!option) return false;
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLSelectElement.prototype, "value").set;
+      setter.call(target, String(id));
+      target.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    }, [shortId]);
+    await page.waitForTimeout(800);
+    const persisted = await page.evaluate(() => ({
+      kind: localStorage.getItem("materialProviderKind"),
+      url: localStorage.getItem("materialProviderUrl"),
+      map: localStorage.getItem("materialProviderSlotMap"),
+      base: localStorage.getItem("materialProviderSlotBase"),
+      seen: localStorage.getItem("materialProviderLastSeen"),
+    }));
+    record("The configuration is written down where a restart can find it",
+      mapped && persisted.kind === JSON.stringify("spoolman") && Boolean(persisted.url)
+        && Boolean(persisted.seen) && (persisted.map ?? "{}") !== "{}",
+      `map=${persisted.map} base=${persisted.base}`);
+
+  } else if (phase === "provider-restored") {
+    // After a restart: the settings came back, and they reach the send decision.
+    const persisted = await page.evaluate(() => ({
+      kind: localStorage.getItem("materialProviderKind"),
+      url: localStorage.getItem("materialProviderUrl"),
+      map: localStorage.getItem("materialProviderSlotMap"),
+    }));
+    record("The provider configuration survived a restart",
+      persisted.kind === JSON.stringify("spoolman") && Boolean(persisted.url)
+        && (persisted.map ?? "{}") !== "{}",
+      `kind=${persisted.kind} map=${persisted.map}`);
+
+    const address = JSON.parse(persisted.url);
+
+    // Enough: a tracked, recent weight well above what the job needs.
+    const enoughId = Number(process.env.SNAPSTUDIO_SPOOL_ENOUGH || 0);
+    const enough = await callRoute(page, "/send_check", {
+      path: gcodePath, host: "", port: 7125,
+      spoolman: address, slot_map: { "2": enoughId }, slot_base: 1 });
+    const enoughSlot = (enough.body?.materials?.slots ?? []).find((s) => s.needed);
+    record("A tracked, recent weight above the job's need reads as enough",
+      ["enough", "probably_enough"].includes(enoughSlot?.sufficiency?.verdict),
+      `${enoughSlot?.label}: ${enoughSlot?.sufficiency?.verdict}`);
+
+    // Short, but only just. The sample job needs a few tenths of a gram, and a
+    // tracked weight drifts by more than that between corrections — so a
+    // shortfall inside that margin warns and must not refuse. This is the check
+    // that keeps Studio from stopping a print over rounding.
+    const shortId = Number(process.env.SNAPSTUDIO_SPOOL_SHORT || 0);
+    const marginal = await callRoute(page, "/send_check", {
+      path: gcodePath, host: "", port: 7125,
+      spoolman: address, slot_map: { "2": shortId }, slot_base: 1 });
+    const marginalSlot = (marginal.body?.materials?.slots ?? []).find((s) => s.needed);
+    record("A shortfall inside the drift of the tracking warns, never refuses",
+      marginalSlot?.sufficiency?.verdict === "probably_short"
+        && marginal.body?.counts?.blocker === 0,
+      `${marginalSlot?.sufficiency?.verdict}, ${marginal.body?.counts?.blocker} blocker(s)`);
+
+    // And a shortfall well outside it does refuse. A job that needs 87 g against
+    // a spool with a tenth of a gram left is the sentence worth stopping for, so
+    // it is proved here rather than assumed from the smaller case.
+    const bigJob = gcodePath.replace(/\.gcode$/i, "_big.gcode");
+    writeFileSync(bigJob, `; HEADER_BLOCK_START
+; generated by Snapmaker Orca 2.3.4 on 2026-08-25 at 10:00:00
+; total layer number: 12
+; max_z_height: 2.40
+; HEADER_BLOCK_END
+; EXECUTABLE_BLOCK_START
+PRINT_START
+T1
+;LAYER_CHANGE
+;Z:0.2
+G1 X10 Y10 Z0.2 F1200
+PRINT_END
+; EXECUTABLE_BLOCK_END
+
+; filament used [mm] = 0.00, 29000.00, 0.00, 0.00
+; filament used [g] = 0.00, 87.00, 0.00, 0.00
+; total filament used [g] = 87.00
+; total layers count = 12
+
+; CONFIG_BLOCK_START
+; filament_type = PLA;PLA;PLA;PLA
+; layer_height = 0.2
+; nozzle_diameter = 0.4,0.4,0.4,0.4
+; printable_area = 0.5x1,270.5x1,270.5x271,0.5x271
+; printer_model = Snapmaker U1
+; CONFIG_BLOCK_END
+`);
+    const short = await callRoute(page, "/send_check", {
+      path: bigJob, host: "", port: 7125,
+      spoolman: address, slot_map: { "2": shortId }, slot_base: 1 });
+    const shortSlot = (short.body?.materials?.slots ?? []).find((s) => s.needed);
+    record("A tracked, recent shortfall blocks the send",
+      shortSlot?.sufficiency?.verdict === "insufficient"
+        && short.body?.counts?.blocker > 0,
+      `${shortSlot?.sufficiency?.verdict}, ${short.body?.counts?.blocker} blocker(s)`);
+
+    // Derived: Spoolman reports a spool's declared size until something prints
+    // from it. That may warn; it may never refuse.
+    const derivedId = Number(process.env.SNAPSTUDIO_SPOOL_DERIVED || 0);
+    const derived = await callRoute(page, "/send_check", {
+      path: gcodePath, host: "", port: 7125,
+      spoolman: address, slot_map: { "2": derivedId }, slot_base: 1 });
+    const derivedSlot = (derived.body?.materials?.slots ?? []).find((s) => s.needed);
+    record("A weight derived from a spool's declared size never blocks",
+      derivedSlot?.sufficiency?.trusted === false
+        && derived.body?.counts?.blocker === 0,
+      `trusted=${derivedSlot?.sufficiency?.trusted}, ${derived.body?.counts?.blocker} blocker(s)`);
+
+    // Conflict: the mapping says PETG where the job was sliced for PLA. With no
+    // printer to see the slot, that is the user's mapping and is said as such.
+    const conflictId = Number(process.env.SNAPSTUDIO_SPOOL_CONFLICT || 0);
+    const conflict = await callRoute(page, "/material_plan", {
+      path: gcodePath, host: "", port: 7125,
+      spoolman: address, slot_map: { "2": conflictId }, slot_base: 1 });
+    const conflictSlot = (conflict.body?.slots ?? []).find((s) => s.needed);
+    record("A material the mapping disagrees about is reported, not resolved",
+      conflictSlot?.state === "wrong_material"
+        && conflictSlot?.printer_confirmed === false,
+      `${conflictSlot?.state}, printer_confirmed=${conflictSlot?.printer_confirmed}`);
+
+    // And turning it off puts the honest unknown back. With nothing loaded and
+    // nothing tracking a spool, the slot carries no sufficiency claim at all —
+    // which is the honest answer rather than a verdict dressed as one.
+    const off = await callRoute(page, "/send_check",
+      { path: gcodePath, host: "", port: 7125 });
+    const offSlot = (off.body?.materials?.slots ?? []).find((s) => s.needed);
+    record("Choosing no provider restores the honest unknown",
+      offSlot?.state === "unknown" && offSlot?.remaining_g == null
+        && off.body?.counts?.blocker === 0,
+      `state=${offSlot?.state} remaining=${offSlot?.remaining_g}`);
+
   } else if (phase === "goto-compatibility") {
     await page.evaluate(() => {
       window.history.pushState({}, "", "/compatibility");

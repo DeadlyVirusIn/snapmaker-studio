@@ -5,40 +5,51 @@ Honest, current verification state for the current release. A release is only ma
 published installer, and — from beta.24 onward — read-only verification against a
 real Snapmaker U1 have all passed and are recorded here.
 
-> **Unreleased work on `main`, after v0.7.2.** The printer-intelligence layer now
-> reads a printer profile rather than assuming a U1, and a second machine — a
-> VORON 2.4 250 — was run through the same path as an architecture proof. That is
-> **not a release**, has no installer, and is not accepted here; v0.7.2 remains the
-> current release and everything below still describes it. The second printer is
-> **profile verified — hardware not tested by this project**, and no VORON has
-> been connected to Studio. See [PRINTER_COMPATIBILITY.md](PRINTER_COMPATIBILITY.md)
-> and `internal/SECOND_PRINTER_PROOF.md`. The U1's own hardware verification is
-> unchanged at 26/26 against v0.7.2 and was not re-run for this work.
->
-> **Also unreleased: material providers are reachable.** Studio's engine has read
-> Spoolman for several releases and nothing in the app ever sent it an address, so
-> the capability was real and no user could use it. Settings now carries a
-> materials provider section, and running a real Spoolman locally found three
-> defects the mocked tests had agreed with, plus two sufficiency rules that could
-> refuse a send on evidence too weak to support one. See
-> [MATERIAL_PROVIDERS.md](MATERIAL_PROVIDERS.md) and
-> `internal/PROVIDER_AUDIT.md`. Installed-build acceptance for this work is
-> **31/31** against a locally built v0.7.2 installer including the in-place
-> upgrade from v0.7.1 — that is an installer built on this machine from `main`,
-> **not** the published v0.7.2 asset, and it is not a release.
->
-> **`main` is hardware re-verified — as a development build, not as a release.**
-> The read-only harness was run on 2026-08-25 against a physical Snapmaker U1
-> (Moonraker 1.6.0) using an installer built locally from `2d8d899`: **39/39**,
-> with every one of v0.7.2's own 26 hardware facts unchanged and thirteen checks
-> added for the paths the two unreleased sprints introduced. Report:
-> [internal/hardware-main-2d8d899.json](internal/hardware-main-2d8d899.json).
->
-> That installer is **not** the published v0.7.2 asset — it carries the same
-> version string because the next release has not been cut, and its hash and size
-> differ. This run verifies a commit, not a version, and does not replace the
-> hardware gate a real release still has to pass against its own final installer.
-> v0.7.2's 26/26 remains evidence about v0.7.2 alone.
+## v0.8.0 — ACCEPTED
+
+**The spool, the printer, and the evidence.** Everything below ran against *this
+installer* — the exact asset on the release page, verified by SHA256. Canonical
+values: [RELEASE_METADATA.md](RELEASE_METADATA.md). This release's own immutable
+snapshot: [internal/evidence/0.8.0.json](internal/evidence/0.8.0.json).
+
+| Gate | Result |
+|---|---|
+| Backend / desktop suites | backend **1346 passed / 4 skipped**, desktop **321** |
+| `u1convert selfcheck` | **27/27** |
+| Installed-application acceptance | **34/34**, including the in-place upgrade from the published v0.7.2 |
+| Real Snapmaker U1, read-only | **39/39** |
+| `tsc`, `cargo check`, production build | clean |
+
+### What is verified, and what is not
+
+**Snapmaker U1 — hardware verified.** A physical U1 (Moonraker 1.6.0) answered
+this release's read-only harness: four toolheads, a 271 × 335 × 281 mm reported
+travel envelope, 196 firmware objects, and all four loaded filament slots read
+correctly and recorded as the machine's own observation. Full report:
+[internal/hardware-0.8.0.json](internal/hardware-0.8.0.json).
+
+**VORON 2.4 250 — profile verified; hardware not tested by this project.** No
+VORON has ever been connected to Studio. Its profile is derived from the
+configuration Klipper itself publishes for that machine, and it was run through
+the same printer-intelligence code the U1 uses. That is architectural evidence,
+not hardware evidence, and the two are not interchangeable. See
+[PRINTER_COMPATIBILITY.md](PRINTER_COMPATIBILITY.md) and
+`internal/SECOND_PRINTER_PROOF.md`.
+
+**Material providers.** Spoolman is readable and configurable in the app. A short,
+tracked, recent remaining weight can block a send; a stale one, a figure derived
+from a spool's declared size, and a figure with no date all warn instead; nothing
+tracking the spool stays unknown. Provider addresses are restricted to the user's
+own network before any request is opened. Audit: `internal/PROVIDER_AUDIT.md`,
+user-facing behaviour: [MATERIAL_PROVIDERS.md](MATERIAL_PROVIDERS.md).
+
+### Defects fixed before this release
+
+Five, all found while making provider support reachable, and **none of them could
+affect v0.7.2** — that release had no way to configure a provider at all. A
+provider address reached the network layer unvalidated; a stale weight and a
+derived weight could each refuse a send; archived Spoolman spools were invisible;
+and a stock printer's own filament reading carried no provenance.
 
 ## v0.7.2 — ACCEPTED
 

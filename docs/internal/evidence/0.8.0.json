@@ -26,11 +26,13 @@
     "size_bytes": 17011290,
     "url": "https://github.com/DeadlyVirusIn/snapmaker-studio/releases/tag/v0.8.0"
   },
-  "schema_version": "evidence/1",
+  "released": "2026-08-25",
+  "schema_version": "evidence-snapshot/1",
   "screenshots_dir": "docs/screenshots/v0.8.0",
   "selfcheck": {
     "passed": 27,
     "total": 27
   },
+  "source": "recorded when this release was published",
   "version": "0.8.0"
 }

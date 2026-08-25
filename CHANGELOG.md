@@ -6,6 +6,57 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-25
+
+**The spool, the printer, and the evidence.**
+
+### Added
+- **Spoolman as a materials provider, configurable in the app.** Settings gains a
+  Materials provider section: choose Spoolman, give the address of the machine on
+  your network that runs it, test the connection, and map a spool to each slot.
+  Studio then answers whether a job has enough filament to finish. Read-only —
+  Studio never creates a spool and never decrements anyone's remaining weight.
+- **Slot numbering is stated, not guessed.** A person counts printer slots 1–4 and
+  the G-code counts them 0–3; the app asks which you mean.
+- **Remaining-filament sufficiency with provenance and freshness.** A short,
+  tracked, recent figure blocks a send. A stale one, a figure derived from a
+  spool's declared size, and a figure with no date all warn instead. Nothing
+  tracking the spool stays unknown.
+- **Printer profiles.** Build volume, tool count, what a machine reports about its
+  own materials and what it is known not to report, each with a source and a
+  verification level. Live evidence from a connected printer always wins over a
+  profile, and a disagreement is reported rather than resolved.
+- **A second printer profile — VORON 2.4 250 — profile verified, hardware not
+  tested by this project.** Derived from the configuration Klipper publishes for
+  that machine. The Snapmaker U1 remains the only printer verified on physical
+  hardware.
+- Printer Hub shows which machine Studio identified and on what evidence.
+
+### Changed
+- Printer intelligence reads the printer instead of assuming a U1: the bed and
+  toolhead fallbacks, the sliced-job machine comparison, the firmware summary, the
+  discovery hint and the placement wording are all driven by profile data or by
+  what the machine reported.
+- Design and placement answers name the printer they were measured against, so a
+  profile figure never reads as a reading from your machine.
+- Preparing a copy is unchanged: Studio still prepares Snapmaker U1 projects for
+  Snapmaker Orca.
+
+### Fixed
+These were found while making provider support reachable. None of them could
+affect v0.7.2, which had no way to configure a provider at all.
+- A provider address was passed straight to the network layer, so a `file://`
+  address opened a local file and a public web address was fetched. Addresses are
+  now validated as being on the user's own network before anything is opened.
+- A stale tracked weight, and a weight derived from a spool's declared size, could
+  each refuse a send. Both now warn.
+- Archived Spoolman spools were invisible, so a slot mapped to one reported "no
+  such spool" instead of "that spool is archived".
+- A spool's remaining weight was labelled as tracked whenever Spoolman reported
+  one, including for spools nothing had ever printed from.
+- On a printer that reports its own filament, the slot is now recorded as
+  confirmed by the machine rather than carrying no provenance.
+
 ## [0.7.2] - 2026-08-25
 
 **A Prusa object's filament survives the crossing.**
