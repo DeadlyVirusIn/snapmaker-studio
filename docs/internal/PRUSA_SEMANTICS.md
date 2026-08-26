@@ -499,7 +499,7 @@ identical to its own control to the last digit, in both slicers.
 
 | Source key | What PrusaSlicer means by it | Orca's key and level | Recognised? | Behaviour equivalent? | Classification |
 |---|---|---|---|---|---|
-| `layer_height` | this object's layers are this tall | `layer_height`, on `<object>` | yes — nonsense is dropped | yes — same layer count, same Z step | **EXACT** |
+| `layer_height` | this object's layers are this tall | `layer_height`, on `<object>` | yes — nonsense is dropped | yes — same layer count, same Z step, **on a single-filament plate only** | **EXACT**, conditional |
 | `fill_density` | this object's sparse infill is this dense | `sparse_infill_density`, on `<object>` | **only after the rename** — the source's word is dropped like nonsense | yes — infill multiplies on that object alone | **PRESERVED_SEMANTIC** |
 | `support_material` | generate support for this object | `enable_support`, on `<object>` | **only after the rename** | yes — support appears under that object alone | **PRESERVED_SEMANTIC** |
 
@@ -507,6 +507,12 @@ Everything else a source object can override stays **NOT_ESTABLISHED**, is not
 carried, and is reported by name.
 
 ### The bug this sprint found on the way
+
+> **Corrected 2026-08-26.** The rule stated below — that a foreign `Application`
+> causes this — is too broad. It needs a foreign name **and** a flat root model,
+> and only the case-sensitive substring `PrusaSlicer` counts. See *What Snapmaker
+> Orca reads, and what it only stores* at the end of this document. The fix that
+> shipped is unchanged and still correct; only the explanation was wrong.
 
 Studio's prepared copy of a project it does not split keeps the source's root model
 verbatim — including `<metadata name="Application">PrusaSlicer-2.9.6</metadata>`.
@@ -547,3 +553,182 @@ nothing is left exactly as it is.
   diameter** — 0.32 to 0.40 mm on the 0.4 nozzle. Orca refuses above the nozzle and
   accepts 0.3; the band between was not sliced. Studio's gate is the nozzle,
   because the nozzle is the refusal that was measured.
+
+## What Snapmaker Orca reads, and what it only stores — measured 2026-08-26
+
+Preserving a fact and the slicer using it are different things, and the previous
+instalment found that out the hard way: a prepared copy stated an object's
+filament correctly, the fidelity audit compared the two files and called it
+preserved, and Orca — which had decided the file was foreign — loaded the geometry
+and nothing else. The file was right and the print was wrong.
+
+This section is that question asked of every load-bearing fact, one variable per
+file, each answered from the project Orca saved back rather than from a warning.
+
+### The Application gate — the previous instalment's rule was too broad
+
+It said: *a foreign `Application` makes Orca load geometry only*. Measured
+properly, the downgrade needs **two** things at once, and neither alone does it.
+
+On a copy whose root model is **flat** — objects holding their meshes inline,
+which is the shape Studio's verbatim path produces:
+
+| `Application` | Orca |
+|---|---|
+| `SnapmakerStudio-u1convert` | full project |
+| `PrusaSlicer-2.9.6` | **geometry only** |
+| `PrusaSlicer` | **geometry only** |
+| `MyTool (exported from PrusaSlicer)` | **geometry only** |
+| `prusaslicer-2.9.6` (lower case) | full project |
+| `SuperSlicer-2.5.59` | full project |
+| `Slic3r-1.3.0` | full project |
+| `SnapstudioNonsense-9.9.9` (invented) | full project |
+| `BambuStudio-2.3.5` | full project |
+| `OrcaSlicer-2.4.2` | full project |
+| empty | full project |
+| absent | full project |
+
+So it is not "a foreign name". It is the **case-sensitive substring
+`PrusaSlicer`**, anywhere in the value. An invented name is fine.
+
+And on a copy whose root model uses **components into `3D/Objects/`** — the shape
+Studio's multi-part path produces — `Application = PrusaSlicer-2.9.6` opened as a
+**full project** with every name, assignment and per-object setting intact.
+
+Crossing the two:
+
+| root model | `Application` | slic3rpe traces | Orca |
+|---|---|---|---|
+| flat | `PrusaSlicer-2.9.6` | present | geometry only |
+| flat | `PrusaSlicer-2.9.6` | **all removed** | **geometry only** |
+| components | `PrusaSlicer-2.9.6` | **added** | **full project** |
+| components | `PrusaSlicer-2.9.6` | absent | full project |
+
+Adding the `BambuStudio` namespace, adding `BambuStudio:3mfVersion`, and removing
+PrusaSlicer's own namespace all failed to lift it on the flat file. The fix that
+shipped — never claiming to be PrusaSlicer — is still exactly right, and now for
+the reason it actually works.
+
+### The gates
+
+**Required.** Without these the project is not read as a project:
+
+| | what happens without it |
+|---|---|
+| `Metadata/model_settings.config` | **geometry only** — names become `Object_1`…, every object's filament reads 0, every per-object setting is gone |
+| the same file, malformed | **rejected** — *"Snapmaker Orca error"*, nothing loads at all |
+| `3D/_rels/3dmodel.model.rels` | remove one object file's relationship and that object survives **by name with zero parts**: its geometry and its painting are gone, 16 painted facets down to 8, 40 triangles down to 27, and Orca says nothing |
+| `Application` not naming PrusaSlicer, on a flat root model | as above |
+
+**Optional.** Absent or wrong, and nothing changed:
+
+- `BambuStudio:3mfVersion` — absent, `not-a-number`, and `99` all opened as full projects
+- `requiredextensions="p"` — removed, full project
+
+**Reconstructed.** Orca rebuilds these from something else, so preserving them
+byte-for-byte is not what makes them true:
+
+| | measurement |
+|---|---|
+| `Metadata/slice_info.config` | removed *and* deliberately falsified (wrong types, wrong colours, wrong count): both opened identically, and Orca wrote an **empty** one back every time — including from the untouched control |
+| `filament_maps` | written as `1` against five filaments; Orca wrote back `1 1 1 1 1` |
+| `<model_instance>` records | all removed; Orca wrote back one per object |
+| `<assemble>` | Studio writes none; Orca writes one entry per object, from the build transforms |
+| `printer_model` | set to `Bambu Lab X1 Carbon` with everything else Snapmaker; came back `Snapmaker U1`, re-derived from `printer_settings_id` |
+| object and component **ids** | renumbered on every save — 5/6/7 became 3/5/7 — while the transforms hanging off them came back unchanged |
+
+**Consumed.** The file's value is honoured:
+
+- `printer_settings_id`, `printer_variant`, `nozzle_diameter` — a 0.6-nozzle preset was kept
+- `filament_colour` — `#112233FF` and friends came back exactly
+- object and part `extruder`, object names, part `subtype`, part matrices, painting, per-object overrides
+- `print_settings_id`
+
+### The one that was silently discarding Studio's work
+
+A project names a process preset and then lists that preset's values inline.
+Studio assumed the inline values were the ones used. **They are not.**
+
+| project_settings said | Orca kept |
+|---|---|
+| `layer_height="0.28"`, deviation **declared** | **0.28** |
+| `layer_height="0.28"`, deviation **not declared** | **0.2** — the preset's |
+
+The declaration is `different_settings_to_system`, and its shape is Orca's own.
+Three values changed through Orca's own Global process panel and saved back:
+
+```json
+"different_settings_to_system": [
+    "initial_layer_print_height;layer_height;seam_gap", "", "", "", "", ""
+]
+```
+
+Entry 0 is the **process** preset, semicolon-joined and sorted. Entries 1..N are
+the filaments, one each. The last is the printer. The list was six long for a
+four-filament project and seven for a five-filament one.
+
+The category matters, measured both ways: `nozzle_temperature` named in entry 0
+was ignored and the value reset from 230 to 215; the same key named in the
+filament entries was kept at 230. Naming a key Orca does not know costs nothing —
+it keeps the real deviations and drops the invented name from what it writes back.
+
+**What this was costing.** `u1_identity.normalize_presets` blanked every entry to
+clear Orca's "Customized Preset" notice, and its comment said *"the customized
+values themselves stay in the project (intent preserved)"*. Measured on a copy
+Studio itself produced in optimize mode:
+
+| Studio wrote | before the fix | after |
+|---|---|---|
+| `prime_tower_width` 60 | **30** | 60 |
+| `prime_tower_brim_width` 2 | **5** | 2 |
+| `brim_type` `no_brim` | **`auto_brim`** | `no_brim` |
+| `exclude_object` 1 | **0** | 1 |
+| `flush_multiplier` 0.2 | 0.2 | 0.2 |
+
+`brim_type` and `exclude_object` are the shipping Snapmaker-Orca **compatibility
+fixes**, applied on every Prepare in every mode and reported as applied. They had
+never reached the slicer. Neither had any of optimize mode.
+
+Studio now declares exactly the keys it changed, so a project that deviates in
+nothing still imports without a notice. Its own U1 template used to state
+`gap_fill_target: nowhere` where the preset it names says `topbottom` — undeclared,
+so `nowhere` had never reached a print. The template now states `topbottom`, which
+is what every Studio-prepared project has always printed with.
+
+### A per-object layer height and a prime tower
+
+The previous instalment proved a per-object `layer_height` reaches the slicer and
+behaves, on a two-cube single-filament plate. On a multi-filament plate it does
+not, and the plate does not slice at all:
+
+| plate | override on one object | sliced |
+|---|---|---|
+| two filaments | none | **yes** |
+| two filaments | `layer_height` | **no** |
+| one filament | `layer_height` | **yes** |
+| two filaments | `sparse_infill_density` | **yes** |
+
+Orca says so by name and greys out Slice and Print:
+
+> **Error: A prime tower requires that all objects have the same layer height.**
+> *Jump to [B] (initial_layer_print_height)*
+
+Carrying it would hand somebody a multi-colour plate that cannot be sliced, which
+is worse than the object printing at the plate's layer height. So a per-object
+layer height crosses only onto a plate that prints with one filament, and is
+reported by name otherwise. Infill and support are unaffected.
+
+The count that matters is the filaments the plate **prints with**, not the slots
+it declares: every U1 project declares at least four, and the single-filament case
+above declared four too.
+
+### Still not established
+
+- **`[Content_Types].xml` and the package-level `_rels/.rels`** were not varied
+  one at a time.
+- **Which individual `project_settings` keys matter** beyond the ones above. The
+  mechanism is settled — declared or reset — so the question is now which values
+  Studio should be stating at all, not whether they arrive.
+- **`layer_height` between the profile's `max_layer_height` and the nozzle
+  diameter**, 0.32 to 0.40 mm on the 0.4 nozzle. Unchanged from the last
+  instalment.
