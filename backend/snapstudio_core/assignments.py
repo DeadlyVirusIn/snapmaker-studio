@@ -126,9 +126,20 @@ def _read(tm: ThreeMF, part: str) -> str | None:
         return None
 
 
+def _own_body(chunk: str) -> str:
+    """One object's own text, stopping where the object does.
+
+    Splitting on `<object` alone runs the last object to the end of the file, so
+    an object with no parts swallowed the `<plate>` block that follows it and
+    `plater_id` arrived as a setting somebody had overridden on that object. The
+    closing tag is the boundary; a chunk without one is the whole of what is left.
+    """
+    return chunk.split("</object>", 1)[0]
+
+
 def _prusa(text: str) -> list[dict]:
     out = []
-    chunks = re.split(_OBJECT, text)[1:]
+    chunks = [_own_body(c) for c in re.split(_OBJECT, text)[1:]]
     for position, chunk in enumerate(chunks):
         head = chunk.split(">", 1)[0]
         found = _ID.search(head)
@@ -175,7 +186,7 @@ def _prusa(text: str) -> list[dict]:
 
 def _bambu(text: str) -> list[dict]:
     out = []
-    for position, chunk in enumerate(re.split(_OBJECT, text)[1:]):
+    for position, chunk in enumerate(_own_body(c) for c in re.split(_OBJECT, text)[1:]):
         head = chunk.split(">", 1)[0]
         found = _ID.search(head)
         entry = {"object_id": found.group(1) if found else str(position + 1),
@@ -497,15 +508,79 @@ def _semantic_rows(source_objects: list[dict], prepared_objects: list[dict]) -> 
                            f"the source places {before} copies; the copy places {after}")})
 
         # --- per-object overrides --------------------------------------------
-        overrides = source.get("overrides") or {}
-        if overrides:
-            kept = prepared.get("overrides") or {}
-            for key, value in sorted(overrides.items()):
-                carried = kept.get(key) == value
+        rows.extend(_override_rows(source, prepared, name, index))
+    return rows
+
+
+def _override_rows(source: dict, prepared: dict, name: str, index: int) -> list[dict]:
+    """One row per per-object setting, on both sides of the crossing.
+
+    The source key and the target key are not the same word for two of the three
+    settings Studio carries, so asking "is the source's key still there" answers
+    the wrong question: it reports a carried setting as lost. Each row states
+    what the source said, what the copy says, and in which vocabulary.
+
+    A setting the copy states that the source never did is its own failure and
+    gets its own row. A prepared copy inventing a per-object setting would change
+    what prints, and no audit should let that pass as "preserved".
+    """
+    from . import overrides as object_overrides
+
+    source_overrides = source.get("overrides") or {}
+    kept = dict(prepared.get("overrides") or {})
+    rows: list[dict] = []
+
+    for entry in object_overrides.plan(source_overrides)["rows"]:
+        source_key, source_value = entry["source_key"], entry["source_value"]
+        target_key = entry["target_key"]
+        found = kept.pop(target_key, None) if target_key else None
+        if not entry["carried"]:
+            # Studio decided this one cannot cross. If the copy carries it
+            # anyway, something wrote a value this module refused — a fault, not
+            # a bonus.
+            if found is not None:
                 rows.append({
                     "object": name, "index": index, "kind": "override",
-                    "status": PRESERVED_EXACT if carried else UNSUPPORTED,
-                    "detail": (f"{key} = {value}" if carried else
-                               f"{key} was set to {value} on this object and the "
-                               "prepared copy does not carry it")})
+                    "status": CHANGED,
+                    "detail": (f"{source_key} = {source_value} was not carried, but the "
+                               f"copy states {target_key} = {found}")})
+                continue
+            rows.append({
+                "object": name, "index": index, "kind": "override",
+                "status": UNSUPPORTED,
+                "detail": (f"{source_key} = {source_value} is set on this object and the "
+                           f"prepared copy does not carry it: {entry['why']}")})
+            continue
+        wanted = entry["target_value"]
+        if found is None:
+            rows.append({
+                "object": name, "index": index, "kind": "override",
+                "status": CHANGED,
+                "detail": (f"{source_key} = {source_value} should have crossed as "
+                           f"{target_key} = {wanted}, and the copy states nothing")})
+        elif found != wanted:
+            rows.append({
+                "object": name, "index": index, "kind": "override",
+                "status": CHANGED,
+                "detail": (f"{source_key} = {source_value} crossed as {target_key} = "
+                           f"{found}, and should have been {wanted}")})
+        elif entry["kind"] == object_overrides.EXACT:
+            rows.append({
+                "object": name, "index": index, "kind": "override",
+                "status": PRESERVED_EXACT,
+                "detail": f"{source_key} = {wanted}, in the same words on both sides"})
+        else:
+            rows.append({
+                "object": name, "index": index, "kind": "override",
+                "status": PRESERVED_SEMANTIC,
+                "detail": (f"{source_key} = {source_value} crossed as {target_key} = "
+                           f"{wanted} — Snapmaker Orca's own word for "
+                           f"{entry['meaning']}")})
+
+    for target_key, value in sorted(kept.items()):
+        rows.append({
+            "object": name, "index": index, "kind": "override",
+            "status": CHANGED,
+            "detail": (f"the copy sets {target_key} = {value} on this object and the "
+                       "source never did")})
     return rows
