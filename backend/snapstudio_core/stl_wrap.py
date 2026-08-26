@@ -32,6 +32,80 @@ def effective_colours(colours) -> list:
     while len(c) < MIN_FILAMENTS:
         c.append(PAD_COLOUR)
     return c
+
+
+#: How many logical filaments a prepared project may declare. Snapmaker Orca
+#: keeps a part on slot N whenever N is within the project's declared filament
+#: count, and discards the assignment to unassigned when it is not — measured
+#: across a ten-cell matrix against Orca 2.3.5: with four declared, slots 1 and 4
+#: survived and 5 and 6 came back 0; with five declared, 5 survived and 6 did not;
+#: with six declared, all of 4, 5 and 6 survived. The four physical nozzles never
+#: changed, and neither did the bed. Logical filaments and toolheads are separate
+#: things, and this is the logical one.
+MAX_DECLARED_FILAMENTS = 16
+
+
+def slots_referenced(src, model: bytes) -> int:
+    """The highest logical filament slot anything in the source refers to.
+
+    Object assignments, the volumes underneath them and painted colour all name
+    slots, and a prepared copy that declares fewer than the largest of them hands
+    Snapmaker Orca a reference it will silently drop.
+    """
+    from . import multipart, painted_color
+
+    highest = 0
+    for stated in (source_assignments(src) or {}).values():
+        for slot in [stated.get("extruder")] + list(stated.get("volume_extruders") or []):
+            if isinstance(slot, int) and slot > highest:
+                highest = slot
+
+    config = "Metadata/Slic3r_PE_model.config"
+    if src.has_part(config):
+        try:
+            volumes_by_object = multipart.source_volumes(
+                src.read_part(config).decode("utf-8", "ignore"))
+        except Exception:
+            volumes_by_object = {}
+        for volumes in volumes_by_object.values():
+            for volume in volumes:
+                slot = volume.get("slot")
+                if isinstance(slot, int) and slot > highest:
+                    highest = slot
+
+    try:
+        painted = painted_color.read_container(src)
+    except Exception:
+        painted = {}
+    for slot in painted.get("slots_referenced") or ():
+        if isinstance(slot, int) and slot > highest:
+            highest = slot
+
+    return min(highest, MAX_DECLARED_FILAMENTS)
+
+
+def declared_colours(colours, needed: int) -> list:
+    """The colour list a copy must declare to keep every slot the source names.
+
+    The extra entries are padding and say so: the source gave no colour, vendor or
+    material for them, and inventing one would be a claim about a spool nobody
+    mentioned. What they buy is that the assignment survives being opened.
+    """
+    out = effective_colours(colours)
+    while len(out) < needed:
+        out.append(PAD_COLOUR)
+    return out
+
+
+def _filament_maps(count: int) -> str:
+    """One entry per declared filament, all in the first group.
+
+    Snapmaker Orca writes `1 1 1 1` for four filaments and `1 1 1 1 1 1` for six;
+    a single `1` against six filaments is a shorter statement than the project it
+    describes.
+    """
+    return " ".join(["1"] * max(1, count))
+
 _PROD_NS = ('xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" '
             'xmlns:BambuStudio="http://schemas.bambulab.com/package/2021" '
             'xmlns:p="http://schemas.microsoft.com/3dmanufacturing/production/2015/06" '
@@ -202,7 +276,8 @@ def wrap_stl(stl_path, colors=DEFAULT_COLORS, profile_name: str = "snapmaker_u1"
 # ---- geometry-only / foreign-slicer 3MF (no project_settings.config) ----
 
 def build_model_settings_multi(object_ids, name: str = "object", extruder: int = 1,
-                               assignments: dict | None = None) -> bytes:
+                               assignments: dict | None = None,
+                               filaments: int = MIN_FILAMENTS) -> bytes:
     """model_settings.config for an arbitrary set of build objects.
 
     ``assignments`` maps a build object id to what the *source project* said about
@@ -265,7 +340,8 @@ def build_model_settings_multi(object_ids, name: str = "object", extruder: int =
             '    <metadata key="plater_name" value=""/>\n'
             '    <metadata key="locked" value="false"/>\n'
             '    <metadata key="filament_map_mode" value="Auto For Flush"/>\n'
-            '    <metadata key="filament_maps" value="1"/>\n' + instances +
+            f'    <metadata key="filament_maps" value="{_filament_maps(filaments)}"/>\n'
+            + instances +
             '  </plate>\n  <assemble>\n  </assemble>\n</config>\n').encode("utf-8")
 
 
@@ -332,7 +408,7 @@ def wrap_geometry_3mf(path, colors=DEFAULT_COLORS, profile_name: str = "snapmake
     src = ThreeMF.open(path)
     model = src.read_part("3D/3dmodel.model")
     object_ids = _build_object_ids(model)
-    eff = effective_colours(colors)
+    eff = declared_colours(colors, slots_referenced(src, model))
 
     parts: dict[str, bytes] = {}
     order: list[str] = []
@@ -357,7 +433,7 @@ def wrap_geometry_3mf(path, colors=DEFAULT_COLORS, profile_name: str = "snapmake
     # rather than one mesh with a metadata row over it. Only when the split earns
     # itself: a single volume, or volumes that all say the same thing, stay on the
     # path that has been shipping.
-    split = _try_multipart(src, model, Path(path).stem)
+    split = _try_multipart(src, model, Path(path).stem, filaments=len(eff))
     if split is not None:
         for name, data in split["parts"].items():
             put(name, data)
@@ -365,7 +441,8 @@ def wrap_geometry_3mf(path, colors=DEFAULT_COLORS, profile_name: str = "snapmake
     else:
         put("Metadata/model_settings.config",
             build_model_settings_multi(object_ids, name=Path(path).stem,
-                                       assignments=source_assignments(src)))
+                                       assignments=source_assignments(src),
+                                       filaments=len(eff)))
     put("Metadata/slice_info.config", build_slice_info(eff))
     put("Metadata/project_settings.config", dump_project_settings(_base_settings(eff, profile_name)))
     return ThreeMF(parts, order)
@@ -373,7 +450,8 @@ def wrap_geometry_3mf(path, colors=DEFAULT_COLORS, profile_name: str = "snapmake
 
 # ---- one source object, several real parts ----------------------------------
 
-def _try_multipart(src: ThreeMF, model: bytes, stem: str):
+def _try_multipart(src: ThreeMF, model: bytes, stem: str,
+                   filaments: int = MIN_FILAMENTS):
     """Emit a component-based object when the source's volumes earn it.
 
     Returns the archive parts to write, or None to leave the caller on the
@@ -439,11 +517,13 @@ def _try_multipart(src: ThreeMF, model: bytes, stem: str):
             objects_path: multipart.objects_model_xml(parts, roles=roles),
             "3D/_rels/3dmodel.model.rels": multipart.object_rels_xml(),
         },
-        "model_settings": _multipart_settings(stem, parts, slots, roles, object_slot),
+        "model_settings": _multipart_settings(stem, parts, slots, roles, object_slot,
+                                             filaments),
     }
 
 
-def _multipart_settings(stem: str, parts, slots, roles, object_slot) -> bytes:
+def _multipart_settings(stem: str, parts, slots, roles, object_slot,
+                        filaments: int = MIN_FILAMENTS) -> bytes:
     """model_settings.config for one composite object and its real parts.
 
     Built by joining lines rather than by embedding escapes, because a newline
@@ -470,7 +550,7 @@ def _multipart_settings(stem: str, parts, slots, roles, object_slot) -> bytes:
         '    <metadata key="plater_name" value=""/>',
         '    <metadata key="locked" value="false"/>',
         '    <metadata key="filament_map_mode" value="Auto For Flush"/>',
-        '    <metadata key="filament_maps" value="1"/>',
+        f'    <metadata key="filament_maps" value="{_filament_maps(filaments)}"/>',
         "    <model_instance>",
         '      <metadata key="object_id" value="2"/>',
         '      <metadata key="instance_id" value="0"/>',

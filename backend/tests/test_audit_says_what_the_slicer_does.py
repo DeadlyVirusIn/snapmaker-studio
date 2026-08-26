@@ -15,7 +15,9 @@ now says what happens next, instead of stopping at "preserved".
 """
 from __future__ import annotations
 
+import json
 import tempfile
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -39,17 +41,55 @@ def one(rows: list[dict], prefix: str) -> dict:
     return found[0]
 
 
-def test_the_copy_still_states_the_filament_the_source_stated(rows):
-    """Carrying the number is right even when the printer cannot use it."""
+def test_the_copy_states_the_filament_the_source_stated(rows):
     row = one(rows, "Filament for each part")
     assert row["status"] == "preserved_exact"
     assert "[2, 5]" in row["detail"]
 
 
-def test_a_filament_the_profile_does_not_have_is_named(rows):
+def test_the_copy_declares_enough_filaments_to_mean_it(tmp_path):
+    """Stating slot 5 against four declared filaments is a reference Orca drops.
+
+    Measured against Orca 2.3.5: with four declared, a part on 5 came back
+    unassigned; with five declared, it came back as 5. So the copy declares as
+    many as the source refers to, and the four physical nozzles are untouched.
+    """
+    prepared = convert_to_u1(str(TWO_VOLUMES), out_dir=str(tmp_path)).output_path
+    with zipfile.ZipFile(prepared) as z:
+        settings = json.loads(
+            z.read("Metadata/project_settings.config").decode("utf-8"))
+    assert len(settings["filament_settings_id"]) == 5
+    assert len(settings["filament_colour"]) == 5
+    assert len(settings["flush_volumes_matrix"]) == 25, "the flush table is square in it"
+    assert len(settings["flush_volumes_vector"]) == 10
+    assert len(settings["nozzle_diameter"]) == 4, "a fifth toolhead was not invented"
+    assert len(settings["printable_area"]) == 4, "the bed is not a filament array"
+
+
+def test_no_warning_when_every_slot_is_declared(rows):
+    """The row is about a slot the project does not declare, not about slots."""
     row = one(rows, "Filament for each part")
+    assert not (row["reason"] or ""), row["reason"]
+
+
+def test_a_slot_the_copy_does_not_declare_is_still_named(tmp_path):
+    """Shrink the declaration back to four and the audit must notice."""
+    prepared = Path(convert_to_u1(str(TWO_VOLUMES), out_dir=str(tmp_path)).output_path)
+    shrunk = tmp_path / "shrunk.3mf"
+    with zipfile.ZipFile(prepared) as src, zipfile.ZipFile(shrunk, "w") as dst:
+        for item in src.infolist():
+            data = src.read(item.filename)
+            if item.filename == "Metadata/project_settings.config":
+                settings = json.loads(data.decode("utf-8"))
+                for key, value in list(settings.items()):
+                    if isinstance(value, list) and len(value) == 5:
+                        settings[key] = value[:4]
+                data = json.dumps(settings).encode("utf-8")
+            dst.writestr(item, data)
+
+    row = one(audit(str(TWO_VOLUMES), str(shrunk))["rows"], "Filament for each part")
     assert row["reason"] and "filament 5" in row["reason"]
-    assert "configures 4" in row["reason"]
+    assert "declares 4" in row["reason"]
     assert "unassigned" in row["reason"], "say what Orca does, not only that it differs"
 
 

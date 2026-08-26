@@ -861,11 +861,11 @@ def _assignment_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
         reason = None
         if entry["kind"] == "volume_filament" and beyond:
             listed = ", ".join(str(slot) for slot in beyond)
-            reason = (f"the copy states filament {listed}, which this printer profile "
-                      f"does not have — it configures {_filament_count(b)}. Measured "
-                      "against Snapmaker Orca 2.3.5, a slot above the count is dropped "
-                      "to unassigned when the project is opened, so set that part's "
-                      "filament in Orca before slicing")
+            reason = (f"the copy states filament {listed} and declares {_filament_count(b)} "
+                      "filament slot(s). Measured against Snapmaker Orca 2.3.5, a slot "
+                      "above the declared count is dropped to unassigned when the "
+                      "project is opened, so set that part's filament in Orca before "
+                      "slicing")
         rows.append(_row(template.format(object=entry["object"]),
                          mapping.get(entry["status"], UNVERIFIED),
                          detail=entry["detail"], reason=reason))
