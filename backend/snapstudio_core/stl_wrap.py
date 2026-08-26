@@ -17,6 +17,8 @@ from .container import ThreeMF
 from .config_io import dump_project_settings
 from .stl_io import parse_stl
 from .filaments import PER_FILAMENT_KEYS
+from .assignments import _NOT_AN_OVERRIDE
+from . import overrides as object_overrides
 
 BED_CENTER = (135.5, 136.0)   # from U1 printable_area 0.5x1..270.5x271
 SNAPMAKER_FILAMENT = "Snapmaker PLA SnapSpeed @U1"   # U1 filament preset
@@ -277,7 +279,8 @@ def wrap_stl(stl_path, colors=DEFAULT_COLORS, profile_name: str = "snapmaker_u1"
 
 def build_model_settings_multi(object_ids, name: str = "object", extruder: int = 1,
                                assignments: dict | None = None,
-                               filaments: int = MIN_FILAMENTS) -> bytes:
+                               filaments: int = MIN_FILAMENTS,
+                               nozzle_mm: float = object_overrides.DEFAULT_NOZZLE_MM) -> bytes:
     """model_settings.config for an arbitrary set of build objects.
 
     ``assignments`` maps a build object id to what the *source project* said about
@@ -316,10 +319,13 @@ def build_model_settings_multi(object_ids, name: str = "object", extruder: int =
             slot = UNASSIGNED
         slot = slot if slot is not None else extruder
         label = _attr(stated.get("name") or f"{name}_{oid}")
+        carried = object_overrides.plan(stated.get("overrides"), nozzle_mm)["carry"]
+        overrides_xml = "".join(line + "\n" for line in _override_lines(carried))
         return (
             f'  <object id="{oid}">\n'
             f'    <metadata key="name" value="{label}"/>\n'
             f'    <metadata key="extruder" value="{slot}"/>\n'
+            + overrides_xml +
             '    <part id="1" subtype="normal_part">\n'
             f'      <metadata key="name" value="{label}"/>\n'
             '      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>\n'
@@ -381,7 +387,8 @@ def source_assignments(src: ThreeMF) -> dict:
         found = re.search(r'id="(\d+)"', head)
         if not found:
             continue
-        entry = {"extruder": None, "name": None, "volume_extruders": []}
+        entry = {"extruder": None, "name": None, "volume_extruders": [],
+                 "overrides": {}}
         for kind, key, value in re.findall(
                 r'<metadata\s+type="(object|volume)"\s+key="([^"]+)"\s+value="([^"]*)"',
                 chunk.split("<volume", 1)[0]):
@@ -389,6 +396,11 @@ def source_assignments(src: ThreeMF) -> dict:
                 entry["extruder"] = int(value)
             elif key == "name":
                 entry["name"] = value
+            elif key not in _NOT_AN_OVERRIDE:
+                # A setting somebody changed on this object alone. Recorded here
+                # as a fact; whether it may cross is `overrides.plan`'s decision,
+                # and the answer for most keys is no.
+                entry["overrides"][key] = value
         for volume in re.split(r"<volume\b", chunk)[1:]:
             slot = None
             for key, value in re.findall(
@@ -423,7 +435,10 @@ def wrap_geometry_3mf(path, colors=DEFAULT_COLORS, profile_name: str = "snapmake
     for n in src.list_parts():
         if n in ("[Content_Types].xml", "_rels/.rels") or n.startswith("3D/") \
                 or (n.startswith("Metadata/") and n.lower().endswith(".png")):
-            put(n, src.read_part(n))
+            data = src.read_part(n)
+            if n == "3D/3dmodel.model":
+                data = _own_the_root_model(data)
+            put(n, data)
     if "[Content_Types].xml" not in parts:
         put("[Content_Types].xml", CONTENT_TYPES)
     if "_rels/.rels" not in parts:
@@ -433,7 +448,9 @@ def wrap_geometry_3mf(path, colors=DEFAULT_COLORS, profile_name: str = "snapmake
     # rather than one mesh with a metadata row over it. Only when the split earns
     # itself: a single volume, or volumes that all say the same thing, stay on the
     # path that has been shipping.
-    split = _try_multipart(src, model, Path(path).stem, filaments=len(eff))
+    settings = _base_settings(eff, profile_name)
+    split = _try_multipart(src, model, Path(path).stem, filaments=len(eff),
+                           nozzle_mm=_nozzle_mm(settings))
     if split is not None:
         for name, data in split["parts"].items():
             put(name, data)
@@ -442,9 +459,10 @@ def wrap_geometry_3mf(path, colors=DEFAULT_COLORS, profile_name: str = "snapmake
         put("Metadata/model_settings.config",
             build_model_settings_multi(object_ids, name=Path(path).stem,
                                        assignments=source_assignments(src),
-                                       filaments=len(eff)))
+                                       filaments=len(eff),
+                                       nozzle_mm=_nozzle_mm(settings)))
     put("Metadata/slice_info.config", build_slice_info(eff))
-    put("Metadata/project_settings.config", dump_project_settings(_base_settings(eff, profile_name)))
+    put("Metadata/project_settings.config", dump_project_settings(settings))
     return ThreeMF(parts, order)
 
 
@@ -474,7 +492,8 @@ BUILD_ITEM = re.compile(r'<item[^>]* objectid="([0-9]+)"[^>]*'
 
 
 def _try_multipart(src: ThreeMF, model: bytes, stem: str,
-                   filaments: int = MIN_FILAMENTS):
+                   filaments: int = MIN_FILAMENTS,
+                   nozzle_mm: float = object_overrides.DEFAULT_NOZZLE_MM):
     """Emit the target's own layout for every logical object the source has.
 
     Returns the archive parts to write, or None to leave the caller on the path
@@ -557,6 +576,8 @@ def _try_multipart(src: ThreeMF, model: bytes, stem: str,
             "slots": [v["slot"] for v in volumes],
             "part_ids": list(range(next_part_id, next_part_id + len(parts))),
             "object_slot": stated.get("extruder"),
+            "carry_overrides": object_overrides.plan(
+                stated.get("overrides"), nozzle_mm)["carry"],
             "name": stated.get("name") or (stem if len(blocks) == 1
                                            else f"{stem}_{len(plan) + 1}"),
             "transform": placements.get(source_id, "1 0 0 0 1 0 0 0 1 0 0 0"),
@@ -592,6 +613,89 @@ def _try_multipart(src: ThreeMF, model: bytes, stem: str,
     }
 
 
+#: The one thing in a copied root model that is no longer true of it. Everything
+#: else — every object, every build item, every coordinate — is the source's and
+#: stays the source's.
+_APPLICATION = re.compile(r'(<metadata\s+name="Application"\s*>)(.*?)(</metadata>)', re.S)
+APPLICATION = "SnapmakerStudio-u1convert"
+
+
+def _own_the_root_model(data: bytes) -> bytes:
+    """Say who wrote this file, because Snapmaker Orca asks.
+
+    A prepared copy used to keep the source's `<metadata name="Application">
+    PrusaSlicer-2.9.6</metadata>`, and Orca answered with *"The 3mf is not
+    supported by Snapmaker Orca, loading geometry data only"* — then loaded the
+    geometry and **ignored `model_settings.config` entirely**.
+
+    What that cost, measured on Orca 2.3.6 by handing it a prepared copy and
+    reading the project Orca saved back: object names replaced by the file's
+    name, and an object Studio had written as filament 3 came back as
+    **filament 0, unassigned**. The per-object assignment this converter exists
+    to protect was intact in the file and never reached the slicer.
+
+    Isolated to this one line, one variable per file: the same copy with the
+    Application renamed opened as a project with every name and every per-object
+    setting intact, and so did the same copy with the line removed. Adding
+    `BambuStudio:3mfVersion` while leaving the Application alone changed nothing.
+
+    So the value is corrected and nothing else is touched. The copy is Studio's
+    file; claiming to be PrusaSlicer's was the untrue part.
+    """
+    text = data.decode("utf-8", "replace")
+    if "<metadata" not in text:
+        return data
+    if _APPLICATION.search(text):
+        text = _APPLICATION.sub(lambda m: m.group(1) + APPLICATION + m.group(3), text, count=1)
+    else:
+        # No claim to correct. Orca is content with a file that makes none, so
+        # nothing is inserted: an added line is a change to a file this path
+        # exists to copy verbatim.
+        return data
+    return text.encode("utf-8")
+
+
+def _nozzle_mm(settings: dict) -> float:
+    """The nozzle the prepared copy is for, in millimetres.
+
+    Snapmaker Orca refuses to slice a plate whose layer height exceeds the nozzle
+    diameter, and names the object and the setting when it does. So a layer
+    height is measured against this before it is allowed to cross, and the
+    smallest declared nozzle is the one that has to be satisfied.
+    """
+    raw = (settings or {}).get("nozzle_diameter")
+    if isinstance(raw, str):
+        raw = [raw]
+    sizes = []
+    for value in raw or ():
+        number = object_overrides._ascii_number(str(value))
+        if number and number > 0:
+            sizes.append(number)
+    return min(sizes) if sizes else object_overrides.DEFAULT_NOZZLE_MM
+
+
+def _override_lines(carried: dict | None) -> list[str]:
+    """The object-level `<metadata>` rows for the settings that may cross.
+
+    Written inside `<object>` and nowhere else: that is where Snapmaker Orca puts
+    a per-object override when the setting is changed through its own per-object
+    panel, and where it looks for one.
+
+    Validated immediately before it is written rather than only where it was
+    decided. An override Orca cannot read does not degrade gracefully — it takes
+    the object with it — so a copy that cannot be written correctly is not
+    written at all.
+    """
+    if not carried:
+        return []
+    faults = object_overrides.validate_emitted(carried)
+    if faults:
+        raise ValueError("refusing to write a per-object override that would not "
+                         "survive: " + "; ".join(faults))
+    return [f'    <metadata key="{key}" value="{_attr(value)}"/>'
+            for key, value in sorted(carried.items())]
+
+
 def _target_settings(plan: list[dict], filaments: int = MIN_FILAMENTS) -> bytes:
     """model_settings.config for every logical object and its parts.
 
@@ -610,6 +714,7 @@ def _target_settings(plan: list[dict], filaments: int = MIN_FILAMENTS) -> bytes:
             f'    <metadata key="name" value="{name}"/>',
             f'    <metadata key="extruder" value="{slot}"/>',
         ])
+        lines.extend(_override_lines(entry.get("carry_overrides")))
         body = multipart.part_records(entry["parts"], name, entry["slots"],
                                       entry["roles"], entry["part_ids"])
         lines.extend(line for line in body.split(chr(10)) if line.strip())

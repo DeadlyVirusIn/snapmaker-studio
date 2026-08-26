@@ -43,6 +43,8 @@ from __future__ import annotations
 
 import re
 
+from . import overrides as object_overrides
+
 SCHEMA_VERSION = "multipart/1"
 
 #: The namespaces a root model needs to declare components and the production
@@ -445,6 +447,12 @@ def _parts_by_object(settings_xml: str) -> dict:
     return out
 
 
+def _settings_objects(settings_xml: str) -> dict:
+    """Each settings object's own metadata, above its parts."""
+    return {object_id: body.split("<part", 1)[0]
+            for object_id, body in _SETTINGS_OBJECT.findall(settings_xml)}
+
+
 def validate_archive(tm) -> dict:
     """Check that geometry, component graph and metadata all agree.
 
@@ -565,6 +573,19 @@ def validate_archive(tm) -> dict:
             problems.append(
                 f"the metadata describes object {object_id}, which the geometry "
                 "does not build from components")
+
+    # Every per-object setting the copy states must be one Studio has measured
+    # the target to act on, in the form it was measured in. Snapmaker Orca does
+    # not ignore a per-object value it cannot read: handed one, it opened the
+    # project with an empty plate, and handed a zero layer height it hung on
+    # load. A malformed override costs the geometry, so it is caught here rather
+    # than by the person opening the file.
+    for object_id, body in _settings_objects(settings).items():
+        stated = {key: value for key, value in
+                  re.findall(r'<metadata key="([^"]+)" value="([^"]*)"\s*/>', body)
+                  if key not in ("name", "extruder")}
+        for fault in object_overrides.validate_emitted(stated):
+            problems.append(f"object {object_id}: {fault}")
 
     for matrix in re.findall(r'key="matrix" value="([^"]*)"', settings):
         values = matrix.split()
