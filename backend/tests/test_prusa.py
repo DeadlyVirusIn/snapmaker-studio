@@ -137,10 +137,28 @@ def test_a_project_without_the_config_is_refused_clearly():
 def test_what_cannot_be_carried_over_is_named_before_it_is_lost(summary):
     elements = [item["element"] for item in prusa.not_carried(summary)]
     assert any("Variable layer height" in e for e in elements)
-    assert any("Per-object setting overrides" in e for e in elements)
     assert any("Support" in e for e in elements)
     for item in prusa.not_carried(summary):
         assert item["reason"], "every unsupported element must say why"
+
+
+def test_an_object_setting_that_does_cross_is_not_reported_as_a_loss(summary):
+    """`fill_density` crosses as Orca's `sparse_infill_density`, measured."""
+    assert summary["per_object_overrides_carried"] == 1
+    assert summary["per_object_overrides_not_carried"] == []
+    elements = [item["element"] for item in prusa.not_carried(summary)]
+    assert not any("Object-specific settings not carried" in e for e in elements)
+
+
+def test_an_object_setting_that_does_not_cross_is_named_not_counted():
+    config = MODEL_CONFIG.replace(
+        '<metadata type="object" key="fill_density" value="45%"/>',
+        '<metadata type="object" key="ironing_type" value="top"/>')
+    summary = prusa.summarise(CONFIG, config)
+    assert summary["per_object_overrides_not_carried"] == ["ironing_type"]
+    row = next(item for item in prusa.not_carried(summary)
+               if "Object-specific settings not carried" in item["element"])
+    assert "ironing_type" in row["reason"]
 
 
 def test_nothing_is_claimed_for_a_project_with_no_extras():

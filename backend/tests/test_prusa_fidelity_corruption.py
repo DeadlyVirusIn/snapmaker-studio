@@ -188,26 +188,111 @@ def test_an_uncountable_instance_side_is_unverified_not_a_detected_change():
     assert statuses(A.compare(before, after), "instances") == [A.UNVERIFIED]
 
 
-# --- 8 & 9. overrides dropped or flattened ----------------------------------
+# --- 8 & 9. overrides dropped, moved, invented or mistranslated -------------
+#
+# Two of the three settings Studio carries are spelled differently on each side —
+# PrusaSlicer's `fill_density` is Snapmaker Orca's `sparse_infill_density`, and
+# `support_material` is `enable_support`. So the copy carrying the source's own
+# word is not the copy carrying the setting: Orca discards `fill_density` exactly
+# as it discards a key invented for the experiment. Every case below is written
+# in the two vocabularies rather than one.
 
 def test_a_dropped_per_object_override_is_named():
+    """A setting Studio can carry, and the copy has not. That is a fault."""
     before = side(obj(overrides={"layer_height": "0.3"}))
     after = side(obj(overrides={}))
     rows = [r for r in A.compare(before, after)["semantics"] if r["kind"] == "override"]
-    assert rows and rows[0]["status"] == A.UNSUPPORTED
+    assert rows and rows[0]["status"] == A.CHANGED
     assert "layer_height" in rows[0]["detail"]
+
+
+def test_a_setting_studio_cannot_carry_is_unsupported_not_changed():
+    """Not carrying what was never carryable is a limit, not a bug."""
+    before = side(obj(overrides={"brim_width": "5"}))
+    after = side(obj(overrides={}))
+    rows = [r for r in A.compare(before, after)["semantics"] if r["kind"] == "override"]
+    assert rows and rows[0]["status"] == A.UNSUPPORTED
+    assert "brim_width" in rows[0]["detail"]
 
 
 def test_an_override_silently_given_a_different_value_is_detected():
     before = side(obj(overrides={"fill_density": "15%"}))
-    after = side(obj(overrides={"fill_density": "40%"}))
-    assert statuses(A.compare(before, after), "override") == [A.UNSUPPORTED]
+    after = side(obj(overrides={"sparse_infill_density": "40%"}))
+    assert A.CHANGED in statuses(A.compare(before, after), "override")
 
 
-def test_a_carried_override_is_preserved():
+def test_a_carried_override_is_preserved_in_the_targets_own_word():
+    before = side(obj(overrides={"fill_density": "15%"}))
+    after = side(obj(overrides={"sparse_infill_density": "15%"}))
+    rows = [r for r in A.compare(before, after)["semantics"] if r["kind"] == "override"]
+    assert [r["status"] for r in rows] == [A.PRESERVED_SEMANTIC]
+    assert "sparse_infill_density" in rows[0]["detail"]
+
+
+def test_an_override_carried_in_the_sources_own_word_is_not_preserved():
+    """`fill_density` in an Orca project is discarded like a nonsense key."""
+    before = side(obj(overrides={"fill_density": "15%"}))
+    after = side(obj(overrides={"fill_density": "15%"}))
+    assert A.CHANGED in statuses(A.compare(before, after), "override")
+
+
+def test_a_carried_override_keeps_exact_when_both_sides_use_the_word():
     before = side(obj(overrides={"layer_height": "0.3"}))
     after = side(obj(overrides={"layer_height": "0.3"}))
     assert statuses(A.compare(before, after), "override") == [A.PRESERVED_EXACT]
+
+
+def test_an_override_the_copy_invented_is_detected():
+    """A prepared copy stating a setting nobody chose changes what prints."""
+    before = side(obj(overrides={}))
+    after = side(obj(overrides={"enable_support": "1"}))
+    rows = [r for r in A.compare(before, after)["semantics"] if r["kind"] == "override"]
+    assert [r["status"] for r in rows] == [A.CHANGED]
+    assert "source never did" in rows[0]["detail"]
+
+
+def test_an_override_copied_onto_another_object_is_detected():
+    before = side(obj(index=0, name="a", overrides={"layer_height": "0.3"}),
+                  obj(index=1, name="b"))
+    after = side(obj(index=0, name="a", overrides={"layer_height": "0.3"}),
+                 obj(index=1, name="b", overrides={"layer_height": "0.3"}))
+    rows = [r for r in A.compare(before, after)["semantics"] if r["kind"] == "override"]
+    assert [(r["object"], r["status"]) for r in rows] == [
+        ("a", A.PRESERVED_EXACT), ("b", A.CHANGED)]
+
+
+def test_an_override_moved_to_the_wrong_object_is_detected():
+    before = side(obj(index=0, name="a", overrides={"layer_height": "0.3"}),
+                  obj(index=1, name="b"))
+    after = side(obj(index=0, name="a"),
+                 obj(index=1, name="b", overrides={"layer_height": "0.3"}))
+    rows = [r for r in A.compare(before, after)["semantics"] if r["kind"] == "override"]
+    assert [(r["object"], r["status"]) for r in rows] == [
+        ("a", A.CHANGED), ("b", A.CHANGED)]
+
+
+def test_an_inherited_setting_turned_explicit_is_detected():
+    """The source left it to the process profile; the copy states a number."""
+    before = side(obj(overrides={}))
+    after = side(obj(overrides={"layer_height": "0.2"}))
+    assert statuses(A.compare(before, after), "override") == [A.CHANGED]
+
+
+def test_a_malformed_source_value_is_not_carried_and_says_why():
+    """Orca deletes the object when it cannot read a per-object value."""
+    before = side(obj(overrides={"layer_height": "not-a-number"}))
+    after = side(obj(overrides={}))
+    rows = [r for r in A.compare(before, after)["semantics"] if r["kind"] == "override"]
+    assert [r["status"] for r in rows] == [A.UNSUPPORTED]
+    assert "not a plain number" in rows[0]["detail"]
+
+
+def test_carrying_a_malformed_value_anyway_is_a_fault_not_a_bonus():
+    before = side(obj(overrides={"layer_height": "0"}))
+    after = side(obj(overrides={"layer_height": "0"}))
+    rows = [r for r in A.compare(before, after)["semantics"] if r["kind"] == "override"]
+    assert [r["status"] for r in rows] == [A.CHANGED]
+    assert "was not carried" in rows[0]["detail"]
 
 
 # --- 11. painting kept while the assignment underneath is lost --------------

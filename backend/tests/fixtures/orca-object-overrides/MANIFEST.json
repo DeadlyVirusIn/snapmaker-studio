@@ -1,0 +1,47 @@
+{
+ "_provenance": {
+  "kind": "authored_by_the_slicer",
+  "statement": "Every file here was written by Snapmaker Orca 2.3.6 itself. A candidate key was placed on the object in an otherwise byte-identical project, Orca was started on it by an automation harness that owned its own process and never force-killed anything, and Orca was driven through Save Project As. What Orca wrote is what is stored. One variable per file. Nothing was hand-edited afterwards except the absolute source_file path, replaced with 'probe.3mf' so that no private path is tracked.",
+  "slicer": "Snapmaker Orca 2.3.6 (GUI, Save Project As)",
+  "geometry": "a 30 mm cube - synthetic, no private model",
+  "captured": "2026-08-26",
+  "why_the_invented_key_matters": "A key that survives while nonsense also survives has proved nothing. The invented key is dropped, so the three that survive are recognised rather than copied.",
+  "the_sharpest_row": "orca-dropped-unrecognised-key.3mf and orca-control-no-settings.3mf are BYTE-IDENTICAL. A project carrying an invented key, or PrusaSlicer fill_density, or PrusaSlicer support_material, comes back from Orca as the same file as a project that carried nothing at all. Copying the source key across is indistinguishable from writing nonsense."
+ },
+ "files": {
+  "orca-authored-three-overrides.3mf": {
+   "note": "Snapmaker Orca 2.3.6's own account of a per-object override. The three settings were set through Orca's own Process > Objects panel on a plain cube and Orca was asked to Save Project As. It wrote layer_height=0.3, sparse_infill_density=45% and enable_support=1 as <metadata> inside <object> in model_settings.config. That is the target vocabulary and the target structural level, stated by the target.",
+   "size_bytes": 22472,
+   "sha256": "921f3bdb2adb00e0f48197bc0fe52d520fe67ffe288c35e4a9894600e802ba7a"
+  },
+  "orca-control-no-settings.3mf": {
+   "note": "The control: the same project with nothing set, round-tripped. One object, no per-object metadata. This is what 'the object survived' looks like.",
+   "size_bytes": 22425,
+   "sha256": "537e9fac88d6e538f00c7f474b6b0bb658f9f459c798e10e3158487da8dbec36"
+  },
+  "orca-dropped-unrecognised-key.3mf": {
+   "note": "What Orca writes back when the object carries a key it does not act on: nothing. Three different inputs produce this one file byte for byte - an invented key, PrusaSlicer's fill_density and PrusaSlicer's support_material. See input_sha256_all_producing_this_file.",
+   "size_bytes": 22425,
+   "sha256": "537e9fac88d6e538f00c7f474b6b0bb658f9f459c798e10e3158487da8dbec36"
+  },
+  "orca-deleted-object-on-malformed-value.3mf": {
+   "note": "layer_height=\"not-a-number\" on the object. Orca opened the project with an EMPTY PLATE: no object, no build item, no geometry file. A malformed per-object value does not fail safely - it takes the object with it.",
+   "size_bytes": 10620,
+   "sha256": "cf62fb2d0ebbdf52769a0d894e6cbd2a64a55b3fed46543f653cac11ac3009ef"
+  }
+ },
+ "input_sha256_all_producing_this_file": {
+  "R04_invented_key.3mf": {
+   "sha256": "b90f969342ee098a687ce8a7591ebe5fabccc3c97b4218c909fe1aaf2473bacc",
+   "produces": "orca-dropped-unrecognised-key.3mf"
+  },
+  "R07_prusa_fill_density.3mf": {
+   "sha256": "c984d870ea33e1a39efe961697ae87e77a91ed167712fa0e99e10790fef1f0f5",
+   "produces": "orca-dropped-unrecognised-key.3mf"
+  },
+  "R08_prusa_support_material.3mf": {
+   "sha256": "602b04766b7d2a6b08993bbfb181b679aa92aa669ab81ddffb4f6b96ad6e0448",
+   "produces": "orca-dropped-unrecognised-key.3mf"
+  }
+ }
+}
