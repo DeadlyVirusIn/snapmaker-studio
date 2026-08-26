@@ -41,12 +41,19 @@ that deviates in nothing still imports without a notice.
 from __future__ import annotations
 
 #: Where in the list each preset's deviations live. Entry 0 is the process
-#: preset; entries 1..N are the filaments, one each, in slot order; the last
-#: entry is the printer. Measured by declaring a filament key in each place:
-#: `nozzle_temperature` named in entry 0 was ignored and the value reset from
-#: 230 to 215, and the same key named in the filament entries was kept at 230.
+#: preset; entries 1..N are the filaments, one each, in slot order; the **last**
+#: entry is the printer.
+#:
+#: Measured by declaring a key in each place. `nozzle_temperature` named in entry
+#: 0 was ignored and the value reset from 230 to 215; the same key named in the
+#: filament entries was kept at 230. `nozzle_type` left undeclared was reset from
+#: `stainless_steel` to the preset's `hardened_steel`; named in the last entry it
+#: was kept, and so were sentinel comments injected into `machine_start_gcode`
+#: and `machine_end_gcode` — which reached the exported G-code, so the printer
+#: entry decides what the machine actually runs.
 PROCESS = 0
 FIRST_FILAMENT = 1
+PRINTER = -1
 
 #: How Orca joins several deviating keys in one entry.
 SEPARATOR = ";"
@@ -81,20 +88,39 @@ def declared_process_keys(cfg: dict) -> set[str]:
     return {part.strip() for part in first.split(SEPARATOR) if part.strip()}
 
 
-def _split(keys) -> tuple[set[str], set[str]]:
-    """Which of these belong to a filament, and which to the process.
+#: Keys the printer preset owns, which a project must declare in the printer
+#: entry or not at all. Measured: `nozzle_type` declared anywhere else was
+#: ignored and the value reset. This is deliberately short — it names only what
+#: Studio has measured, and a key not on it is declared in the process entry,
+#: where an unrecognised name costs nothing.
+PRINTER_KEYS = frozenset({
+    "machine_start_gcode", "machine_end_gcode", "layer_change_gcode",
+    "machine_pause_gcode", "change_filament_gcode", "template_custom_gcode",
+    "nozzle_type", "nozzle_diameter", "printer_settings_id", "printer_model",
+    "printer_variant", "default_print_profile", "default_filament_profile",
+    "printable_area", "printable_height", "extruder_offset",
+})
 
-    A key declared in the wrong entry is simply ignored — measured both ways —
-    so this split is what makes the declaration work rather than merely be
-    harmless. `PER_FILAMENT_KEYS` is Studio's own list of the keys that are one
-    value per filament slot.
+
+def _split(keys) -> tuple[set[str], set[str], set[str]]:
+    """Which of these belong to the process, the filaments and the printer.
+
+    A key declared in the wrong entry is simply ignored — measured in all three
+    directions — so this split is what makes the declaration work rather than
+    merely be harmless. `PER_FILAMENT_KEYS` is Studio's own list of the keys that
+    are one value per filament slot.
     """
     from .filaments import PER_FILAMENT_KEYS
 
-    filament, process = set(), set()
+    filament, printer, process = set(), set(), set()
     for key in keys:
-        (filament if key in PER_FILAMENT_KEYS else process).add(key)
-    return process, filament
+        if key in PER_FILAMENT_KEYS:
+            filament.add(key)
+        elif key in PRINTER_KEYS:
+            printer.add(key)
+        else:
+            process.add(key)
+    return process, filament, printer
 
 
 def declare(cfg: dict, keys, filaments: int = 4) -> dict | None:
@@ -118,7 +144,7 @@ def declare(cfg: dict, keys, filaments: int = 4) -> dict | None:
         return None
     before = cfg.get("different_settings_to_system")
     entries = _entries(before, filaments)
-    process, filament = _split(wanted)
+    process, filament, printer = _split(wanted)
 
     combined = sorted(declared_process_keys(cfg) | process)
     entries[PROCESS] = SEPARATOR.join(combined)
@@ -129,6 +155,10 @@ def declare(cfg: dict, keys, filaments: int = 4) -> dict | None:
         for index in slots:
             existing = {p.strip() for p in str(entries[index] or "").split(SEPARATOR) if p.strip()}
             entries[index] = SEPARATOR.join(sorted(existing | filament))
+
+    if printer:
+        existing = {p.strip() for p in str(entries[PRINTER] or "").split(SEPARATOR) if p.strip()}
+        entries[PRINTER] = SEPARATOR.join(sorted(existing | printer))
 
     if entries == before:
         return None
@@ -141,6 +171,7 @@ def declare(cfg: dict, keys, filaments: int = 4) -> dict | None:
                    "to the preset it names"),
         "process_keys": combined,
         "filament_keys": sorted(filament),
+        "printer_keys": sorted(printer),
     }
 
 

@@ -113,11 +113,16 @@ MEASURED: dict[str, tuple[str, str]] = {
         "in the metadata with zero parts, its geometry and its painting gone, and "
         "Orca said nothing."),
     "Archive relationships": (
-        NOT_ESTABLISHED,
-        "the package-level relationships were not varied one at a time."),
+        REACHES,
+        "REQUIRED, and strictly. `_rels/.rels` removed, pointed at a file that is "
+        "not in the archive, given the right target with a different relationship "
+        "Type, and malformed: all four were refused outright with 'Snapmaker Orca "
+        "error' and nothing loaded — not even the geometry."),
     "Archive index": (
-        NOT_ESTABLISHED,
-        "[Content_Types].xml was not varied one at a time."),
+        IGNORED,
+        "[Content_Types].xml removed, stripped of its png declaration, declaring "
+        ".model as text/plain, and malformed: all four opened as full projects "
+        "with every object, name, assignment and per-object setting intact."),
     "Slicing summary": (
         RECONSTRUCTED,
         "slice_info.config is Orca's own output. A copy with it deliberately "
