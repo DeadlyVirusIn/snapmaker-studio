@@ -196,3 +196,81 @@ def test_the_print_settings_row_does_not_claim_the_slicer_uses_them():
     verdict, why = target_reachability.of("Print settings kept")
     assert verdict == target_reachability.NOT_ESTABLISHED
     assert "different_settings_to_system" in why
+
+
+# --- the printer entry, and the two package gates ---------------------------
+
+def test_a_printer_key_goes_in_the_last_entry():
+    """Measured. `nozzle_type` left undeclared came back reset from
+    `stainless_steel` to the preset's `hardened_steel`; declared in the last
+    entry it was kept, and sentinel comments injected into `machine_start_gcode`
+    and `machine_end_gcode` reached the exported G-code."""
+    cfg: dict = {}
+    change = preset_deviation.declare(
+        cfg, ["nozzle_type", "machine_start_gcode", "brim_type"], filaments=4)
+    entries = cfg["different_settings_to_system"]
+    assert entries[preset_deviation.PROCESS] == "brim_type"
+    assert entries[-1] == "machine_start_gcode;nozzle_type"
+    assert change["printer_keys"] == ["machine_start_gcode", "nozzle_type"]
+
+
+def test_a_printer_key_is_not_left_in_the_process_entry():
+    cfg: dict = {}
+    preset_deviation.declare(cfg, ["nozzle_type"], filaments=4)
+    assert "nozzle_type" not in cfg["different_settings_to_system"][0]
+
+
+def test_the_package_relationships_are_required():
+    verdict, why = target_reachability.of("Archive relationships")
+    assert verdict == target_reachability.REACHES
+    assert "REQUIRED" in why
+
+
+def test_the_content_types_index_is_ignored():
+    """Removed, stripped, mistyped and malformed all opened as full projects."""
+    verdict, why = target_reachability.of("Archive index")
+    assert verdict == target_reachability.IGNORED
+    assert target_reachability.qualifies(verdict)
+
+
+# --- the settings carried from a PrusaSlicer project ------------------------
+
+def test_the_settings_carried_from_the_source_are_declared(tmp_path):
+    """Five process values are translated from the source project. Undeclared,
+    every one of them is replaced by the U1 preset on load — the whole promise,
+    correct in the file and invisible to the slicer."""
+    import zipfile
+
+    source = FIXTURES / "prusa-semantics" / "C_object_slot3_out.3mf"
+    carrier = tmp_path / "prusa_distinct.3mf"
+    with zipfile.ZipFile(source) as z:
+        parts = {n: z.read(n) for n in z.namelist()}
+    parts["Metadata/Slic3r_PE.config"] = (
+        "; layer_height = 0.15\n; first_layer_height = 0.3\n"
+        "; fill_density = 37%\n; perimeters = 4\n; brim_width = 8\n").encode("utf-8")
+    with zipfile.ZipFile(carrier, "w", zipfile.ZIP_DEFLATED) as z:
+        for name, data in parts.items():
+            z.writestr(name, data)
+
+    prepared = convert_to_u1(str(carrier), out_dir=str(tmp_path)).output_path
+    with zipfile.ZipFile(prepared) as z:
+        cfg = json.loads(z.read(PROJECT).decode("utf-8"))
+
+    assert cfg["layer_height"] == "0.15"
+    assert cfg["sparse_infill_density"] == "37%"
+    assert cfg["wall_loops"] == "4"
+    declared = preset_deviation.declared_process_keys(cfg)
+    for key in ("layer_height", "initial_layer_print_height",
+                "sparse_infill_density", "wall_loops", "brim_width"):
+        assert key in declared, f"{key} was carried and not declared"
+
+
+def test_a_source_whose_settings_match_the_u1_declares_nothing(tmp_path):
+    """No deviation, no notice. The common case still imports clean."""
+    import zipfile
+
+    source = FIXTURES / "prusa-semantics" / "A_no_assignment_out.3mf"
+    prepared = convert_to_u1(str(source), out_dir=str(tmp_path)).output_path
+    with zipfile.ZipFile(prepared) as z:
+        cfg = json.loads(z.read(PROJECT).decode("utf-8"))
+    assert not preset_deviation.declared_process_keys(cfg)
