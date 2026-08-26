@@ -163,6 +163,31 @@ _PROD_NS = ('xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" '
             'xmlns:p="http://schemas.microsoft.com/3dmanufacturing/production/2015/06"')
 
 
+#: The same painting, written two ways. PrusaSlicer names the attribute
+#: `slic3rpe:mmu_segmentation`; the Orca/Bambu family names it `paint_color`. The
+#: encoded value is the same string — the OrcaSlicer and PrusaSlicer painted-cube
+#: fixtures carry byte-identical values for the same eight facets — so translating
+#: is a rename of the attribute and nothing else.
+#:
+#: Measured against Snapmaker Orca 2.3.5: a copy carrying the PrusaSlicer name
+#: opens with no painting at all, and the same copy carrying `paint_color` opens
+#: with all eight facets, the same slots and the same areas.
+SOURCE_PAINT_ATTRIBUTE = "slic3rpe:mmu_segmentation"
+TARGET_PAINT_ATTRIBUTE = "paint_color"
+
+_PAINT_ATTR = re.compile(rf'\b{SOURCE_PAINT_ATTRIBUTE}="')
+
+
+def to_target_paint(tag: str) -> str:
+    """One facet's paint attribute, renamed into the target's vocabulary.
+
+    Only multi-material painting is touched. Support and seam painting use the
+    same attribute names on both sides, and a name Studio has not measured is
+    left exactly as the source wrote it rather than guessed at.
+    """
+    return _PAINT_ATTR.sub(f'{TARGET_PAINT_ATTRIBUTE}="', tag)
+
+
 def objects_model_xml(parts: list[dict], uuids: list[str] | None = None,
                       roles: list | None = None) -> bytes:
     """`3D/Objects/object_1.model` — one mesh object per part, ids from 1.
@@ -181,7 +206,9 @@ def objects_model_xml(parts: list[dict], uuids: list[str] | None = None,
             f'<object id="{part["index"] + 1}"{stamp} '
             f'type="{object_type_for(role)}"><mesh>'
             f'<vertices>{"".join(part["vertices"])}</vertices>'
-            f'<triangles>{"".join(part["triangles"])}</triangles>'
+            '<triangles>'
+            f'{"".join(to_target_paint(t) for t in part["triangles"])}'
+            '</triangles>'
             "</mesh></object>")
     return ('<?xml version="1.0" encoding="UTF-8"?>'
             f'<model unit="millimeter" xml:lang="en-US" {_PROD_NS}>'
@@ -346,6 +373,30 @@ def worth_splitting(volumes: list[dict]) -> bool:
     return len(slots) > 1 or roles != {"part"}
 
 # --- does the archive say the same thing three times? ------------------------
+
+_COMPOSITE = re.compile(r'<object id="(\d+)"[^>]*>\s*<components>(.*?)</components>', re.S)
+_SETTINGS_OBJECT = re.compile(r'<object id="(\d+)"[^>]*>(.*?)</object>', re.S)
+_PART_HEAD = re.compile(r'<part id="(\d+)"([^>]*)>')
+
+
+def _composite_objects(root_xml: str) -> dict:
+    """Each object built from components, and the mesh ids it references."""
+    return {object_id: re.findall(r'objectid="(\d+)"', block)
+            for object_id, block in _COMPOSITE.findall(root_xml)}
+
+
+def _parts_by_object(settings_xml: str) -> dict:
+    """Each settings object's part ids and roles, scoped to that object."""
+    out: dict[str, list] = {}
+    for object_id, body in _SETTINGS_OBJECT.findall(settings_xml):
+        entries = []
+        for part_id, head in _PART_HEAD.findall(body):
+            found = re.search(r'subtype="([^"]*)"', head)
+            entries.append((part_id, found.group(1) if found else None))
+        out[object_id] = entries
+    return out
+
+
 def validate_archive(tm) -> dict:
     """Check that geometry, component graph and metadata all agree.
 
@@ -403,42 +454,57 @@ def validate_archive(tm) -> dict:
     if missing:
         problems.append(
             f"component(s) {sorted(set(missing))} reference an object that no file defines")
-    if len(set(components)) != len(components):
-        problems.append("the same object is referenced twice by one object's components")
 
-    # build item must place the composite object, not a mesh
-    roots = re.findall(r'<object id="(\d+)"[^>]*>\s*<components>', root)
+    # build item must place a composite object, not a mesh
+    composites = _composite_objects(root)
     items = re.findall(r'<item[^>]*objectid="(\d+)"', root)
-    if roots and items and not set(items) & set(roots):
+    if composites and items and not set(items) & set(composites):
         problems.append(
-            f"the build places object(s) {sorted(set(items))} and the composite object "
-            f"is {sorted(set(roots))}")
+            f"the build places object(s) {sorted(set(items))} and the composite "
+            f"object(s) are {sorted(composites)}")
 
     # a part's role and the geometry under it must say the same thing
-    subtypes = dict(re.findall(r'<part id="(\d+)"[^>]*subtype="([^"]*)"', settings))
-    for part_id, subtype in sorted(subtypes.items()):
-        if subtype not in TARGET_ROLES.values():
-            problems.append(f"part {part_id} claims the role {subtype!r}, which is not "
-                            "one Studio has proven the target represents")
-            continue
-        wanted = "model" if subtype == "normal_part" else "other"
-        found = mesh_types.get(part_id)
-        if found is not None and found != wanted:
-            problems.append(
-                f"part {part_id} is a {subtype} and the geometry under it is typed "
-                f"{found!r}; a {subtype} is described by type {wanted!r}")
+    for object_id, part_ids in sorted(_parts_by_object(settings).items()):
+        for part_id, subtype in part_ids:
+            if subtype is None:
+                continue
+            if subtype not in TARGET_ROLES.values():
+                problems.append(
+                    f"part {part_id} of object {object_id} claims the role "
+                    f"{subtype!r}, which is not one Studio has proven the target "
+                    "represents")
+                continue
+            wanted = "model" if subtype == "normal_part" else "other"
+            found = mesh_types.get(part_id)
+            if found is not None and found != wanted:
+                problems.append(
+                    f"part {part_id} of object {object_id} is a {subtype} and the "
+                    f"geometry under it is typed {found!r}; a {subtype} is described "
+                    f"by type {wanted!r}")
 
-    # metadata parts must match the components one for one
-    parts = re.findall(r'<part id="(\d+)"', settings)
-    if len(parts) != len(components):
-        problems.append(
-            f"the metadata lists {len(parts)} part(s) and the geometry has "
-            f"{len(components)}")
-    if sorted(parts) != sorted(components):
-        problems.append(
-            f"part ids {sorted(parts)} do not match component ids {sorted(components)}")
-    if len(set(parts)) != len(parts):
-        problems.append("a part id is used twice")
+    # Every object's parts must match that object's components, one for one. Both
+    # numbers belong to their object: two objects may each hold a part 1, and one
+    # mesh may be referenced by several objects. Reading the whole file as if it
+    # described a single object called a genuine eight-object project broken.
+    by_object = _parts_by_object(settings)
+    for object_id, own_components in sorted(composites.items()):
+        own_parts = [part_id for part_id, _subtype in by_object.get(object_id, [])]
+        if object_id not in by_object:
+            problems.append(f"object {object_id} has components and no part records")
+            continue
+        if len(own_parts) != len(own_components):
+            problems.append(
+                f"object {object_id} lists {len(own_parts)} part(s) and has "
+                f"{len(own_components)} component(s)")
+        if sorted(own_parts) != sorted(own_components):
+            problems.append(
+                f"object {object_id}: part ids {sorted(own_parts)} do not match its "
+                f"component ids {sorted(own_components)}")
+        if len(set(own_parts)) != len(own_parts):
+            problems.append(f"object {object_id} uses a part id twice")
+        if len(set(own_components)) != len(own_components):
+            problems.append(
+                f"object {object_id} references the same mesh twice in its components")
 
     for matrix in re.findall(r'key="matrix" value="([^"]*)"', settings):
         values = matrix.split()

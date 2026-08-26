@@ -93,12 +93,13 @@ def test_a_slot_the_copy_does_not_declare_is_still_named(tmp_path):
     assert "unassigned" in row["reason"], "say what Orca does, not only that it differs"
 
 
-def test_painting_in_the_wrong_dialect_is_named(rows):
-    """Byte-identical is true of the files. It is not true of the plate."""
+def test_painting_crosses_in_the_targets_own_dialect(rows):
+    """The copy no longer carries a name Snapmaker Orca does not read."""
     row = one(rows, "Painted colour")
-    assert row["status"] == "preserved_exact"
-    assert row["reason"] and "no painting" in row["reason"]
-    assert "paint them again in Orca" in row["reason"]
+    assert row["status"] == "preserved_semantic"
+    assert "Orca's own vocabulary" in (row["reason"] or "")
+    assert "no painting" not in (row["reason"] or ""), (
+        "the warning about painting that does not arrive must be gone")
 
 
 def test_painting_already_in_the_targets_dialect_is_not_warned_about(tmp_path):

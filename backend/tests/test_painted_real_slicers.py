@@ -135,7 +135,15 @@ def test_preparing_a_copy_of_a_real_painted_project_keeps_the_painting(path, tmp
 
     report = fidelity.audit(str(source), result.output_path)
     row = [r for r in report["rows"] if r["element"] == "Painted colour"][0]
-    assert row["status"] == fidelity.PRESERVED_EXACT, row
+    if path is PRUSA:
+        # The bits are the same string; the attribute's name is not. Snapmaker
+        # Orca reads `paint_color` and opens a copy carrying PrusaSlicer's name
+        # with nothing painted, so the copy states the painting in the target's
+        # own vocabulary — the same painting, restated.
+        assert row["status"] == fidelity.PRESERVED_SEMANTIC, row
+        assert "Orca's own vocabulary" in (row["reason"] or ""), row
+    else:
+        assert row["status"] == fidelity.PRESERVED_EXACT, row
 
 
 # --- paint the slicers authored themselves -----------------------------------
@@ -227,7 +235,15 @@ def test_authored_paint_survives_preparing_a_copy(path, tmp_path):
 
     report = fidelity.audit(str(source), result.output_path)
     row = [r for r in report["rows"] if r["element"] == "Painted colour"][0]
-    assert row["status"] == fidelity.PRESERVED_EXACT, row
+    if path is PRUSA:
+        # The bits are the same string; the attribute's name is not. Snapmaker
+        # Orca reads `paint_color` and opens a copy carrying PrusaSlicer's name
+        # with nothing painted, so the copy states the painting in the target's
+        # own vocabulary — the same painting, restated.
+        assert row["status"] == fidelity.PRESERVED_SEMANTIC, row
+        assert "Orca's own vocabulary" in (row["reason"] or ""), row
+    else:
+        assert row["status"] == fidelity.PRESERVED_EXACT, row
 
 
 @pytest.mark.parametrize("path", [SNAPMAKER_AUTHORED, BAMBU_AUTHORED],

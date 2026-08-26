@@ -469,14 +469,31 @@ OBJECTS_DIR = "3D/Objects/"
 PRUSA_MODEL_CONFIG = "Metadata/Slic3r_PE_model.config"
 
 
-def _prepared_part_digests(tm: ThreeMF) -> list[str] | None:
-    """Each part's shape in a prepared multi-part copy, in part order."""
+_PAINT_VALUE = re.compile(r'(?:paint_color|slic3rpe:mmu_segmentation)="([^"]*)"')
+
+
+def _paint_of(triangles: list[str]) -> list[str]:
+    """One entry per facet: its paint value, or empty where it is unpainted.
+
+    Position matters as much as the values do. A copy that carries every painted
+    value but hangs them on different facets has moved the colour, and comparing
+    only the set of values would call that preserved.
+    """
+    out = []
+    for tag in triangles:
+        found = _PAINT_VALUE.search(tag)
+        out.append(found.group(1) if found else "")
+    return out
+
+
+def _prepared_part_digests(tm: ThreeMF) -> tuple[list[str], list[list[str]]] | None:
+    """Each part's shape and painting in a prepared copy, in part order."""
     from . import multipart
 
     names = [p for p in tm.list_parts() if p.startswith(OBJECTS_DIR)]
     if not names:
         return None
-    digests: list[tuple[int, str]] = []
+    rows: list[tuple[int, str, list[str]]] = []
     for name in sorted(names):
         body = tm.read_part(name).decode("utf-8", "ignore")
         for object_id in re.findall(r'<object id="(\d+)"', body):
@@ -484,8 +501,13 @@ def _prepared_part_digests(tm: ThreeMF) -> list[str] | None:
             if not block:
                 continue
             vertices, triangles = multipart.read_mesh(block.group(0))
-            digests.append((int(object_id), multipart.geometry_digest(vertices, triangles)))
-    return [digest for _id, digest in sorted(digests)] or None
+            rows.append((int(object_id),
+                         multipart.geometry_digest(vertices, triangles),
+                         _paint_of(triangles)))
+    if not rows:
+        return None
+    rows.sort()
+    return [digest for _id, digest, _paint in rows], [paint for _id, _d, paint in rows]
 
 
 def _source_part_digests(tm: ThreeMF) -> tuple[str, list[str]] | None:
@@ -520,8 +542,10 @@ def _source_part_digests(tm: ThreeMF) -> tuple[str, list[str]] | None:
     if len(triangles) > _MAX_FACETS_TO_RESPLIT:
         return None
     parts = multipart.split_triangles(vertices, triangles, [v["range"] for v in volumes])
-    return name, [multipart.geometry_digest(part["vertices"], part["triangles"])
-                  for part in parts]
+    return (name,
+            [multipart.geometry_digest(part["vertices"], part["triangles"])
+             for part in parts],
+            [_paint_of(part["triangles"]) for part in parts])
 
 
 def _part_shape_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
@@ -539,22 +563,42 @@ def _part_shape_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
         return []
     if source is None or prepared is None:
         return []
-    name, wanted = source
+    name, wanted, wanted_paint = source
+    shapes, painted = prepared
     label = f"The shape of each part of {name}"
-    if len(wanted) != len(prepared):
+    paint_label = f"The painting on each part of {name}"
+    if len(wanted) != len(shapes):
         return [_row(label, CHANGED,
                      detail=(f"the source has {len(wanted)} volume(s) and the copy "
-                             f"{len(prepared)} part(s)"),
+                             f"{len(shapes)} part(s)"),
                      reason="Studio writes one part per source volume")]
-    wrong = [str(i + 1) for i, (x, y) in enumerate(zip(wanted, prepared)) if x != y]
+
+    rows = []
+    wrong = [str(i + 1) for i, (x, y) in enumerate(zip(wanted, shapes)) if x != y]
     if wrong:
-        return [_row(label, CHANGED,
-                     detail=f"part(s) {', '.join(wrong)} hold different geometry",
-                     reason=("each part must hold the facets of the volume it came "
-                             "from — report this as a bug"))]
-    return [_row(label, PRESERVED_EXACT,
-                 detail=(f"all {len(wanted)} part(s) hold the facets of the volume "
-                         "they came from, in winding order"))]
+        rows.append(_row(label, CHANGED,
+                         detail=f"part(s) {', '.join(wrong)} hold different geometry",
+                         reason=("each part must hold the facets of the volume it "
+                                 "came from — report this as a bug")))
+    else:
+        rows.append(_row(label, PRESERVED_EXACT,
+                         detail=(f"all {len(wanted)} part(s) hold the facets of the "
+                                 "volume they came from, in winding order")))
+
+    if any(any(v for v in values) for values in wanted_paint):
+        moved = [str(i + 1) for i, (x, y) in enumerate(zip(wanted_paint, painted))
+                 if x != y]
+        if moved:
+            rows.append(_row(paint_label, CHANGED,
+                             detail=(f"part(s) {', '.join(moved)} carry different "
+                                     "painting than the volume they came from"),
+                             reason=("a facet's colour crosses with that facet — "
+                                     "report this as a bug")))
+        else:
+            rows.append(_row(paint_label, PRESERVED_EXACT,
+                             detail=("every painted facet kept its colour and its "
+                                     "place in the part it came from")))
+    return rows
 
 
 def _settings_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
@@ -664,30 +708,57 @@ _PAINT_ATTR_RE = re.compile(
 
 
 def _paint_shape(result: dict) -> dict:
-    """The meaning of a project's painting, independent of how it is written."""
+    """The meaning of a project's painting, independent of how it is written.
+
+    Painted facets only. A project's per-slot totals also include the area nobody
+    painted, attributed to whatever slot that mesh is assigned — and a copy that
+    carries a part's filament faithfully moves that remainder to the part's own
+    slot, which is a change in the *assignment* and not in the painting. Reading
+    both through one number made a faithful copy look repainted, and the filament
+    rows already answer the assignment question for themselves.
+    """
+    areas: dict[int, float] = {}
+    heights: dict[int, tuple] = {}
+    for entry in result.get("objects") or ():
+        for assignment in entry.get("assignments") or ():
+            if not assignment.get("painted") or assignment.get("slot") is None:
+                continue
+            slot = assignment["slot"]
+            areas[slot] = round(areas.get(slot, 0.0) + (assignment.get("area_mm2") or 0.0), 3)
+            low, high = assignment.get("z_min_mm"), assignment.get("z_max_mm")
+            if low is None:
+                continue
+            before = heights.get(slot)
+            heights[slot] = ((low, high) if before is None
+                             else (min(before[0], low), max(before[1], high)))
     return {
-        "slots": result.get("slots_referenced", []),
+        "slots": sorted(areas),
         "facets": result.get("painted_triangle_count", 0),
-        "areas": {entry["slot"]: round(entry.get("area_mm2") or 0.0, 3)
-                  for entry in result.get("slots", [])},
-        "heights": {entry["slot"]: (entry.get("z_min_mm"), entry.get("z_max_mm"))
-                    for entry in result.get("slots", [])},
+        "areas": areas,
+        "heights": heights,
     }
 
 
 def _paint_dialect_reason(tm: ThreeMF) -> str | None:
     """Will the target act on this painting, or only carry it?
 
-    Studio copies a facet's paint attribute exactly as the source wrote it, which
-    is right for the file and not the whole story for the person. PrusaSlicer
-    writes `slic3rpe:mmu_segmentation`; Snapmaker Orca reads `paint_color`. Handed
-    a copy in the first dialect, Orca 2.3.5 opened it and saved it back with no
-    facet attributes at all — eight painted facets in, none out. A row saying the
-    painting is byte-identical is true of the two files and is easy to read as a
-    promise about the plate.
-    """
-    from . import painted_color
+    Two things have to be true before Snapmaker Orca reads a facet's colour, and
+    both were measured against Orca 2.3.5 by handing it one file at a time:
 
+    * the attribute must be `paint_color`. The identical painting written as
+      PrusaSlicer's `slic3rpe:mmu_segmentation` opened with nothing painted.
+    * the mesh must be in its own object file behind a component. The identical
+      painting, in `paint_color`, left in the root model opened with nothing
+      painted; moved behind a component it opened complete.
+
+    A row saying the painting is preserved is true of the two files either way,
+    and is easy to read as a promise about the plate.
+    """
+    advice = ("The colours are in the file \u2014 paint them again in Orca, or keep "
+              "slicing this one in PrusaSlicer")
+    root_painted = False
+    object_painted = False
+    wrong_dialect = False
     for part in sorted(tm.list_parts()):
         if not part.lower().endswith(".model"):
             continue
@@ -695,13 +766,24 @@ def _paint_dialect_reason(tm: ThreeMF) -> str | None:
             blob = tm.read_part(part)
         except Exception:
             continue
+        painted = b'paint_color="' in blob or b'slic3rpe:mmu_segmentation="' in blob
+        if not painted:
+            continue
         if b'slic3rpe:mmu_segmentation="' in blob:
-            return ("this is PrusaSlicer's way of writing painted colour and "
-                    "Snapmaker Orca reads its own; measured against Orca 2.3.5, the "
-                    "copy opens with no painting. The colours are in the file — paint "
-                    "them again in Orca, or keep slicing this one in PrusaSlicer")
-        if b'paint_color="' in blob:
-            return None
+            wrong_dialect = True
+        if part.startswith(OBJECTS_DIR):
+            object_painted = True
+        elif part == ROOT_MODEL:
+            root_painted = True
+
+    if wrong_dialect:
+        return ("this is PrusaSlicer's way of writing painted colour and Snapmaker "
+                "Orca reads its own; measured against Orca 2.3.5, the copy opens "
+                "with no painting. " + advice)
+    if root_painted and not object_painted:
+        return ("the painted mesh is in the project's root rather than in its own "
+                "object file, and measured against Orca 2.3.5 the painting is not "
+                "read from there. " + advice)
     return None
 
 
@@ -732,20 +814,38 @@ def _painted_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
                             "the comparison would not cover all of it")]
 
     rows = []
-    if before == after:
+    slots = ", ".join(str(s) for s in original["slots_referenced"])
+    translated = original.get("dialect") != copy.get("dialect")
+    if before == after and not translated:
         rows.append(_row("Painted colour", PRESERVED_EXACT,
                          detail=f"{len(before)} painted facet(s), byte-identical, "
-                                f"using slot(s) "
-                                f"{', '.join(str(s) for s in original['slots_referenced'])}",
+                                f"using slot(s) {slots}",
                          reason=_paint_dialect_reason(b)))
         return rows
 
     shape_a, shape_b = _paint_shape(original), _paint_shape(copy)
     if shape_a == shape_b:
-        rows.append(_row("Painted colour", PRESERVED_SEMANTIC,
-                         detail="the paint data is written differently but names the "
-                                "same slots over the same area at the same heights",
-                         reason="the copy was re-serialised"))
+        if translated:
+            # The values are the same string; only the attribute's name changed,
+            # because the two families write the same encoding under different
+            # names. That is a re-statement of the same painting, not the same
+            # bytes, so it is semantic preservation and says which way it went.
+            # A warning about painting that will not arrive outranks the note
+            # about how it was written: being in the target's vocabulary is no
+            # help if the mesh is somewhere the target does not look.
+            translated_reason = (
+                f"written in Snapmaker Orca's own vocabulary instead of "
+                f"{original.get('dialect')}'s, which is the form Orca reads")
+            rows.append(_row("Painted colour", PRESERVED_SEMANTIC,
+                             detail=(f"{len(before)} painted facet(s) over the same "
+                                     f"area at the same heights, using slot(s) {slots}"),
+                             reason=_paint_dialect_reason(b) or translated_reason))
+        else:
+            rows.append(_row("Painted colour", PRESERVED_SEMANTIC,
+                             detail="the paint data is written differently but names "
+                                    "the same slots over the same area at the same "
+                                    "heights",
+                             reason="the copy was re-serialised"))
         return rows
 
     differences = []

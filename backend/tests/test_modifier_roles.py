@@ -222,14 +222,14 @@ def test_changed_modifier_geometry_is_caught(prepared_modifier, tmp_path):
 def test_a_dropped_modifier_is_caught(prepared_modifier, tmp_path):
     broken = damaged(prepared_modifier, tmp_path, SETTINGS,
                      lambda t: re.sub(r'<part id="2".*?</part>\s*', "", t, flags=re.S))
-    assert any("metadata lists 1 part" in p for p in problems(broken))
+    assert any("lists 1 part(s) and has 2 component(s)" in p for p in problems(broken))
     assert role_status(broken)[0] == A.UNSUPPORTED
 
 
 def test_a_duplicated_modifier_is_caught(prepared_modifier, tmp_path):
     broken = damaged(prepared_modifier, tmp_path, SETTINGS, lambda t: t.replace(
         "</object>", re.search(r'<part id="2".*?</part>', t, re.S).group(0) + "</object>"))
-    assert any("used twice" in p for p in problems(broken))
+    assert any("uses a part id twice" in p for p in problems(broken))
 
 
 def test_swapped_roles_are_caught(prepared_modifier, tmp_path):
@@ -249,7 +249,7 @@ def test_a_part_belonging_to_no_object_is_caught(prepared_modifier, tmp_path):
     """A modifier attached to something the geometry does not describe."""
     broken = damaged(prepared_modifier, tmp_path, SETTINGS,
                      lambda t: t.replace('<part id="2"', '<part id="7"'))
-    assert any("do not match component ids" in p for p in problems(broken))
+    assert any("do not match its component ids" in p for p in problems(broken))
 
 
 def test_a_role_word_the_target_does_not_know_is_caught(prepared_modifier, tmp_path):

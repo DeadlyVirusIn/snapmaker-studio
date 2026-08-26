@@ -298,6 +298,22 @@ def _carry_prusa_settings(source: ThreeMF, wrapped: ThreeMF) -> dict | None:
         return None
 
 
+def check_structure(tm) -> None:
+    """Refuse to save a prepared copy whose descriptions of itself disagree.
+
+    The validator has caught every corruption the tests throw at it since it was
+    written, and until now nothing ran it outside those tests — so a writer bug
+    would have reached the user as a project Snapmaker Orca opens wrongly. It runs
+    on every prepared copy now, before the file is written.
+    """
+    from . import multipart
+    from .errors import UnsoundOutput
+
+    result = multipart.validate_archive(tm)
+    if not result.get("ok", True):
+        raise UnsoundOutput(result.get("problems") or ["the structure is unsound"])
+
+
 def convert_to_u1(path: str, out_dir: str | None = None, prepare_mode: str = "preserve",
                   dry_run: bool = False) -> ConversionResult:
     """Convert a single STL or 3MF into a saved U1-ready 3MF. Returns the result."""
@@ -315,6 +331,7 @@ def convert_to_u1(path: str, out_dir: str | None = None, prepare_mode: str = "pr
         from .stl_wrap import wrap_stl
 
         tm = wrap_stl(str(src))
+        check_structure(tm)
         if out:
             tm.save(out)
         res = do_validate(tm, against=None)
@@ -334,6 +351,7 @@ def convert_to_u1(path: str, out_dir: str | None = None, prepare_mode: str = "pr
         # thing on both sides is the difference between a copy of the shape and a
         # copy of the print.
         carried = _carry_prusa_settings(tm, wrapped)
+        check_structure(wrapped)
         if out:
             wrapped.save(out)
         res = do_validate(wrapped, against=None)
@@ -360,6 +378,7 @@ def convert_to_u1(path: str, out_dir: str | None = None, prepare_mode: str = "pr
         recommended_after = load_project_settings(recommended_tm.read_part(SETTINGS))
     summary = _settings_summary(before, after, raw_config, outcome, prepare_mode,
                                 recommended_after=recommended_after)
+    check_structure(tm)
     backup = src.with_suffix(".orig.3mf")
     if not dry_run and not backup.exists():
         shutil.copy2(src, backup)

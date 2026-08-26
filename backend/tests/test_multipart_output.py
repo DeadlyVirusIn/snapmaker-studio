@@ -171,12 +171,43 @@ def test_the_audit_now_reports_the_parts_as_preserved(prepared):
     assert result["rows"][0]["status"] != A.NOT_REPRESENTABLE
 
 
-def test_a_single_volume_object_still_takes_the_simple_path():
+def unpainted(source: Path, tmp_path: Path) -> Path:
+    """The fixture with every painted facet stripped.
+
+    Every project in this fixture family is painted, and painting now earns the
+    target layout on its own, so the plain path needs a plain file to be shown on.
+    """
+    target = tmp_path / "unpainted.3mf"
+    with zipfile.ZipFile(source) as src, zipfile.ZipFile(target, "w") as dst:
+        for item in src.infolist():
+            data = src.read(item.filename)
+            if item.filename.endswith(".model"):
+                data = re.sub(rb'\s*slic3rpe:mmu_segmentation="[^"]*"', b"", data)
+            dst.writestr(item, data)
+    return target
+
+
+def test_a_single_unpainted_volume_still_takes_the_simple_path(tmp_path):
     """The change is narrow on purpose: nothing splits that has nothing to split."""
-    out = convert_to_u1(str(ONE_VOLUME), out_dir=tempfile.mkdtemp()).output_path
+    source = unpainted(ONE_VOLUME, tmp_path)
+    out = convert_to_u1(str(source), out_dir=tempfile.mkdtemp()).output_path
     with zipfile.ZipFile(out) as z:
         assert OBJECTS not in z.namelist()
     assert MP.validate_archive(ThreeMF.open(out))["multipart"] is False
+
+
+def test_painting_alone_earns_the_target_layout():
+    """One volume, no roles, nothing to split — and it still moves.
+
+    Measured against Snapmaker Orca 2.3.5: the identical painting in the root
+    model opens with nothing painted, and behind a component in its own object
+    file opens complete. So a painted object crosses in the shape Orca reads.
+    """
+    out = convert_to_u1(str(ONE_VOLUME), out_dir=tempfile.mkdtemp()).output_path
+    with zipfile.ZipFile(out) as z:
+        assert OBJECTS in z.namelist()
+        assert z.read(ROOT).decode("utf-8").count("<mesh>") == 0
+        assert z.read(OBJECTS).decode("utf-8").count('paint_color="') == 8
 
 
 # --- twelve ways to lie about it ---------------------------------------------
@@ -333,9 +364,12 @@ def test_the_unknown_role_warning_says_what_actually_happens(tmp_path):
 # --- painting -----------------------------------------------------------------
 
 def test_painting_survives_the_split_facet_for_facet(prepared):
+    """The values cross unchanged; only the attribute's name is the target's."""
     before = sorted(re.findall(r'mmu_segmentation="([^"]*)"', read(str(TWO_VOLUMES), ROOT)))
-    after = sorted(re.findall(r'mmu_segmentation="([^"]*)"', read(prepared, OBJECTS)))
+    after = sorted(re.findall(r'paint_color="([^"]*)"', read(prepared, OBJECTS)))
     assert before == after and len(after) == 8
+    assert "mmu_segmentation" not in read(prepared, OBJECTS), (
+        "the source's attribute name means nothing to Snapmaker Orca")
 
 
 def test_each_part_keeps_the_painting_of_its_own_facets(prepared):
@@ -343,5 +377,5 @@ def test_each_part_keeps_the_painting_of_its_own_facets(prepared):
     counts = []
     for object_id in ("1", "2"):
         block = re.search(rf'<object id="{object_id}".*?</object>', body, re.S).group(0)
-        counts.append(block.count("mmu_segmentation"))
+        counts.append(block.count("paint_color"))
     assert sum(counts) == 8 and all(counts), "painting must not pile onto one part"

@@ -450,6 +450,20 @@ def wrap_geometry_3mf(path, colors=DEFAULT_COLORS, profile_name: str = "snapmake
 
 # ---- one source object, several real parts ----------------------------------
 
+def carries_painting(src: ThreeMF) -> bool:
+    """Does the source paint any facet at all?"""
+    for name in src.list_parts():
+        if not name.lower().endswith(".model"):
+            continue
+        try:
+            blob = src.read_part(name)
+        except Exception:
+            continue
+        if b'slic3rpe:mmu_segmentation="' in blob or b'paint_color="' in blob:
+            return True
+    return False
+
+
 def _try_multipart(src: ThreeMF, model: bytes, stem: str,
                    filaments: int = MIN_FILAMENTS):
     """Emit a component-based object when the source's volumes earn it.
@@ -475,7 +489,11 @@ def _try_multipart(src: ThreeMF, model: bytes, stem: str,
     if len(volumes_by_object) != 1:
         return None
     (source_id, volumes), = volumes_by_object.items()
-    if not multipart.worth_splitting(volumes):
+    if not (multipart.worth_splitting(volumes) or carries_painting(src)):
+        # Painting earns the target layout on its own. Snapmaker Orca reads a
+        # facet's colour only from a mesh it loads through a component into its
+        # own object file: measured, the identical painting in the root model
+        # opens with nothing painted, and behind a component opens complete.
         return None
 
     text = model.decode("utf-8", "replace")
