@@ -9,13 +9,14 @@ Written 2026-08-26. **Nothing here is released.** Supersedes
 |---|---|
 | Current stable release | **v0.8.0**, published, latest, untouched |
 | Release tag | `v0.8.0` → commit `e12bc59` |
-| `main` HEAD | **`ff1aef2`** |
+| `main` HEAD | **`85716a1`** — this document; the runtime work ends at `ff1aef2` |
 | Working tree | clean |
 | Release evidence | `docs/internal/evidence/0.8.0.json` unchanged; no snapshot edited |
 
 Commits since the previous handoff:
 
 ```
+85716a1 docs(internal): handoff after the placement work      <- this file
 ff1aef2 fix(placement): a modifier off the plate is not an object off the plate
 f0b8205 docs(internal): handoff after the volume and multi-object work
 ```
@@ -27,6 +28,39 @@ Backend **1606 passed / 4 skipped** · desktop **321** · `u1convert selfcheck`
 
 **Not run against `main`:** installed-app acceptance and the real-U1 hardware
 harness. `main` is **not hardware verified**.
+
+## Start here
+
+```
+cd "D:/STL Files/snapmaker-studio"
+git rev-parse HEAD          # expect 85716a1, and origin/main the same
+git status --short           # expect clean
+cd backend && py -m pytest -q # expect 1606 passed, 4 skipped
+```
+
+Python is `py` on this machine — there is no `python` on PATH and no virtualenv.
+Backend tests must be run from `backend/`; the desktop gates are
+`npm run test`, `npx tsc --noEmit` and `npm run build` from `desktop/`, and
+`cargo check` from `desktop/src-tauri`. The selfcheck is
+`py -c "from u1convert.cli import cli; cli(['selfcheck'])"`.
+
+**The next task** is per-object overrides — the last unsettled category-D
+question. The method is the round-trip harness below, with an invented key as the
+control: a key that survives when nonsense also survives has proved nothing.
+
+**Tooling from the last two instalments lives in a session scratchpad and is
+gone when that session is.** Neither is in the repository, and neither should be:
+
+* the Orca automation harness — starts an Orca only when none is running, own
+  temporary directory, own process id, ownership proved before every keystroke,
+  Save Project As driven through the file dialog, never force-kills, audits the
+  machine afterwards;
+* PrusaSlicer 2.9.6, portable, fetched from the project's GitHub release and
+  verified with `--version`. **It is not installed on this machine.**
+
+Rebuilding either is an hour's work and the methods are described in this
+document and in `PRUSA_SEMANTICS.md`. Do not treat their absence as evidence that
+something cannot be measured.
 
 ## Read this before planning placement work
 
