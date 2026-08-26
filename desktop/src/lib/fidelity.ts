@@ -89,3 +89,32 @@ export function countsLine(report: FidelityReport | null): string {
   if (g.unverified.length) bits.push(`${g.unverified.length} unchecked`);
   return bits.join(" · ");
 }
+
+/**
+ * One plain sentence about the settings somebody set on individual objects.
+ *
+ * A project where one part prints at 0.3 mm layers and another at 0.2 is making
+ * a decision, and a copy that silently flattens it prints a different thing.
+ * Two of the three settings Studio can carry are spelled differently in
+ * Snapmaker Orca, so "preserved" here means the setting arrived, not that the
+ * word did.
+ *
+ * Returns null when the project has none, so the card says nothing rather than
+ * saying "0 settings".
+ */
+export function objectSettingsLine(report: FidelityReport | null): string | null {
+  if (!report?.available) return null;
+  const rows = [...(report.kept ?? []), ...(report.changed ?? []),
+                ...(report.not_carried ?? []), ...(report.unverified ?? [])]
+    .filter((row) => row.element.startsWith("Settings set on"));
+  if (!rows.length) return null;
+
+  const kept = rows.filter(
+    (row) => row.status === "preserved_exact" || row.status === "preserved_semantic").length;
+  const missed = rows.length - kept;
+  const count = (n: number) => `${n} object-specific setting${n === 1 ? "" : "s"}`;
+  if (missed === 0) return `${count(kept)} preserved.`;
+  const was = missed === 1 ? "was" : "were";
+  if (kept === 0) return `${count(missed)} ${was} not carried — the list below says why.`;
+  return `${count(kept)} preserved; ${missed} not carried — the list below says why.`;
+}

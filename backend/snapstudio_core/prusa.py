@@ -178,6 +178,30 @@ def objects(raw: bytes | str) -> list[dict]:
     return out
 
 
+def _overrides_carried(parsed_objects: list[dict]) -> int:
+    """How many object-specific settings cross in Snapmaker Orca's own words."""
+    from . import overrides as object_overrides
+
+    return sum(len(object_overrides.plan(o.get("settings"))["carry"])
+               for o in parsed_objects)
+
+
+def _overrides_not_carried(parsed_objects: list[dict]) -> list[str]:
+    """The object-specific settings that stay behind, named once each.
+
+    Named rather than counted: "three settings were not carried" tells somebody
+    to worry, and `ironing_type, seam_position` tells them what to set in Orca.
+    """
+    from . import overrides as object_overrides
+
+    seen: list[str] = []
+    for entry in parsed_objects:
+        for row in object_overrides.plan(entry.get("settings"))["rows"]:
+            if not row["carried"] and row["source_key"] not in seen:
+                seen.append(row["source_key"])
+    return seen
+
+
 def _nozzles(config: dict) -> tuple[list[str], str | None]:
     """Which nozzle the project was set up for, and how that is known.
 
@@ -240,6 +264,8 @@ def summarise(settings_raw: bytes | str | None,
         "extruders_assigned": assigned,
         "variable_layer_height": any(o.get("has_layer_profile") for o in parsed_objects),
         "per_object_overrides": sum(1 for o in parsed_objects if o.get("settings")),
+        "per_object_overrides_carried": _overrides_carried(parsed_objects),
+        "per_object_overrides_not_carried": _overrides_not_carried(parsed_objects),
         "bed_temperature_c": _float(config.get("bed_temperature")),
         "nozzle_temperature_c": [_float(v) for v in _split(config.get("temperature"))],
     }
@@ -344,11 +370,14 @@ def not_carried(summary: dict) -> list[dict]:
                        "Orca has no equivalent for. The object keeps its shape; the varying "
                        "layer height does not survive."),
         })
-    if summary.get("per_object_overrides"):
+    uncarried = summary.get("per_object_overrides_not_carried") or []
+    if uncarried:
+        listed = ", ".join(uncarried[:4]) + ("…" if len(uncarried) > 4 else "")
         out.append({
-            "element": f"Per-object setting overrides ({summary['per_object_overrides']} object(s))",
-            "reason": ("Settings attached to individual objects are named differently in "
-                       "Snapmaker Orca and are not translated. Review them after opening the copy."),
+            "element": f"Object-specific settings not carried ({len(uncarried)})",
+            "reason": (f"{listed} — Studio has not established what these mean to "
+                       "Snapmaker Orca, so it reports them rather than guessing. Set "
+                       "them on the object in Orca after opening the copy."),
         })
     if summary.get("supports"):
         out.append({

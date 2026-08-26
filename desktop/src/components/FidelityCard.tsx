@@ -9,6 +9,7 @@ import {
   countsLine,
   fidelityHeadline,
   groupedRows,
+  objectSettingsLine,
   statusLabel,
   statusTone,
 } from "@/lib/fidelity";
@@ -42,6 +43,7 @@ export function FidelityCard({ original, prepared }: { original: string; prepare
 
   const groups = groupedRows(report);
   const unresolved = groups.unverified.length + groups.notCarried.length;
+  const objectSettings = objectSettingsLine(report);
 
   return (
     <Card className="text-left">
@@ -63,6 +65,13 @@ export function FidelityCard({ original, prepared }: { original: string; prepare
         </div>
 
         <p className="text-sm text-muted-foreground">{fidelityHeadline(report)}</p>
+
+        {/* A project where one part prints at 0.3 mm layers and another at 0.2
+            is making a decision. Said in one line here; each setting has its own
+            row below. */}
+        {objectSettings && (
+          <p className="text-sm text-muted-foreground">{objectSettings}</p>
+        )}
 
         {report?.available && (
           <div className="space-y-2">

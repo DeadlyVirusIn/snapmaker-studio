@@ -5,6 +5,7 @@ import {
   fidelityHeadline,
   groupedRows,
   mayClaimNothingLost,
+  objectSettingsLine,
   statusLabel,
   statusTone,
 } from "./fidelity";
@@ -150,5 +151,44 @@ describe("groupedRows and countsLine", () => {
       unverified: [row({ status: "unverified" })],
     });
     expect(countsLine(r)).toBe("1 kept · 1 changed · 1 not carried over · 1 unchecked");
+  });
+});
+
+describe("objectSettingsLine", () => {
+  const setting = (status: FidelityStatus, on = "cube"): FidelityRow =>
+    row({ element: `Settings set on ${on}`, status });
+
+  it("says nothing when the project set none", () => {
+    expect(objectSettingsLine(report({ kept: [row()] }))).toBeNull();
+  });
+
+  it("counts a setting that crossed under a different name as preserved", () => {
+    const r = report({ kept: [setting("preserved_semantic"), setting("preserved_exact")] });
+    expect(objectSettingsLine(r)).toBe("2 object-specific settings preserved.");
+  });
+
+  it("names the ones that stayed behind", () => {
+    const r = report({ not_carried: [setting("unsupported")] });
+    expect(objectSettingsLine(r)).toBe(
+      "1 object-specific setting was not carried — the list below says why.");
+  });
+
+  it("reports both halves when a project has some of each", () => {
+    const r = report({
+      kept: [setting("preserved_exact")],
+      not_carried: [setting("unsupported"), setting("unsupported")],
+    });
+    expect(objectSettingsLine(r)).toBe(
+      "1 object-specific setting preserved; 2 not carried — the list below says why.");
+  });
+
+  it("counts a setting the copy got wrong as not preserved", () => {
+    const r = report({ changed: [setting("changed")] });
+    expect(objectSettingsLine(r)).toContain("not carried");
+  });
+
+  it("says nothing for a report that is not available", () => {
+    expect(objectSettingsLine(report({ available: false }))).toBeNull();
+    expect(objectSettingsLine(null)).toBeNull();
   });
 });
