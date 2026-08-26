@@ -92,6 +92,25 @@ Studio's implementation is independent: `paint_codec` decodes the bits and
 replays the subdivision on the facet's own corners, and `painted_color` reads the
 container around it. Neither shares code with any slicer.
 
+## Crossing into a prepared U1 project
+
+Reading a dialect and writing one are different problems. A copy prepared for
+Snapmaker Orca states its painting in Orca's own vocabulary — `paint_color` — with
+the encoded value unchanged, and puts the painted mesh in its own object file
+behind a component. Both were measured against Orca 2.3.5: the identical painting
+under PrusaSlicer's attribute name opens with nothing painted, and so does the
+identical painting left in the project's root model. Neither condition is
+optional, and neither alone is enough.
+
+Studio writes no painting version. PrusaSlicer declares
+`slic3rpe:MmPaintingVersion`; no project in the Orca/Bambu family declares a
+painting version at all, and a copy without one opens correctly.
+
+The fidelity audit reports a crossing as *preserved semantically* rather than
+exactly, because the two files no longer say it the same way, and names the
+translation. It compares each part's facets in order, so colour that lands on the
+wrong part is a finding rather than a matching set of values.
+
 ## Cross-slicer support, from test results
 
 Every SUPPORTED cell below is something a test asserts against a file a real

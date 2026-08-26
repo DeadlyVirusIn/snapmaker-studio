@@ -61,6 +61,67 @@ elements — and reads the saved archive. Where the question was about printing
 rather than about words, the plate is sliced first and the footprint Orca records
 for it is read.
 
+### How many filaments a project may declare
+
+The slot Orca drops is not about the four nozzles. Measured across a ten-cell
+matrix — declared filaments crossed with the slot one part asks for, one variable
+per file:
+
+| declared | part on 1 | part on 4 | part on 5 | part on 6 |
+|---|---|---|---|---|
+| 4 | kept | kept | **dropped to 0** | **dropped to 0** |
+| 5 | — | kept | kept | **dropped to 0** |
+| 6 | — | kept | kept | kept |
+
+**Orca keeps a slot whenever the project declares that many filaments.** The four
+physical nozzles never changed in any of the ten, and neither did the bed. Logical
+filaments and toolheads are separate things, and a U1 project may declare more of
+the first.
+
+What grows with the count was measured the same way, by handing Orca a
+six-filament project and reading which structures it held at six: the flush table
+(square in the count), the flush vector (twice it), `filament_maps` (one entry per
+filament, where Studio used to write a single `1`), and the per-filament rows of
+`slice_info.config`. What stayed at four is every per-extruder option —
+retraction, z-hop, wipe, nozzle diameter, extruder offset and colour, the
+layer-height limits — and `printable_area`, which is the bed polygon and is four
+entries long by coincidence. A naive "grow every four-element array" corrupts the
+bed.
+
+Studio's prepared copy now declares as many filaments as the source refers to,
+across object assignments, volume assignments and painted colour. The extra
+entries are padding and say so: the source gave no colour, vendor or material for
+them.
+
+### What Snapmaker Orca needs before it reads painted colour
+
+Two things, and neither is optional. Measured by handing Orca one file at a time
+and reading the project it saved back:
+
+| the mesh is | the attribute is | painting after Orca |
+|---|---|---|
+| in the root model | `paint_color` | **none** |
+| in its own object file, behind a component | `paint_color` | all 8 facets, same slots, same areas |
+| in its own object file, behind a component | `slic3rpe:mmu_segmentation` | **none** |
+
+So translating the attribute alone fixes nothing, and moving the geometry alone
+fixes nothing. A prepared copy does both.
+
+The encoded value is unchanged: the OrcaSlicer and PrusaSlicer painted-cube
+fixtures carry byte-identical strings for the same eight facets. Crossing is a
+rename and a move, not a re-encode.
+
+**No painting version is invented.** PrusaSlicer declares
+`slic3rpe:MmPaintingVersion`; Snapmaker Orca 2.3.5, OrcaSlicer 2.4.2 and
+BambuStudio declare only `BambuStudio:3mfVersion`, and a copy carrying no painting
+version at all opens correctly. Orca accepts `BambuStudio:MmPaintingVersion` if it
+is there and does not need it, so Studio does not write one.
+
+**Orca parses the attribute rather than copying it.** Handed a paint tree that
+cannot be decoded, Orca 2.3.5 wrote back `00000000` — an unpainted facet. That
+control is what makes the rows above evidence: a slicer that merely carried the
+string across would have returned the broken one unchanged.
+
 ### It reads two parts, and one of the two filaments
 
 The prepared multi-part fixture — one object, parts on filaments 2 and 5 — came
@@ -121,18 +182,19 @@ sliced; the footprint Orca records for it read back.
 solid changes nothing, so this is the whole of the difference between a part that
 prints and one that does not.
 
-### Painting written in PrusaSlicer's dialect does not reach it
+### Painting written in PrusaSlicer's dialect did not reach it, and now does
 
-The prepared copy carries painted facets exactly as the source wrote them, in
-PrusaSlicer's `slic3rpe:mmu_segmentation`. Orca's own attribute is `paint_color`.
-Handed the copy, Orca saved it back with **no facet attributes at all**: 8 painted
-facets in, 0 out.
+The prepared copy used to carry painted facets exactly as the source wrote them,
+in PrusaSlicer's `slic3rpe:mmu_segmentation`, and Orca saved it back with **no
+facet attributes at all**: 8 painted facets in, 0 out. Fixed — see *What Snapmaker
+Orca needs before it reads painted colour* above for the two conditions and the
+controls behind them.
 
-The fidelity audit's `Painted colour` row compares the original with the copy and
-says `preserved_exact`, which is true of the two files — the bytes are identical.
-It is **not** a statement that the painting reaches the slicer, and it is currently
-easy to read as one. Translating the dialect on the way out is the obvious fix and
-is not attempted here.
+The audit followed. Painting that crossed dialects is `preserved_semantic` with
+the translation named rather than `preserved_exact`: the bits are the same string
+and the statement is not. A copy that still carries the source's attribute name,
+or whose painted mesh is in the root model, gets a row saying it opens with no
+painting and what to do about it.
 
 ## What changed in Studio
 
