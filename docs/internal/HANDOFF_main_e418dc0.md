@@ -1,5 +1,11 @@
 # Handoff — unreleased work on `main` after v0.8.0, second instalment
 
+> **Superseded by `HANDOFF_main_04f7910.md`.** Two of the things this document
+> states have since been measured differently: a slot above four is dropped
+> because of the *declared filament count*, not the four toolheads, and
+> translating the paint dialect is only half of what painting needs. Read this
+> for how the round-trip method was arrived at, not for the current state.
+
 Written 2026-08-25. **Nothing here is released.** Supersedes
 `HANDOFF_main_2b06ed6.md`, which describes the state one sprint earlier; read
 `HANDOFF_v0.8.0.md` for the released product.
