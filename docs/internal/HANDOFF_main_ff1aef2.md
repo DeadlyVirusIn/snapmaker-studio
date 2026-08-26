@@ -9,17 +9,19 @@ Written 2026-08-26. **Nothing here is released.** Supersedes
 |---|---|
 | Current stable release | **v0.8.0**, published, latest, untouched |
 | Release tag | `v0.8.0` → commit `e12bc59` |
-| `main` HEAD | **`85716a1`** — this document; the runtime work ends at `ff1aef2` |
+| Runtime work ends at | **`ff1aef2`** — everything after it on `main` is documentation |
 | Working tree | clean |
 | Release evidence | `docs/internal/evidence/0.8.0.json` unchanged; no snapshot edited |
 
 Commits since the previous handoff:
 
 ```
-85716a1 docs(internal): handoff after the placement work      <- this file
 ff1aef2 fix(placement): a modifier off the plate is not an object off the plate
 f0b8205 docs(internal): handoff after the volume and multi-object work
 ```
+
+plus the documentation commits that carry this file.
+
 
 ## Current verification on `main`
 
@@ -33,10 +35,16 @@ harness. `main` is **not hardware verified**.
 
 ```
 cd "D:/STL Files/snapmaker-studio"
-git rev-parse HEAD          # expect 85716a1, and origin/main the same
-git status --short           # expect clean
-cd backend && py -m pytest -q # expect 1606 passed, 4 skipped
+git status --short                       # expect clean, nothing to commit
+git rev-parse HEAD origin/main           # expect the two to match
+git log --oneline ff1aef2..HEAD          # expect docs commits only
+cd backend && py -m pytest -q            # expect 1606 passed, 4 skipped
 ```
+
+No exact HEAD is written here on purpose: a handoff that names the hash of the
+commit containing it is stale the moment it is committed. What matters is that
+the working tree is clean, `main` and `origin/main` agree, and nothing since
+`ff1aef2` touches runtime code.
 
 Python is `py` on this machine — there is no `python` on PATH and no virtualenv.
 Backend tests must be run from `backend/`; the desktop gates are
