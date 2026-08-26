@@ -12,6 +12,7 @@ import {
   objectSettingsLine,
   statusLabel,
   statusTone,
+  targetNote,
 } from "@/lib/fidelity";
 
 /**
@@ -120,6 +121,12 @@ function RowLine({ row }: { row: FidelityRow }) {
       </p>
       <p className="text-muted-foreground">{row.detail}</p>
       {row.reason && <p className="text-muted-foreground">Why: {row.reason}</p>}
+      {/* Whether the fact survived into the copy and whether the slicer reads it
+          are two questions. A copy once stated an object's filament correctly
+          and Snapmaker Orca never looked at it. */}
+      {targetNote(row) && (
+        <p className="text-muted-foreground">In Snapmaker Orca: {targetNote(row)}</p>
+      )}
     </li>
   );
 }

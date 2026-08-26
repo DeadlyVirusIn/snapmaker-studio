@@ -1721,12 +1721,30 @@ export type FidelityStatus =
   | "unsupported"
   | "unverified";
 
+/**
+ * Whether Snapmaker Orca was measured to act on a fact at all.
+ *
+ * Separate from `status`, which only says whether the fact made it from the
+ * source into the copy. A copy can pass that on paper and fail on the plate:
+ * one stated an object's filament correctly and Orca, having decided the file
+ * was foreign, loaded the geometry and nothing else.
+ *
+ * `null` means nobody has measured it — which is not the same as "ignored".
+ */
+export type FidelityTarget =
+  | "reaches_target"
+  | "reconstructed"
+  | "ignored"
+  | "not_established";
+
 export interface FidelityRow {
   element: string;
   status: FidelityStatus;
   detail: string;
   reason: string | null;
   part: string | null;
+  target?: FidelityTarget | null;
+  target_detail?: string | null;
 }
 
 export interface FidelityReport {

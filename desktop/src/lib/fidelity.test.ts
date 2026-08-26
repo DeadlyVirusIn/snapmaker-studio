@@ -5,7 +5,9 @@ import {
   fidelityHeadline,
   groupedRows,
   mayClaimNothingLost,
+  looksBetterThanItIs,
   objectSettingsLine,
+  targetNote,
   statusLabel,
   statusTone,
 } from "./fidelity";
@@ -190,5 +192,44 @@ describe("objectSettingsLine", () => {
   it("says nothing for a report that is not available", () => {
     expect(objectSettingsLine(report({ available: false }))).toBeNull();
     expect(objectSettingsLine(null)).toBeNull();
+  });
+});
+
+describe("targetNote", () => {
+  it("says nothing about a fact the slicer was measured to read", () => {
+    expect(targetNote(row({ target: "reaches_target" }))).toBeNull();
+  });
+
+  it("says nothing about a fact nobody has classified", () => {
+    expect(targetNote(row({}))).toBeNull();
+  });
+
+  it("names a fact Orca rebuilds for itself", () => {
+    expect(targetNote(row({ target: "reconstructed" }))).toContain("rebuilds");
+  });
+
+  it("names a fact Orca does not read", () => {
+    expect(targetNote(row({ target: "ignored" }))).toContain("does not read");
+  });
+
+  it("says plainly when nobody has established it", () => {
+    expect(targetNote(row({ target: "not_established" }))).toContain("not established");
+  });
+});
+
+describe("looksBetterThanItIs", () => {
+  it("flags a preserved fact the slicer rebuilds anyway", () => {
+    expect(looksBetterThanItIs(
+      row({ status: "preserved_exact", target: "reconstructed" }))).toBe(true);
+  });
+
+  it("does not flag a preserved fact the slicer reads", () => {
+    expect(looksBetterThanItIs(
+      row({ status: "preserved_exact", target: "reaches_target" }))).toBe(false);
+  });
+
+  it("does not flag a change, which is already not a win", () => {
+    expect(looksBetterThanItIs(
+      row({ status: "changed", target: "ignored" }))).toBe(false);
   });
 });

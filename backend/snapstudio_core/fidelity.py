@@ -79,8 +79,19 @@ _HUMAN = {
 
 def _row(element: str, status: str, *, detail: str, reason: str | None = None,
          part: str | None = None) -> dict:
+    """One fact, answered twice.
+
+    `status` is Studio's own comparison of the two files. `target` is whether
+    Snapmaker Orca was measured to act on the fact at all — a separate question,
+    and the one a copy can pass on paper while failing on the plate. A row nobody
+    has measured carries no target verdict rather than a reassuring one.
+    """
+    from . import target_reachability
+
+    target, target_detail = target_reachability.of(element)
     return {"element": element, "status": status, "detail": detail,
-            "reason": reason, "part": part}
+            "reason": reason, "part": part,
+            "target": target, "target_detail": target_detail}
 
 
 def _sha(data: bytes) -> str:
@@ -1052,7 +1063,16 @@ def _assignment_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
                             "records no assignments at all",
                      reason="Studio does not drop object assignments — report this as a bug")]
 
-    verdict = assignments.compare(before, after)
+    # How many filaments the prepared plate prints with, because one of the
+    # per-object settings is only allowed on a plate that needs no prime tower.
+    # Without it the audit calls Studio's correct refusal a fault.
+    try:
+        from .stl_wrap import filaments_in_use
+
+        in_use = filaments_in_use(a, a.read_part("3D/3dmodel.model"))
+    except Exception:
+        in_use = 1
+    verdict = assignments.compare(before, after, filaments=in_use)
     if not verdict.get("available"):
         return [_row("Which filament each object uses", UNVERIFIED,
                      detail=verdict.get("reason", "the two sides cannot be compared"))]

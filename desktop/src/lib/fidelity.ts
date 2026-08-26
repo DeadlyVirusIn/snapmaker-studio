@@ -51,7 +51,12 @@ export function fidelityHeadline(report: FidelityReport | null): string {
   if (!report) return "Checking what survived…";
   if (!report.available) return report.summary;
   if (report.claims.may_claim_nothing_lost) {
-    return "Everything Studio can identify came through, and every change is listed below.";
+    // "Came through" was a claim about the file, and a reader takes it as a
+    // claim about the print. Those came apart once already: a copy stated an
+    // object's filament correctly and Snapmaker Orca never read it. The rows
+    // now say where the slicer does something other than read a value, so the
+    // headline says which of the two questions it is answering.
+    return "Everything Studio can identify is in the prepared copy, and every change is listed below.";
   }
   if (report.unverified.length) {
     const n = report.unverified.length;
@@ -117,4 +122,34 @@ export function objectSettingsLine(report: FidelityReport | null): string | null
   const was = missed === 1 ? "was" : "were";
   if (kept === 0) return `${count(missed)} ${was} not carried — the list below says why.`;
   return `${count(kept)} preserved; ${missed} not carried — the list below says why.`;
+}
+
+/**
+ * What to say about a fact the slicer does not simply read.
+ *
+ * `status` answers "did the fact reach the copy". This answers "does Snapmaker
+ * Orca act on it" — the question a file comparison cannot ask. A row that
+ * survived into the copy and is then rebuilt or ignored by the slicer must not
+ * read as a plain win, and a row nobody has measured must not read as one
+ * either.
+ */
+export function targetNote(row: FidelityRow): string | null {
+  switch (row.target) {
+    case "reaches_target":
+      return null;
+    case "reconstructed":
+      return "Snapmaker Orca rebuilds this itself, so keeping it unchanged is not what makes it right.";
+    case "ignored":
+      return "Snapmaker Orca does not read this.";
+    case "not_established":
+      return "Studio has not established whether Snapmaker Orca uses this.";
+    default:
+      return null;
+  }
+}
+
+/** True when the row's file status looks good and the slicer's answer does not. */
+export function looksBetterThanItIs(row: FidelityRow): boolean {
+  const kept = row.status === "preserved_exact" || row.status === "preserved_semantic";
+  return kept && (row.target === "reconstructed" || row.target === "ignored");
 }
