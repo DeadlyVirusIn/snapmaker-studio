@@ -724,11 +724,177 @@ above declared four too.
 
 ### Still not established
 
-- **`[Content_Types].xml` and the package-level `_rels/.rels`** were not varied
-  one at a time.
+- ~~`[Content_Types].xml` and the package-level `_rels/.rels`~~ — **settled
+  2026-08-26**, see *The two package gates* below.
 - **Which individual `project_settings` keys matter** beyond the ones above. The
   mechanism is settled — declared or reset — so the question is now which values
   Studio should be stating at all, not whether they arrive.
 - **`layer_height` between the profile's `max_layer_height` and the nozzle
   diameter**, 0.32 to 0.40 mm on the 0.4 nozzle. Unchanged from the last
   instalment.
+
+## The two package gates — measured 2026-08-26
+
+The last instalment left these unmeasured. One variable per file, from a
+known-good prepared project.
+
+| `[Content_Types].xml` | Orca |
+|---|---|
+| correct | full project |
+| **absent** | **full project** |
+| stripped of its `png` declaration | full project |
+| `.model` declared `text/plain` | full project |
+| malformed XML | full project |
+
+| `_rels/.rels` | Orca |
+|---|---|
+| correct | full project |
+| **absent** | **rejected** — *"Snapmaker Orca error"*, nothing loads |
+| target pointing at a file not in the archive | **rejected** |
+| correct target, different relationship `Type` | **rejected** |
+| malformed XML | **rejected** |
+
+So `[Content_Types].xml` is **ignored** — Orca does not read it at all — and
+`_rels/.rels` is **required**, down to the relationship `Type` URI and not merely
+the target. Rejection here is harder than the geometry-only downgrade: nothing
+loads, not even the mesh.
+
+## The printer entry
+
+`different_settings_to_system` has one entry per preset. The process entry and
+the filament entries were established last instalment; the **last** entry is the
+printer's.
+
+| `nozzle_type` written as `stainless_steel` | Orca kept |
+|---|---|
+| not declared | **`hardened_steel`** — the preset's |
+| declared in the last entry | **`stainless_steel`** |
+
+The same file declared in the last entry also kept sentinel comments injected
+into `machine_start_gcode` and `machine_end_gcode`, **and those sentinels reached
+the exported G-code**. So the printer entry decides what the machine actually
+runs.
+
+`preset_deviation.PRINTER_KEYS` names the keys Studio has measured to belong
+there. It is deliberately short: a key not on it is declared in the process
+entry, where an unrecognised name costs nothing.
+
+## What a prepared U1 project should state at all — settled 2026-08-26
+
+A project names its presets and then lists most of their values inline. Studio's
+template does that for 549 keys. Since a value is only used when it is also
+declared, a restated preset default is not a setting — it is a comment the slicer
+overwrites.
+
+Classified against the effective Snapmaker Orca 2.3.6 U1 presets, inheritance
+resolved, measured on the **prepared output** rather than the template (the
+template's per-filament arrays are rewritten at prepare time, so the template
+overstates the differences three-fold):
+
+| | keys |
+|---|---|
+| equal to the effective preset — inherited in practice | **274** |
+| no preset defines them — nothing to inherit from | **264** |
+| genuinely different from the preset | **11** |
+
+Of the eleven, two (`print_settings_id`, `printer_settings_id`) are the project
+naming its own presets, and one (`gap_fill_target`) was fixed last instalment.
+The remaining eight had no owning feature anywhere in Studio, and — being
+undeclared — Orca replaced every one of them on load. **None had ever reached a
+print.** They are removed:
+
+| key | template said | preset says | owner |
+|---|---|---|---|
+| `machine_start_gcode` | dated `20251222` | dated `20260128` | printer |
+| `machine_end_gcode` | ` PRINT_END\nTIMELAPSE_STOP` | the full by-object block | printer |
+| `layer_change_gcode` | an older variant | the current one | printer |
+| `nozzle_type` | `stainless_steel` | `hardened_steel` | printer |
+| `default_print_profile` | `0.20mm Standard @Snapmaker` | a profile this Orca has not got | printer |
+| `enable_pressure_advance` | `1` | `0` | filament |
+| `supertack_plate_temp` | `35` | `40` | filament |
+| `supertack_plate_temp_initial_layer` | `35` | `40` | filament |
+
+The machine's own start and end G-code are the sharpest: they are what the
+printer runs, they belong to the installed printer preset which tracks the
+firmware, and Studio was shipping a five-week-old snapshot of them.
+
+### The policy
+
+**Inherit** — state nothing, let the installed preset supply it. For machine and
+process defaults Studio did not choose. This is what the 274 identical keys
+already do in effect, and what the eight removed keys now do in the file too.
+
+**Pin and declare** — state the value *and* name it in the right entry of
+`different_settings_to_system`. For source semantics Studio promised to carry,
+Studio's compatibility fixes, and optimizations the user asked for. Undeclared,
+none of these happens.
+
+**Write structurally, never declare** — filament counts, colours, purge tables,
+plate records. The project describing itself, which no preset owns.
+
+**Remove** — a captured value with no owning feature that differs from the preset
+for no reason. The eight above.
+
+`backend/snapstudio_core/data/templates/PROVENANCE.md` records which group every
+key belongs to, and `test_template_provenance` fails if one appears that belongs
+to none.
+
+### Version drift, 2.3.5 against 2.3.6
+
+Both builds' U1 presets were resolved with inheritance flattened. The chains are
+identical:
+
+```
+printer   Snapmaker U1 (0.4 nozzle) <- fdm_U1 <- fdm_toolchanger <- fdm_klipper
+process   0.20 Standard @Snapmaker U1 (0.4 nozzle) <- fdm_process_U1_0.20
+                                                   <- fdm_process_U1_common
+                                                   <- fdm_process_U1
+filament  Snapmaker PLA SnapSpeed @U1 <- Snapmaker PLA SnapSpeed @U1 base
+```
+
+The **process** preset is byte-identical between the two. Three inherited values
+moved:
+
+| key | 2.3.5 | 2.3.6 |
+|---|---|---|
+| `machine_start_gcode` | dated `20260128`, differing body | dated `20260128` |
+| `supertack_plate_temp` | **absent** | `40` |
+| `supertack_plate_temp_initial_layer` | **absent** | `40` |
+
+Three of roughly 299 inherited values, and the two that appear are for a bed type
+2.3.5 does not have. So inheriting is stable across the supported builds, and
+pinning a machine G-code snapshot against a moving preset is the riskier of the
+two — which is the case for removing it rather than declaring it.
+
+**Studio does not read these preset files at runtime and must not start.** That
+would be a second preset resolver to keep in step with every Orca release.
+Studio knows what it changed because Studio made the change. The preset files are
+audit evidence; `test_template_provenance` asserts no module reads them.
+
+### The settings carried from a PrusaSlicer project
+
+`prusa.CARRIED` translates five process values from the source — the layer
+height, the first layer, the infill density, the wall count and the brim — so a
+project sliced at 0.15 mm with four walls does not arrive at 0.2 mm with two.
+
+They were not declared. Undeclared, every one is replaced by the U1 preset on
+load: the whole promise, correct in the file and invisible to the slicer, exactly
+the same defect as the compatibility fixes. They are declared now.
+
+### Measured but not yet re-run through Orca
+
+The desktop was in continuous use for the second half of this instalment and the
+harness refuses to take the foreground from a window it does not own, so four
+prepared fixtures are waiting rather than done:
+
+* `N0_prusa_carry_undeclared` / `N1_prusa_carry_declared` — the source-carry pair;
+* `M01_machine_gcode_undeclared` — an undeclared `machine_start_gcode` sentinel.
+  The *category* is established by the pair above it (`nozzle_type` undeclared is
+  reset, declared survives), but this specific control has not been run;
+* `F1_everything_minimal` — three objects, a multi-part object, painting, five
+  declared filaments, a per-object override and carried source settings, for the
+  full-feature round-trip and the full-versus-minimal slice comparison.
+
+Nothing above depends on them: the mechanism they would confirm was measured in
+both directions on other files. They are named so the next session runs them
+rather than assuming.
