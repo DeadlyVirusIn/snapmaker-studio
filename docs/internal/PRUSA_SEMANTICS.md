@@ -387,19 +387,163 @@ dropped quietly.
 Stated plainly so the next session does not assume otherwise:
 
 - **Orca's object list is still invisible to UI Automation.** It is custom-drawn:
-  neither the control view nor the raw view exposes a row, at any depth. The list
-  *was* reached and photographed — the earlier synthetic click failed because the
-  script was DPI-unaware and Windows was handing it a virtualised desktop, so its
-  coordinates were two thirds of the way to where it meant to click — but a
-  photograph is not a value. Everything claimed above is read from a file Orca
+  neither the control view nor the raw view exposes a row, at any depth. It *can*
+  be driven — the per-object settings this sprint measured were set by clicking
+  into that panel at coordinates read off a screenshot — but a click is not a
+  reading. Every value claimed anywhere in this document is read from a file Orca
   wrote, which is why the save route rather than the list is the method.
-- **Slicing was used only as a yes-or-no.** The plate footprint Orca records after
-  slicing answers "did this part contribute material"; no toolpath was compared,
-  and no slice was sent anywhere.
-- **Per-object overrides: all category D, not established.** The real
-  Orca-family projects in the fixtures carry only `name` and `extruder` at object
-  level — no per-object setting override appears in the sample at all. So nothing
-  proves a target equivalent for `layer_height`, `fill_density` or
-  `support_material`, and a matching name is not evidence of matching semantics.
-  They stay reported as not carried.
-- **Modifier and override carrying are not implemented** — only reported.
+- **Slicing used to be a yes-or-no** — the plate footprint after slicing answered
+  "did this part contribute material", and no toolpath was compared. That changed
+  on 2026-08-26: G-code is now exported from Orca and read directly, so layer
+  count, the Z sequence and per-object extrusion by feature are all measurable.
+  Still nothing is sent anywhere.
+- **Modifier carrying is implemented; see above.** The earlier note here saying
+  it was "only reported" was already out of date when it was written.
+
+Per-object overrides were on this list and are not any more. What settled them is
+below.
+
+## Per-object setting overrides — settled 2026-08-26
+
+The previous instalment left these category D on the grounds that no real
+Orca-family project in the fixtures carried one, so nothing proved a target
+equivalent. That was a statement about the sample, not about the target. Asking
+the target directly answered it.
+
+### Orca's own words for them
+
+Snapmaker Orca 2.3.6 has a per-object settings panel — **Process ▸ Objects**, then
+the object in the tree, then the Frequent / Quality / Strength / Speed / Support
+tabs beneath it. Three settings were changed there on a plain cube and Orca was
+asked to Save Project As. Orca wrote, inside `<object>` in
+`model_settings.config`:
+
+| set in Orca's own panel | Orca wrote | level |
+|---|---|---|
+| Layer height 0.30 | `<metadata key="layer_height" value="0.3"/>` | **object** |
+| Sparse infill density 45 | `<metadata key="sparse_infill_density" value="45%"/>` | **object** |
+| Enable support ✓ | `<metadata key="enable_support" value="1"/>` | **object** |
+
+Kept in `backend/tests/fixtures/orca-object-overrides/`, with a manifest the test
+suite re-hashes. That file is the target stating its own vocabulary and its own
+granularity, so nothing below rests on a name that happens to match.
+
+### Recognition, with an invented key as the control
+
+One key per file, everything else byte-identical, handed to Orca, saved back:
+
+| written on the object | Orca wrote back |
+|---|---|
+| `layer_height="0.3"` | `layer_height="0.3"` |
+| `sparse_infill_density="45%"` | `sparse_infill_density="45%"` |
+| `enable_support="1"` | `enable_support="1"` |
+| `snapstudio_nonsense_setting="0.3"` | **gone** |
+| `object_layer_thickness="0.3"` | **gone** |
+| **`fill_density="15%"`** — PrusaSlicer's own word | **gone** |
+| **`support_material="1"`** — PrusaSlicer's own word | **gone** |
+
+**The project Orca saved from the invented key is byte-identical to the project it
+saved from `fill_density`, to the one it saved from `support_material`, and to the
+one it saved from a project carrying no setting at all.** Copying the source's own
+key across is not carrying the setting; it is writing nonsense with a straight
+face. That single identity is why there is an allowlist rather than a copy loop.
+
+Part level behaves the same way: the three real keys written on a `<part>` survive,
+and an invented key or `fill_density` on a `<part>` does not. Studio writes at
+object level regardless, because that is where Orca itself writes.
+
+### What a value Orca cannot read costs
+
+Not the setting. The object.
+
+| written on the object | what Orca did |
+|---|---|
+| `layer_height="not-a-number"` | opened **with an empty plate** — no object, no build item, no geometry file |
+| `layer_height="٠.٣"` (Arabic-Indic digits) | **object gone** |
+| `enable_support="true"` | **object gone** |
+| `enable_support="2"` | **object gone** |
+| `layer_height="0"` | **Orca hung on load** — unresponsive, burning CPU, no clean close |
+| `layer_height="-0.2"` | **Orca hung on load** |
+| `layer_height="0.5"`, nozzle 0.4 | opened, then refused to slice: *"Layer height cannot exceed nozzle diameter"*, naming the object and the setting. Slice and Print greyed out. |
+| `layer_height="99"` | kept in the file, **not clamped** |
+| `sparse_infill_density="45"` | normalised to `45%` |
+| `sparse_infill_density="0.45"` | normalised to `0.45%` — nought point four five percent, not forty-five |
+| `sparse_infill_density="400%"` | kept, **not clamped** |
+| `layer_height="0.300"` | normalised to `0.3` |
+
+So every value Studio writes is checked first, and one that does not pass leaves
+the setting uncarried and named rather than carried and broken.
+
+### Behaviour, measured on both sides of the crossing
+
+Two identical objects on one plate, A overridden and B not, sliced, and the
+G-code read — layer count, Z sequence and per-object extrusion attributed through
+the `; printing object <name>` markers both slicers emit.
+
+| | PrusaSlicer 2.9.6 on the source | Snapmaker Orca 2.3.6 on Studio's copy |
+|---|---|---|
+| A layers / Z step | **41 at 0.3 mm** | **40 at 0.3 mm** |
+| B layers / Z step | 60 at 0.2 mm | 60 at 0.2 mm |
+| A infill | 641 mm — 3.0× B | 444 mm — 2.8× B |
+| B infill | 214 mm | 159 mm |
+| A support | 883 mm | 1819 mm |
+| B support | **0** | **0** |
+
+Every statement the source makes about A is a statement Orca acts on for A, and B
+is untouched on both sides. The absolute lengths differ because the two slicers do
+not draw infill or support the same way; what each setting *says* is the same. In
+the single-variable isolation runs the non-overridden object's total extrusion was
+identical to its own control to the last digit, in both slicers.
+
+### The classification
+
+| Source key | What PrusaSlicer means by it | Orca's key and level | Recognised? | Behaviour equivalent? | Classification |
+|---|---|---|---|---|---|
+| `layer_height` | this object's layers are this tall | `layer_height`, on `<object>` | yes — nonsense is dropped | yes — same layer count, same Z step | **EXACT** |
+| `fill_density` | this object's sparse infill is this dense | `sparse_infill_density`, on `<object>` | **only after the rename** — the source's word is dropped like nonsense | yes — infill multiplies on that object alone | **PRESERVED_SEMANTIC** |
+| `support_material` | generate support for this object | `enable_support`, on `<object>` | **only after the rename** | yes — support appears under that object alone | **PRESERVED_SEMANTIC** |
+
+Everything else a source object can override stays **NOT_ESTABLISHED**, is not
+carried, and is reported by name.
+
+### The bug this sprint found on the way
+
+Studio's prepared copy of a project it does not split keeps the source's root model
+verbatim — including `<metadata name="Application">PrusaSlicer-2.9.6</metadata>`.
+Handed that, Snapmaker Orca 2.3.6 says **"The 3mf is not supported by Snapmaker
+Orca, loading geometry data only"** and then ignores `model_settings.config`
+entirely.
+
+What that cost, read from the project Orca saved back: object names replaced by the
+file's own name, and **an object Studio had written as filament 3 came back as
+filament 0, unassigned.** The per-object assignment this converter exists to
+protect was correct in the file and never reached the slicer. The fidelity audit
+compared the two files and called it preserved, because the file *was* right.
+
+Isolated to that one line, one variable per file:
+
+| the copy's root model says | Orca | object names | per-object settings |
+|---|---|---|---|
+| `Application = PrusaSlicer-2.9.6` | *"not supported… geometry data only"* | lost | dropped |
+| the same file, `Application` replaced | opened as a project | kept | kept |
+| the same file, `Application` removed | opened as a project | kept | kept |
+| `BambuStudio:3mfVersion` added, `Application` untouched | *"not supported"* | lost | dropped |
+
+The copy now states `SnapmakerStudio-u1convert`, which is true of it and is what
+Studio's own writer already stamps on the projects it builds itself. Nothing else
+in the root model is touched: a copy of a genuine PrusaSlicer root model differs
+from its source in that one value and nowhere else, and a root model that claims
+nothing is left exactly as it is.
+
+### Still not established
+
+- **Whether Orca applies a per-part override.** It stores one and does not drop it,
+  and an invented key at part level *is* dropped, so it recognises the key there.
+  Nothing was sliced to see whether it acts on it, and Studio writes at object
+  level, so it did not need to be.
+- **Every other per-object setting.** `ironing_type`, `seam_position`, `wall_loops`,
+  `brim_width` and the rest are untested and uncarried.
+- **`layer_height` between the profile's `max_layer_height` and the nozzle
+  diameter** — 0.32 to 0.40 mm on the 0.4 nozzle. Orca refuses above the nozzle and
+  accepts 0.3; the band between was not sliced. Studio's gate is the nozzle,
+  because the nozzle is the refusal that was measured.
