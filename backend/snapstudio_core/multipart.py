@@ -189,7 +189,8 @@ def to_target_paint(tag: str) -> str:
 
 
 def objects_model_xml(parts: list[dict], uuids: list[str] | None = None,
-                      roles: list | None = None) -> bytes:
+                      roles: list | None = None,
+                      ids: list[int] | None = None) -> bytes:
     """`3D/Objects/object_1.model` — one mesh object per part, ids from 1.
 
     The id given here is the number the root's component references and the number
@@ -199,11 +200,12 @@ def objects_model_xml(parts: list[dict], uuids: list[str] | None = None,
     """
     uuids = uuids or [""] * len(parts)
     roles = roles or ["part"] * len(parts)
+    ids = ids or [part["index"] + 1 for part in parts]
     body = []
-    for part, uuid, role in zip(parts, uuids, roles):
+    for part, uuid, role, part_id in zip(parts, uuids, roles, ids):
         stamp = f' p:UUID="{uuid}"' if uuid else ""
         body.append(
-            f'<object id="{part["index"] + 1}"{stamp} '
+            f'<object id="{part_id}"{stamp} '
             f'type="{object_type_for(role)}"><mesh>'
             f'<vertices>{"".join(part["vertices"])}</vertices>'
             '<triangles>'
@@ -241,6 +243,50 @@ def root_model_xml(part_count: int, transform: str, root_id: int = 2,
             f'<components>{components}</components></object></resources>'
             f'<build{build_uuid}><item objectid="{root_id}"{item_uuid} '
             f'transform="{transform}" printable="1"/></build></model>').encode("utf-8")
+
+
+def root_model_multi_xml(objects: list[dict]) -> bytes:
+    """One composite object per logical source object, each placed by its own item.
+
+    This is the shape Snapmaker Orca writes for a project of several objects: its
+    own badge fixture holds three, each with its own object file, its own
+    components and its own build item, and mesh ids that are unique across the
+    whole project rather than restarting per object. Flattening them into one
+    composite would put three separate models under a single placement.
+    """
+    resources = []
+    for entry in objects:
+        components = "".join(
+            f'<component p:path="{entry["path"]}" objectid="{part_id}" '
+            'transform="1 0 0 0 1 0 0 0 1 0 0 0"/>'
+            for part_id in entry["part_ids"])
+        resources.append(f'<object id="{entry["root_id"]}" type="model">'
+                         f"<components>{components}</components></object>")
+    items = "".join(
+        f'<item objectid="{entry["root_id"]}" transform="{entry["transform"]}" '
+        'printable="1"/>'
+        for entry in objects)
+    meta = "".join(f'<metadata name="{key}"></metadata>' for key in
+                   ["Copyright", "CreationDate", "Description", "Designer",
+                    "DesignerCover", "DesignerUserId", "License", "ModificationDate",
+                    "Origin", "Title"])
+    return ('<?xml version="1.0" encoding="UTF-8"?>'
+            f'<model unit="millimeter" xml:lang="en-US" {_PROD_NS}>'
+            '<metadata name="Application">SnapmakerStudio-u1convert</metadata>'
+            '<metadata name="BambuStudio:3mfVersion">1</metadata>' + meta +
+            f'<resources>{"".join(resources)}</resources>'
+            f"<build>{items}</build></model>").encode("utf-8")
+
+
+def object_rels_multi_xml(paths: list[str]) -> bytes:
+    """Every object file declared, because geometry nobody declared is not read."""
+    relationships = "".join(
+        f'<Relationship Target="{path}" Id="rel-{order + 1}" '
+        'Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/>'
+        for order, path in enumerate(paths))
+    return ('<?xml version="1.0" encoding="UTF-8"?>'
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            f"{relationships}</Relationships>").encode("utf-8")
 
 
 def object_rels_xml(objects_path: str = "/3D/Objects/object_1.model") -> bytes:
@@ -289,7 +335,8 @@ def object_type_for(role: str) -> str:
     return "model" if role == "part" else "other"
 
 
-def part_records(parts: list[dict], name: str, slots: list, roles: list | None = None) -> str:
+def part_records(parts: list[dict], name: str, slots: list,
+                 roles: list | None = None, ids: list[int] | None = None) -> str:
     """The `<part>` block for `model_settings.config`, one entry per real part.
 
     A slot of `None` writes no extruder at all rather than a 1: an object nobody
@@ -297,8 +344,9 @@ def part_records(parts: list[dict], name: str, slots: list, roles: list | None =
     same one the object level already keeps.
     """
     roles = roles or ["part"] * len(parts)
+    ids = ids or [part["index"] + 1 for part in parts]
     out = []
-    for part, slot, role in zip(parts, slots, roles):
+    for part, slot, role, part_id in zip(parts, slots, roles, ids):
         if role not in TARGET_ROLES:
             # Never fall back to `normal_part`. That fallback is precisely how a
             # modifier becomes solid plastic, and Snapmaker Orca already does it
@@ -312,7 +360,7 @@ def part_records(parts: list[dict], name: str, slots: list, roles: list | None =
                     # the source did state is reported by the audit, not dropped.
                     if slot and role == "part" else "")
         out.append(
-            f'    <part id="{part["index"] + 1}" subtype="{subtype}">\n'
+            f'    <part id="{part_id}" subtype="{subtype}">\n'
             f'      <metadata key="name" value="{name}_{part["index"] + 1}"/>\n'
             '      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>\n'
             + extruder +
@@ -505,6 +553,18 @@ def validate_archive(tm) -> dict:
         if len(set(own_components)) != len(own_components):
             problems.append(
                 f"object {object_id} references the same mesh twice in its components")
+
+    # Two objects referencing one mesh is **not** a fault: a genuine Snapmaker Orca
+    # project in the fixtures holds eight objects that all build from the same two
+    # meshes, which is how it states eight copies of one pair. A check that called
+    # that broken was written here and removed again when the file disproved it.
+
+    # Every object the metadata describes must be one the geometry has.
+    for object_id in sorted(by_object):
+        if object_id not in composites:
+            problems.append(
+                f"the metadata describes object {object_id}, which the geometry "
+                "does not build from components")
 
     for matrix in re.findall(r'key="matrix" value="([^"]*)"', settings):
         values = matrix.split()

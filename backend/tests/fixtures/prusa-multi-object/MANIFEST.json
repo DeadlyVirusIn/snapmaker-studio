@@ -1,0 +1,103 @@
+{
+ "_provenance": {
+  "kind": "authored_by_the_slicer",
+  "statement": "Written by PrusaSlicer 2.9.6 itself. Three copies of the painted cube were placed in a candidate project at three positions and the project was handed back with --export-3mf; what the slicer wrote is what is stored. Nothing was hand-edited afterwards.",
+  "slicer": "PrusaSlicer 2.9.6 (prusa-slicer-console.exe --export-3mf)",
+  "geometry": "three 12-facet cubes \u2014 synthetic, no private model",
+  "why": "The writer had only ever been asked to carry one source object. This exercises several at once, one of them with two volumes on different filaments, two painted and one not.",
+  "captured": "2026-08-25"
+ },
+ "file": {
+  "name": "prusa_three_objects.3mf",
+  "size_bytes": 2351,
+  "sha256": "f7ede7343dea134cd16cc5bdde31cf4e9c94243e684a0246e46a3e2e1e2225f0",
+  "objects": [
+   {
+    "id": "1",
+    "instances": 1,
+    "extruder": null,
+    "name": "A_two_volumes",
+    "volumes": [
+     {
+      "first": 0,
+      "last": 5,
+      "extruder": "2",
+      "volume_type": "ModelPart",
+      "name": "A_two_volumes_v1"
+     },
+     {
+      "first": 6,
+      "last": 11,
+      "extruder": "5",
+      "volume_type": "ModelPart",
+      "name": "A_two_volumes_v2"
+     }
+    ]
+   },
+   {
+    "id": "2",
+    "instances": 1,
+    "extruder": "3",
+    "name": "B_painted",
+    "volumes": [
+     {
+      "first": 0,
+      "last": 11,
+      "extruder": null,
+      "volume_type": "ModelPart",
+      "name": "B_painted_v1"
+     }
+    ]
+   },
+   {
+    "id": "3",
+    "instances": 1,
+    "extruder": null,
+    "name": "C_plain",
+    "volumes": [
+     {
+      "first": 0,
+      "last": 11,
+      "extruder": null,
+      "volume_type": "ModelPart",
+      "name": "C_plain_v1"
+     }
+    ]
+   }
+  ],
+  "mesh_objects": [
+   {
+    "id": "1",
+    "triangles": 12,
+    "vertices": 16,
+    "painted": 8
+   },
+   {
+    "id": "2",
+    "triangles": 12,
+    "vertices": 16,
+    "painted": 8
+   },
+   {
+    "id": "3",
+    "triangles": 12,
+    "vertices": 16,
+    "painted": 0
+   }
+  ],
+  "build_items": [
+   [
+    "1",
+    "1 0 0 0 1 0 0 0 1 40 40 10"
+   ],
+   [
+    "2",
+    "1 0 0 0 1 0 0 0 1 90 40 10"
+   ],
+   [
+    "3",
+    "1 0 0 0 1 0 0 0 1 140 90 10"
+   ]
+  ]
+ }
+}

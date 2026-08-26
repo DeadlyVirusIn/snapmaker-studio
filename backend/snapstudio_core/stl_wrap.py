@@ -464,17 +464,43 @@ def carries_painting(src: ThreeMF) -> bool:
     return False
 
 
+#: Scanning the root model for its objects, written without a single backslash
+#: escape: a `\b` that travels through a shell heredoc arrives as a backspace
+#: byte, and the pattern then matches nothing while still looking right.
+OBJECT_WITH_ID = re.compile(r'<object[^>]* id="([0-9]+)"[^>]*>.*?</object>', re.S)
+OBJECT_BLOCK = re.compile(r'<object[^>]*>.*?</object>', re.S)
+BUILD_ITEM = re.compile(r'<item[^>]* objectid="([0-9]+)"[^>]*'
+                        r' transform="([^"]*)"')
+
+
 def _try_multipart(src: ThreeMF, model: bytes, stem: str,
                    filaments: int = MIN_FILAMENTS):
-    """Emit a component-based object when the source's volumes earn it.
+    """Emit the target's own layout for every logical object the source has.
 
-    Returns the archive parts to write, or None to leave the caller on the
-    existing single-mesh path. Refusing is always safe: the object still crosses,
-    and the fidelity audit still reports what could not be carried.
+    Returns the archive parts to write, or None to leave the caller on the path
+    that copies the source geometry verbatim. Refusing is always safe: the
+    objects still cross, and the fidelity audit still reports what could not be
+    carried.
 
-    Deliberately narrow for now — one source object, one mesh, volumes expressed
-    as triangle ranges over it. That is what PrusaSlicer writes, and widening it
-    without a file that needs it would be guessing.
+    The shape is what Snapmaker Orca writes for a project of several objects —
+    its own badge fixture holds three, each with its own object file, its own
+    components and its own build item, and part ids unique across the project:
+
+        3D/3dmodel.model            one composite <object> per logical object,
+                                    one <item> per composite, no meshes
+        3D/Objects/object_N.model   that object's part meshes
+        3D/_rels/…rels              every object file declared
+        model_settings.config       one <object> per logical object, its parts
+                                    numbered the same as its components
+
+    Two things earn the layout. Volumes that carry facts of their own become real
+    parts. And painting earns it by itself: measured against Orca 2.3.5, the
+    identical painting in the root model opens with nothing painted, and behind a
+    component in its own object file opens complete.
+
+    If any object cannot be carried the whole project declines. A half-converted
+    project would leave some objects in a shape the target does not read from,
+    which is worse than a project that crosses whole and says so.
     """
     from . import multipart
 
@@ -486,58 +512,126 @@ def _try_multipart(src: ThreeMF, model: bytes, stem: str,
             src.read_part(config).decode("utf-8", "ignore"))
     except Exception:
         return None
-    if len(volumes_by_object) != 1:
-        return None
-    (source_id, volumes), = volumes_by_object.items()
-    if not (multipart.worth_splitting(volumes) or carries_painting(src)):
-        # Painting earns the target layout on its own. Snapmaker Orca reads a
-        # facet's colour only from a mesh it loads through a component into its
-        # own object file: measured, the identical painting in the root model
-        # opens with nothing painted, and behind a component opens complete.
+    if not volumes_by_object:
         return None
 
     text = model.decode("utf-8", "replace")
-    objects = re.findall(r"<object[^>]*>.*?</object>", text, re.S)
-    if len(objects) != 1:
+    blocks = OBJECT_WITH_ID.findall(text)
+    bodies = OBJECT_BLOCK.findall(text)
+    if len(blocks) != len(bodies) or not blocks:
         return None
-    item = re.search(r"<item[^>]*/>", text)
-    transform = "1 0 0 0 1 0 0 0 1 0 0 0"
-    if item:
-        found = re.search(r'transform="([^"]*)"', item.group(0))
-        if found:
-            transform = found.group(1)
+    placements = dict(BUILD_ITEM.findall(text))
 
-    try:
-        vertices, triangles = multipart.read_mesh(objects[0])
-        parts = multipart.split_triangles(
-            vertices, triangles, [v["range"] for v in volumes])
-    except multipart.Unsplittable:
-        # The ranges do not describe this mesh. Carrying the object whole is
-        # honest; inventing a split is not.
-        return None
-
-    slots = [v["slot"] for v in volumes]
-    roles = [v["role"] for v in volumes]
-    if any(role not in multipart.TARGET_ROLES for role in roles):
-        # A role Studio cannot prove the target represents. It is not written as
-        # a normal part — that is how a modifier becomes solid plastic — so the
-        # object stays whole and the audit reports the role as not carried.
-        return None
-
+    painted = carries_painting(src)
     assignments = source_assignments(src)
-    stated = (assignments.get(int(source_id)) if str(source_id).isdigit() else None) or {}
-    object_slot = stated.get("extruder")
+    plan = []
+    next_part_id = 1
+    earns_it = painted
+    for source_id, body in zip(blocks, bodies):
+        volumes = volumes_by_object.get(source_id)
+        if not volumes:
+            # The root holds geometry the model config says nothing about. Studio
+            # cannot say what its parts are, so it does not invent any.
+            return None
+        try:
+            vertices, triangles = multipart.read_mesh(body)
+            parts = multipart.split_triangles(
+                vertices, triangles, [v["range"] for v in volumes])
+        except multipart.Unsplittable:
+            # The ranges do not describe this mesh. Carrying the object whole is
+            # honest; inventing a split is not.
+            return None
+        roles = [v["role"] for v in volumes]
+        if any(role not in multipart.TARGET_ROLES for role in roles):
+            # A role Studio cannot prove the target represents. It is not written
+            # as a normal part — that is how a modifier becomes solid plastic — so
+            # the object stays whole and the audit reports the role as not carried.
+            return None
+        stated = (assignments.get(int(source_id))
+                  if str(source_id).isdigit() else None) or {}
+        earns_it = earns_it or multipart.worth_splitting(volumes)
+        plan.append({
+            "source_id": source_id,
+            "parts": parts,
+            "roles": roles,
+            "slots": [v["slot"] for v in volumes],
+            "part_ids": list(range(next_part_id, next_part_id + len(parts))),
+            "object_slot": stated.get("extruder"),
+            "name": stated.get("name") or (stem if len(blocks) == 1
+                                           else f"{stem}_{len(plan) + 1}"),
+            "transform": placements.get(source_id, "1 0 0 0 1 0 0 0 1 0 0 0"),
+        })
+        next_part_id += len(parts)
 
-    objects_path = "3D/Objects/object_1.model"
-    return {
-        "parts": {
-            "3D/3dmodel.model": multipart.root_model_xml(len(parts), transform),
-            objects_path: multipart.objects_model_xml(parts, roles=roles),
-            "3D/_rels/3dmodel.model.rels": multipart.object_rels_xml(),
-        },
-        "model_settings": _multipart_settings(stem, parts, slots, roles, object_slot,
-                                             filaments),
+    if not earns_it:
+        return None
+
+    # Composite ids follow the parts rather than sharing their numbers, which is
+    # what Orca's own multi-object projects do.
+    root_id = next_part_id
+    files: dict[str, bytes] = {}
+    graph = []
+    for order, entry in enumerate(plan, start=1):
+        path = f"3D/Objects/object_{order}.model"
+        files[path] = multipart.objects_model_xml(
+            entry["parts"], roles=entry["roles"], ids=entry["part_ids"])
+        entry["root_id"] = root_id
+        graph.append({"root_id": root_id, "part_ids": entry["part_ids"],
+                      "path": "/" + path, "transform": entry["transform"]})
+        root_id += 1
+
+    parts_to_write = {
+        "3D/3dmodel.model": multipart.root_model_multi_xml(graph),
+        "3D/_rels/3dmodel.model.rels": multipart.object_rels_multi_xml(
+            [entry["path"] for entry in graph]),
     }
+    parts_to_write.update(files)
+    return {
+        "parts": parts_to_write,
+        "model_settings": _target_settings(plan, filaments),
+    }
+
+
+def _target_settings(plan: list[dict], filaments: int = MIN_FILAMENTS) -> bytes:
+    """model_settings.config for every logical object and its parts.
+
+    Built by joining lines rather than by embedding escapes, because a newline
+    that has to survive several layers of quoting is a newline that eventually
+    does not.
+    """
+    from . import multipart
+
+    lines = ['<?xml version="1.0" encoding="UTF-8"?>', "<config>"]
+    for entry in plan:
+        name = _attr(entry["name"])
+        slot = entry["object_slot"] if entry["object_slot"] else UNASSIGNED
+        lines.extend([
+            f'  <object id="{entry["root_id"]}">',
+            f'    <metadata key="name" value="{name}"/>',
+            f'    <metadata key="extruder" value="{slot}"/>',
+        ])
+        body = multipart.part_records(entry["parts"], name, entry["slots"],
+                                      entry["roles"], entry["part_ids"])
+        lines.extend(line for line in body.split(chr(10)) if line.strip())
+        lines.append("  </object>")
+
+    lines.extend([
+        "  <plate>",
+        '    <metadata key="plater_id" value="1"/>',
+        '    <metadata key="plater_name" value=""/>',
+        '    <metadata key="locked" value="false"/>',
+        '    <metadata key="filament_map_mode" value="Auto For Flush"/>',
+        f'    <metadata key="filament_maps" value="{_filament_maps(filaments)}"/>',
+    ])
+    for entry in plan:
+        lines.extend([
+            "    <model_instance>",
+            f'      <metadata key="object_id" value="{entry["root_id"]}"/>',
+            '      <metadata key="instance_id" value="0"/>',
+            "    </model_instance>",
+        ])
+    lines.extend(["  </plate>", "  <assemble>", "  </assemble>", "</config>", ""])
+    return chr(10).join(lines).encode("utf-8")
 
 
 def _multipart_settings(stem: str, parts, slots, roles, object_slot,

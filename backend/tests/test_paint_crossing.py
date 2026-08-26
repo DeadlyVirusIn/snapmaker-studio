@@ -298,8 +298,9 @@ def test_prepare_refuses_to_save_a_structure_it_cannot_vouch_for(monkeypatch, tm
 
     original = MP.part_records
 
-    def wrong(parts, name, slots, roles=None):
-        return original(parts, name, slots, roles).replace('<part id="2"', '<part id="9"')
+    def wrong(parts, name, slots, roles=None, ids=None):
+        return original(parts, name, slots, roles, ids).replace('<part id="2"',
+                                                                '<part id="9"')
 
     monkeypatch.setattr(stl_wrap.multipart if hasattr(stl_wrap, "multipart") else MP,
                         "part_records", wrong)

@@ -235,6 +235,27 @@ def _count_row(label: str, before: int, after: int, *, unchanged_reason: str,
     return _row(label, CHANGED, detail=f"{before} → {after}", reason=changed_reason)
 
 
+def _logical_objects(tm: ThreeMF) -> int:
+    """How many objects a person would say the project holds.
+
+    A composite object built from components is one object however many meshes it
+    references; a project that has no composites is counted by its meshes.
+    """
+    try:
+        root = _text(tm, ROOT_MODEL)
+    except Exception:
+        return 0
+    composites = re.findall(r'<object id="[0-9]+"[^>]*>\s*<components>', root)
+    if composites:
+        return len(composites)
+    total = len(re.findall(r"<object[^>]*>", root))
+    for part in tm.list_parts():
+        if part.startswith(OBJECTS_DIR):
+            total += len(re.findall(
+                r"<object[^>]*>", tm.read_part(part).decode("utf-8", "ignore")))
+    return total
+
+
 def _semantic_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
     from .fingerprint import compute_fingerprint
 
@@ -245,7 +266,10 @@ def _semantic_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
         return [_row("Objects, plates and colours", UNVERIFIED,
                      detail="Studio could not read one of the projects well enough to compare")]
 
-    rows.append(_count_row("Objects", fa.object_count, fb.object_count,
+    # How many objects the person has, not how many `<object>` elements are in the
+    # file. A prepared copy states each object as a composite plus one mesh object
+    # per part, so counting elements makes three objects look like seven.
+    rows.append(_count_row("Objects", _logical_objects(a), _logical_objects(b),
                            unchanged_reason="every object in the original is in the copy",
                            changed_reason="Studio does not add or remove objects — "
                                           "report this as a bug"))
@@ -486,37 +510,61 @@ def _paint_of(triangles: list[str]) -> list[str]:
     return out
 
 
-def _prepared_part_digests(tm: ThreeMF) -> tuple[list[str], list[list[str]]] | None:
-    """Each part's shape and painting in a prepared copy, in part order."""
+def _prepared_objects(tm: ThreeMF) -> list[dict] | None:
+    """Each prepared object: its parts, their shapes, their painting, its place.
+
+    Keyed by the object the metadata declares, because a project may hold several
+    and a total across all of them hides one object's parts landing under
+    another's.
+    """
     from . import multipart
 
-    names = [p for p in tm.list_parts() if p.startswith(OBJECTS_DIR)]
-    if not names:
+    settings = _text(tm, "Metadata/model_settings.config")
+    root = _text(tm, ROOT_MODEL)
+    if not settings or not root:
         return None
-    rows: list[tuple[int, str, list[str]]] = []
-    for name in sorted(names):
+    by_object = multipart._parts_by_object(settings)
+    if not by_object:
+        return None
+
+    shapes: dict[str, tuple] = {}
+    for name in sorted(p for p in tm.list_parts() if p.startswith(OBJECTS_DIR)):
         body = tm.read_part(name).decode("utf-8", "ignore")
-        for object_id in re.findall(r'<object id="(\d+)"', body):
-            block = re.search(rf'<object id="{object_id}".*?</object>', body, re.S)
+        for mesh_id in re.findall(r'<object id="(\d+)"', body):
+            block = re.search(rf'<object id="{mesh_id}".*?</object>', body, re.S)
             if not block:
                 continue
             vertices, triangles = multipart.read_mesh(block.group(0))
-            rows.append((int(object_id),
-                         multipart.geometry_digest(vertices, triangles),
-                         _paint_of(triangles)))
-    if not rows:
+            shapes[mesh_id] = (multipart.geometry_digest(vertices, triangles),
+                               _paint_of(triangles))
+    if not shapes:
         return None
-    rows.sort()
-    return [digest for _id, digest, _paint in rows], [paint for _id, _d, paint in rows]
+
+    placements = dict(re.findall(
+        r'<item[^>]* objectid="([0-9]+)"[^>]* transform="([^"]*)"', root))
+    out = []
+    for object_id, parts in by_object.items():
+        rows = [shapes.get(part_id) for part_id, _subtype in parts]
+        if any(row is None for row in rows):
+            return None
+        out.append({
+            "object_id": object_id,
+            "part_ids": [part_id for part_id, _s in parts],
+            "digests": [row[0] for row in rows],
+            "paint": [row[1] for row in rows],
+            "transform": placements.get(object_id),
+        })
+    return out
 
 
-def _source_part_digests(tm: ThreeMF) -> tuple[str, list[str]] | None:
-    """Each source volume's shape, cut out of the one mesh PrusaSlicer wrote.
+def _source_objects(tm: ThreeMF) -> list[dict] | None:
+    """Each source object's volumes, cut out of the one mesh PrusaSlicer wrote.
 
-    The source states its volumes as triangle ranges over a single mesh, so the
-    only way to compare a part with the volume it came from is to cut the same
-    ranges again and hash what falls out. Vertex numbering is renumbered by the
-    split on both sides, which is why the digest hashes coordinates.
+    The source states its volumes as inclusive triangle ranges over a single mesh
+    per object, so the only way to compare a part with the volume it came from is
+    to cut the same ranges again and hash what falls out. Vertex numbering is
+    renumbered by the split on both sides, which is why the digest hashes
+    coordinates.
     """
     from . import multipart
 
@@ -524,80 +572,107 @@ def _source_part_digests(tm: ThreeMF) -> tuple[str, list[str]] | None:
         return None
     config = tm.read_part(PRUSA_MODEL_CONFIG).decode("utf-8", "ignore")
     volumes_by_object = multipart.source_volumes(config)
-    if len(volumes_by_object) != 1:
+    if not volumes_by_object:
         return None
-    (_source_id, volumes), = volumes_by_object.items()
-    if len(volumes) < 2:
-        return None
-    name = "the object"
-    found = re.search(r'<metadata type="object" key="name" value="([^"]*)"', config)
-    if found:
-        name = found.group(1)
+    names = dict(re.findall(
+        r'<object id="([^"]+)"[^>]*>\s*<metadata type="object" key="name" '
+        r'value="([^"]*)"', config))
 
     root = tm.read_part(ROOT_MODEL).decode("utf-8", "ignore")
-    objects = re.findall(r"<object[^>]*>.*?</object>", root, re.S)
-    if len(objects) != 1:
+    ids = re.findall(r'<object[^>]* id="([0-9]+)"[^>]*>.*?</object>', root, re.S)
+    bodies = re.findall(r"<object[^>]*>.*?</object>", root, re.S)
+    if len(ids) != len(bodies):
         return None
-    vertices, triangles = multipart.read_mesh(objects[0])
-    if len(triangles) > _MAX_FACETS_TO_RESPLIT:
-        return None
-    parts = multipart.split_triangles(vertices, triangles, [v["range"] for v in volumes])
-    return (name,
-            [multipart.geometry_digest(part["vertices"], part["triangles"])
-             for part in parts],
-            [_paint_of(part["triangles"]) for part in parts])
+    placements = dict(re.findall(
+        r'<item[^>]* objectid="([0-9]+)"[^>]* transform="([^"]*)"', root))
+
+    out = []
+    for source_id, body in zip(ids, bodies):
+        volumes = volumes_by_object.get(source_id)
+        if not volumes:
+            return None
+        vertices, triangles = multipart.read_mesh(body)
+        if len(triangles) > _MAX_FACETS_TO_RESPLIT:
+            return None
+        parts = multipart.split_triangles(
+            vertices, triangles, [v["range"] for v in volumes])
+        out.append({
+            "object_id": source_id,
+            "name": names.get(source_id) or f"object {source_id}",
+            "digests": [multipart.geometry_digest(p["vertices"], p["triangles"])
+                        for p in parts],
+            "paint": [_paint_of(p["triangles"]) for p in parts],
+            "transform": placements.get(source_id),
+        })
+    return out
 
 
 def _part_shape_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
-    """Does each carried part hold the shape of the volume it came from?
+    """Does each object's every part hold the shape, colour and place it came from?
 
     A part record and a mesh can agree with each other and still describe the
-    wrong solid. This compares the two shapes directly, facet by facet in winding
-    order, so a part that quietly picked up someone else's geometry is a finding
-    rather than a clean row.
+    wrong solid, and a project's totals can be right while two objects have
+    swapped their parts. So each source object is answered for itself.
     """
     try:
-        source = _source_part_digests(a)
-        prepared = _prepared_part_digests(b)
+        source = _source_objects(a)
+        prepared = _prepared_objects(b)
     except Exception:
         return []
-    if source is None or prepared is None:
+    if not source or not prepared:
         return []
-    name, wanted, wanted_paint = source
-    shapes, painted = prepared
-    label = f"The shape of each part of {name}"
-    paint_label = f"The painting on each part of {name}"
-    if len(wanted) != len(shapes):
-        return [_row(label, CHANGED,
-                     detail=(f"the source has {len(wanted)} volume(s) and the copy "
-                             f"{len(shapes)} part(s)"),
-                     reason="Studio writes one part per source volume")]
+
+    if len(source) != len(prepared):
+        return [_row("Objects carried", CHANGED,
+                     detail=(f"the source has {len(source)} object(s) and the copy "
+                             f"{len(prepared)}"),
+                     reason="Studio writes one prepared object per source object")]
 
     rows = []
-    wrong = [str(i + 1) for i, (x, y) in enumerate(zip(wanted, shapes)) if x != y]
-    if wrong:
-        rows.append(_row(label, CHANGED,
-                         detail=f"part(s) {', '.join(wrong)} hold different geometry",
-                         reason=("each part must hold the facets of the volume it "
-                                 "came from — report this as a bug")))
-    else:
-        rows.append(_row(label, PRESERVED_EXACT,
-                         detail=(f"all {len(wanted)} part(s) hold the facets of the "
-                                 "volume they came from, in winding order")))
+    for origin, copy in zip(source, prepared):
+        name = origin["name"]
+        if len(origin["digests"]) != len(copy["digests"]):
+            rows.append(_row(f"The parts of {name}", CHANGED,
+                             detail=(f"{len(origin['digests'])} volume(s) in the "
+                                     f"source, {len(copy['digests'])} part(s) in the "
+                                     "copy"),
+                             reason="Studio writes one part per source volume"))
+            continue
 
-    if any(any(v for v in values) for values in wanted_paint):
-        moved = [str(i + 1) for i, (x, y) in enumerate(zip(wanted_paint, painted))
-                 if x != y]
-        if moved:
-            rows.append(_row(paint_label, CHANGED,
-                             detail=(f"part(s) {', '.join(moved)} carry different "
-                                     "painting than the volume they came from"),
-                             reason=("a facet's colour crosses with that facet — "
-                                     "report this as a bug")))
-        else:
-            rows.append(_row(paint_label, PRESERVED_EXACT,
-                             detail=("every painted facet kept its colour and its "
-                                     "place in the part it came from")))
+        wrong = [str(i + 1) for i, (x, y)
+                 in enumerate(zip(origin["digests"], copy["digests"])) if x != y]
+        rows.append(_row(
+            f"The shape of each part of {name}",
+            CHANGED if wrong else PRESERVED_EXACT,
+            detail=(f"part(s) {', '.join(wrong)} hold different geometry" if wrong
+                    else f"all {len(origin['digests'])} part(s) hold the facets of "
+                         "the volume they came from, in winding order"),
+            reason=("each part must hold the facets of the volume it came from — "
+                    "report this as a bug") if wrong else None))
+
+        if any(any(value for value in values) for values in origin["paint"]):
+            moved = [str(i + 1) for i, (x, y)
+                     in enumerate(zip(origin["paint"], copy["paint"])) if x != y]
+            rows.append(_row(
+                f"The painting on each part of {name}",
+                CHANGED if moved else PRESERVED_EXACT,
+                detail=(f"part(s) {', '.join(moved)} carry different painting than "
+                        "the volume they came from" if moved
+                        else "every painted facet kept its colour and its place in "
+                             "the part it came from"),
+                reason=("a facet's colour crosses with that facet — report this as "
+                        "a bug") if moved else None))
+
+        if origin["transform"] and copy["transform"]:
+            same = origin["transform"] == copy["transform"]
+            rows.append(_row(
+                f"Where {name} sits on the plate",
+                PRESERVED_EXACT if same else CHANGED,
+                detail=("placed exactly where the source placed it" if same
+                        else f"{origin['transform']} → {copy['transform']}"),
+                reason=None if same else (
+                    "Studio does not move objects while preparing them — report "
+                    "this as a bug")))
     return rows
 
 
