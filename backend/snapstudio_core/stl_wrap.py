@@ -86,6 +86,64 @@ def slots_referenced(src, model: bytes) -> int:
     return min(highest, MAX_DECLARED_FILAMENTS)
 
 
+def filaments_in_use(src, model: bytes) -> int:
+    """How many different filaments this plate will actually print with.
+
+    Not how many slots it declares. A U1 project always declares at least four,
+    and a single-colour print uses one of them — and that difference decides
+    whether Snapmaker Orca builds a prime tower, which decides whether a
+    per-object layer height is allowed. Measured: two cubes on filaments 1 and 2
+    with a per-object layer height would not slice; the same two cubes both on
+    filament 1, in a project declaring the same four slots, sliced normally.
+
+    An object nobody assigned still prints, on the project's first filament, so
+    it counts as one.
+    """
+    from . import multipart, painted_color
+
+    used: set[int] = set()
+    unassigned = False
+    for stated in (source_assignments(src) or {}).values():
+        slot = stated.get("extruder")
+        if isinstance(slot, int) and slot > 0:
+            used.add(slot)
+        else:
+            unassigned = True
+        for slot in stated.get("volume_extruders") or ():
+            if isinstance(slot, int) and slot > 0:
+                used.add(slot)
+
+    config = "Metadata/Slic3r_PE_model.config"
+    if src.has_part(config):
+        try:
+            volumes_by_object = multipart.source_volumes(
+                src.read_part(config).decode("utf-8", "ignore"))
+        except Exception:
+            volumes_by_object = {}
+        for volumes in volumes_by_object.values():
+            for volume in volumes:
+                slot = volume.get("slot")
+                if isinstance(slot, int) and slot > 0:
+                    used.add(slot)
+
+    try:
+        painted = painted_color.read_container(src)
+    except Exception:
+        painted = {}
+    # `slots_referenced` is every slot the project declares, which is four or
+    # more on any U1 file whether anything is painted or not. What counts here is
+    # the slots painting actually puts on the plate.
+    for entry in painted.get("slots") or ():
+        if isinstance(entry, dict) and entry.get("from_painting"):
+            slot = entry.get("slot")
+            if isinstance(slot, int) and slot > 0:
+                used.add(slot)
+
+    if unassigned:
+        used.add(1)
+    return max(1, len(used))
+
+
 def declared_colours(colours, needed: int) -> list:
     """The colour list a copy must declare to keep every slot the source names.
 
@@ -280,7 +338,8 @@ def wrap_stl(stl_path, colors=DEFAULT_COLORS, profile_name: str = "snapmaker_u1"
 def build_model_settings_multi(object_ids, name: str = "object", extruder: int = 1,
                                assignments: dict | None = None,
                                filaments: int = MIN_FILAMENTS,
-                               nozzle_mm: float = object_overrides.DEFAULT_NOZZLE_MM) -> bytes:
+                               nozzle_mm: float = object_overrides.DEFAULT_NOZZLE_MM,
+                               filaments_used: int = 1) -> bytes:
     """model_settings.config for an arbitrary set of build objects.
 
     ``assignments`` maps a build object id to what the *source project* said about
@@ -319,8 +378,10 @@ def build_model_settings_multi(object_ids, name: str = "object", extruder: int =
             slot = UNASSIGNED
         slot = slot if slot is not None else extruder
         label = _attr(stated.get("name") or f"{name}_{oid}")
-        carried = object_overrides.plan(stated.get("overrides"), nozzle_mm)["carry"]
-        overrides_xml = "".join(line + "\n" for line in _override_lines(carried))
+        carried = object_overrides.plan(
+            stated.get("overrides"), nozzle_mm, filaments_used)["carry"]
+        overrides_xml = "".join(
+            line + "\n" for line in _override_lines(carried, nozzle_mm, filaments_used))
         return (
             f'  <object id="{oid}">\n'
             f'    <metadata key="name" value="{label}"/>\n'
@@ -577,7 +638,7 @@ def _try_multipart(src: ThreeMF, model: bytes, stem: str,
             "part_ids": list(range(next_part_id, next_part_id + len(parts))),
             "object_slot": stated.get("extruder"),
             "carry_overrides": object_overrides.plan(
-                stated.get("overrides"), nozzle_mm)["carry"],
+                stated.get("overrides"), nozzle_mm, filaments)["carry"],
             "name": stated.get("name") or (stem if len(blocks) == 1
                                            else f"{stem}_{len(plan) + 1}"),
             "transform": placements.get(source_id, "1 0 0 0 1 0 0 0 1 0 0 0"),
@@ -674,7 +735,8 @@ def _nozzle_mm(settings: dict) -> float:
     return min(sizes) if sizes else object_overrides.DEFAULT_NOZZLE_MM
 
 
-def _override_lines(carried: dict | None) -> list[str]:
+def _override_lines(carried: dict | None, nozzle_mm: float = object_overrides.DEFAULT_NOZZLE_MM,
+                    filaments: int = 1) -> list[str]:
     """The object-level `<metadata>` rows for the settings that may cross.
 
     Written inside `<object>` and nowhere else: that is where Snapmaker Orca puts
@@ -688,7 +750,7 @@ def _override_lines(carried: dict | None) -> list[str]:
     """
     if not carried:
         return []
-    faults = object_overrides.validate_emitted(carried)
+    faults = object_overrides.validate_emitted(carried, nozzle_mm, filaments)
     if faults:
         raise ValueError("refusing to write a per-object override that would not "
                          "survive: " + "; ".join(faults))
@@ -714,7 +776,7 @@ def _target_settings(plan: list[dict], filaments: int = MIN_FILAMENTS) -> bytes:
             f'    <metadata key="name" value="{name}"/>',
             f'    <metadata key="extruder" value="{slot}"/>',
         ])
-        lines.extend(_override_lines(entry.get("carry_overrides")))
+        lines.extend(_override_lines(entry.get("carry_overrides"), filaments=filaments))
         body = multipart.part_records(entry["parts"], name, entry["slots"],
                                       entry["roles"], entry["part_ids"])
         lines.extend(line for line in body.split(chr(10)) if line.strip())

@@ -288,7 +288,7 @@ NOT_REPRESENTABLE = "not_representable"
 UNKNOWN = "unknown"
 
 
-def compare(before: dict, after: dict) -> dict:
+def compare(before: dict, after: dict, filaments: int = 1) -> dict:
     """Object by object, what happened to the assignment.
 
     Objects are matched by position, because the two dialects number objects
@@ -368,7 +368,7 @@ def compare(before: dict, after: dict) -> dict:
                 f"({wanted}) is carried and the rest cannot be represented")
         rows.append(row)
 
-    semantics = _semantic_rows(source_objects, prepared_objects)
+    semantics = _semantic_rows(source_objects, prepared_objects, filaments)
 
     for index in range(len(source_objects), len(prepared_objects)):
         prepared = prepared_objects[index]
@@ -407,7 +407,8 @@ def _flattened(source_objects: list[dict], prepared_objects: list[dict]) -> bool
     return all((entry.get("instances") or 1) == 1 for entry in prepared_objects)
 
 
-def _semantic_rows(source_objects: list[dict], prepared_objects: list[dict]) -> list[dict]:
+def _semantic_rows(source_objects: list[dict], prepared_objects: list[dict],
+                   filaments: int = 1) -> list[dict]:
     """Volumes, roles, instances and overrides, each answered for itself.
 
     One row saying "objects preserved" is how a copy passes an audit while the
@@ -508,11 +509,12 @@ def _semantic_rows(source_objects: list[dict], prepared_objects: list[dict]) -> 
                            f"the source places {before} copies; the copy places {after}")})
 
         # --- per-object overrides --------------------------------------------
-        rows.extend(_override_rows(source, prepared, name, index))
+        rows.extend(_override_rows(source, prepared, name, index, filaments))
     return rows
 
 
-def _override_rows(source: dict, prepared: dict, name: str, index: int) -> list[dict]:
+def _override_rows(source: dict, prepared: dict, name: str, index: int,
+                   filaments: int = 1) -> list[dict]:
     """One row per per-object setting, on both sides of the crossing.
 
     The source key and the target key are not the same word for two of the three
@@ -530,7 +532,11 @@ def _override_rows(source: dict, prepared: dict, name: str, index: int) -> list[
     kept = dict(prepared.get("overrides") or {})
     rows: list[dict] = []
 
-    for entry in object_overrides.plan(source_overrides)["rows"]:
+    # The same count the writer used. Without it the audit believes a layer
+    # height should have crossed on a plate that needs a prime tower, and
+    # reports Studio's correct refusal as a fault.
+    for entry in object_overrides.plan(
+            source_overrides, filaments=filaments)["rows"]:
         source_key, source_value = entry["source_key"], entry["source_value"]
         target_key = entry["target_key"]
         found = kept.pop(target_key, None) if target_key else None

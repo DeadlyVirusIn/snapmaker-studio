@@ -122,7 +122,7 @@ def _percent(value: str):
     return _ascii_number(text)
 
 
-def _carry_layer_height(value: str, nozzle_mm: float):
+def _carry_layer_height(value: str, nozzle_mm: float, filaments: int = 1):
     number = _ascii_number(value)
     if number is None:
         return None, ("the value is not a plain number, and Snapmaker Orca deletes "
@@ -134,11 +134,27 @@ def _carry_layer_height(value: str, nozzle_mm: float):
         return None, (f"{number:g} mm is taller than the {nozzle_mm:g} mm nozzle this "
                       "copy is prepared for, and Snapmaker Orca refuses to slice a "
                       "layer taller than the nozzle")
+    if filaments and filaments > 1:
+        # Measured on Orca 2.3.6, one variable per file. Two cubes on one plate:
+        # on two filaments with no override it sliced; on two filaments with a
+        # per-object layer height Orca refused, greyed out Slice and Print and
+        # said "A prime tower requires that all objects have the same layer
+        # height"; on one filament the same override sliced normally, and on two
+        # filaments an infill override sliced normally too.
+        #
+        # Carrying it would hand somebody a multi-colour plate that will not
+        # slice at all, which is worse than the object printing at the plate's
+        # layer height. So it is reported instead.
+        return None, (f"this copy uses {filaments} filaments, and Snapmaker Orca will "
+                      "not slice a multi-filament plate whose objects have different "
+                      "layer heights — it needs one prime tower for all of them. Set "
+                      "the layer height for the whole plate in Orca, or print this "
+                      "object on its own")
     # Written back in the form Orca itself writes: it normalises "0.300" to "0.3".
     return f"{number:g}", None
 
 
-def _carry_infill(value: str, nozzle_mm: float):
+def _carry_infill(value: str, nozzle_mm: float, filaments: int = 1):
     number = _percent(value)
     if number is None:
         return None, ("the value is not a plain percentage, and Snapmaker Orca deletes "
@@ -148,7 +164,7 @@ def _carry_infill(value: str, nozzle_mm: float):
     return f"{number:g}%", None
 
 
-def _carry_support(value: str, nozzle_mm: float):
+def _carry_support(value: str, nozzle_mm: float, filaments: int = 1):
     text = (value or "").strip()
     if text not in ("0", "1"):
         return None, ("the value is neither 0 nor 1, and Snapmaker Orca deletes the "
@@ -201,7 +217,8 @@ TARGET_KEY = {entry.source_key: entry.target_key for entry in CARRIED.values()}
 WRITABLE = frozenset(entry.target_key for entry in CARRIED.values())
 
 
-def plan(source_overrides: dict, nozzle_mm: float = DEFAULT_NOZZLE_MM) -> dict:
+def plan(source_overrides: dict, nozzle_mm: float = DEFAULT_NOZZLE_MM,
+         filaments: int = 1) -> dict:
     """Decide, for each source override, whether it crosses and in what words.
 
     Returns ``{"carry": {target_key: value}, "rows": [...]}``. Every source
@@ -221,7 +238,7 @@ def plan(source_overrides: dict, nozzle_mm: float = DEFAULT_NOZZLE_MM) -> dict:
                         "Snapmaker Orca, so it is reported rather than guessed at"),
             })
             continue
-        value, why = entry.convert(raw, nozzle_mm)
+        value, why = entry.convert(raw, nozzle_mm, filaments)
         if value is None:
             rows.append({
                 "source_key": source_key, "source_value": raw,
@@ -239,7 +256,8 @@ def plan(source_overrides: dict, nozzle_mm: float = DEFAULT_NOZZLE_MM) -> dict:
     return {"carry": carry, "rows": rows}
 
 
-def validate_emitted(carried: dict, nozzle_mm: float = DEFAULT_NOZZLE_MM) -> list[str]:
+def validate_emitted(carried: dict, nozzle_mm: float = DEFAULT_NOZZLE_MM,
+                     filaments: int = 1) -> list[str]:
     """Faults in what a writer is about to put in a prepared copy.
 
     Prepare fails on any of these rather than writing them. An override Orca
@@ -254,7 +272,7 @@ def validate_emitted(carried: dict, nozzle_mm: float = DEFAULT_NOZZLE_MM) -> lis
             faults.append(f"{key} is not a setting Studio has proved Snapmaker Orca "
                           "acts on, so it must not be written into a prepared copy")
             continue
-        again, why = entry.convert(value, nozzle_mm)
+        again, why = entry.convert(value, nozzle_mm, filaments)
         if again is None:
             faults.append(f"{key}={value!r} would not survive: {why}")
         elif again != value:

@@ -221,11 +221,48 @@ def object_metadata(path: str) -> dict:
     return dict(re.findall(r'<metadata key="([^"]+)" value="([^"]*)"\s*/>', body))
 
 
-def test_the_prepared_copy_states_all_three_in_orcas_vocabulary(prepared):
+def test_the_prepared_copy_states_the_two_that_can_cross_here(prepared):
+    """This fixture is a five-colour painted cube, so it needs a prime tower.
+
+    Measured on Orca 2.3.6: a plate that prints with more than one filament and
+    has a per-object layer height will not slice — *"A prime tower requires that
+    all objects have the same layer height"*, with Slice and Print greyed out.
+    Infill and support are unaffected and still cross.
+    """
     stated = object_metadata(prepared)
-    assert stated["layer_height"] == "0.3"
     assert stated["sparse_infill_density"] == "15%"
     assert stated["enable_support"] == "1"
+    assert "layer_height" not in stated
+
+
+def test_the_same_override_does_cross_on_a_single_filament_plate():
+    assert carried({"layer_height": "0.3"}, nozzle_mm=0.4) == {"layer_height": "0.3"}
+
+
+def test_a_per_object_layer_height_is_refused_on_a_multi_filament_plate():
+    row = row_for({"layer_height": "0.3"}, "layer_height")
+    assert row["carried"]
+    row = next(r for r in overrides.plan({"layer_height": "0.3"}, 0.4, 2)["rows"]
+               if r["source_key"] == "layer_height")
+    assert not row["carried"]
+    assert "prime tower" in row["why"]
+
+
+def test_infill_and_support_still_cross_on_a_multi_filament_plate():
+    """Only the layer height is the one a prime tower cannot cope with."""
+    written = overrides.plan(
+        {"fill_density": "80%", "support_material": "1"}, 0.4, 4)["carry"]
+    assert written == {"sparse_infill_density": "80%", "enable_support": "1"}
+
+
+def test_the_filaments_a_plate_prints_with_is_not_the_slots_it_declares():
+    """Every U1 project declares four slots; a single-colour print uses one."""
+    from snapstudio_core.container import ThreeMF
+
+    plain = ThreeMF.open(str(Path(__file__).parents[2] / "examples" / "sample_cube_U1.3mf"))
+    assert stl_wrap.filaments_in_use(plain, plain.read_part("3D/3dmodel.model")) == 1
+    painted = ThreeMF.open(str(FIXTURES.parent / "painted" / "orcaslicer-2.4.2-painted-cube.3mf"))
+    assert stl_wrap.filaments_in_use(painted, painted.read_part("3D/3dmodel.model")) == 5
 
 
 def test_the_prepared_copy_never_states_the_sources_vocabulary(prepared):
@@ -261,10 +298,13 @@ def test_the_audit_reports_each_setting_for_itself(prepared):
 
     rows = [r for r in audit(str(OVERRIDE_SOURCE), prepared)["rows"]
             if "Settings set on" in r["element"]]
-    by_setting = {r["detail"].split(" ", 1)[0]: r["status"] for r in rows}
-    assert by_setting["layer_height"] == "preserved_exact"
-    assert by_setting["fill_density"] == "preserved_semantic"
-    assert by_setting["support_material"] == "preserved_semantic"
+    by_setting = {r["detail"].split(" ", 1)[0]: r for r in rows}
+    assert by_setting["fill_density"]["status"] == "preserved_semantic"
+    assert by_setting["support_material"]["status"] == "preserved_semantic"
+    # The one the prime tower forbids says so rather than going quiet.
+    layer = by_setting["layer_height"]
+    assert layer["status"] == "unsupported"
+    assert "prime tower" in layer["detail"]
 
 
 # --- identity under renumbering ---------------------------------------------
@@ -363,9 +403,10 @@ def test_every_source_object_still_crosses(three_objects):
 
 
 def test_the_settings_stay_on_the_object_that_had_them(three_objects):
+    """Three painted objects across five filaments: infill crosses, layers cannot."""
     stated = three_objects["objects"]["B_painted"]
-    assert stated["layer_height"] == "0.3"
     assert stated["sparse_infill_density"] == "60%"
+    assert "layer_height" not in stated
 
 
 def test_no_other_object_picks_them_up(three_objects):
