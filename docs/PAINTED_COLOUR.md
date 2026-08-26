@@ -108,8 +108,19 @@ painting version at all, and a copy without one opens correctly.
 
 The fidelity audit reports a crossing as *preserved semantically* rather than
 exactly, because the two files no longer say it the same way, and names the
-translation. It compares each part's facets in order, so colour that lands on the
-wrong part is a finding rather than a matching set of values.
+translation. It compares each part's facets in order, and each object's parts
+separately, so colour that lands on the wrong part — or on the wrong object — is a
+finding rather than a matching set of values.
+
+Every logical object in a project crosses this way, not only the first. That
+matters because Orca reads a facet's colour only from a mesh in its own object
+file, so an object left in the project's root would arrive with none.
+
+**Orca prints it.** A painted cube alone on the plate sliced to two objects, the
+cube and a wipe tower; the same cube with its paint attributes stripped sliced to
+the cube alone. A wipe tower exists only for a print that changes filament, so the
+control is what turns "the painting survives the file" into "the slicer acts on
+it".
 
 ## Cross-slicer support, from test results
 

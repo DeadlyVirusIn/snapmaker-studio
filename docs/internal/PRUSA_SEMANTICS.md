@@ -122,6 +122,64 @@ cannot be decoded, Orca 2.3.5 wrote back `00000000` — an unpainted facet. That
 control is what makes the rows above evidence: a slicer that merely carried the
 string across would have returned the broken one unchanged.
 
+### What a volume's triangle range means
+
+Pinned down by handing PrusaSlicer 2.9.6 projects and reading what it wrote back,
+because a facet cannot be attributed to a volume until this is settled:
+
+| Question | Answer |
+|---|---|
+| Are `firstid`/`lastid` inclusive? | **Yes.** 0 to 5 is six facets. |
+| Can ranges leave a gap? | **Not from the slicer.** Handed 0–3 and 8–11 it re-laid the volumes contiguously as 0–3 and 4–7 and wrote an eight-facet mesh. |
+| Can they overlap? | **Not from the slicer.** Handed 0–7 and 5–11 it duplicated the shared facets into the second volume and renumbered, writing a fifteen-facet mesh. |
+| A reversed range? | **Refused.** "Found invalid triangle id", and no file written. |
+| A range past the end of the mesh? | **Refused**, the same way. |
+
+So a genuine file answers "which volume owns this facet" exactly once, and a file
+that is not genuine may answer twice or not at all. Both of those are *unknown*.
+
+**What Studio got wrong.** An unpainted patch prints in whatever its own volume is
+assigned, and Studio answered that once per object — taking the first volume that
+stated a slot as the answer for every facet. On the two-volume fixture that put
+50 mm² under filament 2 that belongs to filament 5, and the *source* reading was
+the wrong one: the prepared copy, which carries each part's own filament, had been
+right all along. A facet is attributed to the volume whose range holds it now, and
+the order is the volume's own assignment, then its object's where the volume is
+silent, then unknown. Nothing inherits from a sibling volume.
+
+Eight fixtures in `backend/tests/fixtures/prusa-volumes/`, each authored by the
+slicer, pin the rule down. The two sharpest put the silence exactly where this
+cube's only partly-painted facet is: its volume silent, its sibling on filament 5,
+its object on 3. The answer is 3, and where the object is silent too the answer is
+unknown. A reader leaking from a sibling would say 5 in both.
+
+### A project of several objects
+
+Snapmaker Orca's own badge project holds three objects. Each has its own object
+file, its own relationship, its own composite object with its own components, its
+own build item, and part ids that are unique across the whole project rather than
+restarting per object; composite ids follow the parts rather than sharing their
+numbers. That is the shape a prepared copy now takes for every logical object it
+carries, and a project of three came back from Orca 2.3.5 with all three intact —
+names, assignments, parts, filaments, geometry digests, painted-facet counts and
+transforms.
+
+One thing that is **not** a fault: two objects referencing the same mesh. The
+`orca-pa-line-dual` fixture holds eight objects that all build from the same two
+meshes, which is how it states eight copies of one pair. A validator check that
+called that broken was written and removed again when the file disproved it.
+
+### Orca prints the painting, not only reads it
+
+The save round-trip shows Orca reading and rewriting a copy's painting. Slicing
+shows what it does with it. A painted cube alone on the plate sliced to two
+objects — the cube and a **wipe tower**. The same cube with its paint attributes
+stripped sliced to the cube alone.
+
+A wipe tower exists only for a print that changes filament, so its appearance is
+Orca acting on the painting rather than carrying it, and its absence in the
+control is what makes that a measurement rather than a coincidence.
+
 ### It reads two parts, and one of the two filaments
 
 The prepared multi-part fixture — one object, parts on filaments 2 and 5 — came
