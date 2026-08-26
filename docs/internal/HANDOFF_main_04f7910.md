@@ -1,5 +1,11 @@
 # Handoff — unreleased work on `main` after v0.8.0, third instalment
 
+> **Superseded by `HANDOFF_main_e38e468.md`.** All four of the open findings
+> this document lists have since been settled: the Prusa reader attributes per
+> volume, multi-object sources carry, the plate placement is scoped, and the
+> slice-level paint proof was obtained. Read this for how the capacity and
+> painting work was arrived at, not for the current state.
+
 Written 2026-08-25. **Nothing here is released.** Supersedes
 `HANDOFF_main_e418dc0.md`; read `HANDOFF_v0.8.0.md` for the released product.
 
