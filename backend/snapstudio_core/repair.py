@@ -8,7 +8,7 @@ from .filaments import apply_remap, filament_count, conform_filament_arrays
 from .preserve import machine_compat_keys, prepare_preserved_values
 from .detect import detect_source
 from .optimize import load_optimization, apply_optimization
-from . import orca_import
+from . import orca_import, preset_deviation
 from .report import RepairOutcome
 from .u1_identity import (
     normalize_project_identity, normalize_values, scrub_foreign, normalize_slice_info,
@@ -106,6 +106,35 @@ def repair(tm: ThreeMF, mode: str = "u1", remap: dict | None = None,
     if mode in ("preserve", "u1", "optimize"):
         report["orca_compatibility"] = orca_import.apply_compatibility(
             work, filament_count(work))
+
+    # Everything above states values. This says which of them Snapmaker Orca is
+    # not to take from the preset the project names.
+    #
+    # Measured on Orca 2.3.6, one variable per file: a project stating
+    # support_style=tree_hybrid, brim_type=no_brim, prime_tower_width=60 and
+    # gap_fill_target=nowhere came back from Orca as default / auto_brim / 30 /
+    # topbottom when the deviations were not declared, and kept all four when
+    # they were. So every compatibility fix and every optimization Studio wrote
+    # was being reported as applied and then discarded by the slicer.
+    #
+    # Declaring a key Orca does not know is harmless — it drops the name and
+    # keeps the rest — so this declares what Studio changed rather than trying to
+    # work out which keys belong to the process preset.
+    if mode in ("preserve", "u1", "optimize"):
+        declared = preset_deviation.declare(
+            work,
+            preset_deviation.keys_from_changes(
+                report.get("identity", {}).get("changed") if isinstance(
+                    report.get("identity"), dict) else None,
+                report.get("value_normalizations"),
+                report.get("preserved_value_changes"),
+                report.get("optimizations"),
+                report.get("orca_compatibility"),
+            ),
+            filaments=filament_count(work),
+        )
+        if declared:
+            report["preset_deviations_declared"] = declared
 
     # ThreeMF is in-memory here. Replacing the parts even for dry runs lets the
     # caller validate the exact would-be project without writing an output file.

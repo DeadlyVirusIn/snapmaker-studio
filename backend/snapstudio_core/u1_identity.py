@@ -135,8 +135,19 @@ def normalize_project_identity(cfg: dict, n_filaments: int,
 #  - "Customized Preset"  -> `different_settings_to_system` non-empty (the
 #    "differs from the system preset" marker, carried from the source slice).
 #  - "Print By Object" collision -> `print_sequence == "by object"`.
-# A genuine clean U1 export carries neither. We reset the markers/sequence; the
-# customized *values* themselves stay in the project (intent preserved).
+#
+# This used to say "the customized *values* themselves stay in the project
+# (intent preserved)". That was measured to be false. `different_settings_to_system`
+# is not a notice flag: it is the list of values Snapmaker Orca is *not* to take
+# from the preset the project names. Blanking it is what makes Orca throw the
+# values away — a project stating brim_type=no_brim and prime_tower_width=60
+# came back from Orca as auto_brim and 30 with the marker blank, and kept both
+# with it declared.
+#
+# The blanking still happens here, because a marker carried from the source is a
+# claim about the *source's* presets and does not describe the copy. What follows
+# it is `preset_deviation.declare`, which re-states exactly the deviations the
+# copy actually has. Blanking without that step is what silently discarded them.
 U1_PRINT_SEQUENCE = "by layer"
 
 
@@ -238,14 +249,22 @@ def is_u1_clean(cfg: dict, *, preserve_creator_settings: bool = False,
         issues.append("filament_settings_id contains non-Snapmaker presets")
     if not cfg.get("version"):
         issues.append("missing version")
-    # Clean-import markers (Snapmaker Orca dialogs):
+    # `different_settings_to_system` used to be checked here as a defect, on the
+    # belief that it only produces Snapmaker Orca's "Customized Preset" notice.
+    # It does more than that: it is the list of values Orca is *not* to take from
+    # the preset the project names. Measured on Orca 2.3.6, a project stating
+    # brim_type=no_brim and prime_tower_width=60 came back as auto_brim and 30
+    # when they were not declared here, and kept both when they were — so an
+    # empty marker beside a changed value is the fault, not the marker.
+    #
+    # What is still worth saying is that the notice will appear, because it will.
     dss = cfg.get("different_settings_to_system")
-    if (not preserve_creator_settings
-            and ((isinstance(dss, list) and any(str(x) for x in dss)) or (isinstance(dss, str) and dss))):
-        issues.append("different_settings_to_system is non-empty (triggers 'Customized Preset')")
-    elif preserve_creator_settings and ((isinstance(dss, list) and any(str(x) for x in dss))
-                                         or (isinstance(dss, str) and dss)):
-        issues.append("warning: creator's different_settings_to_system was kept")
+    declared = ((isinstance(dss, list) and any(str(x) for x in dss))
+                or (isinstance(dss, str) and bool(dss)))
+    if declared:
+        issues.append("warning: Snapmaker Orca will show a 'Customized Preset' notice — "
+                      "this project states values the named preset does not, and they "
+                      "are declared so the slicer uses them")
     ps = cfg.get("print_sequence")
     if not preserve_creator_settings and ps not in (None, U1_PRINT_SEQUENCE):
         issues.append(f"print_sequence is {ps!r}, expected {U1_PRINT_SEQUENCE!r} (triggers 'Print By Object')")

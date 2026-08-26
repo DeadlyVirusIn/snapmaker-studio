@@ -583,7 +583,7 @@
   "fuzzy_skin_point_distance": "0.3",
   "fuzzy_skin_scale": "1",
   "fuzzy_skin_thickness": "0.2",
-  "gap_fill_target": "nowhere",
+  "gap_fill_target": "topbottom",
   "gap_infill_speed": "250",
   "gcode_add_line_number": "0",
   "gcode_comments": "0",

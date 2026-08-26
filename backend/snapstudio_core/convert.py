@@ -103,7 +103,12 @@ def _action_reasons(report: dict) -> tuple[dict[str, str], set[str], set[str]]:
               report.get("filament_array_changes", []),
               report.get("value_normalizations", []), report.get("preserved_value_changes", []),
               report.get("presets_normalized", []), report.get("foreign_cleared", []),
-              report.get("orca_compatibility", [])]
+              report.get("orca_compatibility", []),
+              # The declaration that makes every change above reach the slicer.
+              # Without it in this list a real, reported change looks like an
+              # unexplained mutation and the copy fails its own validation.
+              [report["preset_deviations_declared"]]
+              if report.get("preset_deviations_declared") else []]
     identity = report.get("identity", {})
     groups.append(identity.get("changed", []) if isinstance(identity, dict) else [])
     for group in groups:

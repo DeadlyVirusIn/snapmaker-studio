@@ -79,16 +79,24 @@ def test_normalize_presets_clears_customized_markers():
     assert {"different_settings_to_system", "print_sequence"} <= keys
 
 
-def test_is_u1_clean_fails_on_customized_preset_marker():
+def test_a_declared_deviation_is_a_warning_not_a_defect():
+    """The marker is what makes a stated value reach the slicer.
+
+    It used to fail the cleanliness gate, on the belief that it only produced
+    Snapmaker Orca's "Customized Preset" notice. Measured on Orca 2.3.6: a
+    project stating `brim_type=no_brim` and `prime_tower_width=60` came back as
+    `auto_brim` and `30` when they were not declared here, and kept both when
+    they were. An empty marker beside a changed value is the fault.
+    """
     cfg = _bambu_cfg()
     normalize_project_identity(cfg, n_filaments=len(cfg["filament_colour"]))
     scrub_foreign(cfg)
     normalize_presets(cfg)
-    assert is_u1_clean(cfg)[0] is True  # baseline clean
-    # inject the "Customized Preset" trigger -> must fail
+    assert is_u1_clean(cfg)[0] is True  # baseline: nothing deviates, nothing declared
     cfg["different_settings_to_system"] = ["brim_type;enable_support", "", "", ""]
     ok, issues = is_u1_clean(cfg)
-    assert ok is False and any("different_settings_to_system" in i for i in issues)
+    assert ok is True, "declaring a real deviation must not fail the copy"
+    assert any(i.startswith("warning:") and "Customized Preset" in i for i in issues)
 
 
 def test_is_u1_clean_fails_on_print_by_object():
