@@ -479,6 +479,11 @@ def audit(original: str, prepared: str) -> dict:
         "not_carried": [r for r in ordered if r["status"] in (REMOVED, UNSUPPORTED)],
         "unverified": [r for r in ordered if r["status"] == UNVERIFIED],
         "claims": claims,
+        # Whether the copy fits the printer's plate is not a comparison between the
+        # two files: Studio can preserve a placement perfectly and the target still
+        # be unable to print it there. It is reported beside the rows rather than
+        # as one of them, so a preserved placement is never counted as a loss.
+        "placement": _placement_report(prepared),
         "summary": _summary(counts, claims),
         "disclaimer": ("This compares what Studio can identify in both files. Anything it "
                        "could not identify is listed as unverified rather than assumed to "
@@ -628,6 +633,7 @@ def _part_shape_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
                              f"{len(prepared)}"),
                      reason="Studio writes one prepared object per source object")]
 
+    rigid = _rigid_offset(source, prepared)
     rows = []
     for origin, copy in zip(source, prepared):
         name = origin["name"]
@@ -664,16 +670,68 @@ def _part_shape_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:
                         "a bug") if moved else None))
 
         if origin["transform"] and copy["transform"]:
-            same = origin["transform"] == copy["transform"]
-            rows.append(_row(
-                f"Where {name} sits on the plate",
-                PRESERVED_EXACT if same else CHANGED,
-                detail=("placed exactly where the source placed it" if same
-                        else f"{origin['transform']} → {copy['transform']}"),
-                reason=None if same else (
-                    "Studio does not move objects while preparing them — report "
-                    "this as a bug")))
+            rows.append(_placement_row(name, origin["transform"], copy["transform"],
+                                       rigid))
     return rows
+
+
+def _rigid_offset(source: list[dict], prepared: list[dict]) -> tuple | None:
+    """The one translation every object moved by, if there is one.
+
+    A whole plate moved together keeps every distance and every orientation
+    somebody chose, so it is a different fact from one object drifting away from
+    the others — and it is what an explicit "move onto the plate" does.
+    """
+    from . import placement
+
+    offsets = set()
+    for origin, copy in zip(source, prepared):
+        one = placement.parse_transform(origin.get("transform"))
+        two = placement.parse_transform(copy.get("transform"))
+        if one is None or two is None:
+            return None
+        if one[0] != two[0] or one[1] != two[1] or one[2] != two[2]:
+            return None                       # a rotation or a scale, not a move
+        if abs(two[3][2] - one[3][2]) > placement.TOLERANCE:
+            return None                       # height changed; not a plate move
+        offsets.add((round(two[3][0] - one[3][0], 4), round(two[3][1] - one[3][1], 4)))
+    if len(offsets) != 1:
+        return None
+    dx, dy = offsets.pop()
+    if abs(dx) <= placement.TOLERANCE and abs(dy) <= placement.TOLERANCE:
+        return None
+    return dx, dy
+
+
+def _placement_row(name: str, before: str, after: str, rigid: tuple | None) -> dict:
+    from . import placement
+
+    if before == after:
+        return _row(f"Where {name} sits on the plate", PRESERVED_EXACT,
+                    detail="placed exactly where the source placed it")
+    if rigid:
+        dx, dy = rigid
+        return _row(f"Where {name} sits on the plate", PRESERVED_SEMANTIC,
+                    detail=(f"moved with the rest of the plate, "
+                            f"{placement._offset(dx, dy)}"),
+                    reason=("the whole arrangement moved together, so every distance "
+                            "and every orientation is as it was — this is what "
+                            "moving a project onto the printer's plate does"))
+    return _row(f"Where {name} sits on the plate", CHANGED,
+                detail=f"{before} → {after}",
+                reason=("Studio does not move objects while preparing them, and this "
+                        "one did not move with the rest of the plate — report this as "
+                        "a bug"))
+
+
+def _placement_report(prepared: str) -> dict | None:
+    from . import placement
+
+    try:
+        report = placement.assess(prepared)
+    except Exception:  # noqa: BLE001 — a report, never a crash
+        return None
+    return report if report.get("available") else None
 
 
 def _settings_rows(a: ThreeMF, b: ThreeMF) -> list[dict]:

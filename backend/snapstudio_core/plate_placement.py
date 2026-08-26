@@ -126,13 +126,32 @@ def _cluster_bounds(items: list[dict]) -> dict:
 
 
 def _centering_offset(cluster: dict, bed: dict) -> dict:
-    """The translation that centres the whole arrangement on the bed."""
-    return {
-        "x": round(((bed["min_x"] + bed["max_x"]) / 2.0)
-                   - ((cluster["min_x"] + cluster["max_x"]) / 2.0), 3),
-        "y": round(((bed["min_y"] + bed["max_y"]) / 2.0)
-                   - ((cluster["min_y"] + cluster["max_y"]) / 2.0), 3),
-    }
+    """The smallest translation that brings the whole arrangement onto the bed.
+
+    Not the centre of the plate. Somebody who arranged a print 0.5 mm off the edge
+    asked for it to be where it is; moving it half a metre to the middle answers a
+    question they did not ask. The smallest move that works changes as little as
+    possible about what they chose, and it is deterministic: for each axis there is
+    one interval of translations that fits, and this is the point in it nearest to
+    not moving at all.
+    """
+    low_x = bed["min_x"] + EDGE_MARGIN_MM - cluster["min_x"]
+    high_x = bed["max_x"] - EDGE_MARGIN_MM - cluster["max_x"]
+    low_y = bed["min_y"] + EDGE_MARGIN_MM - cluster["min_y"]
+    high_y = bed["max_y"] - EDGE_MARGIN_MM - cluster["max_y"]
+    return {"x": round(_nearest_to_zero(low_x, high_x), 3),
+            "y": round(_nearest_to_zero(low_y, high_y), 3)}
+
+
+def _nearest_to_zero(low: float, high: float) -> float:
+    """The number in [low, high] closest to zero; 0 when the interval is empty."""
+    if low > high:
+        return 0.0
+    if low > 0.0:
+        return low
+    if high < 0.0:
+        return high
+    return 0.0
 
 
 def _fits_after(cluster: dict, bed: dict, offset: dict) -> bool:
@@ -140,6 +159,45 @@ def _fits_after(cluster: dict, bed: dict, offset: dict) -> bool:
             and cluster["max_x"] + offset["x"] <= bed["max_x"] - EDGE_MARGIN_MM + 1e-6
             and cluster["min_y"] + offset["y"] >= bed["min_y"] + EDGE_MARGIN_MM - 1e-6
             and cluster["max_y"] + offset["y"] <= bed["max_y"] - EDGE_MARGIN_MM + 1e-6)
+
+
+def _printable_only(path: str, items: list[dict]) -> list[dict]:
+    """Bounds measured from the parts that print, where the project says which.
+
+    A modifier, a negative volume or a support blocker is an instruction to the
+    slicer rather than something that lands on the bed, and one of them sitting far
+    off the plate does not stop the print. Measured against Snapmaker Orca 2.3.5
+    with a control: a modifier cube 400 mm off the plate sliced without complaint,
+    and the same cube written as a normal part stopped the slice. Counting it would
+    warn about a problem the printer does not have — and offer to move an
+    arrangement that is already fine.
+    """
+    from . import placement
+
+    try:
+        read = placement.read_objects(path)
+    except Exception:
+        return items
+    footprints = {entry["object_id"]: entry["footprint"]
+                  for entry in read.get("objects") or ()
+                  if entry.get("footprint")}
+    if not footprints:
+        return items
+
+    out = []
+    for item in items:
+        box = footprints.get(str(item.get("object_id")))
+        if box is None:
+            out.append(item)
+            continue
+        low, high = item["bounds"]["min"], item["bounds"]["max"]
+        entry = dict(item)
+        entry["bounds"] = {"min": (box["min_x"], box["min_y"], low[2]),
+                           "max": (box["max_x"], box["max_y"], high[2])}
+        entry["dimensions"] = dict(item["dimensions"],
+                                   x=round(box["width"], 3), y=round(box["depth"], 3))
+        out.append(entry)
+    return out
 
 
 def _unavailable(reason: str) -> dict:
@@ -259,6 +317,7 @@ def assess(path: str, bed: dict | None = None, bed_name: str | None = None) -> d
     plate_count = (traits.get("plate_count") or {}).get("value") or 1
 
     items = geometry.build_item_dims(path)
+    items = _printable_only(path, items)
     if not items:
         return _unavailable(
             "Studio could not read where the objects sit in this project, so it "
@@ -445,6 +504,75 @@ def _unique_output(src: Path, out_dir: Path | None) -> Path:
     return out
 
 
+def verify_only_placement_moved(source: str, moved: str) -> dict:
+    """Prove the copy differs from the original in where the objects sit, and in
+    nothing else.
+
+    A move that quietly re-serialised a mesh, dropped a painted facet or rewrote a
+    setting would still pass a placement check, because a placement check only
+    looks at placement.
+    """
+    import zipfile
+
+    from . import multipart, painted_color, placement
+
+    checks: list[dict] = []
+
+    def check(name: str, ok: bool, detail: str = "") -> bool:
+        checks.append({"check": name, "pass": bool(ok), "detail": detail})
+        return bool(ok)
+
+    with zipfile.ZipFile(source) as before, zipfile.ZipFile(moved) as after:
+        names_before, names_after = set(before.namelist()), set(after.namelist())
+        check("the file list is unchanged", names_before == names_after,
+              f"+{sorted(names_after - names_before)} "
+              f"-{sorted(names_before - names_after)}")
+        differing = [name for name in sorted(names_before & names_after)
+                     if before.read(name) != after.read(name)]
+        check("only the root model differs", differing == [ROOT_MODEL],
+              f"differing: {differing}")
+        root_before = before.read(ROOT_MODEL).decode("utf-8", "ignore")
+        root_after = after.read(ROOT_MODEL).decode("utf-8", "ignore")
+
+    strip = lambda text: _ITEM_TAG_RE.sub("", text)  # noqa: E731
+    check("the root model's geometry and components are unchanged",
+          strip(root_before) == strip(root_after))
+
+    items_before = dict(placement._BUILD_ITEM.findall(root_before))
+    items_after = dict(placement._BUILD_ITEM.findall(root_after))
+    check("every object is still placed", set(items_before) == set(items_after))
+
+    deltas = set()
+    same_basis = True
+    for object_id, text in items_before.items():
+        one = placement.parse_transform(text)
+        two = placement.parse_transform(items_after.get(object_id))
+        if one is None or two is None:
+            same_basis = False
+            break
+        if one[0] != two[0] or one[1] != two[1] or one[2] != two[2]:
+            same_basis = False        # a rotation or a scale crept in
+            break
+        deltas.add((round(two[3][0] - one[3][0], 4), round(two[3][1] - one[3][1], 4),
+                    round(two[3][2] - one[3][2], 4)))
+    check("nothing was rotated or rescaled", same_basis)
+    check("every object moved by the same amount, in X and Y only",
+          len(deltas) == 1 and abs(next(iter(deltas))[2]) <= 1e-6 if deltas else False,
+          str(sorted(deltas)))
+
+    structure = multipart.validate_archive(ThreeMF.open(moved))
+    check("the moved copy still describes itself consistently",
+          structure.get("ok", False), "; ".join(structure.get("problems") or ()))
+
+    one_paint = painted_color.read_container(ThreeMF.open(source))
+    two_paint = painted_color.read_container(ThreeMF.open(moved))
+    check("the painting is unchanged",
+          one_paint.get("painted_triangle_count") == two_paint.get("painted_triangle_count")
+          and one_paint.get("slots_referenced") == two_paint.get("slots_referenced"))
+
+    return {"passed": all(entry["pass"] for entry in checks), "checks": checks}
+
+
 def prepare_placed_copy(path: str, out_dir: str | None = None,
                         bed: dict | None = None) -> dict:
     """Write a new copy with the whole arrangement moved onto the U1 plate.
@@ -502,6 +630,17 @@ def prepare_placed_copy(path: str, out_dir: str | None = None,
     # Validate the fix by re-running the same check against the file that was
     # actually written — not against what the code intended to write.
     after = assess(str(out), bed=bed)
+    proof = verify_only_placement_moved(str(src), str(out))
+    if not proof["passed"]:
+        out.unlink(missing_ok=True)
+        return {
+            "schema_version": SCHEMA_VERSION, "ok": False,
+            "reason": ("Studio's moved copy changed something other than where the "
+                       "objects sit, so it was not kept: "
+                       + "; ".join(entry["check"] for entry in proof["checks"]
+                                   if not entry["pass"])),
+            "before": before, "verification": proof,
+        }
     ok = bool(after.get("available")) and not after.get("off_plate")
     if not ok:
         # The copy is left in place so a user can inspect it, but the result says
@@ -522,6 +661,7 @@ def prepare_placed_copy(path: str, out_dir: str | None = None,
         "output_name": out.name,
         "objects_moved": moved,
         "offset_mm": offset,
+        "verification": proof,
         "before": before,
         "after": after,
         "changes": [{
