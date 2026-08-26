@@ -1,5 +1,10 @@
 # Handoff — unreleased work on `main` after v0.8.0, fourth instalment
 
+> **Superseded by `HANDOFF_main_ff1aef2.md`.** Its top backlog item — telling
+> the person when an object is off the U1 bed and offering a reposition — was
+> largely already shipped; the next instalment found that out the slow way and
+> records where the existing feature lives.
+
 Written 2026-08-25. **Nothing here is released.** Supersedes
 `HANDOFF_main_04f7910.md`; read `HANDOFF_v0.8.0.md` for the released product.
 
