@@ -277,7 +277,7 @@ def _carry_prusa_settings(source: ThreeMF, wrapped: ThreeMF) -> dict | None:
     profile is a working project, and a half-applied one might not be.
     """
     from .config_io import dump_project_settings
-    from . import prusa
+    from . import preset_deviation, prusa
 
     try:
         if not source.has_part(prusa.SETTINGS_PART):
@@ -297,6 +297,17 @@ def _carry_prusa_settings(source: ThreeMF, wrapped: ThreeMF) -> dict | None:
                 settings[key] = merged
             else:
                 settings[key] = value
+        # A carried setting that is not declared is a carried setting the slicer
+        # throws away. Measured on Snapmaker Orca 2.3.6: a project stating
+        # layer_height=0.28 came back at the preset's 0.2 undeclared, and at 0.28
+        # declared. Without this the whole of `prusa.CARRIED` — the layer height,
+        # the first layer, the infill density, the wall count and the brim —
+        # arrives correct in the file and never reaches the slicer.
+        declared = preset_deviation.declare(
+            settings, carried["settings"].keys(),
+            filaments=len(settings.get("filament_colour") or []) or 4)
+        if declared:
+            carried["declared"] = declared
         wrapped.replace_part(SETTINGS, dump_project_settings(settings))
         return carried
     except Exception:  # noqa: BLE001 — a starter profile is a working project
