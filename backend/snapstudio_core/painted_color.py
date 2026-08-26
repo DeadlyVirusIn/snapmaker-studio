@@ -181,6 +181,32 @@ def _version(tm: ThreeMF, dialect: str) -> tuple[int | None, str | None]:
     return None, None
 
 
+def volume_of(ranges: list[tuple], facet: int) -> int | None:
+    """Which volume owns this facet, or None when the file does not say.
+
+    Measured against PrusaSlicer 2.9.6: `firstid`/`lastid` are **inclusive**, and
+    the slicer always writes contiguous ascending ranges that partition the mesh.
+    Handed a project whose ranges left a gap it re-laid the volumes contiguously
+    and wrote a shorter mesh; handed overlapping ranges it duplicated the shared
+    triangles into the second volume and renumbered; handed a reversed range, or
+    one past the end of the mesh, it refused to write a file at all.
+
+    So a genuine file always answers this question exactly once. A file that is
+    not genuine may answer it twice or not at all, and both of those are
+    **unknown** — never the slot of whichever volume happens to be first, which
+    is how an object's second volume used to inherit the first one's filament.
+    """
+    owner = None
+    for index, (first, last) in enumerate(ranges):
+        if first is None or last is None or first > last:
+            continue
+        if first <= facet <= last:
+            if owner is not None:
+                return None            # two volumes claim it; the file is wrong
+            owner = index
+    return owner
+
+
 def _slot_bucket(slot: int) -> dict:
     """One filament slot's tally across a whole project."""
     return {"slot": slot, "triangles_touching": 0, "facet_equivalent": 0.0,
@@ -293,8 +319,14 @@ def _facets(body: bytes):
 
 
 def _read_object(open_tag: bytes, body: bytes, attribute: str,
-                 budget: _Budget) -> dict | None:
-    """Everything one mesh says about its painting."""
+                 budget: _Budget, ranges: list | None = None) -> dict | None:
+    """Everything one mesh says about its painting.
+
+    `ranges` are the source volumes' inclusive triangle ranges, where the dialect
+    has them. They decide which volume an unpainted patch belongs to, and so which
+    filament it prints in — a question one answer per mesh cannot answer for an
+    object whose volumes disagree.
+    """
     attrs = _attrs(open_tag)
     object_id = attrs.get("id")
     painted_marker = attribute.encode("ascii")
@@ -316,6 +348,7 @@ def _read_object(open_tag: bytes, body: bytes, attribute: str,
 
     vertices, vertices_truncated = _vertices(body)
     counts: dict[int, dict] = {}
+    unpainted_by_volume: dict[object, dict] = {}
     triangle_count = 0
     painted_count = 0
     leaf_total = 0
@@ -368,17 +401,31 @@ def _read_object(open_tag: bytes, body: bytes, attribute: str,
         budget.spend_leaves(len(leaves))
         whole_area = area_of(corners) if corners else 0.0
         seen_here = set()
+        owner = (volume_of(ranges, triangle_count - 1)
+                 if ranges else None)
         for leaf in leaves:
-            entry = counts.get(leaf.state)
-            if entry is None:
-                entry = counts[leaf.state] = {
-                    "leaf_count": 0, "facet_share": 0.0, "area_mm2": 0.0,
-                    "triangles": 0, "z_min": None, "z_max": None}
+            if leaf.state == paint_codec.STATE_UNPAINTED and ranges is not None:
+                # An unpainted patch prints in whatever its own volume is
+                # assigned, so it is tallied against that volume rather than
+                # against the mesh as a whole.
+                entry = unpainted_by_volume.get(owner)
+                if entry is None:
+                    entry = unpainted_by_volume[owner] = {
+                        "leaf_count": 0, "facet_share": 0.0, "area_mm2": 0.0,
+                        "triangles": 0, "z_min": None, "z_max": None}
+                seen_key = ("unpainted", owner)
+            else:
+                entry = counts.get(leaf.state)
+                if entry is None:
+                    entry = counts[leaf.state] = {
+                        "leaf_count": 0, "facet_share": 0.0, "area_mm2": 0.0,
+                        "triangles": 0, "z_min": None, "z_max": None}
+                seen_key = leaf.state
             entry["leaf_count"] += 1
-            if leaf.state not in seen_here:
+            if seen_key not in seen_here:
                 # How many of the mesh's own facets this slot appears on, counted
                 # once each however finely the facet is subdivided.
-                seen_here.add(leaf.state)
+                seen_here.add(seen_key)
                 entry["triangles"] += 1
             entry["facet_share"] += leaf.fraction
             entry["area_mm2"] += whole_area * leaf.fraction
@@ -397,6 +444,7 @@ def _read_object(open_tag: bytes, body: bytes, attribute: str,
             "z_max": max(heights) if heights else None,
             "leaf_count": leaf_total,
             "states": counts,
+            "unpainted_by_volume": unpainted_by_volume,
             "mesh_area_mm2": total_area,
             "malformed_triangle_count": malformed_count,
             "malformed_examples": malformed,
@@ -462,6 +510,12 @@ def _prusa_volumes(tm: ThreeMF) -> dict:
     for chunk in re.split(r"<object\b", text)[1:]:
         match = re.search(r'id="([^"]+)"', chunk.split(">", 1)[0])
         object_id = match.group(1) if match else None
+        object_slot = None
+        for key, value in re.findall(
+                r'<metadata\s+type="object"\s+key="([^"]+)"\s+value="([^"]*)"',
+                chunk.split("<volume", 1)[0]):
+            if key == "extruder" and value.strip().isdigit():
+                object_slot = int(value)
         volumes = []
         for volume_chunk in re.split(r"<volume\b", chunk)[1:]:
             head = volume_chunk.split(">", 1)[0]
@@ -479,7 +533,7 @@ def _prusa_volumes(tm: ThreeMF) -> dict:
                     info["name"] = value
             volumes.append(info)
         if object_id:
-            out[object_id] = {"volumes": volumes}
+            out[object_id] = {"volumes": volumes, "extruder": object_slot}
     return out
 
 
@@ -535,6 +589,10 @@ def read_container(tm: ThreeMF) -> dict:
     version, version_part = _version(tm, dialect)
     budget = _Budget(MAX_PAINTED_TRIANGLES, MAX_PAINTED_LEAVES)
 
+    # The volume graph is read first: a mesh cannot be attributed to volumes it
+    # has not been told about.
+    settings = (_bambu_parts(tm) if dialect == DIALECT_BAMBU else _prusa_volumes(tm))
+
     # Mesh-level reading, keyed by the id each mesh object carries.
     meshes: dict[str, dict] = {}
     mesh_part: dict[str, str] = {}
@@ -544,7 +602,14 @@ def read_container(tm: ThreeMF) -> dict:
         except Exception:
             continue
         for open_tag, body in _object_regions(blob):
-            info = _read_object(open_tag, body, attribute, budget)
+            ranges = None
+            if dialect == DIALECT_PRUSA:
+                found = re.search(rb'id="([^"]+)"', open_tag)
+                entry = settings.get(found.group(1).decode("ascii", "ignore")) if found else None
+                if entry:
+                    ranges = [(v.get("first_triangle"), v.get("last_triangle"))
+                              for v in entry.get("volumes") or []]
+            info = _read_object(open_tag, body, attribute, budget, ranges)
             if info is None:
                 continue
             key = f"{part}#{info.get('object_id')}"
@@ -553,7 +618,6 @@ def read_container(tm: ThreeMF) -> dict:
             if info.get("object_id"):
                 mesh_part.setdefault(info["object_id"], key)
 
-    settings = (_bambu_parts(tm) if dialect == DIALECT_BAMBU else _prusa_volumes(tm))
     placements = _build_transforms(tm)
 
     objects = []
@@ -696,16 +760,33 @@ def _describe(info: dict, key: str, dialect: str, settings: dict,
     painted_share = 0.0
     unpainted_share = 0.0
     mesh_area = info.get("mesh_area_mm2") or 0.0
-    for state in sorted(info.get("states", {})):
-        stats = info["states"][state]
+
+    # An unpainted patch prints in whatever its own volume is assigned. Where the
+    # dialect states volumes, each one gets its own entry; where it does not, the
+    # mesh has a single default and there is one entry, as before.
+    by_volume = info.get("unpainted_by_volume") or {}
+    entries = [(state, info["states"][state], None)
+               for state in sorted(info.get("states", {}))]
+    entries += [(paint_codec.STATE_UNPAINTED, stats, volume)
+                for volume, stats in sorted(
+                    by_volume.items(),
+                    key=lambda pair: (pair[0] is None, pair[0]))]
+
+    for state, stats, volume in entries:
         share = stats["facet_share"]
         if state == paint_codec.STATE_UNPAINTED:
             unpainted_share += share
-            slot = default_slot
+            if volume is None and by_volume:
+                slot, source = None, (
+                    "no volume of this object claims that facet, so Studio cannot "
+                    "say which colour its unpainted area prints in")
+            elif volume is None:
+                slot, source = default_slot, default_source
+            else:
+                slot, source = _volume_slot(volume, info, settings)
             painted = False
-            evidence = (f"left unpainted, so it prints in slot {default_slot} — "
-                        f"{default_source}" if default_slot is not None else
-                        f"left unpainted, and {default_source}")
+            evidence = (f"left unpainted, so it prints in slot {slot} — {source}"
+                        if slot is not None else f"left unpainted, and {source}")
         else:
             painted_share += share
             slot = state
@@ -718,6 +799,7 @@ def _describe(info: dict, key: str, dialect: str, settings: dict,
         assignments.append({
             "slot": slot,
             "state": state,
+            "volume": volume,
             "painted": painted,
             # Two different facts, deliberately not merged: how many of the
             # mesh's own triangles carry any of this slot, and how much whole-
@@ -791,13 +873,47 @@ def _default_slot(info: dict, dialect: str, settings: dict,
                               "area prints in")
         return None, ("Studio could not match this mesh to a part in the "
                       "project's settings, so the unpainted area's slot is unknown")
-    volumes = (settings.get(object_id) or {}).get("volumes") or []
-    for volume in volumes:
-        if volume.get("extruder"):
-            return volume["extruder"], (
-                f"this volume is assigned slot {volume['extruder']} in the "
-                "project's own model config")
+    # The mesh-wide answer, used only where the file states no volumes at all.
+    # Taking "the first volume with an extruder" as the whole object's default is
+    # the defect this replaced: an object whose second volume prints in filament 5
+    # had that volume's unpainted area counted under the first volume's filament.
+    entry = settings.get(object_id) or {}
+    if entry.get("extruder"):
+        return entry["extruder"], (
+            f"this object is assigned slot {entry['extruder']} in the project's "
+            "own model config")
+    volumes = entry.get("volumes") or []
+    if len(volumes) == 1 and volumes[0].get("extruder"):
+        return volumes[0]["extruder"], (
+            f"this object's only volume is assigned slot {volumes[0]['extruder']} "
+            "in the project's own model config")
     return None, ("the project does not record a slot for this volume, so "
+                  "Studio cannot say which colour its unpainted area prints in")
+
+
+def _volume_slot(volume: int, info: dict, settings: dict) -> tuple[int | None, str]:
+    """Which slot one volume's unpainted area prints in.
+
+    In order, and each step is a different fact: the volume's own assignment, the
+    object's where the volume is silent, and otherwise unknown. Nothing inherits
+    from a sibling volume, because a sibling's filament is a statement about the
+    sibling.
+    """
+    entry = settings.get(info.get("object_id")) or {}
+    volumes = entry.get("volumes") or []
+    if volume >= len(volumes):
+        return None, ("the project states no volume there, so Studio cannot say "
+                      "which colour its unpainted area prints in")
+    own = volumes[volume]
+    if own.get("extruder"):
+        return own["extruder"], (
+            f"volume {volume + 1} is assigned slot {own['extruder']} in the "
+            "project's own model config")
+    if entry.get("extruder"):
+        return entry["extruder"], (
+            f"volume {volume + 1} states no slot of its own and its object is "
+            f"assigned slot {entry['extruder']}")
+    return None, (f"neither volume {volume + 1} nor its object states a slot, so "
                   "Studio cannot say which colour its unpainted area prints in")
 
 

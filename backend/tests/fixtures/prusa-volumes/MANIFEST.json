@@ -1,0 +1,316 @@
+{
+ "_provenance": {
+  "kind": "authored_by_the_slicer",
+  "statement": "Every file here was written by PrusaSlicer 2.9.6 itself. A candidate model config was placed in a genuine PrusaSlicer project and the project was handed back with --export-3mf; what the slicer wrote is what is stored. One variable per file. Nothing was hand-edited afterwards.",
+  "slicer": "PrusaSlicer 2.9.6 (prusa-slicer-console.exe --export-3mf)",
+  "base_project": "backend/tests/fixtures/prusa-semantics/H_two_volumes_different_slots_out.3mf",
+  "geometry": "a 12-facet cube \u2014 synthetic, no private model",
+  "why": "A volume's unpainted area prints in that volume's filament. Studio used to attribute every facet of an object to the first volume that stated one, so an object whose second volume printed in filament 5 had that area counted under the first volume's. These are the cases that pin the rule down.",
+  "captured": "2026-08-25"
+ },
+ "files": {
+  "A_two_volumes_same_slot.3mf": {
+   "note": "two volumes, both on filament 2",
+   "size_bytes": 2225,
+   "sha256": "fbfb0032295a749e97e836995d42c99ddf8e7cfc093c06575b8facbcda11145c",
+   "objects": [
+    {
+     "id": "1",
+     "instances": 1,
+     "extruder": null,
+     "name": "cube.stl",
+     "volumes": [
+      {
+       "first": 0,
+       "last": 5,
+       "extruder": "2",
+       "volume_type": "ModelPart",
+       "name": "v1"
+      },
+      {
+       "first": 6,
+       "last": 11,
+       "extruder": "2",
+       "volume_type": "ModelPart",
+       "name": "v2"
+      }
+     ]
+    }
+   ],
+   "mesh_objects": [
+    {
+     "id": "1",
+     "triangles": 12,
+     "vertices": 16,
+     "painted": 8
+    }
+   ]
+  },
+  "B_two_volumes_slots_2_and_5.3mf": {
+   "note": "two volumes on filaments 2 and 5",
+   "size_bytes": 2235,
+   "sha256": "9769453be1cfb1f5d74e6873ab718b0fd8b59240114205c8dfd629a858814e0f",
+   "objects": [
+    {
+     "id": "1",
+     "instances": 1,
+     "extruder": null,
+     "name": "cube.stl",
+     "volumes": [
+      {
+       "first": 0,
+       "last": 5,
+       "extruder": "2",
+       "volume_type": "ModelPart",
+       "name": "v1"
+      },
+      {
+       "first": 6,
+       "last": 11,
+       "extruder": "5",
+       "volume_type": "ModelPart",
+       "name": "v2"
+      }
+     ]
+    }
+   ],
+   "mesh_objects": [
+    {
+     "id": "1",
+     "triangles": 12,
+     "vertices": 16,
+     "painted": 8
+    }
+   ]
+  },
+  "C_object_3_volume_two_5.3mf": {
+   "note": "object on filament 3; first volume silent, second on 5",
+   "size_bytes": 2232,
+   "sha256": "bfc38b73a14d6664fc0b07cc66e5782fb90bffc6505bbb17b36d309e85f6c6c4",
+   "objects": [
+    {
+     "id": "1",
+     "instances": 1,
+     "extruder": "3",
+     "name": "cube.stl",
+     "volumes": [
+      {
+       "first": 0,
+       "last": 5,
+       "extruder": null,
+       "volume_type": "ModelPart",
+       "name": "v1"
+      },
+      {
+       "first": 6,
+       "last": 11,
+       "extruder": "5",
+       "volume_type": "ModelPart",
+       "name": "v2"
+      }
+     ]
+    }
+   ],
+   "mesh_objects": [
+    {
+     "id": "1",
+     "triangles": 12,
+     "vertices": 16,
+     "painted": 8
+    }
+   ]
+  },
+  "D_object_silent_volume_two_4.3mf": {
+   "note": "object states nothing; second volume on 4",
+   "size_bytes": 2230,
+   "sha256": "49d31f0a5b1899c6b010760a2e05e2e4fd7a6372cad7e14331cac8ca27afae8f",
+   "objects": [
+    {
+     "id": "1",
+     "instances": 1,
+     "extruder": null,
+     "name": "cube.stl",
+     "volumes": [
+      {
+       "first": 0,
+       "last": 5,
+       "extruder": null,
+       "volume_type": "ModelPart",
+       "name": "v1"
+      },
+      {
+       "first": 6,
+       "last": 11,
+       "extruder": "4",
+       "volume_type": "ModelPart",
+       "name": "v2"
+      }
+     ]
+    }
+   ],
+   "mesh_objects": [
+    {
+     "id": "1",
+     "triangles": 12,
+     "vertices": 16,
+     "painted": 8
+    }
+   ]
+  },
+  "E_all_volumes_silent.3mf": {
+   "note": "neither volume states a slot",
+   "size_bytes": 2211,
+   "sha256": "036c63ed5a81b9328b6fe409b3fd50caba3a425ef35990d8cc13ade0b3ff1c77",
+   "objects": [
+    {
+     "id": "1",
+     "instances": 1,
+     "extruder": null,
+     "name": "cube.stl",
+     "volumes": [
+      {
+       "first": 0,
+       "last": 5,
+       "extruder": null,
+       "volume_type": "ModelPart",
+       "name": "v1"
+      },
+      {
+       "first": 6,
+       "last": 11,
+       "extruder": null,
+       "volume_type": "ModelPart",
+       "name": "v2"
+      }
+     ]
+    }
+   ],
+   "mesh_objects": [
+    {
+     "id": "1",
+     "triangles": 12,
+     "vertices": 16,
+     "painted": 8
+    }
+   ]
+  },
+  "K_three_volumes_2_3_4.3mf": {
+   "note": "three volumes on filaments 2, 3 and 4",
+   "size_bytes": 2262,
+   "sha256": "08f07713771dd204d3b0291350e7e2fbe32be183a00c2a8da9b47e6d8410d2e6",
+   "objects": [
+    {
+     "id": "1",
+     "instances": 1,
+     "extruder": null,
+     "name": "cube.stl",
+     "volumes": [
+      {
+       "first": 0,
+       "last": 3,
+       "extruder": "2",
+       "volume_type": "ModelPart",
+       "name": "v1"
+      },
+      {
+       "first": 4,
+       "last": 7,
+       "extruder": "3",
+       "volume_type": "ModelPart",
+       "name": "v2"
+      },
+      {
+       "first": 8,
+       "last": 11,
+       "extruder": "4",
+       "volume_type": "ModelPart",
+       "name": "v3"
+      }
+     ]
+    }
+   ],
+   "mesh_objects": [
+    {
+     "id": "1",
+     "triangles": 12,
+     "vertices": 30,
+     "painted": 8
+    }
+   ]
+  },
+  "F_second_volume_silent_object_3.3mf": {
+   "note": "object on filament 3; the volume holding the unpainted patch is silent and its sibling is on 5",
+   "size_bytes": 2240,
+   "sha256": "0123271beee05f048ca22926bba203c58e3464930caccff23a8c8d8862b963ec",
+   "objects": [
+    {
+     "id": "1",
+     "instances": 1,
+     "extruder": "3",
+     "name": "cube.stl",
+     "volumes": [
+      {
+       "first": 0,
+       "last": 5,
+       "extruder": "5",
+       "volume_type": "ModelPart",
+       "name": "v1"
+      },
+      {
+       "first": 6,
+       "last": 11,
+       "extruder": null,
+       "volume_type": "ModelPart",
+       "name": "v2"
+      }
+     ]
+    }
+   ],
+   "mesh_objects": [
+    {
+     "id": "1",
+     "triangles": 12,
+     "vertices": 16,
+     "painted": 8
+    }
+   ]
+  },
+  "G_second_volume_silent_object_silent.3mf": {
+   "note": "nothing states a slot for the volume holding the unpainted patch; its sibling is on 5",
+   "size_bytes": 2233,
+   "sha256": "b015bd2daacb30eda8bbc787b8419dec328ded6f02d8705185b311327fa0ccca",
+   "objects": [
+    {
+     "id": "1",
+     "instances": 1,
+     "extruder": null,
+     "name": "cube.stl",
+     "volumes": [
+      {
+       "first": 0,
+       "last": 5,
+       "extruder": "5",
+       "volume_type": "ModelPart",
+       "name": "v1"
+      },
+      {
+       "first": 6,
+       "last": 11,
+       "extruder": null,
+       "volume_type": "ModelPart",
+       "name": "v2"
+      }
+     ]
+    }
+   ],
+   "mesh_objects": [
+    {
+     "id": "1",
+     "triangles": 12,
+     "vertices": 16,
+     "painted": 8
+    }
+   ]
+  }
+ }
+}

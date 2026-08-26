@@ -707,21 +707,26 @@ _PAINT_ATTR_RE = re.compile(
     rb'(?:paint_color|slic3rpe:mmu_segmentation)="([^"]*)"')
 
 
-def _paint_shape(result: dict) -> dict:
+def _paint_shape(result: dict, *, painted_only: bool = False) -> dict:
     """The meaning of a project's painting, independent of how it is written.
 
-    Painted facets only. A project's per-slot totals also include the area nobody
-    painted, attributed to whatever slot that mesh is assigned — and a copy that
-    carries a part's filament faithfully moves that remainder to the part's own
-    slot, which is a change in the *assignment* and not in the painting. Reading
-    both through one number made a faithful copy look repainted, and the filament
-    rows already answer the assignment question for themselves.
+    Both what was painted and what was left for the mesh's own filament, because
+    both are things a copy can get wrong. That was not always safe to compare: the
+    source reader used to attribute every unpainted patch of an object to the
+    first volume that stated a filament, so a copy that faithfully carried each
+    part's own filament looked repainted by 50 mm². The reader answers per volume
+    now and the two sides agree, so the comparison can include it again.
+
+    `painted_only` drops the unpainted side for the cases where a project states
+    no slot for it at all and the comparison would be between two unknowns.
     """
     areas: dict[int, float] = {}
     heights: dict[int, tuple] = {}
     for entry in result.get("objects") or ():
         for assignment in entry.get("assignments") or ():
-            if not assignment.get("painted") or assignment.get("slot") is None:
+            if assignment.get("slot") is None:
+                continue
+            if painted_only and not assignment.get("painted"):
                 continue
             slot = assignment["slot"]
             areas[slot] = round(areas.get(slot, 0.0) + (assignment.get("area_mm2") or 0.0), 3)
