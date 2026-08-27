@@ -65,14 +65,39 @@ Three further hardenings came out of the same failure, and are worth keeping:
 
 ## Why the fixtures are still unanswered
 
+Two reasons, and the second is the one worth remembering.
+
 The harness drives the foreground, so it competes with whoever is using the
 machine — and it is built to lose that competition rather than type into
 somebody's browser. The desktop was in near-continuous use, so runs kept
-declining before they started. That is the harness behaving correctly.
+declining before they started. That is the harness behaving correctly, and an
+idle gate was added so a run either happens on a quiet machine or does not happen
+at all.
 
-An idle gate was added: `Assert-DesktopIdle` refuses to start a run unless the
-machine has been untouched for a set number of seconds, so a run either happens
-cleanly or does not happen at all. No half-runs.
+**Then the idle gate turned out to be measuring the wrong thing.** `Alt+N` did
+not fix the save either, and the failure screenshot showed why: the window in the
+foreground was not Orca and was not a browser. It was **another automated session
+running on this machine**, working in a different repository, taking the
+foreground while nobody touched the keyboard.
+
+`GetLastInputInfo` measures *human* input. A second agent on the same desktop
+makes the idle counter read "quiet" while the foreground is pulled away every few
+seconds — so every save was typed into a dialog that lost focus before Enter
+committed, and every failure read as a timeout.
+
+Nothing was typed into the other session: `Send-OwnedKeys` checks foreground
+ownership before every keystroke and the failures were all `SAVE FAILED`, never
+`REFUSING TO TYPE`. The guard held. But a check before the send and a steal
+during it is a race, and the results of a run under those conditions could not be
+trusted anyway.
+
+So idleness is now two conditions rather than one — no human input **and** a
+foreground that stays put for several seconds — and `Assert-StillOwned` re-checks
+ownership after the save is committed, so a stolen foreground is reported as a
+stolen foreground instead of as a timeout.
+
+**GUI automation on this machine needs a desktop with no other agent session
+running on it.** That is a scheduling constraint, not a bug to code around.
 
 ## Running them
 
