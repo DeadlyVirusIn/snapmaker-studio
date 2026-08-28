@@ -1,28 +1,42 @@
 # Do I have enough filament to finish this print?
 
-> **State:** this describes `main` after v0.7.2. The published installer, v0.7.2,
-> does not contain the settings page described here. Not a release announcement.
+> **State:** this describes `main` after v0.8.0. The published installer does not
+> contain the Bambuddy support described here. Not a release announcement.
 
 A printer knows which spool is in which slot, because it is looking at it. It
 knows nothing at all about how much filament is left on that spool. So the
 question people actually ask before pressing print is one no printer can answer,
 and Studio said "unknown" to it on every setup.
 
-Something on your network may know. Spoolman tracks spools and what has been used
-from them, and Studio can read it — read-only, over your own network, optional.
+Something on your network may know. **Spoolman** tracks spools and what has been
+used from them; **Bambuddy** keeps a spool inventory alongside its printer
+management. Studio can read either — read-only, over your own network, optional.
 
 ## Setting it up
 
 **Settings → Materials provider.**
 
-1. Choose **Spoolman**.
-2. Type the address of the machine it runs on: `spoolman.local:7912`, or its IP.
+1. Choose **Spoolman** or **Bambuddy**.
+2. Type the address of the machine it runs on: `spoolman.local:7912` or
+   `bambuddy.local:8000`, or the IP.
 3. Press **Test connection**.
 4. Say which numbering your slots use — 1 to 4, or 0 to 3 — and then which spool
    is in which slot.
 
 That is all of it. No account, no cloud, and Studio does not scan your network
 looking for anything.
+
+Changing provider clears the address and the slot mapping, because a spool id
+only means something to the provider that issued it. Carried across, a mapping
+would point at whatever spool happened to share the number — and Studio would
+then report that spool's material for the slot, confidently and with no reason
+to be right.
+
+### If Bambuddy asks Studio to sign in
+
+Bambuddy can be run with authentication switched on, and then it wants an API key
+on every request. Studio has nowhere safe to keep one, so it says so rather than
+storing a key in the clear. A Bambuddy that does not require a key reads normally.
 
 ### Why it asks about slot numbering
 
@@ -35,14 +49,20 @@ knowing. So it asks instead of guessing.
 
 Two numbers, because they are genuinely different:
 
-- how many spools Spoolman has;
-- how many of those carry a weight **Spoolman is actually keeping track of**.
+- how many spools the provider has;
+- how many of those carry a weight **something is actually keeping track of**.
 
-Spoolman reports what a spool started with until something prints from it. A shelf
-of spools you have just registered will all report a full kilogram, and that is a
-declared size rather than a measurement. Studio treats those as estimates, and
-says so, rather than letting a number that has never been updated stop you
+Both providers report what a spool started with until something prints from it. A
+shelf of spools you have just registered will all report a full kilogram, and that
+is a declared size rather than a measurement. Studio treats those as estimates,
+and says so, rather than letting a number that has never been updated stop you
 printing.
+
+Bambuddy has no remaining-weight field at all: it stores what the label claimed
+and what has been used, and Studio subtracts one from the other. That figure is
+arithmetic, and Studio never presents it as something Bambuddy is keeping — unless
+the spool has been weighed, which writes both the figure and the moment it was
+true.
 
 ## What Studio will and will not say
 
@@ -72,7 +92,7 @@ how much is on it.
 
 When they disagree, Studio shows the disagreement and keeps the printer's answer:
 
-> Printer reports PLA; your Spoolman mapping says PETG. Check slot 2.
+> Printer reports PLA; your provider mapping says PETG. Check slot 2.
 
 It does not pick a winner quietly, and it does not throw away the provider's
 remaining weight because the material disagreed — those are two separate claims
@@ -102,14 +122,18 @@ real reason to expect an 87 g job to run out.
   setup. Without a provider, Studio says it does not know, which is true.
 - **Leaves your network.** The address is checked to be on your own network —
   loopback, a private range, a tailnet, or a `.local` style name — before any
-  request is opened. A public address is refused rather than fetched.
+  request is opened. A public address is refused rather than fetched, and so is a
+  local address that answers with a redirect to a public one.
 - **Invents a figure.** A provider that cannot say how much is left produces
   unknown, everywhere, all the way to the send button.
 
 ## Other providers
 
-The seam is generic: `material_providers.py` normalises any source into one shape
-that everything downstream reads without knowing where it came from.
+Material providers normalise into a shared read-only contract; **Spoolman and
+Bambuddy are currently implemented**. Two is not "any provider works" — it is two
+providers whose wire formats have almost nothing in common, proved to produce the
+same decisions from the same facts. `material_providers.py` is the only place a
+provider's name is turned into anything; past it the name is a label on a fact.
 
 **U1Hub** was re-examined on 2026-08-25 and is deliberately **not** integrated. It
 does expose `/api/spools` and `/api/slots`, but they carry no version or schema,

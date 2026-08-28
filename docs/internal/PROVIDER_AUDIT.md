@@ -226,3 +226,223 @@ A future minor release can carry both — and must re-run the U1 harness first.
 
 Material-provider interoperability leaves the top of the list: it is done to the
 extent the ecosystem allows. What remains is verification, not capability.
+
+---
+
+# Second provider, and what one implementation was hiding
+
+Run 2026-08-28 on `main` at `0bdcf18`, after the U1 project contract work.
+**No release was made.**
+
+## The question
+
+Not "should Studio support more providers" — the seam existed. The narrower one:
+
+> Is the material-provider seam actually provider-generic, or does it only look
+> generic because there has never been anything to compare Spoolman against?
+
+## Answer in one line
+
+The business logic was already generic and the proof stands; the plumbing above
+it was named after one product, and the address check had a hole one hop past the
+address.
+
+## Candidate research
+
+Seven candidates were examined against the live projects, not from memory.
+
+| Candidate | Integration API | Remaining quantity | Local | Licence | Verdict |
+|---|---|---|---|---|---|
+| **Bambuddy** (`maziggy/bambuddy`) | **Yes** — OpenAPI 3.1, `/api/v1`, versioned, documented for third parties | **Yes** — `label_weight` and `weight_used`, subtraction by the caller | Docker, port 8000 | AGPL-3.0 (server; Studio is an HTTP client, no linking) | **SELECTED** |
+| U1Hub (`dlgambill/u1hub`) | No — Express routes its own UI calls, behind a password gate | **No** — RFID/QR *identity* only | Yes | MIT | Still ineligible |
+| OpenSpool (`spuder/OpenSpool`) | An NFC tag format, not a service API | **No** — the format has no remaining field | Firmware | — | Ineligible |
+| OctoPrint-SpoolManager (`OllisGit`) | No — a Python event bus for other plugins | Yes | Plugin | — | Ineligible: no third-party HTTP API |
+| SpoolEase (`yanshay`) | Not documented | Yes (scale) | Yes | Apache-2.0 **+ Commons Clause** | Ineligible: no documented API, and a licence rider |
+| SpoolBuddy (`macpit/spoolbuddy`) | Yes, but it is a *client* of Bambuddy's inventory | Via Bambuddy | Yes | MIT | Not an independent inventory |
+| FilaMan (`ManuelW77/Filaman`) | ESP32 firmware; writes into Spoolman | Via Spoolman | Yes | MIT | Not an independent inventory |
+
+**Why Bambuddy and not something Spoolman-compatible.** A clone would exercise the
+same wire format and prove almost nothing. Bambuddy agrees with Spoolman about
+almost nothing: `/api/v1/inventory/spools` against `/api/v1/spool`,
+`include_archived` against `allow_archived`, `brand` against a nested
+`vendor.name`, `rgba` (RRGGBBAA) against `color_hex` (RRGGBB), `material` and
+`subtype` as separate fields against one `"PLA Matte"` string to split — and,
+decisively, **no remaining-weight field at all**.
+
+Bambuddy is a Bambu Lab printer manager, which is worth saying plainly: it is not
+a tool a U1 owner necessarily runs. It was chosen as an inventory, on the
+strength of its API and the distance between its schema and Spoolman's, and the
+integration reads its spool inventory and nothing else.
+
+## Authentication — a design gate, resolved without weakening anything
+
+Bambuddy's API accepts an `X-API-Key`. Studio persists provider configuration in
+`localStorage` and has **no secure credential store**, so keeping a bearer token
+would have meant storing a secret in the clear.
+
+Resolved by option B of the gate: Bambuddy supports auth-disabled deployments,
+and a fresh instance answers `GET /api/v1/inventory/spools` unauthenticated —
+measured, HTTP 200 with a JSON array. Studio reads that and sends no credential,
+ever. An instance with authentication on answers 401/403, and Studio says so
+plainly rather than asking for a secret it has nowhere to put. No security
+property was traded for the feature.
+
+## Real instance
+
+**Bambuddy 1.2.5.3**, `ghcr.io/maziggy/bambuddy:latest`
+(`sha256:c670164a…`), run in a session-owned Docker container on a session-owned
+port, seeded through its own documented REST API, removed afterwards. No
+pre-existing container was touched. The captured response is at
+`backend/tests/fixtures/providers/bambuddy_1_2_5_3.json` with its own provenance
+block, so the findings stay pinned without Docker.
+
+## What the real instance contradicted
+
+1. **Archived spools are omitted from the default listing** — 10 with
+   `include_archived=true`, 9 without. The same trap Spoolman set, spelled
+   differently. Studio asks for them.
+2. **`remaining` is not a field.** Bambuddy's own interface computes
+   `label_weight − weight_used`; over the API Studio does that subtraction, so
+   the figure is arithmetic and is labelled as such.
+3. **`last_used` was null on every spool**, including one whose weight had just
+   been set through the scale endpoint — it is written by print consumption only.
+   So an undated figure is the common case here too, reached through an entirely
+   different schema. `last_weighed_at` is a real date for a real figure and is
+   used; `created_at` is when the row was written and is not.
+4. **It stores weights that cannot be true** — `weight_used: -500`, a used weight
+   five times the label weight, and a 99,000,000 g spool were all accepted and
+   returned unchanged. Each becomes `unknown` with a note, never "enough".
+
+## Remaining weight, and how it is labelled
+
+| Evidence | Label | `remaining_as_of` |
+|---|---|---|
+| Weighed — `last_scale_weight` and `last_weighed_at` present | **tracked** | `last_weighed_at` |
+| Consumption recorded — `last_used` and a non-zero `weight_used` | **tracked** | `last_used` |
+| A label weight minus a used figure nothing has touched | **derived** | none |
+| No label weight, or none usable | **unknown** | none |
+
+The middle rule is deliberately the same evidence test Spoolman's `_quality`
+uses. That is what makes the equivalence below meaningful rather than arranged.
+
+`core_weight` and `last_scale_weight` are deliberately **not** used to compute a
+remaining figure. A scale reading is gross weight and `core_weight` defaults to
+250 g whether or not anyone set it, so subtracting one from the other would
+manufacture a number that looks measured and is not.
+
+## The abstraction debt one implementation was hiding
+
+Mapped before anything was written. The **business logic was already clean**:
+`material_plan`, `send_check`, `freshness`, `combine` and `post_slice` name no
+provider in any decision — `freshness.phrase` even takes the name as a parameter.
+
+The **plumbing was not**. The wire field, the service keyword and the desktop
+type were all literally `spoolman`, so the seam looked generic and read as an
+integration. They are now `provider` and `provider_url`; `spoolman=` still works
+and means exactly what it did, so nothing that already calls it has to change.
+
+## The generic-seam proof
+
+`test_provider_seam_equivalence.py`. Each scenario is built from **the raw
+payload each provider really returns**, pushed through that provider's real
+adapter, and the whole result compared after scrubbing the two names to one
+token — equal, not similar.
+
+Twelve situations: enough tracked recent · clearly short tracked recent · stale
+short · derived short · undated short · remaining unknown · archived · a
+different material · provider unavailable · a mapping pointing at nothing · a
+printer/provider material conflict · a printer that agrees · a machine that
+reports no filament at all.
+
+All identical. One divergence was found and fixed rather than excused: Bambuddy
+explained an unknown quantity and Spoolman said nothing at all, so the sentence
+became shared. No verdict changed.
+
+A source guard walks the syntax tree of every generic consumer and fails on a
+comparison against a provider name. Prose is exempt; `if source == "spoolman"`
+is not.
+
+## Security: a real existing defect, fixed centrally
+
+`validate_provider_url` checks the address the user types. That was not the whole
+journey. **A local address answering `302 Location: http://example.com` was
+followed, and the request left the machine** — demonstrated against this module,
+not imagined: a local server that redirected every request produced example.com's
+404 inside Studio's own error message.
+
+This affected **Spoolman today**, not only the new provider. It is fixed at the
+shared transport, with one opener for every provider, so the rule cannot be true
+of one and not another. A redirect that stays on the local network is still
+followed.
+
+Also closed: `float()` accepts full-width Unicode digits, so `"１０００"` became
+1000.0 and a malformed field quietly became a weight Studio might reason from.
+`_number` now requires a plain ASCII number. This codebase has been caught by
+Unicode digits twice before, both times through a regex `\d`.
+
+## What did not change
+
+Spoolman's semantics are untouched — archived handling, tracked against derived,
+staleness, explicit mapping, conflicts, provider `None`, address validation. Its
+suites pass unchanged. The one shared sentence added an explanation where there
+had been silence, and changed no verdict.
+
+## Real downstream evidence
+
+Against the live instance, over the network, through combine → material plan →
+send check:
+
+| Case | Verdict | Send check |
+|---|---|---|
+| Weighed spool, 420 g, job 200 g | `enough`, trusted, fresh | no blocker |
+| Weighed spool, 420 g, job 1200 g | `insufficient`, trusted | **blocker** — "It will run out part-way through. Last updated 18 minutes ago." |
+| Declared kilo, nothing recorded, job 1200 g | `probably_short`, **not** trusted | warning, never a blocker |
+| Label weight 0 | `unknown` | unknown, with the reason said out loud |
+| Printer PLA against a mapping saying PETG | printer wins; the 700 g still used | disagreement shown, not resolved |
+| Mapping at a spool that does not exist | slot absent, confidence unknown | reported |
+| No provider at all | `unknown` | unchanged — a stock setup stays first-class |
+
+A **stale** case could not be produced on the live instance: `last_weighed_at` is
+stamped by Bambuddy at the moment of weighing, and no documented route sets it in
+the past. Staleness is covered by fixture replay and by the equivalence table,
+and that limit is stated rather than papered over.
+
+## Tests
+
+| | Before | After |
+|---|---|---|
+| Backend | 1731 passed / 4 skipped | **1804 passed / 4 skipped** |
+| Desktop | 335 | **340** |
+| selfcheck | 27/27 | **27/27** |
+| Provider suites | 125 | **189** |
+| Installed acceptance | not run against `main` | **still not run** |
+| Real U1 | not run against `main` | **still not run** |
+
+New: `test_provider_bambuddy.py` (41), `test_provider_seam_equivalence.py` (23),
+and nine more in `test_provider_address_safety.py` for the redirect rule.
+
+## Not run
+
+Installed-build acceptance and the real-U1 hardware harness, neither of which has
+been run against current `main`. `main` remains **not hardware verified**.
+
+## Release decision
+
+**No release.** Nothing here fixes a defect a released user can reach: no shipped
+installer can select a provider at all. The redirect hole is real and is fixed on
+`main`, and it was never reachable from a released build for the same reason the
+last audit's defects were not.
+
+## Reranked priorities
+
+1. **Re-run the real-U1 harness against `main`.** Unchanged at the top, and now
+   three sprints of unreleased runtime change deep. Needs the printer and its
+   address — a human gate, not work.
+2. **Installed-build acceptance against `main`.** Also not run since the local
+   v0.7.2 build.
+3. **Individual per-object placement**, if the product ever wants it.
+4. **OBJ/GLB input** — unchanged, still last.
+
+A third material provider is **not** on this list. The seam is proved by two
+implementations that share no wire format; a third would cost the same and prove
+much less.
