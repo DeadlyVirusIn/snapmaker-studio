@@ -272,7 +272,8 @@ def _make_handler(token: str):
                 # not a 500.
                 try:
                     self._send(200, service.provider_test(
-                        rv.optional_str(data, "url", "")))
+                        rv.optional_str(data, "url", ""),
+                        provider=rv.optional_str(data, "provider", "") or None))
                 except ValidationError as e:
                     self._send(400, {"error": str(e)})
                 except Exception:
@@ -285,6 +286,8 @@ def _make_handler(token: str):
                         host=rv.optional_str(data, "host", "") or None,
                         port=rv.require_port(data),
                         spoolman=rv.optional_str(data, "spoolman", "") or None,
+                        provider=rv.optional_str(data, "provider", "") or None,
+                        provider_url=rv.optional_str(data, "provider_url", "") or None,
                         slot_map=slot_map if isinstance(slot_map, dict) else None,
                         slot_base=rv.optional_int(data, "slot_base", 0)))
                 except ValidationError as e:
@@ -301,6 +304,8 @@ def _make_handler(token: str):
                         include_timeline=bool(data.get("include_timeline")),
                         project_path=rv.optional_str(data, "project_path", "") or None,
                         spoolman=rv.optional_str(data, "spoolman", "") or None,
+                        provider=rv.optional_str(data, "provider", "") or None,
+                        provider_url=rv.optional_str(data, "provider_url", "") or None,
                         slot_map=slot_map if isinstance(slot_map, dict) else None,
                         slot_base=rv.optional_int(data, "slot_base", 0)))
                 except ValidationError as e:
@@ -681,6 +686,8 @@ def _make_handler(token: str):
                             expect_state=expect if isinstance(expect, dict) else None,
                             project_path=rv.optional_str(data, "project_path", "") or None,
                             spoolman=rv.optional_str(data, "spoolman", "") or None,
+                            provider=rv.optional_str(data, "provider", "") or None,
+                            provider_url=rv.optional_str(data, "provider_url", "") or None,
                             slot_map=slot_map if isinstance(slot_map, dict) else None,
                             slot_base=rv.optional_int(data, "slot_base", 0))
                     self._send(200, out)
