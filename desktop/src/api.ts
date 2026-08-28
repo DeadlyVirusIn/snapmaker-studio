@@ -1516,7 +1516,10 @@ export function printPlan(path: string): Promise<PrintPlan> {
  *  stock printer with no other software answers every question here except how
  *  much filament is left. */
 export interface ProviderArgs {
-  spoolman?: string;
+  /** Which provider to read. The engine turns this into a decision exactly once,
+   *  in the adapter; nothing downstream of that looks at it again. */
+  provider?: string;
+  provider_url?: string;
   slot_map?: Record<string, number>;
   slot_base?: number;
 }
@@ -1528,9 +1531,12 @@ export interface ProviderTest {
   ok: boolean;
   reason?: string;
   spools: number;
+  /** Which provider answered, echoed back so a stale result cannot be read as
+   *  belonging to the one now selected. */
+  provider?: string;
   /** How many spools carry a weight something is actually keeping track of.
-   *  Spoolman reports what a spool started with until something prints from it,
-   *  so "connected" and "useful" are different numbers. */
+   *  Both providers report what a spool started with until something prints from
+   *  it, so "connected" and "useful" are different numbers. */
   with_tracked_weight?: number;
   archived?: number;
   detail?: string;
@@ -1547,8 +1553,8 @@ export interface ProviderSpool {
   archived?: boolean;
 }
 
-export function providerTest(url: string): Promise<ProviderTest> {
-  return post("/provider/test", { url }, "provider test");
+export function providerTest(url: string, provider: string): Promise<ProviderTest> {
+  return post("/provider/test", { url, provider }, "provider test");
 }
 
 export function materialPlan(

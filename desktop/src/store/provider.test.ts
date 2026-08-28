@@ -40,15 +40,36 @@ describe("providerArgs", () => {
     expect(providerArgs({ kind: "spoolman", url: "   ", slotMap: {}, slotBase: 1 })).toEqual({});
   });
 
-  it("sends the address, the mapping and the numbering together", () => {
+  it("sends the provider, the address, the mapping and the numbering together", () => {
     const args = providerArgs({
       kind: "spoolman", url: " spoolman.local:7912 ", slotMap: { "1": 7 }, slotBase: 1,
     });
     expect(args).toEqual({
-      spoolman: "spoolman.local:7912",
+      provider: "spoolman",
+      provider_url: "spoolman.local:7912",
       slot_map: { "1": 7 },
       slot_base: 1,
     });
+  });
+
+  it("names the provider it is sending, so the engine never has to guess", () => {
+    // The address field used to be called `spoolman`, which made a seam with one
+    // implementation look like a seam and read like an integration. A second
+    // provider is what forced the name to become honest.
+    const bambuddy = providerArgs({
+      kind: "bambuddy", url: "bambuddy.local:8000", slotMap: { "1": 4 }, slotBase: 1,
+    });
+    expect(bambuddy.provider).toBe("bambuddy");
+    expect(bambuddy.provider_url).toBe("bambuddy.local:8000");
+    expect("spoolman" in bambuddy).toBe(false);
+  });
+
+  it("sends nothing at all for either provider once None is chosen", () => {
+    for (const kind of ["spoolman", "bambuddy"] as const) {
+      expect(providerArgs({ kind, url: "", slotMap: { "1": 7 }, slotBase: 1 })).toEqual({});
+    }
+    expect(providerArgs({ kind: "none", url: "still.local:1", slotMap: { "1": 7 }, slotBase: 1 }))
+      .toEqual({});
   });
 
   it("always states the slot numbering rather than leaving it to be guessed", () => {
@@ -116,5 +137,55 @@ describe("the provider store", () => {
     expect(state.url).toBe("");
     expect(state.lastSeen).toBeNull();
     expect(localStorage.getItem("materialProviderUrl")).toBeNull();
+  });
+});
+
+
+describe("switching provider", () => {
+  beforeEach(reset);
+
+  it("does not carry one provider's address and mapping across to the other", () => {
+    // A spool id is only meaningful to the provider that issued it. Carried
+    // across, a mapping points at whatever spool happens to share the number —
+    // and Studio would then report that spool's material for the slot, with
+    // complete confidence and no reason to be right.
+    const store = useProvider.getState();
+    store.setKind("spoolman");
+    store.setUrl("spoolman.local:7912");
+    store.setSlot("1", 7);
+    expect(useProvider.getState().slotMap).toEqual({ "1": 7 });
+
+    useProvider.getState().setKind("bambuddy");
+    const after = useProvider.getState();
+    expect(after.kind).toBe("bambuddy");
+    expect(after.url).toBe("");
+    expect(after.slotMap).toEqual({});
+    expect(after.lastSeen).toBeNull();
+    expect(providerArgs(after)).toEqual({});
+  });
+
+  it("keeps what was typed when the same provider is chosen again", () => {
+    const store = useProvider.getState();
+    store.setKind("bambuddy");
+    store.setUrl("bambuddy.local:8000");
+    store.setSlot("1", 4);
+    useProvider.getState().setKind("bambuddy");
+    expect(useProvider.getState().url).toBe("bambuddy.local:8000");
+    expect(useProvider.getState().slotMap).toEqual({ "1": 4 });
+  });
+
+  it("survives a restart, provider and all", () => {
+    const store = useProvider.getState();
+    store.setKind("bambuddy");
+    store.setUrl("bambuddy.local:8000");
+    store.setSlotBase(0);
+    store.setSlot("0", 4);
+
+    // Everything this store holds is written as it changes, so a fresh read of
+    // localStorage is what the next launch would see.
+    expect(JSON.parse(localStorage.getItem("materialProviderKind")!)).toBe("bambuddy");
+    expect(JSON.parse(localStorage.getItem("materialProviderUrl")!)).toBe("bambuddy.local:8000");
+    expect(JSON.parse(localStorage.getItem("materialProviderSlotMap")!)).toEqual({ "0": 4 });
+    expect(JSON.parse(localStorage.getItem("materialProviderSlotBase")!)).toBe(0);
   });
 });

@@ -3,7 +3,7 @@ import { Boxes, CheckCircle2, Loader2, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { providerTest, type ProviderSpool, type ProviderTest } from "@/api";
-import { useProvider, type ProviderKind } from "@/store/provider";
+import { useProvider, PROVIDERS, type ProviderKind } from "@/store/provider";
 
 // Where a person tells Studio what is keeping track of their filament.
 //
@@ -12,6 +12,10 @@ import { useProvider, type ProviderKind } from "@/store/provider";
 // This is the missing half, and it is deliberately small: pick a provider, type
 // the address of the machine it runs on, press Test, say which spool is in which
 // slot. No account, no cloud, no scanning the network.
+//
+// A second provider was added without adding a second page, which is the point:
+// choosing one swaps a label and a placeholder, and nothing else on this screen
+// or after it knows the difference.
 //
 // The one genuinely confusing thing is slot numbering — a person counts the
 // slots on a printer as 1, 2, 3, 4 while the G-code counts them 0, 1, 2, 3 — so
@@ -23,10 +27,10 @@ const SLOTS = [0, 1, 2, 3];
 function quality(spool: ProviderSpool): string {
   if (spool.remaining_g === null || spool.remaining_g === undefined) return "no weight recorded";
   const amount = `${Math.round(spool.remaining_g)} g`;
-  // Spoolman answers with a remaining weight for every spool, computing it from
-  // the spool's declared size. Only a spool something has printed from carries a
-  // figure anything is actually keeping, so the two are labelled apart here as
-  // well as in the engine.
+  // Both providers answer with a remaining weight for every spool, computed from
+  // the spool's declared size. Only a spool something has printed from — or has
+  // been weighed — carries a figure anything is actually keeping, so the two are
+  // labelled apart here as well as in the engine.
   return spool.remaining_quality === "tracked" ? `${amount} tracked` : `${amount} estimated`;
 }
 
@@ -43,7 +47,7 @@ export default function MaterialProviderSettings() {
     try {
       const value = draft.trim();
       setUrl(value);
-      const out = await providerTest(value);
+      const out = await providerTest(value, kind);
       setResult(out);
       if (out.ok) markSeen();
     } catch (e) {
@@ -71,26 +75,35 @@ export default function MaterialProviderSettings() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {(["none", "spoolman"] as ProviderKind[]).map((option) => (
+          {(["none", "spoolman", "bambuddy"] as ProviderKind[]).map((option) => (
             <Button
               key={option}
               size="sm"
               variant={kind === option ? "primary" : "secondary"}
-              onClick={() => setKind(option)}
+              onClick={() => {
+                setKind(option);
+                // The address belongs to the provider that was selected, and the
+                // store has just cleared it. The box has to follow, or it shows
+                // an address that is no longer configured.
+                if (option !== kind) {
+                  setDraft("");
+                  setResult(null);
+                }
+              }}
             >
-              {option === "none" ? "None" : "Spoolman"}
+              {option === "none" ? "None" : PROVIDERS[option].label}
             </Button>
           ))}
         </div>
 
-        {kind === "spoolman" && (
+        {kind !== "none" && (
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && test()}
-                placeholder="spoolman.local:7912"
+                placeholder={PROVIDERS[kind].placeholder}
                 className="h-9 min-w-[220px] flex-1 rounded-md border border-border bg-card px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
               />
               <Button size="sm" onClick={test} disabled={busy || !draft.trim()}>
@@ -98,9 +111,10 @@ export default function MaterialProviderSettings() {
               </Button>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              The address of the machine Spoolman runs on, on your own network. Studio reads it
-              and never writes to it, and it makes no requests to the internet — an address that
-              is not on your network is refused.
+              {PROVIDERS[kind].blurb} Give the address of the machine it runs on, on your own
+              network. Studio reads it and never writes to it, and it makes no requests to the
+              internet — an address that is not on your network is refused, and so is a local
+              address that redirects to one.
             </p>
 
             {result && (
@@ -127,7 +141,7 @@ export default function MaterialProviderSettings() {
             <div className="space-y-2 border-t border-border pt-3">
               <p className="text-xs font-medium">Which spool is in which slot</p>
               <p className="text-[11px] text-muted-foreground">
-                Spoolman does not know where a spool is — you do. Pick the numbering that
+                {PROVIDERS[kind].label} does not know where a spool is — you do. Pick the numbering that
                 matches the labels on your printer, then say what is loaded. Studio never
                 treats this as something the printer confirmed; on a machine that reports its
                 own filament, the machine wins.

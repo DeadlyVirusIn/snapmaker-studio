@@ -12,7 +12,29 @@ import { create } from "zustand";
 // network, the engine refuses anything that is not, and none of it is ever sent
 // off the machine.
 
-export type ProviderKind = "none" | "spoolman";
+export type ProviderKind = "none" | "spoolman" | "bambuddy";
+
+/** What each provider is called on screen, and what to suggest typing.
+ *
+ *  The whole difference between the two, as far as this app is concerned. Both
+ *  are read over the local network, both are optional, and everything after the
+ *  address box treats their answers identically. */
+export const PROVIDERS: Record<Exclude<ProviderKind, "none">, {
+  label: string; placeholder: string; blurb: string;
+}> = {
+  spoolman: {
+    label: "Spoolman",
+    placeholder: "spoolman.local:7912",
+    blurb: "Spoolman tracks spools and what has been used from them.",
+  },
+  bambuddy: {
+    label: "Bambuddy",
+    placeholder: "bambuddy.local:8000",
+    blurb:
+      "Bambuddy keeps a spool inventory alongside its printer management. Studio " +
+      "reads the inventory only, and cannot read an instance that requires an API key.",
+  },
+};
 
 /** Which spool the user says is in which slot. Keyed by the slot number as the
  *  user counts them — see `slotBase`, which records whether that is 0 or 1. */
@@ -65,9 +87,16 @@ interface ProviderState {
 /** What to send with a request, or nothing at all when no provider is set up. */
 export function providerArgs(state: {
   kind: ProviderKind; url: string; slotMap: SlotMap; slotBase: 0 | 1;
-}): { spoolman?: string; slot_map?: SlotMap; slot_base?: number } {
-  if (state.kind !== "spoolman" || !state.url.trim()) return {};
-  return { spoolman: state.url.trim(), slot_map: state.slotMap, slot_base: state.slotBase };
+}): { provider?: string; provider_url?: string; slot_map?: SlotMap; slot_base?: number } {
+  // "None" sends nothing at all, so no provider request is made anywhere. The
+  // engine never sees an address it might then try to open.
+  if (state.kind === "none" || !state.url.trim()) return {};
+  return {
+    provider: state.kind,
+    provider_url: state.url.trim(),
+    slot_map: state.slotMap,
+    slot_base: state.slotBase,
+  };
 }
 
 export const useProvider = create<ProviderState>((set, get) => ({
@@ -78,7 +107,19 @@ export const useProvider = create<ProviderState>((set, get) => ({
   lastSeen: read<string | null>(KEY_SEEN, null),
 
   setKind: (kind) => {
+    // Changing provider clears the address and the slot map. They belong to the
+    // provider that was selected — a Spoolman spool id means nothing to
+    // Bambuddy, and a mapping carried across would point at whatever spool
+    // happened to share the number, confidently and wrongly.
+    const changed = kind !== get().kind;
     write(KEY_KIND, kind);
+    if (changed) {
+      write(KEY_URL, "");
+      write(KEY_MAP, {});
+      write(KEY_SEEN, null);
+      set({ kind, url: "", slotMap: {}, lastSeen: null });
+      return;
+    }
     set({ kind });
   },
   setUrl: (url) => {
