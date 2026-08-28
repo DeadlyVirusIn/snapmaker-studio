@@ -12,6 +12,12 @@
 // steps (the file dialog) that CDP cannot reach.
 //
 // Usage: node checks.mjs <phase> <cdpUrl> <outDir> [samplePath] [gcodePath] [paintedPath]
+//                        [spoolmanUrl]
+//
+// The second provider, the probe servers and the seeded spool ids arrive as
+// environment variables rather than as more positional arguments. That is
+// deliberate: the positions above are the contract this harness already had,
+// and a run that predates the second provider must keep working unchanged.
 
 import { chromium } from "playwright-core";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -739,6 +745,434 @@ PRINT_END
       offSlot?.state === "unknown" && offSlot?.remaining_g == null
         && off.body?.counts?.blocker === 0,
       `state=${offSlot?.state} remaining=${offSlot?.remaining_g}`);
+
+  } else if (phase === "provider-wire") {
+    // The wire contract, against the frozen sidecar rather than the source tree.
+    //
+    // Two shapes have to work at once. `spoolman:` is what every client sent
+    // before this release and what this harness itself still sends; `provider`
+    // plus `provider_url` is what the app sends now. If the older one broke, an
+    // upgrading client would silently lose its provider — so it is checked first
+    // and on its own.
+    const bb = process.env.SNAPSTUDIO_BAMBUDDY_URL || "";
+    const spEnough = Number(process.env.SNAPSTUDIO_SPOOL_ENOUGH || 0);
+    const bbEnough = Number(process.env.SNAPSTUDIO_BB_ENOUGH || 0);
+    const map = { "2": spEnough };
+    const usable = (b) => (b.slots ?? []).some(
+      (s) => s.needed === true && s.remaining_g !== null
+             && s.confirmed_by === "provider" && s.printer_confirmed === false);
+    const pick = (b) => {
+      const s = (b.slots ?? []).find((x) => x.needed);
+      return s && JSON.stringify([s.remaining_g, s.remaining_quality,
+                                  s.sufficiency?.verdict, s.confirmed_by]);
+    };
+
+    let legacyPlan = null;
+    if (spoolmanUrl) {
+      legacyPlan = await callRoute(page, "/material_plan", {
+        path: gcodePath, host: "", port: 7125,
+        spoolman: spoolmanUrl, slot_map: map, slot_base: 1 });
+      record("Legacy `spoolman` field still reaches a remaining weight",
+        legacyPlan.status === 200 && usable(legacyPlan.body),
+        "HTTP " + legacyPlan.status);
+
+      const legacySend = await callRoute(page, "/send_check", {
+        path: gcodePath, host: "", port: 7125,
+        spoolman: spoolmanUrl, slot_map: map, slot_base: 1 });
+      record("Legacy `spoolman` field still reaches the send decision",
+        legacySend.status === 200 && legacySend.body?.available === true
+          && (legacySend.body?.materials?.slots ?? []).some((s) => s.remaining_g !== null),
+        "HTTP " + legacySend.status);
+
+      // The same facts through the new names must produce the same answer. Not
+      // similar — the same verdict on the same slot.
+      const namedPlan = await callRoute(page, "/material_plan", {
+        path: gcodePath, host: "", port: 7125,
+        provider: "spoolman", provider_url: spoolmanUrl, slot_map: map, slot_base: 1 });
+      record("`provider`/`provider_url` decides exactly what `spoolman` decided",
+        namedPlan.status === 200 && pick(namedPlan.body) === pick(legacyPlan.body),
+        pick(legacyPlan.body) + " vs " + pick(namedPlan.body));
+
+      const noKind = await callRoute(page, "/provider/test", { url: spoolmanUrl });
+      record("`/provider/test` with no provider named still means Spoolman",
+        noKind.status === 200 && noKind.body?.ok === true
+          && noKind.body?.provider === "spoolman",
+        "provider=" + noKind.body?.provider);
+    }
+
+    if (bb) {
+      const bbPlan = await callRoute(page, "/material_plan", {
+        path: gcodePath, host: "", port: 7125,
+        provider: "bambuddy", provider_url: bb,
+        slot_map: { "2": bbEnough }, slot_base: 1 });
+      record("A second provider reaches a remaining weight through the same contract",
+        bbPlan.status === 200 && usable(bbPlan.body), "HTTP " + bbPlan.status);
+
+      // The legacy field names Spoolman and nothing else. Pointed at a Bambuddy
+      // it must fail as Spoolman failing, never quietly succeed.
+      const wrongReader = await callRoute(page, "/provider/test", { url: bb });
+      record("The legacy field never silently reads a different provider",
+        wrongReader.status === 200 && wrongReader.body?.ok === false
+          && wrongReader.body?.provider === "spoolman",
+        wrongReader.body?.provider + ": " + String(wrongReader.body?.reason).slice(0, 60));
+    }
+
+    const unknown = await callRoute(page, "/provider/test",
+      { url: "127.0.0.1:1", provider: "filamentron-9000" });
+    record("An unknown provider fails clearly rather than being guessed at",
+      unknown.status === 200 && unknown.body?.ok === false
+        && /does not know how to read/.test(unknown.body?.reason ?? ""),
+      String(unknown.body?.reason).slice(0, 70));
+
+  } else if (phase === "provider-zero-request") {
+    // "No provider" as a measurement rather than a claim. The probe counts every
+    // request it is sent, so configuring it must move the count and selecting
+    // None must not.
+    const probe = process.env.SNAPSTUDIO_PROBE_URL || "";
+    // Read from this process, not from inside the app. The app's page runs on
+    // the `tauri.localhost` origin and is not allowed to fetch an arbitrary
+    // local port — and it should not be: the counter is this harness's
+    // instrument, and reading it through the thing being measured would make
+    // every count one too many.
+    const hits = async () => {
+      const r = await fetch("http://" + probe + "/__hits");
+      return (await r.json()).hits;
+    };
+
+    const before = await hits();
+    await callRoute(page, "/material_plan", {
+      path: gcodePath, host: "", port: 7125,
+      provider: "spoolman", provider_url: probe, slot_map: { "2": 1 }, slot_base: 1 });
+    const configured = await hits();
+    record("A configured provider is actually contacted",
+      configured > before, before + " then " + configured);
+
+    // Every shape of "none": no fields at all, an empty legacy field, and a
+    // provider named with no address.
+    const shapes = [
+      ["no provider fields at all", { path: gcodePath, host: "", port: 7125 }],
+      ["an empty legacy field", { path: gcodePath, host: "", port: 7125, spoolman: "" }],
+      ["a provider named with no address",
+        { path: gcodePath, host: "", port: 7125, provider: "spoolman", provider_url: "" }],
+    ];
+    for (const [label, body] of shapes) {
+      const was = await hits();
+      const out = await callRoute(page, "/material_plan", body);
+      const now = await hits();
+      const slot = (out.body?.slots ?? []).find((s) => s.needed);
+      record("With " + label + ", no provider request is made and nothing is claimed",
+        now === was && out.status === 200 && slot?.remaining_g == null
+          && (slot?.sufficiency?.verdict ?? "unknown") === "unknown",
+        "hits " + was + "->" + now + ", remaining=" + slot?.remaining_g);
+    }
+
+  } else if (phase === "provider-safety") {
+    // Address safety through the frozen sidecar. Unit tests prove the function;
+    // this proves the shipped binary carries it.
+    const refusals = [
+      ["a public hostname", "http://example.com", /your own network/],
+      ["a public IP", "http://93.184.216.34", /your own network/],
+      ["file://", "file:///c:/windows/win.ini", /http or https/],
+      ["ftp://", "ftp://192.168.1.9", /http or https/],
+      ["credentials in the address", "http://user:pass@192.168.1.9:7912", /username or password/],
+      ["a path on the address", "http://192.168.1.9:7912/api/v1", /without a path/],
+      ["a query on the address", "http://192.168.1.9:7912/?x=1", /without a path/],
+      ["a port that is not a number", "http://192.168.1.9:notaport", /.+/],
+      ["an empty address", "", /.+/],
+    ];
+    for (const [what, url, reason] of refusals) {
+      for (const provider of ["spoolman", "bambuddy"]) {
+        const out = await callRoute(page, "/provider/test", { url, provider });
+        record("Refused for " + provider + ": " + what,
+          out.status === 200 && out.body?.ok === false
+            && reason.test(out.body?.reason ?? ""),
+          String(out.body?.reason).slice(0, 60));
+      }
+    }
+    // And a local address is not swept up with them.
+    for (const ok of ["127.0.0.1:7912", "192.168.1.9:7912", "spoolman.local:7912"]) {
+      const out = await callRoute(page, "/provider/test", { url: ok, provider: "spoolman" });
+      const why = String(out.body?.reason ?? "reached");
+      record("A local address is not refused: " + ok,
+        out.status === 200
+          && !/your own network|http or https|without a path/.test(why),
+        why.slice(0, 60));
+    }
+
+  } else if (phase === "provider-redirect") {
+    // The defect this exists for was real and lived in the shared transport: a
+    // local address answering `302` to a public host was followed, and the
+    // request left the machine. Both providers must inherit the refusal.
+    const redirect = process.env.SNAPSTUDIO_REDIRECT_URL || "";
+    for (const provider of ["spoolman", "bambuddy"]) {
+      const out = await callRoute(page, "/provider/test", { url: redirect, provider });
+      const reason = String(out.body?.reason ?? "");
+      record("A redirect off the local network is refused for " + provider,
+        out.status === 200 && out.body?.ok === false
+          && /not on your own network/.test(reason),
+        reason.slice(0, 80));
+      // The public host's own answer must never appear. If it did, the request
+      // was made and the refusal is cosmetic.
+      record("No public response reaches Studio for " + provider,
+        !/404|Not Found|<html/i.test(reason), reason.slice(0, 60));
+    }
+    // The rule is about leaving the network, not about redirects as such.
+    const probe = process.env.SNAPSTUDIO_PROBE_URL || "";
+    if (probe) {
+      const out = await callRoute(page, "/provider/test", { url: probe, provider: "spoolman" });
+      record("A provider on the local network is still read normally",
+        out.status === 200 && out.body?.ok === true,
+        String(out.body?.reason ?? "ok").slice(0, 60));
+    }
+
+  } else if (phase === "provider-adversarial") {
+    // Values a provider can really hand over that cannot be true. Fail open to
+    // unknown; never to "you have plenty". Read from the real Bambuddy, which
+    // stores every one of them without complaint.
+    const bb = process.env.SNAPSTUDIO_BAMBUDDY_URL || "";
+    const cases = [
+      ["a negative used weight", Number(process.env.SNAPSTUDIO_BB_NEGATIVE || 0)],
+      ["a used weight above the label weight", Number(process.env.SNAPSTUDIO_BB_OVERUSED || 0)],
+      ["a 99,000,000 g spool", Number(process.env.SNAPSTUDIO_BB_ABSURD || 0)],
+      ["no label weight at all", Number(process.env.SNAPSTUDIO_BB_ZERO || 0)],
+    ];
+    for (const [what, id] of cases) {
+      const out = await callRoute(page, "/material_plan", {
+        path: gcodePath, host: "", port: 7125,
+        provider: "bambuddy", provider_url: bb, slot_map: { "2": id }, slot_base: 1 });
+      const slot = (out.body?.slots ?? []).find((s) => s.needed);
+      record(what + " becomes unknown, never enough",
+        out.status === 200 && slot?.remaining_g == null
+          && (slot?.sufficiency?.verdict ?? "unknown") === "unknown",
+        "remaining=" + slot?.remaining_g + " verdict=" + slot?.sufficiency?.verdict);
+    }
+    // The connection test must still report the inventory rather than falling
+    // over on the spools it cannot use.
+    const test = await callRoute(page, "/provider/test", { url: bb, provider: "bambuddy" });
+    record("A provider full of impossible weights still answers a connection test",
+      test.status === 200 && test.body?.ok === true && test.body?.spools > 0,
+      test.body?.spools + " spool(s), " + test.body?.with_tracked_weight + " usable");
+
+  } else if (phase === "provider-equivalence") {
+    // The claim the second provider exists to test, in the installed build:
+    // equivalent facts, equivalent decisions. Each pair below is the same
+    // physical situation seeded into both providers through their own APIs.
+    const bb = process.env.SNAPSTUDIO_BAMBUDDY_URL || "";
+    const bigJob = gcodePath.replace(/\.gcode$/i, "_big.gcode");
+    const pairs = [
+      ["ENOUGH", gcodePath, Number(process.env.SNAPSTUDIO_SPOOL_ENOUGH || 0),
+        Number(process.env.SNAPSTUDIO_BB_ENOUGH || 0), "no blocker"],
+      ["TRACKED RECENT SHORT", bigJob, Number(process.env.SNAPSTUDIO_SPOOL_SHORT || 0),
+        Number(process.env.SNAPSTUDIO_BB_SHORT || 0), "blocker"],
+      ["DERIVED / UNDATED SHORT", bigJob, Number(process.env.SNAPSTUDIO_SPOOL_DERIVED || 0),
+        Number(process.env.SNAPSTUDIO_BB_DERIVED || 0), "warning only"],
+    ];
+    const shape = (r) => {
+      const s = (r.body?.materials?.slots ?? []).find((x) => x.needed);
+      return { verdict: s?.sufficiency?.verdict, trusted: s?.sufficiency?.trusted,
+               quality: s?.remaining_quality, blockers: r.body?.counts?.blocker,
+               warnings: r.body?.counts?.warning };
+    };
+    for (const [label, job, spId, bbId, expected] of pairs) {
+      const one = await callRoute(page, "/send_check", {
+        path: job, host: "", port: 7125,
+        provider: "spoolman", provider_url: spoolmanUrl,
+        slot_map: { "2": spId }, slot_base: 1 });
+      const two = await callRoute(page, "/send_check", {
+        path: job, host: "", port: 7125,
+        provider: "bambuddy", provider_url: bb,
+        slot_map: { "2": bbId }, slot_base: 1 });
+      const a = shape(one), b = shape(two);
+      record(label + ": both providers decide the same",
+        JSON.stringify(a) === JSON.stringify(b),
+        "spoolman=" + JSON.stringify(a) + " bambuddy=" + JSON.stringify(b));
+      const blocked = a.blockers > 0;
+      const right = expected === "blocker" ? blocked && a.verdict === "insufficient"
+        : expected === "warning only" ? !blocked && a.trusted === false
+        : !blocked;
+      record(label + ": the decision is " + expected, right,
+        "verdict=" + a.verdict + " blockers=" + a.blockers + " trusted=" + a.trusted);
+    }
+    // Unknown, on the provider that can actually produce one.
+    const unknown = await callRoute(page, "/send_check", {
+      path: gcodePath, host: "", port: 7125, provider: "bambuddy", provider_url: bb,
+      slot_map: { "2": Number(process.env.SNAPSTUDIO_BB_ZERO || 0) }, slot_base: 1 });
+    const uSlot = (unknown.body?.materials?.slots ?? []).find((s) => s.needed);
+    record("UNKNOWN: no false blocker and no invented figure",
+      unknown.body?.counts?.blocker === 0 && uSlot?.remaining_g == null,
+      "blockers=" + unknown.body?.counts?.blocker + " remaining=" + uSlot?.remaining_g);
+
+    // Archived, on both. A slot mapped to an archived spool must read as
+    // archived rather than as a spool that does not exist.
+    const archived = [
+      ["spoolman", spoolmanUrl, Number(process.env.SNAPSTUDIO_SPOOL_ARCHIVED || 0)],
+      ["bambuddy", bb, Number(process.env.SNAPSTUDIO_BB_ARCHIVED || 0)],
+    ];
+    for (const [provider, url, id] of archived) {
+      const out = await callRoute(page, "/material_plan", {
+        path: gcodePath, host: "", port: 7125, provider, provider_url: url,
+        slot_map: { "2": id }, slot_base: 1 });
+      const slot = (out.body?.slots ?? []).find((s) => s.needed);
+      const notes = (slot?.notes ?? []).join(" ");
+      record("An archived spool is found and flagged on " + provider,
+        /archived/i.test(notes) && !/no spool with id/i.test(notes), notes.slice(0, 80));
+    }
+
+    // And a mapping pointing at nothing, on both.
+    for (const [provider, url] of [["spoolman", spoolmanUrl], ["bambuddy", bb]]) {
+      const out = await callRoute(page, "/material_plan", {
+        path: gcodePath, host: "", port: 7125, provider, provider_url: url,
+        slot_map: { "2": 99999 }, slot_base: 1 });
+      const slot = (out.body?.slots ?? []).find((s) => s.needed);
+      record("A mapping pointing at nothing is reported on " + provider,
+        (slot?.notes ?? []).some((n) => /no spool with id 99999/i.test(n)),
+        (slot?.notes ?? []).join(" ").slice(0, 70));
+    }
+
+  } else if (phase === "provider-conflict") {
+    // The printer is looking at the slot; the provider holds what someone wrote
+    // down. When they disagree, both are shown and neither is silently dropped.
+    const bb = process.env.SNAPSTUDIO_BAMBUDDY_URL || "";
+    const both = [
+      ["spoolman", spoolmanUrl, Number(process.env.SNAPSTUDIO_SPOOL_CONFLICT || 0)],
+      ["bambuddy", bb, Number(process.env.SNAPSTUDIO_BB_CONFLICT || 0)],
+    ];
+    for (const [provider, url, id] of both) {
+      const out = await callRoute(page, "/material_plan", {
+        path: gcodePath, host: "", port: 7125, provider, provider_url: url,
+        slot_map: { "2": id }, slot_base: 1 });
+      const slot = (out.body?.slots ?? []).find((s) => s.needed);
+      record("A material the mapping disagrees about is reported on " + provider,
+        slot?.state === "wrong_material" && slot?.printer_confirmed === false,
+        slot?.state + ", printer_confirmed=" + slot?.printer_confirmed);
+      record("The disagreement does not throw away the weight on " + provider,
+        slot?.remaining_g !== null && slot?.remaining_g !== undefined,
+        "remaining=" + slot?.remaining_g);
+    }
+
+  } else if (phase === "provider-upload-contract") {
+    // The upload route, as far as it can honestly be taken with no printer on
+    // this network. It must accept both wire shapes and fail for want of a
+    // printer, never for a validation reason. Nothing is started or heated.
+    const bb = process.env.SNAPSTUDIO_BAMBUDDY_URL || "";
+    const shapes = [
+      ["the legacy field", { spoolman: spoolmanUrl }],
+      ["the named pair", { provider: "spoolman", provider_url: spoolmanUrl }],
+      ["a second provider", { provider: "bambuddy", provider_url: bb }],
+    ];
+    for (const [label, extra] of shapes) {
+      const out = await callRoute(page, "/printer/upload_gcode", Object.assign({
+        host: "127.0.0.1", port: 7125, path: gcodePath, confirm: true,
+        slot_map: { "2": 1 }, slot_base: 1 }, extra));
+      const body = JSON.stringify(out.body ?? {});
+      record("Upload accepts " + label + " and fails only for want of a printer",
+        out.status === 200
+          && !/unexpected keyword|slot_base|provider_url.*invalid/i.test(body),
+        "HTTP " + out.status + " " + body.slice(0, 90));
+    }
+
+  } else if (phase === "provider-switch") {
+    // Switching provider in the installed UI. A spool id means something only to
+    // the provider that issued it, so carrying a mapping across would point at
+    // whatever spool happened to share the number.
+    await page.evaluate(() => {
+      window.history.pushState({}, "", "/settings");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    await page.waitForTimeout(1500);
+
+    const names = await page.evaluate(() =>
+      [...document.querySelectorAll("button")].map((b) => b.textContent.trim()));
+    record("The installed settings offer None, Spoolman and Bambuddy",
+      ["None", "Spoolman", "Bambuddy"].every((n) => names.includes(n)),
+      names.filter((n) => ["None", "Spoolman", "Bambuddy"].includes(n)).join(", "));
+
+    await page.getByRole("button", { name: /^Bambuddy$/ }).first().click();
+    await page.waitForTimeout(700);
+    const afterSwitch = await page.evaluate(() => ({
+      kind: localStorage.getItem("materialProviderKind"),
+      url: localStorage.getItem("materialProviderUrl"),
+      map: localStorage.getItem("materialProviderSlotMap"),
+    }));
+    record("Switching provider drops the other one's address and mapping",
+      afterSwitch.kind === JSON.stringify("bambuddy")
+        && (afterSwitch.url ?? '""') === '""'
+        && (afterSwitch.map ?? "{}") === "{}",
+      "kind=" + afterSwitch.kind + " url=" + afterSwitch.url + " map=" + afterSwitch.map);
+
+    const bb = process.env.SNAPSTUDIO_BAMBUDDY_URL || "";
+    const box = page.getByPlaceholder(/bambuddy/i).first();
+    record("The address box asks for the provider that is selected",
+      (await box.count()) > 0);
+    await box.fill(bb);
+    await page.getByRole("button", { name: /Test connection/i }).first().click();
+    await page.waitForTimeout(4000);
+    const said = await page.getByText(/Bambuddy answered with/i).count();
+    record("Test connection names the provider that answered", said > 0,
+      said + " match(es)");
+
+    const bbEnough = Number(process.env.SNAPSTUDIO_BB_ENOUGH || 0);
+    const mapped = await page.evaluate(([id]) => {
+      const selects = [...document.querySelectorAll("select")];
+      const target = selects[1] || selects[0];
+      if (!target) return false;
+      if (![...target.options].some((o) => o.value === String(id))) return false;
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLSelectElement.prototype, "value").set;
+      setter.call(target, String(id));
+      target.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    }, [bbEnough]);
+    await page.waitForTimeout(900);
+    const stored = await page.evaluate(() => ({
+      kind: localStorage.getItem("materialProviderKind"),
+      url: localStorage.getItem("materialProviderUrl"),
+      map: localStorage.getItem("materialProviderSlotMap"),
+    }));
+    record("The second provider's configuration is written down for a restart",
+      mapped && stored.kind === JSON.stringify("bambuddy")
+        && Boolean(stored.url) && (stored.map ?? "{}") !== "{}",
+      "map=" + stored.map);
+
+  } else if (phase === "provider-switch-restored") {
+    // After a restart, with Bambuddy configured rather than Spoolman.
+    const stored = await page.evaluate(() => ({
+      kind: localStorage.getItem("materialProviderKind"),
+      url: localStorage.getItem("materialProviderUrl"),
+      map: localStorage.getItem("materialProviderSlotMap"),
+    }));
+    record("The second provider's configuration survived a restart",
+      stored.kind === JSON.stringify("bambuddy") && Boolean(stored.url)
+        && (stored.map ?? "{}") !== "{}",
+      "kind=" + stored.kind + " map=" + stored.map);
+
+    const address = JSON.parse(stored.url ?? '""');
+    const slotMap = JSON.parse(stored.map ?? "{}");
+    const out = await callRoute(page, "/send_check", {
+      path: gcodePath, host: "", port: 7125,
+      provider: "bambuddy", provider_url: address, slot_map: slotMap, slot_base: 1 });
+    const slot = (out.body?.materials?.slots ?? []).find((s) => s.needed);
+    record("The restored second provider reaches the send decision",
+      out.status === 200 && slot?.remaining_g !== null && slot?.remaining_g !== undefined,
+      "remaining=" + slot?.remaining_g + " verdict=" + slot?.sufficiency?.verdict);
+
+    // Then None, and back to the honest unknown with nothing configured.
+    await page.evaluate(() => {
+      window.history.pushState({}, "", "/settings");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    await page.waitForTimeout(1200);
+    await page.getByRole("button", { name: /^None$/ }).first().click();
+    await page.waitForTimeout(700);
+    const off = await page.evaluate(() => ({
+      kind: localStorage.getItem("materialProviderKind"),
+      url: localStorage.getItem("materialProviderUrl"),
+      map: localStorage.getItem("materialProviderSlotMap"),
+    }));
+    record("Choosing None leaves no provider configured at all",
+      off.kind === JSON.stringify("none") && (off.url ?? '""') === '""'
+        && (off.map ?? "{}") === "{}",
+      "kind=" + off.kind + " url=" + off.url + " map=" + off.map);
 
   } else if (phase === "goto-compatibility") {
     await page.evaluate(() => {

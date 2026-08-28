@@ -21,6 +21,7 @@
 #
 # Usage:
 #   pwsh -File tools/acceptance/run.ps1 [-Installer <path>] [-KeepInstall]
+#        [-SpoolmanUrl host:port] [-BambuddyUrl host:port]
 
 [CmdletBinding()]
 param(
@@ -36,7 +37,18 @@ param(
     # Optional: without it the provider checks still prove the frozen build carries
     # the route, refuses an address that is not local, and claims nothing about
     # remaining filament. With it they prove the whole path inside the installed app.
-    [string]$SpoolmanUrl
+    [string]$SpoolmanUrl,
+    # A second provider. Studio normalises both into one contract, so with both
+    # supplied the run also proves that equivalent facts produce equal decisions
+    # in the installed build rather than only in the test suite.
+    [string]$BambuddyUrl,
+    # Ports for the two throwaway probe servers this script owns. One counts the
+    # requests it receives, which is how "no provider is configured" becomes a
+    # measurement; the other answers every request with a redirect to a public
+    # host, which is the only way to prove the shipped build refuses to follow
+    # one off the local network.
+    [int]$ProbePort = 9401,
+    [int]$RedirectPort = 9402
 )
 
 $ErrorActionPreference = "Stop"
@@ -176,6 +188,32 @@ if ($existing) {
     reg export $existing.Name $backupReg /y | Out-Null
     Write-Host "Existing install detected; its registry entry was exported to $backupReg"
 }
+
+# Two throwaway servers this run owns. Started before the app so the provider
+# checks can reach them, tracked by pid like everything else here, and stopped by
+# the same Stop-Tracked that stops the app.
+# The repository path contains a space, and an unquoted argument array hands
+# node half a path. The first run of this failed with a connection refused that
+# looked like a product defect and was this line.
+$probeScript = '"' + (Join-Path $PSScriptRoot "probes.mjs") + '"'
+$probes = Start-Process -FilePath "node" `
+    -ArgumentList $probeScript, $ProbePort, $RedirectPort `
+    -PassThru -WindowStyle Hidden
+# Deliberately not in $started. That list is stopped and emptied every time the
+# app is restarted with a different project, and the probes have to outlive
+# those restarts — they are instruments for the whole run, not part of the app.
+# They are stopped in the finally block instead, and only ever by their own pid.
+$script:probePid = $probes.Id
+Start-Sleep -Seconds 2
+$probeUrl = "127.0.0.1:$ProbePort"
+$redirectUrl = "127.0.0.1:$RedirectPort"
+$env:SNAPSTUDIO_PROBE_URL = $probeUrl
+$env:SNAPSTUDIO_REDIRECT_URL = $redirectUrl
+$env:SNAPSTUDIO_BAMBUDDY_URL = $BambuddyUrl
+try {
+    $probeAlive = (Invoke-WebRequest "http://$probeUrl/__hits" -UseBasicParsing -TimeoutSec 5).StatusCode -eq 200
+} catch { $probeAlive = $false }
+Add-Check "Probe servers this run owns are up" $probeAlive "count $ProbePort, redirect $RedirectPort"
 
 try {
     # --- upgrade path --------------------------------------------------------
@@ -333,6 +371,46 @@ try {
         Add-Check "The provider can be configured in the installed app" ($code -eq 0)
     }
 
+    # --- the provider wire, the safety rules and the second provider ----------
+    #
+    # These run against the frozen sidecar from inside the app's own origin. The
+    # unit suites prove the engine; these prove the binary that was installed
+    # actually carries it.
+    try {
+        $probeStillUp = (Invoke-WebRequest "http://$probeUrl/__hits" `
+            -UseBasicParsing -TimeoutSec 5).StatusCode -eq 200
+    } catch { $probeStillUp = $false }
+    Add-Check "Probe servers survived the app restarts" $probeStillUp
+
+    $code = Invoke-Phase "provider-wire" $sampleWork $gcodeWork
+    Add-Check "Both provider wire shapes work in the installed build" ($code -eq 0)
+
+    $code = Invoke-Phase "provider-zero-request" $sampleWork $gcodeWork
+    Add-Check "No provider configured means no provider request" ($code -eq 0)
+
+    $code = Invoke-Phase "provider-safety" $sampleWork $gcodeWork
+    Add-Check "Provider addresses are validated in the installed build" ($code -eq 0)
+
+    $code = Invoke-Phase "provider-redirect" $sampleWork $gcodeWork
+    Add-Check "A redirect off the local network is refused in the installed build" ($code -eq 0)
+
+    if ($BambuddyUrl) {
+        $code = Invoke-Phase "provider-adversarial" $sampleWork $gcodeWork
+        Add-Check "Impossible provider weights become unknown, never enough" ($code -eq 0)
+    }
+
+    if ($SpoolmanUrl -and $BambuddyUrl) {
+        $code = Invoke-Phase "provider-equivalence" $sampleWork $gcodeWork
+        Add-Check "Equivalent facts from two providers decide the same" ($code -eq 0)
+
+        $code = Invoke-Phase "provider-conflict" $sampleWork $gcodeWork
+        Add-Check "A printer/provider disagreement is shown, not resolved" ($code -eq 0)
+
+        $code = Invoke-Phase "provider-upload-contract" $sampleWork $gcodeWork
+        Add-Check "The upload route accepts both wire shapes" ($code -eq 0)
+
+    }
+
     # --- close and prove no orphan -------------------------------------------
     Stop-Tracked
     $script:started = @()
@@ -352,14 +430,43 @@ try {
         Add-Check "Provider settings survive a restart and reach the send decision" ($code -eq 0)
     }
 
+    # Only now, with the first provider's persistence proved, is it safe to
+    # switch. Doing it earlier cleared the Spoolman configuration that the
+    # restart check above exists to find — which is what the first run of this
+    # did, and it read as five product failures.
+    if ($SpoolmanUrl -and $BambuddyUrl) {
+        $code = Invoke-Phase "provider-switch" $sampleWork $gcodeWork
+        Add-Check "Switching provider in the installed app clears the old one" ($code -eq 0)
+
+        # A second restart, so the second provider's persistence is measured the
+        # same way the first one's was rather than assumed from it.
+        Stop-Tracked
+        $script:started = @()
+        $third = Start-Process -FilePath $appExe -PassThru
+        $script:started += $third.Id
+        Start-Sleep -Seconds 8
+        Add-Check "Reopens again after switching provider" `
+            ($null -ne (Get-Process -Id $third.Id -ErrorAction SilentlyContinue))
+
+        $code = Invoke-Phase "provider-switch-restored" $sampleWork $gcodeWork
+        Add-Check "The second provider survives a restart and can then be turned off" ($code -eq 0)
+    }
+
     Stop-Tracked
     $script:started = @()
 }
 finally {
     Stop-Tracked
+    if ($script:probePid) {
+        Stop-Process -Id $script:probePid -Force -ErrorAction SilentlyContinue
+    }
     Remove-Item Env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS -ErrorAction SilentlyContinue
     Remove-Item Env:WEBVIEW2_USER_DATA_FOLDER -ErrorAction SilentlyContinue
     Remove-Item Env:SNAPSTUDIO_DATA_DIR -ErrorAction SilentlyContinue
+    foreach ($name in @("SNAPSTUDIO_PROBE_URL", "SNAPSTUDIO_REDIRECT_URL",
+                        "SNAPSTUDIO_BAMBUDDY_URL")) {
+        Remove-Item "Env:$name" -ErrorAction SilentlyContinue
+    }
 }
 
 # --- uninstall ---------------------------------------------------------------
