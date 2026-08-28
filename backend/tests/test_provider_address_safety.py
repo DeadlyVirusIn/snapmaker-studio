@@ -142,3 +142,113 @@ def json_text(value) -> str:
     import json
 
     return json.dumps(value)
+
+
+# --- the hop the address check could not see ---------------------------------
+#
+# `validate_provider_url` checks the string the user typed. That turned out not
+# to be the whole journey: a service on the LAN answering `302 Location:
+# http://example.com` made Studio follow it, and the request left the machine —
+# demonstrated against this module by standing up a local server that redirected
+# every request to the public internet and watching example.com's 404 come back
+# in Studio's own error message.
+#
+# The same defect as `file://` and a public hostname, one hop later, and fixed in
+# the same place for every provider rather than in whichever adapter noticed.
+
+class _Redirector:
+    """A local server that always redirects somewhere it should not be followed."""
+
+    def __init__(self, target: str):
+        self.target = target
+        self.hits: list[str] = []
+
+    def __enter__(self):
+        import http.server
+        import threading
+
+        owner = self
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):  # noqa: N802 — the stdlib's spelling
+                owner.hits.append(self.path)
+                self.send_response(302)
+                self.send_header("Location", owner.target)
+                self.end_headers()
+
+            def log_message(self, *args):
+                pass
+
+        self.server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+        self.port = self.server.server_address[1]
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        return self
+
+    def __exit__(self, *exc):
+        self.server.shutdown()
+        self.server.server_close()
+
+
+@pytest.mark.parametrize("provider_kind", ["spoolman", "bambuddy"])
+@pytest.mark.parametrize("target", [
+    "http://example.com/api/v1/spool",
+    "https://example.com/",
+    "http://8.8.8.8/",
+])
+def test_a_redirect_off_the_local_network_is_refused(provider_kind, target):
+    """A local address is not a promise about where the second request goes."""
+    from snapstudio_core import material_providers as mp
+
+    with _Redirector(target) as server:
+        out = mp.read(provider_kind, f"127.0.0.1:{server.port}")
+
+    assert out["available"] is False
+    assert "not on your own network" in out["error"]
+    assert server.hits, "the local server was never reached, so nothing was proved"
+
+
+@pytest.mark.parametrize("provider_kind", ["spoolman", "bambuddy"])
+def test_a_redirect_that_stays_local_is_still_followed(provider_kind):
+    """The rule is about leaving the network, not about redirects."""
+    import json as _json
+
+    from snapstudio_core import material_providers as mp
+
+    import http.server
+    import threading
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802
+            if "moved" not in self.path:
+                self.send_response(302)
+                self.send_header("Location", f"http://127.0.0.1:{port}/moved")
+                self.end_headers()
+                return
+            body = _json.dumps([]).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+    port = server.server_address[1]
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        out = mp.read(provider_kind, f"127.0.0.1:{port}")
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert out["available"] is True
+    assert out["spools"] == []
+
+
+def test_the_redirect_rule_is_one_rule_for_every_provider():
+    """One opener, so it cannot be true of one provider and not another."""
+    from snapstudio_core import material_providers as mp
+
+    assert any(isinstance(h, mp._LocalOnlyRedirects) for h in mp._OPENER.handlers)

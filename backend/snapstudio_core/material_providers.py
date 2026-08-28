@@ -89,7 +89,7 @@ def validate_provider_url(value: str) -> str:
     """
     text = (value or "").strip()
     if not text:
-        raise InvalidProviderAddress("Enter the address of your Spoolman server.")
+        raise InvalidProviderAddress("Enter the address of your material provider's server.")
     if len(text) > 255:
         raise InvalidProviderAddress("That address is too long to be a server address.")
     if "://" not in text:
@@ -124,6 +124,12 @@ def validate_provider_url(value: str) -> str:
 
 STOCK = "stock-u1"
 SPOOLMAN = "spoolman"
+BAMBUDDY = "bambuddy"
+
+#: The providers a user can choose, and what to call them on screen. Everything
+#: past the adapter reads `source` as an opaque label — this table exists so the
+#: name appears once, as provenance, rather than being spelled into any decision.
+PROVIDER_NAMES = {SPOOLMAN: "Spoolman", BAMBUDDY: "Bambuddy"}
 
 CONFIRMED = "confirmed"
 LIKELY = "likely"
@@ -226,9 +232,40 @@ def stock_u1(host: str, port: int = 7125) -> dict:
 
 # --- Spoolman ----------------------------------------------------------------
 
+class _LocalOnlyRedirects(urllib.request.HTTPRedirectHandler):
+    """Refuse a redirect that walks off the user's own network.
+
+    `validate_provider_url` checks the address the user typed, and that was not
+    enough. A service on the LAN answering 302 with a `Location` on the public
+    internet made Studio follow it, and the request genuinely left the machine —
+    demonstrated against this module, not imagined: a local server that answered
+    every request with `302 → http://example.com` produced example.com's 404 in
+    Studio's own error message.
+
+    That is the same defect as the one the address check was written for, one
+    hop later, and it is fixed in the same place for every provider rather than
+    in whichever adapter happened to notice.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        parts = urllib.parse.urlsplit(newurl)
+        if parts.scheme not in ("http", "https") or not _host_is_local(parts.hostname or ""):
+            raise InvalidProviderAddress(
+                f"That provider redirected Studio to {parts.hostname or newurl}, which is "
+                "not on your own network. Studio makes no requests to the internet, so it "
+                "stopped rather than following it.")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+#: One opener for every provider, so the redirect rule cannot be true of one and
+#: not another. Deliberately not the module-level default: replacing the global
+#: opener would change behaviour for code that has nothing to do with providers.
+_OPENER = urllib.request.build_opener(_LocalOnlyRedirects)
+
+
 def _get_json(url: str, timeout: float = 4.0):
     request = urllib.request.Request(url, headers={"Accept": "application/json"})
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    with _OPENER.open(request, timeout=timeout) as response:
         # Bounded like every other response Studio reads from the network.
         return json.loads(response.read(4 * 1024 * 1024).decode("utf-8", "replace"))
 
@@ -267,6 +304,11 @@ def spoolman(base_url: str, slot_map: dict | None = None, timeout: float = 4.0,
     except TimeoutError:
         out["error"] = (f"Spoolman did not answer within {timeout:g} seconds — Studio carried "
                         "on without it")
+        return out
+    except InvalidProviderAddress as exc:
+        # A redirect that led off the local network. Refused mid-request, and
+        # said plainly, because it is the user's network that just behaved oddly.
+        out["error"] = str(exc)
         return out
     except urllib.error.URLError as exc:
         out["error"] = f"Spoolman did not answer: {getattr(exc, 'reason', exc)}"
@@ -308,29 +350,219 @@ def spoolman(base_url: str, slot_map: dict | None = None, timeout: float = 4.0,
         })
     out["remaining_known"] = any(s["remaining_g"] is not None for s in out["spools"])
 
+    _attach_slots(out, SPOOLMAN, slot_map, slot_base)
+    return out
+
+
+def _attach_slots(out: dict, source: str, slot_map: dict | None,
+                  slot_base: int | None) -> None:
+    """Turn the user's slot-to-spool map into normalised slots, for any provider.
+
+    Shared deliberately. A filament inventory knows what spools exist and not
+    which one a person pushed into slot 2, so every provider Studio can read
+    needs exactly this step — and every provider must reach the same verdict for
+    a mapping that points nowhere, or at something archived. Writing it once is
+    what makes that true rather than hoped for.
+    """
+    name = PROVIDER_NAMES.get(source, source)
     by_id = {s["id"]: s for s in out["spools"]}
     mapped, base = _mapped_slots(slot_map, slot_base)
     out["slot_base"] = base
     for slot_index, spool_id in mapped:
         spool = by_id.get(spool_id)
         if not spool:
-            out["slots"].append(_slot(slot_index, present=False, source=SPOOLMAN,
+            out["slots"].append(_slot(slot_index, present=False, source=source,
                                       confidence=UNKNOWN, confirmed_by=BY_PROVIDER,
-                                      notes=[f"no spool with id {spool_id} in Spoolman"]))
+                                      notes=[f"no spool with id {spool_id} in {name}"]))
             continue
         notes = list(spool["notes"])
         if spool["archived"]:
-            notes.append("this spool is archived in Spoolman")
+            notes.append(f"this spool is archived in {name}")
         out["slots"].append(_slot(
             slot_index, material=spool["material"], subtype=spool["subtype"],
             color=spool["color"], vendor=spool["vendor"], spool_id=spool["id"],
-            remaining_g=spool["remaining_g"], source=SPOOLMAN,
+            remaining_g=spool["remaining_g"], source=source,
             remaining_quality=spool["remaining_quality"],
             remaining_as_of=spool["remaining_as_of"], notes=notes,
             # The user told Studio which spool is in which slot. That is a
             # statement of intent, not a measurement the printer confirmed.
             confidence=LIKELY, confirmed_by=BY_PROVIDER))
+
+
+# --- Bambuddy ----------------------------------------------------------------
+
+def bambuddy(base_url: str, slot_map: dict | None = None, timeout: float = 4.0,
+             slot_base: int | None = None) -> dict:
+    """Read spools from a Bambuddy instance on the local network.
+
+    The second implementation of this seam, and chosen partly because it agrees
+    with Spoolman about almost nothing at the wire: a versioned FastAPI service
+    on `/api/v1/inventory/spools`, `brand` rather than a nested vendor object,
+    `rgba` rather than `color_hex`, `material` and `subtype` as separate fields
+    rather than one string to split, `include_archived` rather than
+    `allow_archived` — and, decisively, **no remaining-weight field at all**.
+
+    Read-only like every provider here. Bambuddy has routes that would create,
+    archive and reweigh spools; Studio calls none of them.
+    """
+    out = {"schema_version": SCHEMA_VERSION, "source": BAMBUDDY, "available": False,
+           "slots": [], "spools": []}
+    if not base_url:
+        out["error"] = "no Bambuddy address configured"
+        return out
+
+    try:
+        root = validate_provider_url(base_url)
+    except InvalidProviderAddress as exc:
+        out["error"] = str(exc)
+        return out
+    try:
+        # Archived spools are left out of the default listing, exactly as
+        # Spoolman leaves them out of its own — measured against a real instance,
+        # 10 spools with this parameter and 9 without. A slot mapped to a spool
+        # somebody archived last week should read as archived, not as missing.
+        spools = _get_json(f"{root}/api/v1/inventory/spools?include_archived=true",
+                           timeout=timeout)
+    except TimeoutError:
+        out["error"] = (f"Bambuddy did not answer within {timeout:g} seconds — Studio carried "
+                        "on without it")
+        return out
+    except InvalidProviderAddress as exc:
+        out["error"] = str(exc)
+        return out
+    except urllib.error.HTTPError as exc:
+        if exc.code in (401, 403):
+            # Bambuddy can be run with authentication on, and then every route
+            # wants an `X-API-Key`. Studio has nowhere safe to keep one, so it
+            # says so instead of asking for a secret it would store in the clear.
+            out["error"] = ("Bambuddy is asking Studio to sign in. Studio reads providers "
+                            "without credentials, so use a Bambuddy that does not require "
+                            "an API key.")
+            return out
+        out["error"] = f"Bambuddy did not answer: HTTP {exc.code}"
+        return out
+    except urllib.error.URLError as exc:
+        out["error"] = f"Bambuddy did not answer: {getattr(exc, 'reason', exc)}"
+        return out
+    except Exception as exc:  # noqa: BLE001
+        out["error"] = f"Bambuddy answered with something unexpected: {type(exc).__name__}"
+        return out
+
+    if not isinstance(spools, list):
+        out["error"] = "Bambuddy answered with something unexpected"
+        return out
+
+    out["available"] = True
+    for spool in spools:
+        if not isinstance(spool, dict):
+            continue
+        remaining, quality, as_of, notes = _bambuddy_remaining(spool)
+        family, subtype = _bambuddy_material(spool)
+        out["spools"].append({
+            "id": spool.get("id"),
+            "material": family,
+            "subtype": subtype,
+            "color": _colour(spool.get("rgba")),
+            "vendor": _text(spool.get("brand")),
+            "remaining_g": remaining,
+            "remaining_quality": quality,
+            "remaining_as_of": as_of,
+            # `created_at` is when the row was written. It is not when anything
+            # about the filament was last true, and it is not offered as one.
+            "registered": spool.get("created_at") or None,
+            "notes": notes,
+            "name": _text(spool.get("color_name")),
+            "archived": bool(spool.get("archived_at")),
+        })
+    out["remaining_known"] = any(s["remaining_g"] is not None for s in out["spools"])
+
+    _attach_slots(out, BAMBUDDY, slot_map, slot_base)
     return out
+
+
+def _bambuddy_material(spool: dict) -> tuple[str | None, str | None]:
+    """Bambuddy keeps the family and the variant apart, so there is nothing to split."""
+    family = _text(spool.get("material"))
+    return (family.upper() if family else None), _text(spool.get("subtype"))
+
+
+def _bambuddy_remaining(spool: dict) -> tuple[float | None, str, object, list[str]]:
+    """How much is left on a Bambuddy spool, how that is known, and when it was true.
+
+    Bambuddy has no remaining-weight field. It stores what the label claimed and
+    what has been used, and its own interface subtracts one from the other — so
+    the figure is arithmetic Studio performs, and it is never dressed up as
+    something Bambuddy is keeping.
+
+    The same evidence test as everywhere else decides the label. A weighing wrote
+    both the used figure and the moment it was taken, so that is a record with a
+    date. A used figure that print consumption has been moving is a record too,
+    dated by `last_used`. What is left — a label weight minus a number nothing has
+    touched since the spool was added — is arithmetic, and says so.
+    """
+    notes: list[str] = []
+    label = _number(spool.get("label_weight"))
+    used = _number(spool.get("weight_used"))
+    if label is None or label <= 0 or used is None:
+        # Nothing to subtract from. Unknown, which is what a person needs to hear
+        # to go and look at the spool — and said out loud, because a silent
+        # unknown reads as though Studio never asked.
+        notes.append(_no_quantity_note(BAMBUDDY))
+        return None, UNTRACKED, None, notes
+
+    if used < 0:
+        notes.append("Bambuddy reports a negative used weight for this spool, so Studio "
+                     "cannot work out what is left")
+        return None, UNTRACKED, None, notes
+    if label > IMPLAUSIBLE_GRAMS:
+        notes.append(f"Bambuddy reports a {label:g} g spool, which is not a weight of "
+                     "filament — check the spool in Bambuddy")
+        return None, UNTRACKED, None, notes
+
+    value = round(label - used, 1)
+    if value < 0:
+        notes.append(f"Bambuddy records more used ({used:g} g) than this spool ever held "
+                     f"({label:g} g), so Studio cannot use it")
+        return None, UNTRACKED, None, notes
+
+    weighed_at = spool.get("last_weighed_at")
+    if weighed_at and _number(spool.get("last_scale_weight")) is not None:
+        return value, TRACKED, weighed_at, notes
+    last_used = spool.get("last_used")
+    if last_used and used:
+        return value, TRACKED, last_used, notes
+    return value, DERIVED, last_used or None, notes
+
+
+def _text(value) -> str | None:
+    """A non-empty string, or nothing. A provider may send either."""
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+# --- choosing one ------------------------------------------------------------
+
+#: Every provider Studio can read, by the name the app sends. Adding one here is
+#: the whole registration: nothing downstream looks the provider up again.
+READERS = {SPOOLMAN: spoolman, BAMBUDDY: bambuddy}
+
+
+def read(kind: str, base_url: str, slot_map: dict | None = None, timeout: float = 4.0,
+         slot_base: int | None = None) -> dict:
+    """Read whichever provider the user configured, in one shape.
+
+    The only place in Studio that turns a provider's name into a decision. Past
+    this call the name is provenance — a label on a fact — and nothing branches
+    on it.
+    """
+    reader = READERS.get((kind or "").strip().lower())
+    if reader is None:
+        return {"schema_version": SCHEMA_VERSION, "source": kind or "unknown",
+                "available": False, "slots": [], "spools": [],
+                "error": f"Studio does not know how to read a provider called {kind!r}."}
+    return reader(base_url, slot_map, timeout=timeout, slot_base=slot_base)
 
 
 def _mapped_slots(slot_map: dict | None,
@@ -399,6 +631,7 @@ def _remaining(spool: dict, filament: dict) -> tuple[float | None, str, list[str
             value = round(net - used, 1)
             quality = DERIVED
         else:
+            notes.append(_no_quantity_note(SPOOLMAN))
             return None, UNTRACKED, notes
 
     if value < 0:
@@ -416,6 +649,19 @@ def _remaining(spool: dict, filament: dict) -> tuple[float | None, str, list[str
                      f"({net:g} g), so Studio cannot use it")
         return None, UNTRACKED, notes
     return value, quality, notes
+
+
+def _no_quantity_note(source: str) -> str:
+    """One sentence, shared, for "there is nothing here to work a weight out from".
+
+    Shared because the two providers reach it down completely different roads —
+    Spoolman having neither a remaining weight nor the pair to derive one,
+    Bambuddy having no label weight to subtract from — and a person reading the
+    slot does not care which. An unknown that explains itself sends them to look
+    at the spool; a silent one reads as though Studio never asked.
+    """
+    return (f"{PROVIDER_NAMES.get(source, source)} does not record enough about this "
+            "spool for Studio to work out how much is left on it")
 
 
 def _quality(spool: dict) -> str:
@@ -438,8 +684,22 @@ def _quality(spool: dict) -> str:
     return DERIVED
 
 
+#: A plain ASCII number and nothing else. `float()` is more generous than that:
+#: it accepts full-width Unicode digits, so `float("１０００")` is 1000.0
+#: and a malformed field quietly becomes a weight Studio might reason from. This
+#: codebase has been caught by Unicode digits twice already, both times through a
+#: regex `\d`, and this is the same mistake wearing different clothes.
+_PLAIN_NUMBER_RE = re.compile(r"\A[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)\Z")
+
+
 def _number(value):
+    """A usable number, or nothing. Never a guess at what a string meant."""
     if isinstance(value, bool):
+        return None
+    if isinstance(value, str):
+        if not _PLAIN_NUMBER_RE.match(value.strip()):
+            return None
+    elif not isinstance(value, (int, float)):
         return None
     try:
         number = float(value)
