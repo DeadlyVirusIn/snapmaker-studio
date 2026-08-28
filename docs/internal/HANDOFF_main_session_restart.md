@@ -28,9 +28,14 @@ version string 0.8.0 and **is not the published v0.8.0 asset**, whose sha256 is
 `67776cd1…`; a development build from a later commit simply inherits the version
 in the manifests. Full account below.
 
-**Not run:** the real-U1 hardware harness. `main` is **not hardware verified**, and
-no frozen-sidecar result is hardware evidence. **There is no release**, and the
-next one is a minor — **v0.9.0**, not v0.8.1.
+**Real U1, read-only: 57/57**, run 2026-08-28 against that same installer with a
+physical Snapmaker U1 on the network. The current development runtime — commit
+`25d99a7`, installer `505762ef…` — is **hardware verified**. Full account below.
+
+**There is no release.** v0.8.0 remains the published release and its own
+evidence is unchanged; nothing here makes v0.8.0 newly verified, and nothing here
+is a v0.9.0. The next release is a minor — **v0.9.0**, not v0.8.1 — and it needs
+its own final installer and its own evidence.
 
 ## Start here
 
@@ -134,6 +139,69 @@ with neither provider still exercises everything that does not need one.
 whole number of grams. Studio survives it correctly — the provider becomes
 unavailable and nothing is claimed — but it will stop a seeding script dead.
 
+## Real U1 hardware — done, 57/57
+
+Run 2026-08-28 through the installed application and its frozen sidecar against a
+physical Snapmaker U1, pinned to the accepted installer with `-Installer` rather
+than whatever was newest in the bundle directory.
+
+**Read-only, and the gate is printed before the first request.** Seven routes,
+all reads; the allow-list is asserted against a deny-list of every control route
+at load time. Nothing was uploaded, started, paused, resumed, cancelled, heated,
+homed, moved or configured. The machine happened to be **mid-print when the run
+began** and finished on its own during it — worth recording, because it means the
+loaded-filament evidence is a machine genuinely using those spools, and because
+nothing this harness can do could have interfered either way.
+
+**Live identity, from the printer rather than its name.** `matched: true`,
+`printer_id: snapmaker_u1`, `confidence: confirmed`, on the evidence that it
+exposes `print_task_config` — which mainline Klipper does not — and reports four
+toolheads. Moonraker **1.6.0**, Klipper **1.6.0.267_20260815150420**, klippy
+ready, **196** firmware objects, 115 custom macros, 7 capabilities detected.
+
+**Live wins over the profile**, everywhere it is asked: four toolheads from
+`live`, 271 × 335 × 281 mm from `live`, four filament slots from `live`. The
+travel envelope is larger than the printable plate and that is still **not** a
+conflict — `conflicts: []` — because axis range and printable area answer
+different questions.
+
+**Eighteen new provider checks**, the ones that could not exist before there was
+a second provider *and* a machine that can see its own spools:
+
+- a provider that agrees supplies the weight the machine cannot know, and
+  agreement is not reported as a disagreement;
+- a provider that disagrees loses on material and keeps its weight;
+- **the two providers decide identically about the same live observation**,
+  agreeing and disagreeing alike, provenance name aside;
+- an unreachable provider subtracts a weight, not the printer;
+- nothing claims the printer weighed anything. A U1 is not a scale.
+
+All 39 checks from the v0.8.0 hardware evidence are present and passing.
+**Nothing was removed.** Evidence:
+`docs/internal/hardware-main-25d99a7.json`, named for the runtime commit because
+there is no version to name it after.
+
+**How to re-run it:**
+
+```
+pwsh -File tools/hardware/verify.ps1 -PrinterHost <ipv4> -Installer <the exact exe>
+```
+
+Two things that cost time and will again:
+
+- **Pass an IPv4 address.** Resolving the printer's name can hand back the IPv6
+  link-local address first, zone index and all, and Studio then fails safe with
+  "the printer did not answer" — correct behaviour, and indistinguishable at a
+  glance from the printer being off.
+- **Do not pass a hostname that is a substring of anything in the evidence.** The
+  anonymiser replaces the address string wherever it appears, so a host called
+  `u1` would rewrite `snapmaker_u1` into `snapmaker_<printer-on-lan>` and corrupt
+  the identity evidence. An IP address has no such collision.
+
+The provider addresses and seeded spool ids arrive through the environment, so a
+run with no provider still does everything else and reports the provider checks
+as skipped rather than passing.
+
 ## The second material provider — done
 
 **Bambuddy** is the second implementation of the material-provider seam, closed
@@ -174,13 +242,18 @@ prove the seam; a third would cost the same and prove much less.
 
 ## Backlog
 
-1. **Re-run the real-U1 harness against `main`.** Now the only gate left before a
-   release sprint can begin, and four sprints of unreleased runtime change deep.
-   Needs the printer powered on and its address supplied — a human gate, not work.
-2. Individual per-object placement, if the product ever wants it — the check
+Every development verification gate is now closed. What remains is a **v0.9.0
+convergence sprint**, which is not on this list because it is a release rather
+than engineering: version bump, a *new* final installer with its own hash, the
+full software gates, installed acceptance and the hardware harness re-run against
+**that** binary, the v0.8.0 → v0.9.0 in-place upgrade, an immutable v0.9.0
+evidence snapshot, and publish / re-download / re-hash. None of this sprint's
+evidence transfers to a different binary.
+
+1. Individual per-object placement, if the product ever wants it — the check
    already reports which objects are off the plate; it needs its own user intent
    and its own audit rows.
-3. OBJ/GLB input — unchanged, still last.
+2. OBJ/GLB input — unchanged, still last.
 
 The 274 preset-equal template values are **not** on this list. They are
 deferred, not unfinished.
