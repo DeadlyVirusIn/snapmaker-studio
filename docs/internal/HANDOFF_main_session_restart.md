@@ -18,7 +18,7 @@ tree is clean, `main` and `origin/main` agree, and the gates below pass.
 
 ## Verification on `main`
 
-Backend **1731 passed / 4 skipped** · desktop **335** · `u1convert selfcheck`
+Backend **1804 passed / 4 skipped** · desktop **340** · `u1convert selfcheck`
 **27/27** · `tsc --noEmit` clean · `cargo check` clean · production build clean.
 
 **Not run:** installed-app acceptance and the real-U1 hardware harness. `main` is
@@ -68,47 +68,55 @@ a matching key name, and always with a control that discriminates.
 Full measurement record: `docs/internal/PRUSA_SEMANTICS.md`. Template rule:
 `backend/snapstudio_core/data/templates/PROVENANCE.md`.
 
-## The next engineering item
+## The second material provider — done
 
-**A second material provider.** Spoolman is the only implementation of the
-material-provider seam, so nothing proves the seam is actually provider-generic.
-Read `docs/MATERIAL_PROVIDERS.md` and `docs/internal/PROVIDER_AUDIT.md` first.
+**Bambuddy** is the second implementation of the material-provider seam, closed
+2026-08-28. Read `docs/internal/PROVIDER_AUDIT.md` (second half) before touching
+any of it.
 
-Nothing has been researched, chosen or written. The shape the work should take:
+Seven candidates were researched against the live projects. U1Hub is **still**
+ineligible — re-checked, and it has neither an intentional external API nor any
+remaining-filament quantity. OpenSpool's tag format has no remaining field;
+OctoPrint's SpoolManager offers a Python event bus rather than an HTTP API;
+SpoolEase documents no API and carries a Commons Clause rider; SpoolBuddy and
+FilaMan are clients of other people's inventories rather than inventories.
 
-1. **Research before choosing.** At least three candidates, each recorded with
-   repository, maintenance status, licence, interface, remaining-weight
-   semantics, freshness/timestamp, slot association, authentication and local
-   deployment path. Rank on evidence. Re-check U1Hub, but it stays ineligible
-   unless it now has **both** an intentional external integration API **and**
-   remaining-filament quantity. If no credible second provider exists, that is a
-   valid result — do not invent a weak integration.
-2. **Prove the seam before writing an adapter.** Equivalent normalised facts from
-   Spoolman and the new provider must produce identical downstream decisions —
-   enough, clearly short, stale, derived, unknown, provider unavailable, material
-   conflict, unmapped spool. The provider's name may appear as provenance and
-   nowhere else. If generic consumer code needs provider-specific branching,
-   stop: the abstraction is wrong, and hiding it is worse than fixing it.
-3. **A real instance**, session-owned, seeded through its documented API. No
-   mocks-only proof. Never touch a container this session did not start.
-4. **Reuse the existing address-safety boundary** — local accepted, public
-   internet / `file://` / `ftp://` / embedded credentials / redirect escape all
-   rejected, plus timeout, oversized and malformed response. No new arbitrary
-   network path.
-5. **No new page.** The existing Materials Provider settings become
-   None / Spoolman / the new one, showing only the fields that provider needs.
+What the sprint established, and what not to redo:
 
-Existing suites to keep green: `test_provider_reality.py`,
-`test_provider_address_safety.py`, `test_provider_printer_conflicts.py`,
-`test_material_providers_adversarial.py`, `test_freshness.py` (125 tests).
+- **The seam is generic, and it is proved.** `test_provider_seam_equivalence.py`
+  builds each scenario from the raw payload each provider really returns, pushes
+  it through that provider's real adapter, and demands the whole downstream
+  result be *equal* after scrubbing the two names. Twelve situations. A source
+  guard walks the AST of every generic consumer and fails on a comparison
+  against a provider name.
+- **The wire names are `provider` and `provider_url`.** `spoolman=` still works
+  and means what it did, which is why the acceptance harness needed no change.
+- **A local address that redirects to a public host used to be followed**, and
+  the request left the machine. Fixed at the shared transport for every provider.
+  If you add a third provider, you inherit that rule — do not write a second
+  opener.
+- **Bambuddy's remaining figure is arithmetic** (`label_weight - weight_used`)
+  unless the spool has been weighed. `core_weight` and `last_scale_weight` are
+  deliberately unused: a scale reading is gross weight and `core_weight` defaults
+  to 250 g whether or not anyone set it.
+- **Studio has no secure credential store.** A Bambuddy wanting an `X-API-Key`
+  is told plainly that Studio cannot read it. Do not "fix" this by storing a
+  token in `localStorage`.
 
-## Backlog after that
+A third provider is **not** wanted. Two implementations sharing no wire format
+prove the seam; a third would cost the same and prove much less.
 
-1. Second material provider (above).
-2. Individual per-object placement, if the product ever wants it — the check
+## Backlog
+
+1. **Re-run the real-U1 harness against `main`.** The gate on everything else,
+   and now three sprints of unreleased runtime change deep. Needs the printer
+   powered on and its address supplied — a human gate, not work.
+2. **Installed-build acceptance against `main`.** Not run since the local v0.7.2
+   build.
+3. Individual per-object placement, if the product ever wants it — the check
    already reports which objects are off the plate; it needs its own user intent
    and its own audit rows.
-3. OBJ/GLB input — unchanged, still last.
+4. OBJ/GLB input — unchanged, still last.
 
 The 274 preset-equal template values are **not** on this list. They are
 deferred, not unfinished.
@@ -137,8 +145,9 @@ that cost the most time recently:
 - **The template is not the output.** `set_filament_block` rewrites every
   per-filament array at prepare time. Classify the prepared project, never the
   template.
-- **`\d` in a Python regex matches Unicode digits.** Spell out `[0-9]`. This has
-  been hit twice in this codebase.
+- **Unicode digits.** `\d` in a Python regex matches them, and so does `float()`
+  — `float("１０００")` is 1000.0. Spell out `[0-9]`. This has now been
+  hit three times in this codebase.
 - **Grep before building.** More than one sprint has started by writing a feature
   that already existed.
 
