@@ -70,12 +70,20 @@ def _slot_word(index: int) -> str:
 
 
 def plan(job_slots: list[dict], loaded: list | None,
-         tools_used: list[int] | None = None) -> dict:
+         tools_used: list[int] | None = None,
+         slot_facts: list[dict] | None = None) -> dict:
     """Compare what the job needs, slot by slot, with what is loaded.
 
     ``job_slots`` is ``gcode.read_facts()["slots"]``. ``loaded`` is
     ``moonraker.loaded_filaments()`` — index-aligned, with ``None`` for an empty
     slot. Either may be missing; what cannot be compared is reported as unknown.
+
+    ``slot_facts`` is the normalised slot list the providers produced, and it is
+    optional because most callers predate it. It carries the one thing ``loaded``
+    cannot: *who* established that a slot holds nothing. An index-aligned ``None``
+    is silence, and silence has three different causes that must not read alike —
+    a printer that looked and saw an empty slot, a mapping pointing at a spool
+    that no longer exists, and nobody having said anything at all.
     """
     out: dict = {
         "schema_version": SCHEMA_VERSION,
@@ -90,6 +98,7 @@ def plan(job_slots: list[dict], loaded: list | None,
         return out
 
     used = set(tools_used or [s["tool"] for s in job_slots if s.get("used")])
+    facts = {f["slot"]: f for f in (slot_facts or []) if isinstance(f, dict)}
 
     for slot in job_slots:
         index = slot["tool"]
@@ -134,8 +143,29 @@ def plan(job_slots: list[dict], loaded: list | None,
             continue
 
         if have is None:
+            # Nothing is loaded here — but "the printer reports it empty" is an
+            # observation, and it was being said whether or not any printer had
+            # looked. A slot whose provider mapping names a spool that has since
+            # been deleted arrived here too, and was described as a printer's
+            # report of an empty slot on the strength of nothing at all.
+            fact = facts.get(index)
             entry["state"] = "empty"
-            entry["detail"] = "This job prints from this slot and the printer reports it empty."
+            entry["confirmed_by"] = (fact or {}).get("confirmed_by")
+            entry["printer_confirmed"] = (fact or {}).get("confirmed_by") == "printer"
+            entry["notes"] = list((fact or {}).get("notes") or ())
+            if entry["printer_confirmed"]:
+                entry["detail"] = ("This job prints from this slot and the printer "
+                                   "reports it empty.")
+            elif fact is not None:
+                # A mapping that points nowhere. Saying so sends the person to
+                # the provider to fix the mapping; "empty" sends them to the
+                # printer to look at a slot that may well have a spool in it.
+                said = " ".join(entry["notes"]) or "your mapping names a spool it cannot find"
+                entry["detail"] = ("This job prints from this slot. Nothing has confirmed "
+                                   f"what is in it — {said}.")
+            else:
+                entry["detail"] = ("This job prints from this slot and nothing Studio can "
+                                   "read says what is in it.")
             entry["action"] = (f"Load {slot.get('type') or 'filament'} here before you start"
                                + (f" — the job was sliced for {slot['color']}." if slot.get("color") else "."))
             out["changes_needed"] += 1
@@ -263,7 +293,8 @@ def from_facts(gcode_facts: dict, printer: dict | None) -> dict:
         }
     return plan(gcode_facts.get("slots") or [],
                 (printer or {}).get("loaded_filaments"),
-                gcode_facts.get("tools_used"))
+                gcode_facts.get("tools_used"),
+                (printer or {}).get("slot_facts"))
 
 
 #: How much more than the job needs should be on the spool before Studio calls it

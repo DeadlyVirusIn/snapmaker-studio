@@ -323,6 +323,80 @@ def test_a_machine_that_reports_no_filament_reads_the_same_on_either(monkeypatch
     assert results[providers.SPOOLMAN] == results[providers.BAMBUDDY]
 
 
+# --- an empty slot is three different facts ----------------------------------
+#
+# Found by the installed-build acceptance run, not by this suite, and it was a
+# defect of exactly the kind this project's honesty rules exist to prevent: a
+# slot whose provider mapping named a spool that no longer existed was described
+# to the user as
+#
+#     "This job prints from this slot and the printer reports it empty."
+#
+# with no printer configured, no printer contacted, and nothing having looked at
+# the slot at all. `as_loaded_filaments` drops a slot that holds nothing, so by
+# the time the plan was built the three causes of an absent slot were
+# indistinguishable — and the sentence picked the one that sounded most certain.
+
+def empty_slot_plan(monkeypatch, kind, *, spool_id, printer=None):
+    """Map a slot to a spool the provider does not have, and read the plan."""
+    payload = [BUILDERS[kind](7, label=1000, used=100.0, when=_ago(hours=3))]
+    state = read_one(kind, monkeypatch, payload, {"0": spool_id})
+    combined = providers.combine(*([printer] if printer else []) + [state])
+    facts = job(200.0)
+    return material_plan.from_facts(facts, {
+        "loaded_filaments": providers.as_loaded_filaments(combined),
+        "slot_facts": combined["slots"],
+    })["slots"][0]
+
+
+@pytest.mark.parametrize("kind", sorted(BUILDERS))
+def test_a_stale_mapping_is_never_reported_as_a_printer_observation(monkeypatch, kind):
+    slot = empty_slot_plan(monkeypatch, kind, spool_id=999)
+    assert slot["state"] == "empty"
+    assert slot["printer_confirmed"] is False
+    assert "printer reports it empty" not in slot["detail"]
+    # And the reason is carried through rather than dropped, because it sends the
+    # person to the provider to fix a mapping instead of to the printer to look
+    # at a slot that may well have a spool in it.
+    assert any("no spool with id 999" in note for note in slot["notes"])
+    assert "no spool with id 999" in slot["detail"]
+
+
+def test_the_two_providers_still_say_the_same_thing_about_a_stale_mapping(monkeypatch):
+    both = {kind: scrub(empty_slot_plan(monkeypatch, kind, spool_id=999))
+            for kind in BUILDERS}
+    assert both[providers.SPOOLMAN] == both[providers.BAMBUDDY]
+
+
+@pytest.mark.parametrize("kind", sorted(BUILDERS))
+def test_a_printer_that_looked_and_saw_nothing_still_says_so(monkeypatch, kind):
+    """The sentence was not wrong, only unearned. Where it is earned it stays."""
+    empty = {"schema_version": providers.SCHEMA_VERSION, "source": providers.STOCK,
+             "available": True, "remaining_known": False,
+             "slots": [providers._slot(0, present=False,
+                                       confirmed_by=providers.BY_PRINTER)]}
+    slot = empty_slot_plan(monkeypatch, kind, spool_id=999, printer=empty)
+    assert slot["state"] == "empty"
+    assert slot["printer_confirmed"] is True
+    assert "printer reports it empty" in slot["detail"]
+
+
+def test_with_nothing_configured_at_all_studio_says_exactly_that():
+    """No provider, no printer slot facts: silence, described as silence."""
+    facts = job(200.0)
+    slot = material_plan.from_facts(facts, {"loaded_filaments": [None]})["slots"][0]
+    assert slot["state"] == "empty"
+    assert slot["printer_confirmed"] is False
+    assert "nothing Studio can read says what is in it" in slot["detail"]
+
+
+def test_the_older_call_shape_is_unchanged():
+    """`plan()` without slot facts is what every caller predating this passes."""
+    out = material_plan.plan(
+        [{"tool": 0, "used": True, "grams": 200.0, "type": "PLA"}], [None], [0])
+    assert out["slots"][0]["state"] == "empty"
+
+
 # --- keeping the boundary where it is ----------------------------------------
 
 #: Everything downstream of the adapters. None of it may name a provider.

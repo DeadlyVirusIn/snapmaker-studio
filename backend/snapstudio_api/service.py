@@ -533,6 +533,11 @@ def _with_providers(printer: dict, host: str | None, port: int,
     if loaded is not None:
         printer = dict(printer)
         printer["loaded_filaments"] = loaded
+        # The normalised slots as well as the flattened list. `loaded` drops a
+        # slot that holds nothing, which loses the difference between a printer
+        # reporting an empty slot and a mapping pointing at a spool that no
+        # longer exists.
+        printer["slot_facts"] = combined.get("slots")
         printer["material_sources"] = combined.get("sources")
         printer["remaining_known"] = combined.get("remaining_known", False)
     return printer
