@@ -18,12 +18,19 @@ tree is clean, `main` and `origin/main` agree, and the gates below pass.
 
 ## Verification on `main`
 
-Backend **1804 passed / 4 skipped** · desktop **340** · `u1convert selfcheck`
+Backend **1811 passed / 4 skipped** · desktop **340** · `u1convert selfcheck`
 **27/27** · `tsc --noEmit` clean · `cargo check` clean · production build clean.
 
-**Not run:** installed-app acceptance and the real-U1 hardware harness. `main` is
-**not hardware verified**. **There is no release**, and the next one is a minor —
-**v0.9.0**, not v0.8.1.
+**Installed acceptance: 43/43**, run 2026-08-28 against a development installer
+built from this tree — 17,101,301 bytes, sha256
+`505762ef6fe5e23e4caf3ca9ccf5a474d86a08ae1cb1023db12b50acf399949d`. It carries the
+version string 0.8.0 and **is not the published v0.8.0 asset**, whose sha256 is
+`67776cd1…`; a development build from a later commit simply inherits the version
+in the manifests. Full account below.
+
+**Not run:** the real-U1 hardware harness. `main` is **not hardware verified**, and
+no frozen-sidecar result is hardware evidence. **There is no release**, and the
+next one is a minor — **v0.9.0**, not v0.8.1.
 
 ## Start here
 
@@ -68,6 +75,65 @@ a matching key name, and always with a control that discriminates.
 Full measurement record: `docs/internal/PRUSA_SEMANTICS.md`. Template rule:
 `backend/snapstudio_core/data/templates/PROVENANCE.md`.
 
+## Installed acceptance — done, 43/43
+
+Run 2026-08-28 against the installed application and its frozen sidecar, not the
+dev server, with a real **Spoolman 0.26.1** and a real **Bambuddy 1.2.5.3** in
+session-owned containers seeded through their own APIs. Clean install, launch,
+close, reopen twice, uninstall, no orphan sidecar, install directory removed, and
+the maintainer's own uninstall registration exported and restored.
+
+What it now proves that it could not before:
+
+- **The legacy wire still works.** `spoolman:` reaches a remaining weight and a
+  send decision in the frozen build, and `provider`/`provider_url` decides
+  *exactly* what it decided — the same verdict on the same slot, not merely
+  something similar. `/provider/test` with no provider named still means Spoolman.
+- **No provider means no request**, measured rather than asserted: a probe server
+  counts what it receives, and the count does not move for any of the three
+  shapes of none.
+- **A redirect off the local network is refused in the shipped binary**, for both
+  providers, with no trace of the public host's own answer in the error.
+- **Equivalence in the installed build** — enough, tracked-recent-short, derived,
+  undated, unknown, archived and a stale mapping all decide identically across
+  the two providers.
+- Impossible weights a real Bambuddy stores without complaint become unknown,
+  never enough.
+
+**One real defect was found, and it was a product defect rather than a harness
+one:** a slot whose provider mapping named a spool that no longer existed was
+described as *"the printer reports it empty"* with no printer configured and none
+contacted. Fixed in `material_plan.plan`, which now takes the normalised slot
+facts and says a different sentence for each of the three reasons a slot can be
+absent. Seven regression tests. Reachable with Spoolman alone, and older than the
+seam having two implementations.
+
+Three further failures were defects in the new harness code and are fixed in it:
+a probe script path split on the space in the repository path, a hit counter read
+from an origin not allowed to fetch it, and probes tracked alongside the app so a
+mid-run restart killed them. Two of those produced a connection refused that read
+exactly like a product failure, which is why the run now proves the probes are
+alive before the checks that depend on them.
+
+**How to re-run it**, with both providers:
+
+```
+docker run -d --name <yours> -p 18912:8000 ghcr.io/donkie/spoolman:latest
+docker run -d --name <yours> -p 18000:8000 -e PORT=8000 ghcr.io/maziggy/bambuddy:latest
+# seed both, then export SNAPSTUDIO_SPOOL_* and SNAPSTUDIO_BB_* with the ids
+pwsh -File tools/acceptance/run.ps1 -SpoolmanUrl 127.0.0.1:18912 -BambuddyUrl 127.0.0.1:18000
+```
+
+Both provider addresses and the seeded spool ids arrive as environment variables,
+so the positional argument contract the harness already had is untouched. A run
+with neither provider still exercises everything that does not need one.
+
+**A note for whoever seeds Bambuddy:** its scale route accepts a fractional
+`weight_grams` and then its own list endpoint returns HTTP 500 serialising the
+`last_scale_weight` it stored, because that field is declared an integer. Use a
+whole number of grams. Studio survives it correctly — the provider becomes
+unavailable and nothing is claimed — but it will stop a seeding script dead.
+
 ## The second material provider — done
 
 **Bambuddy** is the second implementation of the material-provider seam, closed
@@ -108,15 +174,13 @@ prove the seam; a third would cost the same and prove much less.
 
 ## Backlog
 
-1. **Re-run the real-U1 harness against `main`.** The gate on everything else,
-   and now three sprints of unreleased runtime change deep. Needs the printer
-   powered on and its address supplied — a human gate, not work.
-2. **Installed-build acceptance against `main`.** Not run since the local v0.7.2
-   build.
-3. Individual per-object placement, if the product ever wants it — the check
+1. **Re-run the real-U1 harness against `main`.** Now the only gate left before a
+   release sprint can begin, and four sprints of unreleased runtime change deep.
+   Needs the printer powered on and its address supplied — a human gate, not work.
+2. Individual per-object placement, if the product ever wants it — the check
    already reports which objects are off the plate; it needs its own user intent
    and its own audit rows.
-4. OBJ/GLB input — unchanged, still last.
+3. OBJ/GLB input — unchanged, still last.
 
 The 274 preset-equal template values are **not** on this list. They are
 deferred, not unfinished.
