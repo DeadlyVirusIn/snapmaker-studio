@@ -19,6 +19,12 @@
 // with a placeholder before anything is written to disk.
 //
 // Usage: node checks.mjs <cdpUrl> <outDir> <printerHost> <samplePath>
+//
+// Optional, through the environment so the positions above stay the contract
+// they already were: SNAPSTUDIO_HW_SPOOLMAN and SNAPSTUDIO_HW_BAMBUDDY, plus
+// the seeded spool ids, enable the provider-against-hardware checks. Without
+// them everything else still runs and the provider checks say they were
+// skipped rather than quietly passing.
 
 import { chromium } from "playwright-core";
 import { writeFileSync, mkdirSync } from "node:fs";
@@ -404,6 +410,137 @@ record("An address that answers nothing gets a generic hint",
     && /If it is a Snapmaker U1/i.test(nowhereAction)
     && !nowhereText.includes(printerHost),
   nowhereAction);
+
+
+// --- a material provider, against a machine that can see its own spools ------
+//
+// The second-provider sprint added a whole source of material facts and proved
+// the seam in tests and in an installed build. Neither of those had a printer
+// on the other end. The rule the design turns on only becomes real here: the
+// machine is *looking* at the slot, and a provider is somebody's note about it.
+//
+// All of this is read-only. `/material_plan` and `/send_check` are on the
+// allow-list, Studio never writes to a provider, and the providers themselves
+// are session-owned containers on this machine, not the printer.
+
+const spoolmanUrl = process.env.SNAPSTUDIO_HW_SPOOLMAN || "";
+const bambuddyUrl = process.env.SNAPSTUDIO_HW_BAMBUDDY || "";
+const agreeIds = {
+  spoolman: Number(process.env.SNAPSTUDIO_HW_SP_AGREE || 0),
+  bambuddy: Number(process.env.SNAPSTUDIO_HW_BB_AGREE || 0),
+};
+const conflictIds = {
+  spoolman: Number(process.env.SNAPSTUDIO_HW_SP_CONFLICT || 0),
+  bambuddy: Number(process.env.SNAPSTUDIO_HW_BB_CONFLICT || 0),
+};
+const providerUrls = { spoolman: spoolmanUrl, bambuddy: bambuddyUrl };
+
+/** The plan for the slot this job prints from, with a provider mapped onto it. */
+async function planWithProvider(provider, spoolId) {
+  const out = await callRoute(page, "/material_plan", {
+    path: jobPath, host: printerHost, port: 7125,
+    provider, provider_url: providerUrls[provider],
+    slot_map: { "2": spoolId }, slot_base: 1,
+  });
+  const slots = out.body?.slots ?? [];
+  return { body: out.body, slot: slots.find((s) => s.needed) ?? slots[1] ?? slots[0] };
+}
+
+if (spoolmanUrl && bambuddyUrl) {
+  const agreed = {};
+  const conflicted = {};
+
+  for (const provider of ["spoolman", "bambuddy"]) {
+    // --- the provider agrees with what the machine can see -------------------
+    const a = await planWithProvider(provider, agreeIds[provider]);
+    agreed[provider] = a.slot;
+    record(`The machine's own reading survives a provider that agrees (${provider})`,
+      a.slot?.printer_confirmed === true && a.slot?.confirmed_by === "printer"
+        && /PLA/i.test(String(a.slot?.has_material ?? "")),
+      `${a.slot?.has_material} confirmed_by=${a.slot?.confirmed_by}`);
+    record(`The provider supplies the weight the machine cannot know (${provider})`,
+      typeof a.slot?.remaining_g === "number" && a.slot.remaining_g > 0
+        && a.slot?.remaining_quality === "tracked",
+      `${a.slot?.remaining_g} g ${a.slot?.remaining_quality}`);
+    record(`Agreement is not reported as a disagreement (${provider})`,
+      (a.slot?.conflicts ?? []).length === 0,
+      `${(a.slot?.conflicts ?? []).length} conflict(s)`);
+
+    // --- the provider disagrees ---------------------------------------------
+    const c = await planWithProvider(provider, conflictIds[provider]);
+    conflicted[provider] = c.slot;
+    record(`The printer stays authoritative when a provider disagrees (${provider})`,
+      /PLA/i.test(String(c.slot?.has_material ?? ""))
+        && c.slot?.printer_confirmed === true,
+      `${c.slot?.has_material}, printer_confirmed=${c.slot?.printer_confirmed}`);
+    record(`The disagreement is said out loud rather than resolved (${provider})`,
+      (c.slot?.conflicts ?? []).length > 0
+        && (c.slot?.conflicts ?? []).some((x) => /PETG/i.test(x)),
+      (c.slot?.conflicts ?? []).join(" ").slice(0, 90));
+    record(`A disagreement does not throw the weight away (${provider})`,
+      typeof c.slot?.remaining_g === "number" && c.slot.remaining_g > 0,
+      `${c.slot?.remaining_g} g`);
+  }
+
+  // --- the two providers must decide the same about this machine -------------
+  //
+  // The seam was proved equal in unit tests and in an installed build. This is
+  // the same claim with a real printer supplying half the facts.
+  const shape = (slot) => JSON.stringify({
+    material: slot?.has_material, state: slot?.state,
+    confirmed_by: slot?.confirmed_by, printer_confirmed: slot?.printer_confirmed,
+    remaining_g: slot?.remaining_g, quality: slot?.remaining_quality,
+    conflicts: (slot?.conflicts ?? []).map((c) => c.replace(/spoolman|bambuddy/gi, "PROVIDER")),
+    verdict: slot?.sufficiency?.verdict, trusted: slot?.sufficiency?.trusted,
+  });
+  record("Two providers agreeing with the machine decide the same",
+    shape(agreed.spoolman) === shape(agreed.bambuddy),
+    `${shape(agreed.spoolman)} vs ${shape(agreed.bambuddy)}`.slice(0, 160));
+  record("Two providers disagreeing with the machine decide the same",
+    shape(conflicted.spoolman) === shape(conflicted.bambuddy),
+    `${shape(conflicted.spoolman)} vs ${shape(conflicted.bambuddy)}`.slice(0, 160));
+
+  // --- a provider that is not there ------------------------------------------
+  //
+  // The machine is still there, and what it can see must be unaffected. An
+  // unreachable provider subtracts a weight; it does not subtract the printer.
+  const gone = await callRoute(page, "/material_plan", {
+    path: jobPath, host: printerHost, port: 7125,
+    provider: "spoolman", provider_url: "127.0.0.1:1",
+    slot_map: { "2": 1 }, slot_base: 1,
+  });
+  const goneSlots = gone.body?.slots ?? [];
+  const goneSlot = goneSlots.find((s) => s.needed) ?? goneSlots[1];
+  record("An unreachable provider leaves the machine's own facts intact",
+    goneSlot?.printer_confirmed === true
+      && /PLA/i.test(String(goneSlot?.has_material ?? "")),
+    `${goneSlot?.has_material} confirmed_by=${goneSlot?.confirmed_by}`);
+  record("An unreachable provider claims no weight rather than none",
+    goneSlot?.remaining_g == null
+      && (goneSlot?.sufficiency?.verdict ?? "unknown") === "unknown",
+    `remaining=${goneSlot?.remaining_g} verdict=${goneSlot?.sufficiency?.verdict}`);
+
+  // --- and the send decision, with the machine and a provider both speaking ---
+  const send = await callRoute(page, "/send_check", {
+    path: jobPath, host: printerHost, port: 7125,
+    provider: "bambuddy", provider_url: bambuddyUrl,
+    slot_map: { "2": agreeIds.bambuddy }, slot_base: 1,
+  });
+  record("A real machine and a provider together reach a send decision",
+    send.status === 200 && send.body?.available === true
+      && typeof send.body?.verdict === "string",
+    `${send.body?.verdict} ${JSON.stringify(send.body?.counts ?? {})}`);
+  record("Nothing about this run claims the printer weighed anything",
+    !/weighed|scale/i.test(JSON.stringify(send.body?.materials ?? {})),
+    "no weighing claimed on the machine's behalf");
+
+  evidence.provider_on_hardware = anonymise({
+    agreed: { spoolman: agreed.spoolman, bambuddy: agreed.bambuddy },
+    conflicted: { spoolman: conflicted.spoolman, bambuddy: conflicted.bambuddy },
+  });
+} else {
+  console.log("no provider addresses supplied — the provider-on-hardware checks were skipped");
+}
 
 // --- report -------------------------------------------------------------------
 
