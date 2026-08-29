@@ -170,7 +170,7 @@ guessing in the direction that looks better.
   to end and prints a 27-check pass/fail table, so the claims can be verified
   without reading the source. It runs in CI on every pull request.
 - **An acceptance harness that drives the installed application**, not a dev
-  server: 34 checks over the real window and the frozen engine, including that the
+  server: 47 checks over the real window and the frozen engine, including that the
   input file is byte-identical afterwards and that uninstalling leaves nothing
   behind.
 - **Regression tests against genuine slicer output** — real OrcaSlicer,
@@ -208,18 +208,18 @@ simply the machine it is verified against.
 
 ## Evidence
 
-Everything below was verified against the **published v0.8.0 installer**, not a
+Everything below was verified against the **published v0.9.0 installer**, not a
 development build. Commands, counts and full reports:
 [TRUST_STATUS.md](TRUST_STATUS.md).
 
 | What | Result |
 |---|---|
-| Installed-application acceptance, through the real UI | 34/34 |
-| Read-only verification against a real Snapmaker U1 | 39/39 |
+| Installed-application acceptance, through the real UI | 47/47 |
+| Read-only verification against a real Snapmaker U1 | 57/57 |
 | Regression tests against genuine Orca/Bambu/Prusa projects | 36 tests |
 | End-to-end pipeline self-check | 27/27 |
-| Backend tests | 1346 passed, 3 skipped |
-| Desktop tests | 321 passed |
+| Backend tests | 1813 passed, 4 skipped |
+| Desktop tests | 340 passed |
 | TypeScript, Rust, production build | clean |
 
 Demo: [`docs/media/snapmaker-studio-demo.mp4`](media/snapmaker-studio-demo.mp4) —

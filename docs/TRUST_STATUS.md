@@ -5,6 +5,81 @@ Honest, current verification state for the current release. A release is only ma
 published installer, and — from beta.24 onward — read-only verification against a
 real Snapmaker U1 have all passed and are recorded here.
 
+## v0.9.0 — ACCEPTED
+
+**The project that crosses whole.** Everything below ran against *this installer*
+— the exact asset on the release page, verified by SHA256. Canonical values:
+[RELEASE_METADATA.md](RELEASE_METADATA.md). This release's own immutable
+snapshot: [internal/evidence/0.9.0.json](internal/evidence/0.9.0.json).
+
+| Gate | Result |
+|---|---|
+| Backend / desktop suites | backend **1813 passed / 4 skipped**, desktop **340** |
+| `u1convert selfcheck` | **27/27** |
+| Installed-application acceptance | **47/47**, including the in-place upgrade from the published v0.8.0 |
+| Real Snapmaker U1, read-only | **57/57** |
+| `tsc`, `cargo check`, production build | clean |
+
+### What is verified, and what is not
+
+**Snapmaker U1 — hardware verified.** A physical U1 answered this release's
+read-only harness: identified from the `print_task_config` object it exposes and
+mainline Klipper does not, four toolheads, a 271 × 335 × 281 mm reported travel
+envelope, 196 firmware objects, and all four loaded filament slots read correctly
+and recorded as the machine's own observation. Moonraker 1.6.0, Klipper
+1.6.0.267_20260815150420. Full report:
+[internal/hardware-0.9.0.json](internal/hardware-0.9.0.json).
+
+The harness is read-only by construction: seven read routes on an allow-list
+asserted against a deny-list of every control route, printed before the first
+request. Nothing was uploaded, started, paused, resumed, cancelled, heated,
+homed, moved or configured.
+
+**VORON 2.4 250 — profile verified; hardware not tested by this project.** No
+VORON has ever been connected to Studio. Its profile is derived from the
+configuration Klipper itself publishes for that machine, and it was run through
+the same printer-intelligence code the U1 uses. That is architectural evidence,
+not hardware evidence, and the two are not interchangeable. See
+[PRINTER_COMPATIBILITY.md](PRINTER_COMPATIBILITY.md) and
+`internal/SECOND_PRINTER_PROOF.md`.
+
+**Project crossing — measured against the slicer, not asserted.** Painted colour,
+an object's parts, the four non-printing volume roles, multi-object layout and
+three per-object settings were each established by handing Snapmaker Orca a
+project, letting Orca save it back, and reading what Orca wrote — with a control
+that discriminates in each case. Record: `internal/PRUSA_SEMANTICS.md`.
+
+**Material providers — two implementations, one shared contract.** Spoolman and
+Bambuddy both normalise into the same read-only shape, and equivalent facts from
+either produce identical downstream decisions: the same sufficiency verdict,
+blockers, warnings, confidence and conflict behaviour, with only the provider's
+name differing as provenance. Proved three ways — a table-driven suite, the
+installed build, and against the live U1. Two providers are strong evidence the
+contract is general; they are not a claim that every provider will work. Audit:
+`internal/PROVIDER_AUDIT.md`, user-facing behaviour:
+[MATERIAL_PROVIDERS.md](MATERIAL_PROVIDERS.md).
+
+A provider that requires a sign-in cannot be read. Studio has no secure
+credential store, so it says so rather than keeping one in the clear.
+
+### Defects fixed before this release
+
+- **Print settings carried from a source project reached the file and not the
+  slicer.** The five translated process values were written but never declared,
+  and an undeclared value is replaced by the preset on load.
+- **A provider address that redirected off the local network was followed**, and
+  the request left the machine. Demonstrated against the code, not imagined, and
+  fixed at the one transport every provider shares. It affected Spoolman and was
+  reachable by no released build, because no shipped installer could send a
+  provider address.
+- **A slot with a stale provider mapping claimed the printer had looked at it** —
+  "the printer reports it empty", with no printer configured and none contacted.
+  Found by the installed-build acceptance run.
+- **Malformed provider numbers could become a weight**; a full-width Unicode digit
+  string parsed as a number.
+- **An unpainted patch on a painted object** printed in the wrong filament.
+- **A modifier off the plate** was reported as an object off the plate.
+
 ## v0.8.0 — ACCEPTED
 
 **The spool, the printer, and the evidence.** Everything below ran against *this

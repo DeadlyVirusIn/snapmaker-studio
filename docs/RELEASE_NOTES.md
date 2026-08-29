@@ -1,108 +1,134 @@
-# Snapmaker Studio v0.8.0 — the spool, the printer, and the evidence
+# Snapmaker Studio v0.9.0 — the project that crosses whole
 
 > **Independent open-source project — not affiliated with or endorsed by Snapmaker.**
 > "Snapmaker" is a trademark of its respective owner.
 
-Two things you can use, and one claim Studio can now back.
+Bring a project from another slicer and Studio prepares a U1 copy of it. Until
+now that copy quietly lost things: painted colour, the parts an object was built
+from, the settings you had set on one object, and — in one path — the print
+settings themselves. This release is mostly about the crossing, and everything in
+it was established by handing Snapmaker Orca a file, letting Orca save it back,
+and reading what Orca wrote.
 
-## Will this print run out of filament?
+## Your project arrives as the project you made
 
-A printer knows which spool is in which slot, because it is looking at it. It
-knows nothing about how much is left on it. So the question people actually ask
-before pressing print is one no printer can answer — and Studio used to say
-"unknown" to it on every setup.
+### Painted colour survives
 
-If you run **Spoolman** on your network, Studio can now read it.
+A prepared copy carried painted colour exactly as the source wrote it, and Orca
+opened it with nothing painted. Painting is only read when the mesh sits in its
+own object file inside the package — so that is where a painted object goes now,
+and the colour arrives.
 
-**Settings → Materials provider.** Choose Spoolman, type the address of the
-machine it runs on, press *Test connection*, then say which spool is in which
-slot. That is the whole setup. No account, no cloud, and Studio does not scan
-your network looking for anything.
+Eight painted facets in, eight out, in the same slots. The encoding did not
+change; where it lives did.
 
-It asks which way your slots are numbered — 1 to 4, or 0 to 3 — because a person
-counts them one way and the G-code counts them the other. Guessing puts every
-spool one slot out and then reports the wrong material with total confidence.
+### An object's parts arrive as parts
 
-### How hard Studio leans on a number
+A project saying "this half prints in filament 2 and that half in filament 5"
+used to arrive as one undifferentiated object, and Studio correctly reported the
+second filament as not carried. The copy now splits the object along its real
+volume boundaries, so each part crosses with its own filament.
 
-A refusal to send is the strongest thing Studio says, so it has to be earned:
+The parts recombine to the source geometry facet for facet, nothing is
+duplicated, and a filament in slot 5 is not quietly clamped to four.
 
-- **Enough, and recent** — the figure and its age, and you carry on.
-- **Short, tracked, and recent** — *not enough*. This blocks the send.
-- **Short, but nobody has updated the figure in over a week** — a warning with
-  how old it is. Never a refusal.
-- **A weight worked out from the spool's declared size** — a warning. That is
-  arithmetic, not a record of what has been used.
-- **No date on the figure at all** — a warning. Nothing says it is still true.
-- **Nothing tracking the spool, or Spoolman unreachable** — *unknown*. Not
-  "enough", and not "empty".
+### A modifier arrives as a modifier
 
-Being stopped by bookkeeping teaches people to ignore the warnings, and the next
-one might be right.
+Some volumes in a project are not meant to be printed — they change how the
+slicer behaves near them. Studio used to carry the whole object as one mesh, so
+those arrived as solid plastic. Worse than the "not carried" it reported.
 
-### When the printer and Spoolman disagree
+Each now crosses with the word Orca actually uses for it, over geometry marked as
+not-printable. Measured rather than guessed: two cubes that do not touch, sliced,
+and the plate footprint read back — 500 mm² when the second is solid, 400 mm² for
+every non-printing role. None of them becomes plastic.
 
-The printer wins on what is physically in the slot, because it can see it, and
-the disagreement is shown rather than quietly resolved:
+### Several objects arrive as several objects
 
-> Printer reports PLA; your Spoolman mapping says PETG. Check slot 2.
+A project with more than one object kept its geometry in one place, and painting
+is not read from there — so a multi-object painted project lost its colour while
+every individual check passed. Every object now crosses as its own object with
+its own file, its own place on the plate and its own records.
 
-Studio still uses Spoolman's remaining weight there. Which material is loaded and
-how much is left are two different claims, and only one of them was contested.
+If any one object cannot be carried, the whole project declines and crosses
+verbatim instead. Half a conversion would leave the rest in a shape the target
+does not read.
 
-Studio reads Spoolman and never writes to it. It does not create spools, and it
-does not decrement anyone's remaining weight after a print.
+### Settings you set on a single object
 
-## A second printer, and what that does and does not mean
+Studio read per-object settings and reported every one of them as not carried.
+Three of them can cross — layer height, infill density and supports — and they do
+now, in the target's own vocabulary rather than the source's.
 
-Studio's printer intelligence used to be written around one machine. The bed
-fallback was a constant called `U1_BED`; a sliced job was checked against the
-text "u1" rather than against the printer on the other end of the wire, so a job
-correctly sliced for any other machine was reported as wrong.
+That distinction matters: copying the source's spelling across is writing
+nonsense with a straight face. Handing Orca one candidate at a time, with an
+invented word as the control, drew the line: those three survive, the source's
+own spellings do not. Every value is checked before it is written, because a
+value the slicer cannot read does not cost you the setting — it costs you the
+object.
 
-That knowledge is now data. Studio ships printer profiles — build volume, tool
-count, what a machine reports about its own materials, what it is known *not* to
-report — and the checks read what the printer actually says.
+A per-object layer height is withheld on a multi-filament plate, because Orca
+refuses to slice a plate whose objects disagree about it when a prime tower is
+involved. The audit says so rather than writing a project that will not open.
 
-To prove it rather than assert it, a second profile ships: a **VORON 2.4 250**.
-One extruder against the U1's four, a 250 mm cube, no object exclusion, and
-nothing at all reporting loaded filament. The same code ran against it: one
-toolhead was read as one, a four-tool job was blocked, and what is loaded came
-back *unknown* — because a tool count is not a spool count.
+## Two fixes you would have noticed
 
-**Snapmaker U1 — hardware verified.**
-**VORON 2.4 250 — profile verified; hardware not tested by this project.**
+**The print settings from your project were reaching the file and not the
+slicer.** Studio translates five values from a source project — layer height,
+first layer, infill density, wall count and brim — so a project sliced at 0.15 mm
+with four walls does not arrive at 0.2 mm with two. They were being written but
+not *declared*, and an undeclared value is replaced by the preset on load. The
+whole of that promise was correct in the file and invisible in the slicer. It is
+declared now.
 
-Those are different claims and Studio keeps them apart. No VORON has ever been
-connected to Studio. That profile's facts come from the configuration Klipper
-itself publishes for the machine. The U1 remains the only printer this project
-has put on a wire, and it is the printer everything here is verified against.
+**An unpainted patch on a painted object** printed in the wrong filament. It now
+prints in its own volume's filament, as it should.
+
+## A second materials provider
+
+Studio has read **Spoolman** for a while to answer "will this job run out of
+filament?". It now reads **Bambuddy** as well.
+
+**Settings → Materials provider** offers None, Spoolman or Bambuddy. There is no
+second page: pick one, give the address of the machine on your network that runs
+it, test the connection, map a spool to each slot. Changing provider clears the
+address and the mapping, because a spool number only means something to the
+provider that issued it.
+
+Everything after that point is identical whichever one you use — the same
+sufficiency rules, the same warnings, the same refusals. A short, tracked, recent
+weight still blocks a send; a stale one, a figure worked out from a spool's
+declared size, and a figure with no date all warn instead; nothing tracking the
+spool stays unknown.
+
+Both are read-only. Studio does not create spools and does not decrement anyone's
+remaining weight.
 
 ## Fixed on the way
 
-These were found while making the above reachable. **None of them could affect
-v0.7.2**, because nothing in that release could configure a material provider —
-the engine could read one and no screen ever sent it an address.
-
-- A provider address went straight to the network layer. A `file://` address
-  opened a local file, and a public web address was actually fetched. Addresses
-  are now checked to be on your own network before anything is opened. Studio
-  still makes no requests to the internet.
-- A stale weight, and a weight worked out from a spool's declared size, could
-  both refuse a send. Both now warn.
-- Spoolman hides archived spools unless asked for them, so a slot mapped to one
-  read as "no such spool" rather than "that spool is archived".
-- On a printer that reports its own filament, Studio now records that the machine
-  itself confirmed the slot — as opposed to a mapping you entered.
+- **A provider address that redirected off your network was followed.** A local
+  address is not a promise about where the *next* request goes, and one that
+  answered with a redirect to the public internet was being followed. Refused
+  now, for every provider, in the one place all of them share. Studio still makes
+  no requests to the internet.
+- **A slot with a stale mapping claimed the printer had looked at it.** If a
+  mapping pointed at a spool that no longer exists, Studio said "the printer
+  reports it empty" — with no printer connected and nothing having looked. It now
+  says which of the three it actually means: the printer saw an empty slot, your
+  mapping points at a spool that is gone, or nothing can tell.
+- **Malformed numbers from a provider** could become a weight. They stay unknown.
+- **A modifier off the plate** was reported as an object off the plate.
+- **Eight values in the U1 template** had never reached a print — restated preset
+  defaults that the slicer overwrote on load, including a nozzle type and start
+  and end code older than the presets they were competing with. Removed.
 
 ## Also in this release
 
-- Design and placement checks name the printer they measured against, so a figure
-  that came from a profile never reads as one that came from your machine.
-- Printer Hub no longer calls every printer that answers a U1, and shows which
-  machine it identified and on what evidence.
-- The not-found hint no longer tells you to change a setting on a machine Studio
-  has never seen.
+- The fidelity report answers each fact twice: what is in the file, and what the
+  slicer will do with it. "Preserved" used to mean only the first.
+- Prepare declares the values the slicer is not to take from its own preset, so a
+  stated value is the value that runs.
+- Placement moves a project onto the plate in one piece, in the target's layout.
 
 ## Still true
 
@@ -110,9 +136,9 @@ Studio does not slice — Snapmaker Orca does. Studio never starts a print on it
 own; every action in Printer Hub is confirmed by you. Everything is local: no
 cloud, no account, nothing uploaded off your local network — the one transfer
 Studio makes is a sliced job to your own printer, after you confirm it. Your
-original files are never modified; preparing always writes a copy. Advice is advisory: Studio reports what it can
-establish and says "unknown" when it cannot, and it does not promise a print will
-work.
+original files are never modified; preparing always writes a copy. Advice is
+advisory: Studio reports what it can establish and says "unknown" when it cannot,
+and it does not promise a print will work.
 
 Windows only. The installer is not code-signed — verify the SHA256 on the release
 page before running it.
@@ -123,14 +149,22 @@ page before running it.
   reported by it either.
 - Remaining filament is known only where something tracks it. Without a provider
   it stays unknown, which is the honest answer on a stock setup.
+- A materials provider that requires a sign-in cannot be read; Studio has nowhere
+  safe to keep a credential and says so rather than storing one.
+- Two providers are implemented and normalise into one shared shape. That is
+  evidence the shape is general; it is not a claim that every provider will work.
 - Painted colour is read, but whether two colours meet on a layer is decided by
   the slice, so such colours have a toolhead reserved rather than being called
   simultaneous.
-- A PrusaSlicer object whose volumes use different filaments cannot be fully
-  carried; the audit reports the rest as not representable rather than picking
-  one.
+- An object whose volumes cannot all be represented declines the split and
+  crosses whole, with the audit naming what that costs.
 - One machine, one firmware version. The read-only verification generalises; the
   sample does not.
 
 Verification for this release — every count, and what was run against the real
-printer — is in [TRUST_STATUS.md](TRUST_STATUS.md).
+printer — is in
+[TRUST_STATUS.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.9.0/docs/TRUST_STATUS.md).
+Installing and verifying the download:
+[windows-install.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.9.0/docs/windows-install.md).
+Materials providers in detail:
+[MATERIAL_PROVIDERS.md](https://github.com/DeadlyVirusIn/snapmaker-studio/blob/v0.9.0/docs/MATERIAL_PROVIDERS.md).

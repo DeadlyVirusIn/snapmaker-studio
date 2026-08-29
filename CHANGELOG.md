@@ -6,6 +6,74 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-08-28
+
+**The project that crosses whole.**
+
+### Added
+- **Painted colour survives the crossing.** A prepared copy carried painting
+  exactly as the source wrote it and Snapmaker Orca opened it with nothing
+  painted. Painting is only read when the mesh sits in its own object file, so
+  that is where a painted object goes now. Eight painted facets in, eight out, in
+  the same slots; the encoding is unchanged.
+- **An object's parts cross as real parts.** A project whose object has volumes on
+  different filaments is split along its real volume boundaries instead of
+  arriving as one undifferentiated mesh. The parts recombine to the source
+  geometry facet for facet, nothing is duplicated, and a filament in slot 5 is not
+  clamped to four.
+- **A modifier crosses as a modifier.** The four non-printing volume roles cross
+  with the word Orca uses, over geometry typed as not-printable, instead of
+  arriving as solid plastic. Measured on Orca's own plate footprint: 500 mm² for a
+  solid second cube, 400 mm² for every non-printing role.
+- **Multi-object projects cross in the target's layout.** Every logical object
+  becomes its own object with its own object file, build item and part records. If
+  any one object cannot be carried the whole project declines and crosses
+  verbatim.
+- **Three per-object settings cross** — layer height, infill density and supports
+  — written in the target's vocabulary rather than the source's, chosen by handing
+  Orca one candidate at a time with an invented key as the control. Every value is
+  validated before it is written, because a value the slicer cannot read costs the
+  object rather than the setting. A per-object layer height is withheld on a
+  multi-filament plate, where Orca refuses to slice a prime-tower plate whose
+  objects disagree.
+- **Bambuddy as a second materials provider.** Settings offers None, Spoolman or
+  Bambuddy on the existing page. Read-only, optional, local-network only.
+  Everything downstream of the adapter is identical whichever is chosen, proved by
+  a table of equivalent facts rather than asserted.
+- **The fidelity report answers each fact twice** — what the file states, and what
+  the slicer will do with it.
+
+### Fixed
+- **Print settings carried from a source project reached the file and not the
+  slicer.** The five translated process values were written but never declared, and
+  an undeclared value is replaced by the preset on load — so the whole promise was
+  correct in the file and invisible in Orca. Declared now, each in the entry it
+  belongs to.
+- **An unpainted patch on a painted object** printed in the wrong filament; it now
+  prints in its own volume's filament.
+- **A provider address that redirected off the local network was followed**, and
+  the request left the machine. Refused now at the one transport every provider
+  shares. A redirect that stays on the local network is still followed.
+- **A slot with a stale provider mapping claimed the printer had looked at it.**
+  With no printer configured and none contacted, a mapping pointing at a deleted
+  spool produced "the printer reports it empty". The three reasons a slot can be
+  absent now read differently from each other.
+- **Malformed provider numbers could become a weight.** A full-width Unicode digit
+  string parsed as a number; a plain ASCII number is now required.
+- **A modifier off the plate** was reported as an object off the plate.
+- **A per-object layer height and a prime tower** could both be written into a
+  project Orca then refused to slice.
+
+### Changed
+- The provider wire names are `provider` and `provider_url`; the older `spoolman`
+  field still works and means what it did.
+- Switching materials provider clears the address and slot mapping, because a
+  spool id only means something to the provider that issued it.
+- **Eight values were removed from the U1 template.** Restated preset defaults
+  that the slicer overwrote on load and that had never reached a print, including
+  a nozzle type and start and end code older than the presets they competed with.
+
+
 ## [0.8.0] - 2026-08-25
 
 **The spool, the printer, and the evidence.**
